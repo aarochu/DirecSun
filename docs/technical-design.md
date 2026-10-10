@@ -999,11 +999,11 @@ Sixty-one findings were logged, sixty resolved and one open (S-15): thirteen abo
 
 **Repository import, 2026-10-10**
 
-The document was imported from the PocketADCS Claude Doc export into `docs/technical-design.md`. The first commit of the import is byte-identical to the export, so a diff against it shows every change listed here.
+The document was imported from the original Claude Doc export into `docs/technical-design.md`. The first commit of the import is byte-identical to the export, so a diff against it shows every change listed here.
 
 | # | Change | Why | Where |
 | --- | --- | --- | --- |
-| I-1 | PocketADCS renamed DirecSun; home-directory paths replaced with repository paths | Project renamed; the files now live in the repository | Title, 1, 2, 8, 13 |
+| I-1 | Project renamed DirecSun (the former name is noted under the title); home-directory paths replaced with repository paths | Project renamed; the files now live in the repository | Title, 1, 2, 8, 13 |
 | I-2 | Platform changed to ESP-IDF v6.0 with C++17, `esp_http_server` WebSocket, cJSON from the registry, `gptimer` tick, RMT bytes encoder; sensor-driver row added | Owner decision 2026-10-10 to match the drivers validated on the ESP32-S3. Replaces Arduino-ESP32 core 3.x built with PlatformIO or the Arduino IDE | 6.1 |
 | I-3 | Network rewritten: station with DHCP and mDNS (`direcsun.local`); static address and SoftAP as menuconfig options; the OM5P-AC optional | Owner decision 2026-10-10. The static 10.TE.AM.120 address works only on the FRC radio | 7, 7.1, 7.2 |
 | I-4 | "5 GHz recommended" for the radio removed; 2.4 GHz stated | The ESP32-S3 has no 5 GHz radio, so a 5 GHz-only access point could not carry the box \[A\] | 7.1, 12.3 |
