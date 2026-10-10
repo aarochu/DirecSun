@@ -1,0 +1,172 @@
+# Project-wide ESP-IDF defaults for the DirecSun flight firmware.
+#
+# This file is TRACKED. sdkconfig is gitignored, so this is the only record of
+# the intended target and of the deliberate timing and concurrency choices
+# below. Wi-Fi credentials go in sdkconfig.defaults.local (gitignored), which
+# firmware/CMakeLists.txt layers on top of this file when it exists.
+#
+# After editing: delete sdkconfig and rebuild (tools/idf.sh build), otherwise
+# the existing sdkconfig wins and these values are ignored.
+#
+# Every symbol below was checked against the ESP-IDF v6.0 Kconfig files and
+# against the generated sdkconfig. A misspelled or invisible symbol is ignored
+# without an error, so re-check the generated sdkconfig after any change here.
+# Ported from drone-flight-software/sdkconfig.defaults; differences are noted.
+
+# ---------------------------------------------------------------------------
+# Target and flash
+# ---------------------------------------------------------------------------
+# Seeed XIAO ESP32-S3: dual-core Xtensa LX7, single-precision FPU per core,
+# two I2C controllers, four RMT TX channels.
+CONFIG_IDF_TARGET="esp32s3"
+
+# Both cores at full speed. Nothing here is power constrained.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# The XIAO ESP32-S3 carries 8 MB of flash. The validated sensor examples ran
+# with the 2 MB default, which leaves a 1 MB app partition; Wi-Fi, httpd, and
+# mDNS together do not fit comfortably in that.
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+
+# Single factory app with a 1.5 MB app partition. No OTA: firmware is flashed
+# over USB-C (FD section 1.3).
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+
+# ---------------------------------------------------------------------------
+# Build
+# ---------------------------------------------------------------------------
+# -O2. Any loop timing measured under -Og is meaningless for budgeting, and the
+# float paths in the estimator and controllers are sensitive to this.
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_ENABLE=y
+
+# C++17 with no exceptions and no RTTI (firmware/CMakeLists.txt sets the
+# standard). Both are already IDF defaults; pinned so an upstream default
+# change cannot silently grow the binary or change error handling.
+# CONFIG_COMPILER_CXX_EXCEPTIONS is not set
+# CONFIG_COMPILER_CXX_RTTI is not set
+
+# ---------------------------------------------------------------------------
+# Scheduler timing
+# ---------------------------------------------------------------------------
+# 1 ms tick (the IDF maximum). The 500 Hz control loop must NOT be
+# tick-scheduled; it is triggered by a gptimer alarm (FD section 7.2). This
+# raises the tick only so that everything else (telemetry, comms) can be timed
+# at sane granularity.
+CONFIG_FREERTOS_HZ=1000
+
+# Explicitly multicore. Do not let this default away; the architecture depends
+# on the control task having core 1 mostly to itself.
+# CONFIG_FREERTOS_UNICORE is not set
+
+# ---------------------------------------------------------------------------
+# Core affinity: core 0 = radio + system, core 1 = control loop
+# ---------------------------------------------------------------------------
+# These are all already the IDF defaults. They are pinned explicitly because
+# the control loop's jitter budget depends on them, and a silent default change
+# upstream would be very hard to diagnose from the box's behaviour.
+CONFIG_ESP_WIFI_TASK_PINNED_TO_CORE_0=y
+CONFIG_ESP_TIMER_TASK_AFFINITY_CPU0=y
+CONFIG_ESP_TIMER_ISR_AFFINITY_CPU0=y
+CONFIG_ESP_MAIN_TASK_AFFINITY_CPU0=y
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=2304
+
+# Allows esp_timer callbacks to be dispatched straight from the timer ISR
+# (ESP_TIMER_ISR) instead of hopping through the esp_timer task. Harmless if
+# unused; kept available for the Hall staleness timer.
+CONFIG_ESP_TIMER_SUPPORTS_ISR_DISPATCH_METHOD=y
+
+# ---------------------------------------------------------------------------
+# Floating point
+# ---------------------------------------------------------------------------
+# The FPU is single-precision only. Keep FPU use out of ISRs so the ISR entry
+# path does not have to save and restore FP context. Do all math in the
+# control task; the Hall ISR only stores a timestamp.
+# CONFIG_FREERTOS_FPU_IN_ISR is not set
+
+# ---------------------------------------------------------------------------
+# Watchdogs
+# ---------------------------------------------------------------------------
+# Keep both watchdogs on. The system task watchdog stays at 5 s here; the
+# 100 ms watchdog on the control task (TD section 6.2) is added by the control
+# task itself in Set 3. The control task blocks on its timer notification
+# every cycle, so core 1's idle task still runs and the TWDT stays happy. If it
+# ever trips on CPU1, that is a real bug (the loop is overrunning its period),
+# not a reason to disable ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1.
+CONFIG_ESP_INT_WDT=y
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=5
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0=y
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1=y
+
+# ---------------------------------------------------------------------------
+# Instrumentation
+# ---------------------------------------------------------------------------
+# Needed for vTaskGetRunTimeStats, vTaskList, and uxTaskGetSystemState so loop
+# timing and CPU share per core can be measured rather than guessed.
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
+CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+# Not in the drone file. VTASKLIST_INCLUDE_COREID depends on it in v6.0, so
+# without this line the core-ID column below is silently dropped.
+CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y
+CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID=y
+CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y
+
+# ---------------------------------------------------------------------------
+# Console
+# ---------------------------------------------------------------------------
+# Primary console on UART0, secondary output on the native USB-Serial-JTAG.
+# The XIAO's USB-C connects to the S3's native USB, and this pairing is how
+# the validated sensor examples got their logs to the laptop. The secondary
+# console is output only; nothing in this firmware reads console input.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y
+
+# ---------------------------------------------------------------------------
+# I2C
+# ---------------------------------------------------------------------------
+# Keep the ISR in IRAM so flash cache misses cannot stall a transaction.
+CONFIG_I2C_MASTER_ISR_HANDLER_IN_IRAM=y
+
+# esp-idf-lib i2cdev: use the new i2c_master driver, not the legacy one. The
+# vendored qmc5883p driver takes an i2c_master bus handle, which it gets from
+# i2cdev_get_shared_handle(), so both must be on the new driver.
+# CONFIG_I2CDEV_USE_LEGACY_DRIVER is not set
+#
+# i2cdev takes a per-port mutex on every transaction. Leave that ON while the
+# bus has more than one owner task. Once every sensor read lives in the
+# control task (FD section 7.2), CONFIG_I2CDEV_NOLOCK=y can drop the lock.
+# CONFIG_I2CDEV_NOLOCK is not set
+
+# ---------------------------------------------------------------------------
+# Wi-Fi and WebSocket (from DirecSun1, the verified link)
+# ---------------------------------------------------------------------------
+# The ground link is an esp_http_server WebSocket on port 81 (FD section 15).
+CONFIG_HTTPD_WS_SUPPORT=y
+
+# No modem sleep while the station is disconnected. DirecSun1 wrote this as
+# CONFIG_ESP_WIFI_STA_DISCONNECT_PM_ENABLE=n, a misspelling that IDF ignored
+# without a warning (its generated sdkconfig still has the option on). The
+# connected-state power save is turned off in code with
+# esp_wifi_set_ps(WIFI_PS_NONE), as DirecSun1 does.
+# CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE is not set
+
+# ---------------------------------------------------------------------------
+# NOT enabled, deliberately
+# ---------------------------------------------------------------------------
+# Flash writes (NVS) disable the cache on BOTH cores, stalling any code running
+# from flash. Auto-suspend fixes that, but IDF gates it behind "supported only
+# for specific flash chips" and the part on the XIAO has not been verified.
+# Evaluate against the ESP-IDF docs (Optional Features for Flash > Auto Suspend
+# & Resume) and confirm the flash chip before enabling:
+# CONFIG_SPI_FLASH_AUTO_SUSPEND=y
+#
+# The interim mitigation, which needs no config, is to keep NVS writes out of
+# armed modes (set_params is accepted in SAFE only, FD section 15.3) and to
+# mark the control loop and everything it calls IRAM_ATTR where it matters.
+
+# Tickless idle would let the tick drift and add wakeup latency. Never enable.
+# It is invisible anyway (gated behind PM_ENABLE), so this line documents
+# intent rather than setting anything.
+# CONFIG_FREERTOS_USE_TICKLESS_IDLE is not set

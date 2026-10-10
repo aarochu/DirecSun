@@ -1,0 +1,6 @@
+dependencies:
+  idf: '>=5.3.2'
+description: QMC5883P
+repository: git://github.com/duruofu/esp-idf-components.git
+url: https://github.com/DuRuofu/esp-idf-components/tree/master/qmc5883p
+version: 0.1.0
