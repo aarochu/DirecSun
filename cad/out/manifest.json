@@ -1,0 +1,321 @@
+{
+  "version": 1,
+  "outputs": {
+    "assembly_preview.png": {
+      "script": "cad/assembly.py",
+      "sha256": "4ca773104cced0e8001a88ab0c659aa0f208bcb79401e4e19fe61fc4b0c906cd",
+      "sources": {
+        "cad/assembly.py": "0fa4d6e01b7d99fd00f04df8200b668f89345ba1e610b1d91c94031969eb2617",
+        "cad/avionics_deck.py": "8658cd544d39e568f3ebcfbe939e1b4e7b03c00c2c2eaa1f21223d74abba1b24",
+        "cad/base_hub.py": "c7193577404bac428a677f52b6b5211837711eec2b981123b7b65f5f10774bec",
+        "cad/battery_deck.py": "ae2bfd53e39ca3c4697bd6aa2ac334864e2e21dcc0cc568e78e3f90f38889096",
+        "cad/battery_holder_body.py": "4653f3d3419dad0c82aac74de5ff89ea46c29a0b7433714712ed3dc0568f7cc8",
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/bottom_cap.py": "38d42c8edf8843e8f94ab8d4f4b6ef2d8c40de42fe8e36add02b68f0cb0f3071",
+        "cad/flywheel_guard.py": "72c1b2bd76f00f38efef1e98d7f30381ba468c0ac94a29a5036f1c26cb0df331",
+        "cad/hall_bracket.py": "3de60b1abdc72864bff54821cc9e257e1127278034f9fa07777ff5d3127528ae",
+        "cad/lock_pin.py": "81a9ba76d4366b6cd6c01bbd3ab93fcff26722a4e1439af44f4fd438d3901a71",
+        "cad/motor_deck.py": "e3b3476bc5f676c69a7cfb0b17b0cf7ee4b62d867f919f32ed6c7cb1bcb58cae",
+        "cad/power_deck.py": "a46969d1c3fcf4d1fdeb6c0b6926c59b204e259753b34dc5da482bf9936935cd",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e",
+        "cad/top_deck.py": "863daa450ee7d11faa516ec08202b9d6957e83d7c10db003f915cb7294f24caa"
+      }
+    },
+    "assembly_view.stl": {
+      "script": "cad/assembly.py",
+      "sha256": "295bf74aedb4d0f9e156a7344798636a55f651d47fc11e77d478629d8640e6c2",
+      "sources": {
+        "cad/assembly.py": "0fa4d6e01b7d99fd00f04df8200b668f89345ba1e610b1d91c94031969eb2617",
+        "cad/avionics_deck.py": "8658cd544d39e568f3ebcfbe939e1b4e7b03c00c2c2eaa1f21223d74abba1b24",
+        "cad/base_hub.py": "c7193577404bac428a677f52b6b5211837711eec2b981123b7b65f5f10774bec",
+        "cad/battery_deck.py": "ae2bfd53e39ca3c4697bd6aa2ac334864e2e21dcc0cc568e78e3f90f38889096",
+        "cad/battery_holder_body.py": "4653f3d3419dad0c82aac74de5ff89ea46c29a0b7433714712ed3dc0568f7cc8",
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/bottom_cap.py": "38d42c8edf8843e8f94ab8d4f4b6ef2d8c40de42fe8e36add02b68f0cb0f3071",
+        "cad/flywheel_guard.py": "72c1b2bd76f00f38efef1e98d7f30381ba468c0ac94a29a5036f1c26cb0df331",
+        "cad/hall_bracket.py": "3de60b1abdc72864bff54821cc9e257e1127278034f9fa07777ff5d3127528ae",
+        "cad/lock_pin.py": "81a9ba76d4366b6cd6c01bbd3ab93fcff26722a4e1439af44f4fd438d3901a71",
+        "cad/motor_deck.py": "e3b3476bc5f676c69a7cfb0b17b0cf7ee4b62d867f919f32ed6c7cb1bcb58cae",
+        "cad/power_deck.py": "a46969d1c3fcf4d1fdeb6c0b6926c59b204e259753b34dc5da482bf9936935cd",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e",
+        "cad/top_deck.py": "863daa450ee7d11faa516ec08202b9d6957e83d7c10db003f915cb7294f24caa"
+      }
+    },
+    "avionics_deck.stl": {
+      "script": "cad/avionics_deck.py",
+      "sha256": "6df18aeb63d20e1c72391fd51157b0fad87c370396be2e9d3e52c2cf79585c0f",
+      "sources": {
+        "cad/avionics_deck.py": "8658cd544d39e568f3ebcfbe939e1b4e7b03c00c2c2eaa1f21223d74abba1b24",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "avionics_deck_preview.png": {
+      "script": "cad/avionics_deck.py",
+      "sha256": "1e6c0f428765b23fe9cd49e027930e004003cdb0dda02b480e15ae2fd03f5915",
+      "sources": {
+        "cad/avionics_deck.py": "8658cd544d39e568f3ebcfbe939e1b4e7b03c00c2c2eaa1f21223d74abba1b24",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "base_hub.stl": {
+      "script": "cad/base_hub.py",
+      "sha256": "9ccf0d8920d91765132d06745792550825ea18df0d84c7213096e1a6a8058c57",
+      "sources": {
+        "cad/base_hub.py": "c7193577404bac428a677f52b6b5211837711eec2b981123b7b65f5f10774bec",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "base_hub_preview.png": {
+      "script": "cad/base_hub.py",
+      "sha256": "529a41427f845005df74837a695949912f5b2f5f8e2347ffe6413356046a71ac",
+      "sources": {
+        "cad/base_hub.py": "c7193577404bac428a677f52b6b5211837711eec2b981123b7b65f5f10774bec",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_cap_a.stl": {
+      "script": "cad/battery_holder_cap.py",
+      "sha256": "2af9c04fd29eddaea6f1c94f22d8ba2972a7cf68d03247431702773efcc4d500",
+      "sources": {
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_cap_a_preview.png": {
+      "script": "cad/battery_holder_cap.py",
+      "sha256": "e9911ec49b13a7653f4633bea36164d021ac4aaa6690f3fec21dd97e55909393",
+      "sources": {
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_cap_b.stl": {
+      "script": "cad/battery_holder_cap.py",
+      "sha256": "ce60b9b3fd82088f04294ccbc193abe2315f510facee032dd5ee98871f0bca2d",
+      "sources": {
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_cap_b_preview.png": {
+      "script": "cad/battery_holder_cap.py",
+      "sha256": "b170eb4a2a6e6ad33bd921f7a1bae5b08c27cf50a6d12fb238c309b8b24ebf64",
+      "sources": {
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_deck.stl": {
+      "script": "cad/battery_deck.py",
+      "sha256": "22ebf0c07f2dcbdc4d933dbb1f874ab44647b510694b668eead356131c476f7d",
+      "sources": {
+        "cad/battery_deck.py": "ae2bfd53e39ca3c4697bd6aa2ac334864e2e21dcc0cc568e78e3f90f38889096",
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_deck_preview.png": {
+      "script": "cad/battery_deck.py",
+      "sha256": "95677a7f0656d1fcdcbe2cf57e89bc317b8bee1861c134aa2312046b4aa8869d",
+      "sources": {
+        "cad/battery_deck.py": "ae2bfd53e39ca3c4697bd6aa2ac334864e2e21dcc0cc568e78e3f90f38889096",
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_holder_body.stl": {
+      "script": "cad/battery_holder_body.py",
+      "sha256": "7101fd52640299f7a18485a68073d10936a35ed3bc564ce6d4549ed3779928b3",
+      "sources": {
+        "cad/battery_holder_body.py": "4653f3d3419dad0c82aac74de5ff89ea46c29a0b7433714712ed3dc0568f7cc8",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "battery_holder_body_preview.png": {
+      "script": "cad/battery_holder_body.py",
+      "sha256": "79a426868d761efddb3e69d2d93da06d1aa33e70c1023a626b71b9edd72d12b6",
+      "sources": {
+        "cad/battery_holder_body.py": "4653f3d3419dad0c82aac74de5ff89ea46c29a0b7433714712ed3dc0568f7cc8",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "bearing_fit_test.stl": {
+      "script": "cad/bearing_fit_test.py",
+      "sha256": "0ab3efb614c48e80b631e43a05e03c7d7a06fdbfe959590c604a661458af68e4",
+      "sources": {
+        "cad/bearing_fit_test.py": "dee6566d28e14cedc63d4396b3c12b0dceee9d8c99c81aea50bf81c82b6e3e35",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "bearing_fit_test_preview.png": {
+      "script": "cad/bearing_fit_test.py",
+      "sha256": "59f337eae625b861a0a0f73a12b25a5b5b3163bc13bb19391aefd6eeca5da86b",
+      "sources": {
+        "cad/bearing_fit_test.py": "dee6566d28e14cedc63d4396b3c12b0dceee9d8c99c81aea50bf81c82b6e3e35",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "bottom_cap.stl": {
+      "script": "cad/bottom_cap.py",
+      "sha256": "c20e929ec0929e1cadd48c40fb535b76182577534073bec4a593e12f5b9100cb",
+      "sources": {
+        "cad/bottom_cap.py": "38d42c8edf8843e8f94ab8d4f4b6ef2d8c40de42fe8e36add02b68f0cb0f3071",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "bottom_cap_preview.png": {
+      "script": "cad/bottom_cap.py",
+      "sha256": "6313ac552dbc58c89fb3a1ede635b80cca8cdc2ade913c312231f53330449027",
+      "sources": {
+        "cad/bottom_cap.py": "38d42c8edf8843e8f94ab8d4f4b6ef2d8c40de42fe8e36add02b68f0cb0f3071",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "flywheel_guard.stl": {
+      "script": "cad/flywheel_guard.py",
+      "sha256": "4e27a4f8ca24c80b7ec5c34c54e6f0bacba261a4cd467ab63bafae1852ea2cb7",
+      "sources": {
+        "cad/flywheel_guard.py": "72c1b2bd76f00f38efef1e98d7f30381ba468c0ac94a29a5036f1c26cb0df331",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "flywheel_guard_preview.png": {
+      "script": "cad/flywheel_guard.py",
+      "sha256": "c3ded7dbef672dfbbca80b54f04c6fd96207099d749b445a14bc7d15c5744080",
+      "sources": {
+        "cad/flywheel_guard.py": "72c1b2bd76f00f38efef1e98d7f30381ba468c0ac94a29a5036f1c26cb0df331",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "hall_bracket.stl": {
+      "script": "cad/hall_bracket.py",
+      "sha256": "a4e09efe965bb71bc5f6fb95e16ed2cb5377e4b5b0c280227f2891eecd048e15",
+      "sources": {
+        "cad/hall_bracket.py": "3de60b1abdc72864bff54821cc9e257e1127278034f9fa07777ff5d3127528ae",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "hall_bracket_preview.png": {
+      "script": "cad/hall_bracket.py",
+      "sha256": "ba3108e6ba4e714f79b49e0e586b874337b8df69810ab304bd8211add3f6102c",
+      "sources": {
+        "cad/hall_bracket.py": "3de60b1abdc72864bff54821cc9e257e1127278034f9fa07777ff5d3127528ae",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "hole_gauge.stl": {
+      "script": "cad/hole_gauge.py",
+      "sha256": "6a7ef485d4480931da7246b3900abff82b7685cbada0990c2826d8940225be12",
+      "sources": {
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/hole_gauge.py": "71656d16189f72f5bd71025a9f6fb38f33e4f963a4530668d13a0afcce8299f0",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "hole_gauge_preview.png": {
+      "script": "cad/hole_gauge.py",
+      "sha256": "e71afb68d56734b362b22eeac1614f3c25f3237d456b5b652667af5273ff10d7",
+      "sources": {
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/hole_gauge.py": "71656d16189f72f5bd71025a9f6fb38f33e4f963a4530668d13a0afcce8299f0",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "hole_ladder.stl": {
+      "script": "cad/hole_ladder.py",
+      "sha256": "476325d4fd0992033a8faf5b2b849db3278b428e66d03171a437cacfe9b90c11",
+      "sources": {
+        "cad/hole_ladder.py": "85d387c24e1316a5e8656d409891a2acc5871b22fabd207eaf97fb9f3662e6f4",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "hole_ladder_preview.png": {
+      "script": "cad/hole_ladder.py",
+      "sha256": "6620f5cba3e728463223c635e6a488331b6730ca5d6542935ca8f58db04b5f66",
+      "sources": {
+        "cad/hole_ladder.py": "85d387c24e1316a5e8656d409891a2acc5871b22fabd207eaf97fb9f3662e6f4",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "lock_pin.stl": {
+      "script": "cad/lock_pin.py",
+      "sha256": "d9948419aa4c5f853cc23557df2f26569a2e73beb45905598a005b0a2a1ff74b",
+      "sources": {
+        "cad/lock_pin.py": "81a9ba76d4366b6cd6c01bbd3ab93fcff26722a4e1439af44f4fd438d3901a71",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "lock_pin_preview.png": {
+      "script": "cad/lock_pin.py",
+      "sha256": "600554bab0a09b560887432bf8a44fb77fab97caa72740f348fe51e22243f09c",
+      "sources": {
+        "cad/lock_pin.py": "81a9ba76d4366b6cd6c01bbd3ab93fcff26722a4e1439af44f4fd438d3901a71",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "motor_deck.stl": {
+      "script": "cad/motor_deck.py",
+      "sha256": "4c7d12e5ea75573169021c2695b6e9b46bb2ffdf5e034dc6ac14d040542e0192",
+      "sources": {
+        "cad/motor_deck.py": "e3b3476bc5f676c69a7cfb0b17b0cf7ee4b62d867f919f32ed6c7cb1bcb58cae",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "motor_deck_preview.png": {
+      "script": "cad/motor_deck.py",
+      "sha256": "16d58cbbfe68d47c687f151d608bd4f0e958db9bd31c4b4f08029db2eef53138",
+      "sources": {
+        "cad/motor_deck.py": "e3b3476bc5f676c69a7cfb0b17b0cf7ee4b62d867f919f32ed6c7cb1bcb58cae",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "power_deck.stl": {
+      "script": "cad/power_deck.py",
+      "sha256": "279cb2c7330168776dfd2edeb32ac57d30b0e8c0ac02a69ad6b178f5d339eccc",
+      "sources": {
+        "cad/power_deck.py": "a46969d1c3fcf4d1fdeb6c0b6926c59b204e259753b34dc5da482bf9936935cd",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "power_deck_preview.png": {
+      "script": "cad/power_deck.py",
+      "sha256": "f5c17d274432451cf7a70b7450f1998423bf0deef6260671e39a11f6e551c21f",
+      "sources": {
+        "cad/power_deck.py": "a46969d1c3fcf4d1fdeb6c0b6926c59b204e259753b34dc5da482bf9936935cd",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
+      }
+    },
+    "top_deck.stl": {
+      "script": "cad/top_deck.py",
+      "sha256": "c42dca5cff281ca88096b50f5ac44f944cdfd402fc54322d6428cf5f712da64d",
+      "sources": {
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e",
+        "cad/top_deck.py": "863daa450ee7d11faa516ec08202b9d6957e83d7c10db003f915cb7294f24caa"
+      }
+    },
+    "top_deck_preview.png": {
+      "script": "cad/top_deck.py",
+      "sha256": "5f013aa1a42b27c66a449316ec9fe66fc3d30e26ca85c88643cd169665196364",
+      "sources": {
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e",
+        "cad/top_deck.py": "863daa450ee7d11faa516ec08202b9d6957e83d7c10db003f915cb7294f24caa"
+      }
+    },
+    "washer_stack_test.stl": {
+      "script": "cad/washer_stack_test.py",
+      "sha256": "159c37c0c1101f468da1e9ebcea9b15f6522e1c10d1e362a5f07842cf374e8f5",
+      "sources": {
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e",
+        "cad/washer_stack_test.py": "8b385e2510ebaec7e674f1bd0cf29181223ca2c4197b6bce378d15f6fc951f00"
+      }
+    },
+    "washer_stack_test_preview.png": {
+      "script": "cad/washer_stack_test.py",
+      "sha256": "900542984b1948d0360f08edfb83d69af30a2491f4cad2a991ee16b1b4b263d0",
+      "sources": {
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e",
+        "cad/washer_stack_test.py": "8b385e2510ebaec7e674f1bd0cf29181223ca2c4197b6bce378d15f6fc951f00"
+      }
+    }
+  }
+}

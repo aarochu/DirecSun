@@ -27,6 +27,18 @@ git clone --recurse-submodules git@github.com:aarochu/DirecSun.git
 
 Each area adds its commands here as it lands.
 
+### CAD
+
+Printable STLs and six-view previews are committed in `cad/out/`, so printing needs no setup. To change a part, edit its script in `cad/` (shared dimensions live in `cad/stack.py`) and rebuild:
+
+```bash
+tools/bootstrap-venv.sh        # once: Python 3.12 venv in .venv with pinned CadQuery
+tools/build-cad.sh             # all parts, the assembly collision check, cad/out/manifest.json
+tools/check-cad-stale.py       # fails if any script changed since cad/out was built
+```
+
+See [cad/README.md](cad/README.md) for the print list, hardware, and assembly order.
+
 ## Working in this repo
 
 Read [AGENTS.md](AGENTS.md) and [changes/CONTEXT.md](changes/CONTEXT.md) before changing anything. Work is planned and tracked in `changes/` with the spec-driven-dev workflow: every feature has a spec, and its test scheme is the gate for merging.

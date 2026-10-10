@@ -13,3 +13,12 @@ __pycache__/
 *.swp
 .vscode/*
 !.vscode/extensions.json
+
+# CAD: tools/build-cad.sh moves outputs into cad/out/; STL and previews there are
+# committed, STEP is not. Anything left next to the scripts is a build leftover.
+cad/*.stl
+cad/*.step
+cad/*_preview.png
+cad/.run_*.json
+cad/.*.log
+cad/out/*.step
