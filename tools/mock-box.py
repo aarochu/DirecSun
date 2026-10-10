@@ -4,9 +4,11 @@
     tools/mock-box.py [--host 127.0.0.1] [--port 8081] [--inputs throttle,wheel,rate]
     tools/mock-box.py --selftest
 
-Speaks wire schema v1 (protocol/schema-v1.json) the way the firmware will:
+Speaks wire schema v1 (protocol/schema-v1.json) the way the firmware does:
 50 Hz tlm to every client, an ack for every cmd, an event on every mode change,
-pong for every ping. It follows the mode machine of docs/firmware-design.md
+pong for every ping. Like the firmware (R3.5), events go only to clients that
+have sent at least one message: a read-only viewer such as the main UI's device
+link receives only tlm, which carries the mode in every frame. It follows the mode machine of docs/firmware-design.md
 section 13.1 (SAFE, arm to SPINUP, READY 2 s later, mode commands, MANUAL with
 its 250 ms staleness rule), the controlling-client rule and the 1 s heartbeat of
 section 14.4, and the e-stop. It is not a plant model: headings and speeds are
@@ -129,7 +131,9 @@ class Box:
         self.ramp = None                  # (start time, start wheel) while ramping down
         self.manual_value = None
         self.manual_last = -1.0
-        self.params = {"bench_mode": False, "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX}
+        self.params = {"bench_mode": False, "hall_installed": True,
+                       "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX}
+        self.talkers = set()              # clients that have sent anything get events (R3.5)
         self.outbox = []                  # (connection or None for broadcast, message)
 
     # ---- outbound ----
@@ -180,6 +184,7 @@ class Box:
     # ---- inbound ----
 
     def receive(self, conn, text):
+        self.talkers.add(conn)
         if len(text.encode()) > MAX_INBOUND_BYTES:
             self._ack(conn, 0, False, "too large")
             return
@@ -254,9 +259,20 @@ class Box:
             self._ack(conn, seq, True)
         elif cmd == "set_params":
             if self.mode != "SAFE":
-                return self._ack(conn, seq, False, "set_params only in SAFE")
-            self.params.update(message["params"])
-            self._ack(conn, seq, True, applied=message["params"])
+                return self._ack(conn, seq, False, "not in SAFE")
+            update = message["params"]
+            # The Hall bench bypass needs bench mode already on: two commands, never one (R3.6).
+            if update.get("hall_installed") is False and not self.params.get("bench_mode"):
+                return self._ack(conn, seq, False, "bench_mode required: hall_installed")
+            if update.get("bench_mode") is False and not update.get("hall_installed", self.params["hall_installed"]):
+                return self._ack(conn, seq, False, "bench_mode required: hall_installed")
+            was_bypassed = not self.params["hall_installed"]
+            self.params.update(update)
+            self._ack(conn, seq, True, applied=update)
+            if was_bypassed != (not self.params["hall_installed"]):
+                self._emit(None, {"v": 1, "type": "event", "seq": self._next_seq(), "t_ms": self._t_ms(),
+                                  "event": "notice", "name": "HALL_BYPASS",
+                                  "detail": "off" if self.params["hall_installed"] else "on"})
         elif cmd == "wheel_step":
             if self.mode != "READY":
                 return self._ack(conn, seq, False, f"not allowed in {self.mode}")
@@ -319,6 +335,7 @@ class Box:
 
     def disconnected(self, conn):
         # The controlling client keeps its role until the heartbeat expires (FD 14.4).
+        self.talkers.discard(conn)
         log(f"client {id(conn) % 10000} disconnected")
 
     # ---- time ----
@@ -382,6 +399,8 @@ class Box:
             flags.append("MOMENTUM_NEAR_LIMIT")
         if stale:
             flags.append("MANUAL_STALE")
+        if not self.params["hall_installed"]:
+            flags.append("HALL_BYPASS")
         flags.extend(self.latched)
 
         throttle = 0
@@ -425,8 +444,10 @@ async def start_box(host, port, inputs):
         while box.outbox:
             target, message = box.outbox.pop(0)
             text = json.dumps(message, separators=(",", ":"))
-            if target is None:
+            if target is None and message["type"] == "tlm":
                 broadcast(clients, text)
+            elif target is None:
+                broadcast([c for c in clients if c in box.talkers], text)
             elif target in clients:
                 broadcast([target], text)
 
@@ -477,6 +498,25 @@ async def selftest_endpoint():
             first = json.loads(await asyncio.wait_for(ws.recv(), timeout=2.0))
             if first.get("type") != "tlm":
                 problems.append(f"first frame on {WS_PATH} was {first.get('type')!r}, not tlm")
+        # Read-only rule (R3.5): a client that never sends gets only tlm, while a
+        # client that has spoken receives the events (the positive control).
+        async with connect(f"ws://127.0.0.1:{port}{WS_PATH}") as silent, \
+                connect(f"ws://127.0.0.1:{port}{WS_PATH}") as talker:
+            await talker.send(json.dumps({"v": 1, "type": "ping", "seq": 1, "t_client_ms": 1}))
+            await talker.send(json.dumps({"v": 1, "type": "cmd", "seq": 2, "cmd": "arm"}))
+            deadline = time.monotonic() + 0.6
+            silent_types, talker_types = set(), set()
+            while time.monotonic() < deadline:
+                for ws, seen in ((silent, silent_types), (talker, talker_types)):
+                    try:
+                        frame = json.loads(await asyncio.wait_for(ws.recv(), timeout=0.05))
+                        seen.add(frame["type"])
+                    except asyncio.TimeoutError:
+                        pass
+            if silent_types != {"tlm"}:
+                problems.append(f"a read-only client received {sorted(silent_types)}, not only tlm")
+            if "event" not in talker_types:
+                problems.append(f"the client that armed got no event ({sorted(talker_types)})")
         for wrong in ("/", "/ws/extra"):
             try:
                 async with connect(f"ws://127.0.0.1:{port}{wrong}"):
@@ -489,7 +529,8 @@ async def selftest_endpoint():
         server.close()
         await server.wait_closed()
     if not problems:
-        print(f"mock-box selftest: endpoint ok, tlm on {WS_PATH}, HTTP 404 on / and /ws/extra")
+        print(f"mock-box selftest: endpoint ok, tlm on {WS_PATH}, HTTP 404 on / and /ws/extra; "
+              "a read-only client gets only tlm, a client that spoke gets events")
     return problems
 
 
@@ -525,14 +566,18 @@ def selftest():
     send(a, {"v": 1, "type": "cmd", "seq": 9, "cmd": "arm"})
     box.last_heartbeat -= 5.0
     box.tick()                                                                        # HEARTBEAT_LOST
+    send(a, {"v": 1, "type": "cmd", "seq": 10, "cmd": "set_params", "params": {"hall_installed": False}})  # refused
+    send(a, {"v": 1, "type": "cmd", "seq": 11, "cmd": "set_params", "params": {"bench_mode": True}})
+    send(a, {"v": 1, "type": "cmd", "seq": 12, "cmd": "set_params", "params": {"hall_installed": False}})
+    box.tick()                                                                        # HALL_BYPASS flag
     kinds = {}
     for _target, message in box.outbox:
         key = message["type"] + (":" + message["event"] if message["type"] == "event" else "") \
             + (":ok" if message.get("ok") is True else ":refused" if message.get("ok") is False else "")
         kinds[key] = kinds.get(key, 0) + 1
-    needed = {"tlm", "pong", "ack:ok", "ack:refused", "event:mode"}
+    needed = {"tlm", "pong", "ack:ok", "ack:refused", "event:mode", "event:notice"}
     missing = needed - set(kinds)
-    causes = [m["cause"] for _t, m in box.outbox if m["type"] == "event"]
+    causes = [m["cause"] for _t, m in box.outbox if m["type"] == "event" and m["event"] == "mode"]
     tlm_modes = {m["mode"] for _t, m in box.outbox if m["type"] == "tlm"}
     print(f"mock-box selftest: {len(box.outbox)} outbound messages, all valid against the schema "
           f"({', '.join(f'{k} {v}' for k, v in sorted(kinds.items()))})")
@@ -545,6 +590,10 @@ def selftest():
             problems.append(f"no mode event with cause {cause}")
     if not any("MANUAL_STALE" in m.get("flags", []) for _t, m in box.outbox if m["type"] == "tlm"):
         problems.append("MANUAL_STALE never set")
+    if not any("HALL_BYPASS" in m.get("flags", []) for _t, m in box.outbox if m["type"] == "tlm"):
+        problems.append("HALL_BYPASS never set")
+    if not any(m.get("name") == "HALL_BYPASS" for _t, m in box.outbox if m["type"] == "event"):
+        problems.append("no HALL_BYPASS notice")
     problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:
         print(f"mock-box selftest: FAILED, {problem}", file=sys.stderr)
