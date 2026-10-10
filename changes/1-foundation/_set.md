@@ -18,7 +18,7 @@ Branch: `feat/set1-foundation`. Order: R1.1 first, because every other feature n
 - [x] R1.6 protocol-link-console: schema v1, link module, bench console, mock box
 - [t] R1.7 ci: GitHub Actions running every check in this set
 - [~] R1.8 match-ui-wire-contract: wire sign clockwise-positive and endpoint port 80 /ws, matching the main UI (frontend/, PR #1)
-- [~] R1.9 frontend-ci: the main UI in CI and in the repo guides (after PR #1 is merged)
+- [t] R1.9 frontend-ci: the main UI in CI and in the repo guides (after PR #1 is merged)
 
 ## Open questions / decisions before implementing
 None. Both questions were answered 2026-10-10: the mock box is in (R1.6), and the MANUAL staleness rule is accepted as recommended (R1.2).
