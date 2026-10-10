@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 14,
+  "cmd": "set_params",
+  "params": {
+    "bench_mode": true,
+    "hall_installed": false,
+    "spinup_throttle": 47,
+    "hall_expect_throttle": 200
+  }
+}

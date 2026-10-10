@@ -130,6 +130,15 @@ struct Event {
     const char *detail = "";     // Kind::Notice: optional, e.g. "on" or "off" for HALL_BYPASS
 };
 
+// One item on the control-to-comms queue (FD section 7.4): an ack addressed to
+// one client, or an event for every client that has spoken (R3.5).
+struct Outbound {
+    enum class Kind : uint8_t { Ack, Event };
+    Kind kind = Kind::Ack;
+    Ack ack;      // kind == Ack: reply to ack.client
+    Event event;  // kind == Event: its strings are static
+};
+
 // Fixed-capacity output list. Pushing into a full box drops the item and
 // counts it, so the producer never blocks (FD section 7.4).
 template <typename T, std::size_t N>
