@@ -30,3 +30,7 @@ None.
 - 2026-10-10: Set scaffolded from the grilling session (layout, C++17, repo-authoritative docs, cad/out policy, link module, network, sets by demo milestone, hardware policy, git flow, CI, MANUAL mode).
 - 2026-10-10: Specs approved by Julian; open questions resolved.
 - 2026-10-10: Aaron's frontend (PR #1) became the main UI. Decisions: the backend matches the UI, the wire is clockwise-positive, the endpoint is port 80 at `/ws`, the UI owns the operator client, and `ground/link` and the console are bench tools. R1.8 and R1.9 were added to carry this into Set 1 before it reaches `main`.
+- 2026-10-10: Set 1 complete (all nine features merged). Integrated-branch check, `tools/check-all.sh --firmware --frontend`:
+  - 13/14 PASS: purity, host tests (7 cases), schema, link (13 tests, 97 messages), mock box, CAD staleness, firmware build, frontend install, typecheck, unit (56).
+  - `frontend-e2e` failed on its `MOCK_ONLY` test, because Google Fonts files loaded after `networkidle` on a freshly rebooted machine at load average 14 to 30. Reruns: one failed the same way, one passed 15/15.
+  - The flake and the runtime-font dependency (no fonts on a demo network without internet) are filed for Aaron as aarochu/DirecSun#2; `frontend/` is not edited from backend work.
