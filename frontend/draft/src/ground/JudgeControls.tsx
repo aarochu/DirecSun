@@ -21,14 +21,12 @@ const ANNOUNCEMENT: Record<SimPhase, (direction: Direction | null) => string> = 
 
 interface JudgeControlsProps {
   plant: MockPlant;
-  deviceLive?: boolean;
 }
 
-export function JudgeControls({ plant, deviceLive = false }: JudgeControlsProps) {
+export function JudgeControls({ plant }: JudgeControlsProps) {
   const { state } = usePlantTelemetry(plant);
   const { phase, lastCommand } = state;
-  const available = controlAvailability(phase);
-  const can = deviceLive ? { rotate: false, stop: false, reset: false } : available;
+  const can = controlAvailability(phase);
   const [announcement, setAnnouncement] = useState('');
   const previousPhase = useRef<SimPhase>(phase);
   const resetPending = useRef(false);
@@ -51,7 +49,7 @@ export function JudgeControls({ plant, deviceLive = false }: JudgeControlsProps)
         <h2 className="controls__title mono-label" id="controls-title">
           COMMAND ATTITUDE
         </h2>
-        <p className="controls__status">{deviceLive ? 'SIMULATION PAUSED' : PHASE_STATUS[phase]}</p>
+        <p className="controls__status">{PHASE_STATUS[phase]}</p>
       </div>
 
       <div className="controls__row">
@@ -118,12 +116,6 @@ export function JudgeControls({ plant, deviceLive = false }: JudgeControlsProps)
           </li>
         ))}
       </ol>
-
-      {deviceLive && (
-        <p className="controls__note mono-label">
-          SHOWING DEVICE TELEMETRY / THESE SIMULATION CONTROLS ARE LOCKED AND NOTHING IS SENT TO THE DEVICE
-        </p>
-      )}
 
       <p className="sr-only" aria-live="polite">
         {announcement}
