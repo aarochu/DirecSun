@@ -38,7 +38,7 @@ static void qmc5883p_test_task(void *arg)
     qmc5883p_data_t data;
 
     ESP_LOGI(TAG, "Initializing QMC5883P...");
-    esp_err_t ret = qmc5883p_init(&dev, bus_handle, QMC5883P_ADDR);
+    esp_err_t ret = qmc5883p_init(&dev, bus_handle, QMC5883P_ADDR, I2C_MASTER_FREQ_HZ);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize QMC5883P (err=%d)", ret);
         vTaskDelete(NULL);
