@@ -256,6 +256,8 @@ The flywheel is three 2.5 in steel fender washers clamped to the bell by the pro
 
 Open problem (Oct 10): the motor's threaded shaft is 6.76 mm long and 5.81 mm across the threads, consistent with M6 \[M\]. That leaves room for one nut and about 3.5 mm of washers, not the 4.8 mm stack plus prop nut and jam nut assumed above. The washers on hand (37.88 mm across; three with a 9.5 mm hole and 1.27 mm thick, four with an 11 mm hole and 1.44 mm thick \[M\]) also sit 1.85 to 2.6 mm loose on the thread, which at 4000 rpm is 3 to 5 N of rotating force per washer if one slides fully off centre \[C\]. The flywheel attachment is being redesigned around a measurement of the motor top: any raised collar around the shaft, any screw holes in the bell, the thread handedness, and whether the motor came with nuts or self-tightening props \[M\].
 
+**Decision (Oct 10, owner).** The flywheel becomes a printed PETG wheel with the washers sealed inside at a print pause, as rehearsed by `washer_stack_test` (see `cad/README.md`). This overrides the rule above that nothing printed spins. Repository Set 2 owns the design and the revision of invariant 8.3, the hazard table (Section 10.1), and PR-4; until then, the text above describes the superseded washer-stack design.
+
 ### 4.6 Centring and balancing
 
 Imbalance is the main dynamic risk (Section 3.5). The procedure, in order:
@@ -422,7 +424,7 @@ The firmware is a 500 Hz cascade of four loops on one core, attitude → rate �
 | Item | Choice | Label |
 | --- | --- | --- |
 | MCU | ESP32-S3 on the XIAO, dual core, 8 MB flash | \[V\]; flash size \[A\], read with esptool during repository Set 1 |
-| Framework | ESP-IDF v6.0 with FreeRTOS tasks, application code in C++17, built with `idf.py` from an EIM install (`tools/idf.sh`). Chosen Oct 10 to match the sensor drivers the owner validated on this MCU; it replaces Arduino-ESP32 with PlatformIO | Design choice |
+| Framework | ESP-IDF v6.0 with FreeRTOS tasks, application code in C++17, built with `idf.py` from an EIM install (`tools/idf.sh`). Chosen Oct 10 to match the sensor drivers the owner validated on this MCU (Section 12.4, I-2, records the earlier choice) | Design choice |
 | Sensor drivers | esp-idf-lib `mpu6050` and `bmp280` on the esp-idf-lib `i2cdev` bus manager, plus a vendored `duruofu/qmc5883p` driver that is handed the same bus through `i2cdev_get_shared_handle()`. Every device runs at 400 kHz; the library defaults (1 MHz for the esp-idf-lib drivers, 100 kHz hard-coded in the QMC5883P driver) are overridden | \[V\] defaults read from the driver source; \[A\] the owner validated each driver alone on an ESP32-S3 at SDA GPIO5 and SCL GPIO6, never all three on one bus (A-23) |
 | DShot | RMT peripheral (4 TX channels) \[V\], driven by the ESP-IDF RMT TX channel and its built-in bytes encoder (firmware design §10.6). A 16-symbol custom encoder is the fallback. No external DShot library | \[M\] build check |
 | Control tick | A `gptimer` alarm interrupt notifies the control task every 2 ms (firmware design §7.2) | Design choice |
@@ -749,7 +751,7 @@ The hazards worth designing around are the spinning wheel and the battery; every
 | Gyro corrupted by vibration | Wheel imbalance at 40 Hz | Noisy rate, poor hold | Balance (4.6); 20 Hz digital low-pass filter; software notch at the wheel frequency |
 | I2C bus lock-up | Glitch on long wires to the top deck | Sensor reads stop | Bus-recovery clock pulses on timeout; Safe mode if the IMU is silent for 50 ms |
 | Brown-out of the MCU | Motor current dips on the shared pack | Reset mid-demo | Buck converter isolates 5 V; bulk capacitor at the ESC input; boot into Safe mode |
-| Wi-Fi drop | RF congestion at the venue | Ground loses control | Private OM5P-AC network; heartbeat timeout to Safe |
+| Wi-Fi drop | RF congestion at the venue | Ground loses control | A private access point (the OM5P-AC or a hotspot) instead of the venue network; heartbeat timeout to Safe |
 | Printed pocket cracks | Bearing pressed into an undersized pocket | Bearing loose | Fit test before printing the cap |
 | PETG softening near the motor | Motor heat | Motor deck creeps | PETG for motor deck; low duty cycle; touch-check temperature in T-14 \[M\] |
 
@@ -994,6 +996,29 @@ Sixty-one findings were logged, sixty resolved and one open (S-15): thirteen abo
 | F-1 | Generic breakouts of unknown size, mounted on perfboard | Adafruit Eagle board files | All three share a 25.40 × 17.78 mm footprint with four 2.5 mm holes and the chip at the board centre | Printed standoffs with nylon M2.5 screws; MPU-6050 on the spin axis; XIAO on a smaller carrier; collision check with a screw through every hole and two new positive controls |
 | F-2 | MPU6050 board needs 5 V into its regulator (true of the GY-521) | Adafruit guides | Adafruit boards accept 3 to 5 V and carry their own regulators and 10 kΩ pull-ups | All sensors on the XIAO's 3V3 over STEMMA QT; I2C rise-time limit calculated |
 | F-3 | BMP280 at 0x76 | Adafruit library header | Library default is 0x77 | Section 5.3 corrected; board default remains \[A\] until scanned |
+
+**Repository import, 2026-10-10**
+
+The document was imported from the PocketADCS Claude Doc export into `docs/technical-design.md`. The first commit of the import is byte-identical to the export, so a diff against it shows every change listed here.
+
+| # | Change | Why | Where |
+| --- | --- | --- | --- |
+| I-1 | PocketADCS renamed DirecSun; home-directory paths replaced with repository paths | Project renamed; the files now live in the repository | Title, 1, 2, 8, 13 |
+| I-2 | Platform changed to ESP-IDF v6.0 with C++17, `esp_http_server` WebSocket, cJSON from the registry, `gptimer` tick, RMT bytes encoder; sensor-driver row added | Owner decision 2026-10-10 to match the drivers validated on the ESP32-S3. Replaces Arduino-ESP32 core 3.x built with PlatformIO or the Arduino IDE | 6.1 |
+| I-3 | Network rewritten: station with DHCP and mDNS (`direcsun.local`); static address and SoftAP as menuconfig options; the OM5P-AC optional | Owner decision 2026-10-10. The static 10.TE.AM.120 address works only on the FRC radio | 7, 7.1, 7.2 |
+| I-4 | "5 GHz recommended" for the radio removed; 2.4 GHz stated | The ESP32-S3 has no 5 GHz radio, so a 5 GHz-only access point could not carry the box \[A\] | 7.1, 12.3 |
+| I-5 | Demo UI owned by Aaron outside the repository, using `ground/link/`; sign conversion done in the UI | Owner decisions 2026-10-10 | 7.4 |
+| I-6 | Simulator section rewritten: dropped, replaced by `tools/mock-box.py` and the host plant simulation; W-6 now targets the mock box | Section 11.5 had already dropped the simulator, but Section 7.5 still described it | 7.5, 11.2 |
+| I-7 | CAD layout, commands, invariants, and agent rules rewritten for `cad/out/`, `tools/build-cad.sh`, `tools/check-cad-stale.py`, the cad-skill submodule, and the repository git flow; "rebuild all eleven" replaced, since sixteen part scripts exist | Repository layout | 8 |
+| I-8 | Approved firmware-design additions written into the body: `disarm`, 0.5 s Ready dwell, magnetometer and sun guards, `respin` replacing the automatic momentum dump (V-2), Hall-silent interlock (V-11), controlling-client heartbeat (V-15) | Owner approval 2026-10-10 | 6.6, 6.7, 7.3, 10.1, 10.2 |
+| I-9 | Approved corrections written into the body: K\_ω and the T-3 pass band (V-1), magnetometer axis map (V-4), aliasing at the electrical frequency (V-5), fast and median wheel-speed estimates (V-7), gyro at ±2000 deg/s (V-9), ack echoes the command `seq` (V-14), ramp limits acceleration rather than final rate (V-20), DShot150 default (V-21) | Owner approval 2026-10-10; findings in firmware design §23 | 4.8, 5.2, 6.4, 6.5, 6.7, 7.3, 9.1, 12.1 |
+| I-10 | Manual mode added, with its wire messages and staleness rule | Owner decision 2026-10-10 | 2, 6.5, 6.6, 7.3, 7.4, 11.4 |
+| I-11 | The three diagrams lost to `[embedded content]` placeholders rebuilt in Mermaid; the lost stack render replaced by a pointer to the viewing STL | The Claude Doc export did not carry them | 2, 4, 6.6, 11 |
+| I-12 | Plain fixes: example `vbat` 10.1 V (V-3), "920 KV" (V-18), 0.84 kg box (V-19), "d4.7" heading, broken `CELL_L` markup, A-13 records the 50.17 mm measurement, missing pick-list tab noted | Typos and stale values | 2, 3.1, 4.7, 4.10, 7.3, 12.1 |
+| I-13 | A-18 rewritten for the RMT bytes encoder; A-23 (shared I2C bus) and A-24 (WebSocket on the S3) added; the register now holds twenty-four assumptions | Platform change | 12.1 |
+| I-14 | Flywheel decision recorded: printed PETG wheel with sealed washers; repository Set 2 revises invariant 8.3, the hazards, and PR-4 | Owner decision 2026-10-10, answering S-15 (the design itself is still open) | 4.5 |
+| I-15 | Open questions on owners and on the network closed | Answered in Sections 11.5 and 7.1 | 12.3 |
+| I-16 | Wi-Fi drop mitigation no longer assumes the OM5P-AC | Network decision | 10.2 |
 
 **Confirmed by the independent re-derivation:** K\_t, washer and box inertias, rate per rpm, absorbable spin, slew time and its formula, stored energy, imbalance forces, gravity torque, coin-test factor, structural stresses, all CAD clearances, the battery divider, the A1104 pull-up arrangement, the DLPF table, sensor addresses and registers, ESP32-S3 RMT and ADC facts, BLHeli\_S and DShot facts, radio addressing, and the slew profile settling within PR-2.
 

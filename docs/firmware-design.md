@@ -1,6 +1,6 @@
 # DirecSun Flight Firmware: Technical Design and Implementation Plan
 
-**Status:** Design for implementation. No firmware has been written, built, flashed, or run. No hardware has been measured. Imported into the repository on 2026-10-10, when the toolchain changed from Arduino-ESP32 to ESP-IDF v6.0 with C++17; §23.1 rows V-22 onward record every edit made then.
+**Status:** Design for implementation. No firmware has been written, built, flashed, or run. No hardware has been measured. Imported into the repository on 2026-10-10, when the toolchain changed to ESP-IDF v6.0 with C++17; §23.1 rows V-22 onward record every edit made then.
 **Parent document:** *DirecSun Technical Design*, `docs/technical-design.md` (referred to below as **TD**). Section numbers such as "TD §6.5" point into that document.
 **Related code:** the wire schema in `protocol/schema-v1.json`, the client side of the protocol in `ground/link/`, and the bench console in `ground/console/`. The demo UI is Aaron's and lives outside this repository (§17).
 **Audience:** firmware and software engineers, software architects, agentic architects, and AI agents that will write, review, or change the firmware.
@@ -174,7 +174,7 @@ The PR-1 requirement needs the gyro range to cover at least 360 deg/s, and TD §
 | Item | Value | Label |
 | --- | --- | --- |
 | MCU | ESP32-S3, dual core | [V] TD §6.1 |
-| Framework | ESP-IDF v6.0, C++17 application code, FreeRTOS tasks | [D] 2026-10-10, replacing Arduino-ESP32 (TD §6.1) |
+| Framework | ESP-IDF v6.0, C++17 application code, FreeRTOS tasks | [D] 2026-10-10 (TD §6.1; V-22 records the earlier choice) |
 | I2C | SDA GPIO5, SCL GPIO6 on port 0, owned by esp-idf-lib `i2cdev`; every device at 400 kHz, fallback 100 kHz. The library defaults (1 MHz for the esp-idf-lib drivers, 100 kHz hard-coded in the QMC5883P driver) are overridden | [V] TD §5.3 to 5.4 for pins and rate; [V] defaults read from the driver source, 2026-10-10 |
 | DShot | DShot300 if ESC MCU is 48 MHz ("H" in its name), DShot150 if 24 MHz ("L") | [V] TD §5.2; [M] read in ESC Configurator |
 | DShot frame | 11-bit throttle, 1 telemetry bit, 4-bit CRC; 0 = disarm, 1–47 commands, 48–2047 throttle | [V] TD §6.3 |
@@ -1117,6 +1117,14 @@ Each statement below was challenged by recomputing it from TD's inputs, by check
 | V-19 | TD §2 opening: "a 0.7 kg box" | TD §3.2: 844 g with wheel | Stale figure | None needed in firmware | Low (TD) |
 | V-20 | TD §6.7 e-stop: "ramp the wheel to zero over 5 s, so the box speeds up gently" | Momentum conservation | The ramp limits acceleration (about 5 rad/s² from the cap), not the final box speed (about 4.0 rev/s from the cap) | Stated explicitly (§14.3); open-loop throttle ramp because control below 800 rpm is not trusted | Low (TD wording) |
 | V-21 | TD §5.2: "DShot300 if … 48 MHz" | No measurement yet | Choosing DShot300 before reading the ESC risks unreliable frames on a 24 MHz MCU | Default DShot150 until read (§16) | Low (This doc) |
+| V-22 | §6, §7.2, §10, §15.2, §18, §19.3, §22 assumed Arduino-ESP32 core 3.x built with PlatformIO or Arduino CLI, arduinoWebSockets, and ArduinoJson | Owner decision 2026-10-10 | The owner chose ESP-IDF v6.0 with C++17 to match the sensor drivers validated on the ESP32-S3 | Rewritten for ESP-IDF: `esp_http_server` WebSocket (verified on an ESP32-C3 in the DirecSun1 prototype), cJSON from `espressif/cjson`, `app_main` replaces `loop()`, layout under `firmware/components`, toolchain in §18.2 | Medium (this doc) |
+| V-23 | §15.1: station on the OM5P-AC at static 10.TE.AM.120; credentials in NVS set over USB serial | Owner decision 2026-10-10 | A static address works only on the FRC radio, and any 2.4 GHz access point should do for the demo | Station with DHCP and mDNS `direcsun.local`; static address and SoftAP in menuconfig; credentials from a gitignored `sdkconfig.defaults.local` | Medium (TD and this doc) |
+| V-24 | §2.3 and §17 assumed the `direcsun/` frontend would integrate directly and left the sign convention open | Owner decisions 2026-10-10 | The demo UI is Aaron's and lives outside the repository; the wire stays CCW-positive | The UI uses `ground/link/` and converts signs for display; §24 Q4 and Q5 closed | Low |
+| V-25 | §13.1 diagram: DETUMBLE, HOLD, SLEW, SUN_POINT left for SAFE only on "estop or interlock" | §15.3 accepts `disarm` in active modes | The diagram omitted `disarm` | Edges now read "estop, disarm, or interlock" | Low (this doc) |
+| V-26 | Seven operating modes | Owner decision 2026-10-10 | Teleoperation needed a mode of its own | `MANUAL` added (§13.5) with `manual_input`, `MANUAL_STALE`, `manual_throttle_min/max`, and host test HT-11 | Medium (this doc and TD) |
+| V-27 | §24 Q6 additions and the V-1, V-4, V-5, V-7, V-9, V-14 corrections awaited owner approval | Owner review 2026-10-10 | Approved | Written into TD §4.8, §5.2, §6.4 to §6.7, §7.3, §9.1, §10; §13.1 and §13.4 text updated | n/a |
+| V-28 | Em dashes in headings and empty table cells | Owner style | n/a | Replaced with colons, "none", or "n/a" | Low |
+| V-29 | §10 had no driver notes | Driver source read 2026-10-10 | The esp-idf-lib drivers default to 1 MHz SCL, the QMC5883P driver hard-codes 100 kHz, and the drivers were validated only one at a time | Driver notes in §10.1 to §10.3; 400 kHz override [D]; TD A-23 | Medium (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
@@ -1140,7 +1148,7 @@ All [C], recomputed from TD §3.2 inputs while writing this document:
 
 ### 23.3 Known limits of this validation
 
-- No datasheet, library header, or source page was opened while writing this document. Register addresses and values for the MPU-6050 beyond those TD quotes, the QMC5883P control bits, and every ESP-IDF/Arduino API name are [A] and are covered by build checks BC-1..BC-6 or driver bring-up.
+- No datasheet, library header, or source page was opened while writing this document. Register addresses and values for the MPU-6050 beyond those TD quotes, the QMC5883P control bits, and every ESP-IDF API name are [A] and are covered by build checks BC-1..BC-6 or driver bring-up.
 - Nothing has been built or measured. Every gain is a starting point.
 - The closed-loop host test (HT-5) uses the idealised TD §3.1 plant. It can find sign and logic errors; it cannot predict ESC dynamics, friction, or vibration.
 
