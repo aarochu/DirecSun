@@ -89,6 +89,10 @@ struct ControlDemand {
     // the rate and attitude loops so the step is the only input.
     float wheel_step_rpm = 0.0f;
     bool wheel_hold = false;
+    // The rate loop's command, deg/s, internal frame (counter-clockwise
+    // positive). READY holds rate, so it is 0 there (TD section 6.6); the
+    // attitude loop (Set 4) and MANUAL `rate` (Set 5) are what will drive it.
+    float omega_cmd_dps = 0.0f;
 };
 
 class ThrottleController {
@@ -100,6 +104,9 @@ public:
     virtual int throttle(const ControlDemand &demand, const TickInputs &in, const Params &params) = 0;
     // Called whenever the box drops to SAFE, so integrators restart clean.
     virtual void reset() = 0;
+    // tlm flags the controller owns (MOMENTUM_SATURATED), for the tick just
+    // run. The supervisor reports them only while armed.
+    virtual uint32_t flags() const { return 0; }
 };
 
 struct TickOutputs {

@@ -409,6 +409,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         d.previous_throttle = prev_throttle_;
         d.wheel_step_rpm = pending_wheel_step_rpm_;
         d.wheel_hold = wheel_hold_;
+        d.omega_cmd_dps = 0.0f;  // READY holds rate (TD section 6.6)
         pending_wheel_step_rpm_ = 0.0f;
         int request = controller.throttle(d, in, params_);
         if (request < 0) request = 0;
@@ -481,6 +482,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     if (!params_.hall_installed) flags |= kFlagHallBypass;
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;
+    if (armed()) flags |= controller.flags();
     if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual)) {
         const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;

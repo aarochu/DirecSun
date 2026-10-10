@@ -57,6 +57,20 @@ void CascadeController::reset()
     last_mode_ = Mode::Safe;
     omega_ref_rpm_ = 0.0f;
     wheel_pi_.reset();
+    stop_rate_loop();
+}
+
+void CascadeController::stop_rate_loop()
+{
+    rate_.reset();
+    rate_active_ = false;
+    tau_cmd_nm_ = 0.0f;
+    momentum_saturated_ = false;
+}
+
+uint32_t CascadeController::flags() const
+{
+    return rate_active_ && momentum_saturated_ ? static_cast<uint32_t>(kFlagMomentumSaturated) : 0u;
 }
 
 int CascadeController::throttle(const ControlDemand &demand, const TickInputs &in, const Params &params)
@@ -71,6 +85,7 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
         (demand.mode != Mode::Spinup && demand.mode != Mode::Ready)) {
         closed_loop_ = false;
         wheel_pi_.reset();
+        stop_rate_loop();
         return open_loop_.throttle(demand, in, params);
     }
 
@@ -78,6 +93,7 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
     const float cap = effective_cap_rpm(params);
 
     if (demand.mode == Mode::Spinup) {
+        stop_rate_loop();
         if (!closed_loop_ || previous_mode != Mode::Spinup) {
             omega_ref_rpm_ = in.wheel_rpm_safe > 0.0f ? in.wheel_rpm_safe : 0.0f;
             wheel_pi_.reset();
@@ -98,6 +114,18 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
         }
         omega_ref_rpm_ += demand.wheel_step_rpm;
         omega_ref_rpm_ = clampf(omega_ref_rpm_, params.omega_low_rpm, cap);
+        if (demand.wheel_hold) {
+            // Bench wheel step: the step is the only input (FD section 15.3).
+            stop_rate_loop();
+        } else {
+            // A rate loop that was not running starts with an empty integral.
+            if (!rate_active_) rate_.reset();
+            const RateLoopStep r = rate_.step(demand.omega_cmd_dps, in.rate_dps, omega_ref_rpm_, dt, params, cap);
+            omega_ref_rpm_ = r.omega_ref_rpm;
+            tau_cmd_nm_ = r.tau_cmd_nm;
+            momentum_saturated_ = r.momentum_saturated;
+            rate_active_ = true;
+        }
     }
 
     closed_loop_ = true;

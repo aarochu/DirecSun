@@ -330,7 +330,7 @@ void control_task(void *)
             const ThrottleBand band = manual_throttle_band(supervisor.params());
             snap.throttle_band_lo = band.lo;
             snap.throttle_band_hi = band.hi;
-            snap.tau_cmd_mNm = 0.0f;
+            snap.tau_cmd_mNm = controller.tau_cmd_nm() * 1000.0f;
             snap.vbat_v = battery.average();
             snap.loop_us = loop_us_window;
             snap.flags = out.flags;
