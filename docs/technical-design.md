@@ -252,7 +252,7 @@ A 76 mm ID, 2.4 mm wall PETG ring sits in a 1 mm groove in the motor deck and st
 
 ### 4.8 Board mounting
 
-The three sensors are Adafruit STEMMA QT boards that share one footprint: 25.40 × 17.78 mm, four 2.5 mm holes 2.54 mm in from the corners, and the sensor chip at the board centre \[V: Adafruit Eagle board files\]. Each sits on four 4 mm printed standoffs, held by M2 × 8 button-head screws from the owner's kit, threaded straight into blind pilot holes drawn at 2.4 mm \[M: hole gauge and hole ladder\], so each board comes off from above. The screws are steel; because they move with the magnetometer, hard- and soft-iron calibration (T-9) absorbs them \[A\]. The MPU-6050 is centred on the spin axis, so the gyro is on the axis. The QMC5883P and BMP280 hang under the flipped top deck, chips facing down, so the firmware inverts the magnetometer's Z axis. The BMP280 product page lists 19.2 × 17.9 mm, which matches Adafruit's older non-STEMMA revision; the current STEMMA QT board file is 25.40 × 17.78 mm \[V\]. The XIAO has no mounting holes \[V: Seeed wiki, 21 × 17.8 mm\], so it rides on a 50 × 35 mm carrier cut from a 5 × 7 cm perfboard, in short card guides that stop 2 mm short of the MPU-6050 board; the power deck keeps full-length guides for a 50 × 70 × 1.6 mm perfboard \[A: vendor listings\]. The guides allow 0.4 mm total play, hold 2 mm of each board edge, and put the board underside 6 mm above the plate for solder joints. Boards enter from −Y and stop at the closed end of their guides.
+The three sensors are Adafruit STEMMA QT boards that share one footprint: 25.40 × 17.78 mm, four 2.5 mm holes 2.54 mm in from the corners, and the sensor chip at the board centre \[V: Adafruit Eagle board files\]. Each sits on four 4 mm printed standoffs, held by M2 × 8 button-head screws from the owner's kit, threaded straight into blind pilot holes drawn at 2.4 mm \[M: hole gauge and hole ladder\], so each board comes off from above. The screws are steel; because they move with the magnetometer, hard- and soft-iron calibration (T-9) absorbs them \[A\]. The MPU-6050 is centred on the spin axis, so the gyro is on the axis. The QMC5883P and BMP280 hang under the flipped top deck, chips facing down. Turning a board over is a 180 deg rotation about a horizontal axis, which negates Z and one horizontal axis, not Z alone; inverting Z alone would leave the heading mirrored. The firmware therefore applies a configurable magnetometer axis map that by default negates Y and Z and keeps X, and T-9 confirms it by checking that a counter-clockwise turn raises the magnetic heading in step with the integrated gyro (V-4). The BMP280 product page lists 19.2 × 17.9 mm, which matches Adafruit's older non-STEMMA revision; the current STEMMA QT board file is 25.40 × 17.78 mm \[V\]. The XIAO has no mounting holes \[V: Seeed wiki, 21 × 17.8 mm\], so it rides on a 50 × 35 mm carrier cut from a 5 × 7 cm perfboard, in short card guides that stop 2 mm short of the MPU-6050 board; the power deck keeps full-length guides for a 50 × 70 × 1.6 mm perfboard \[A: vendor listings\]. The guides allow 0.4 mm total play, hold 2 mm of each board edge, and put the board underside 6 mm above the plate for solder joints. Boards enter from −Y and stop at the closed end of their guides.
 
 If the wheel stops from the cap, for example after an e-stop, the box can reach 4.0 rev/s, which puts about 2.2 g on a board 35 mm from the axis \[C\]. Friction will not hold a board against that. Each board is fixed with hot glue at the open end. Other mounts: the ESC by two zip ties (fits 28 × 13 to 36 × 18 mm units \[V: one opened listing at 28 × 13 mm; A: 36 × 18 mm from a search result; the LANRC unit is unmeasured\]); the printed battery holder between side rails, with cap A screwed to the deck by two M3 screws into nut traps (Section 4.12); the OP550s in pockets sized to the TT Electronics drawing, 5.72 × 4.44 × 1.57 mm \[V\].
 
@@ -346,7 +346,7 @@ The motor model is input power = (I + I0)(I R + ω Kt), with no-load current I0 
 | Item | Value | Label |
 | --- | --- | --- |
 | Firmware | BLHeli\_S; all BLHeli\_S codes use damped light, which brakes regeneratively | \[V\] manual |
-| Input protocol | DShot300 if the ESC MCU runs at 48 MHz (firmware name contains H); DShot150 if 24 MHz (contains L) | \[V\] manual; \[M\] read the name in ESC Configurator |
+| Input protocol | DShot300 if the ESC MCU runs at 48 MHz (firmware name contains H); DShot150 if 24 MHz (contains L). The firmware defaults to DShot150, which both MCUs accept, until the name has been read (V-21) | \[V\] manual; \[M\] read the name in ESC Configurator |
 | Arming | Arms after seeing zero throttle; DShot needs no calibration | \[V\] manual |
 | Direction | Forward only (bias-speed operation, Section 3.4). Brake on stop must be disabled, its default: if enabled, DShot 0 and the signal-loss timeout both short the windings and dump the wheel's momentum into the box at once \[V: source\]. Even when disabled, the ESC stays in its run loop for about 8 s at zero throttle, where damped light likely brakes the wheel \[A, M: T-12\] | Design choice |
 | RPM telemetry | Not in stock BLHeli\_S; available by flashing Bluejay and enabling bidirectional DShot | \[V\] Bluejay, ArduPilot docs; optional |
@@ -430,17 +430,17 @@ Budget: a 14-byte burst read takes about 1.5 ms at 100 kHz I2C and 0.4 ms at 400
 
 ### 6.4 Estimation
 
-- **Box rate.** Gyro Z minus a bias estimated while the box is still in Safe mode. MPU6050 digital low-pass filter DLPF\_CFG = 4 gives 20 Hz gyro and 21 Hz accel bandwidth at 1 kHz output \[V: register map\], with 8.3 ms of gyro delay \[V\], which only partly reduces the 40 Hz wheel vibration at bias. The register map gives cutoff and delay but not the filter order; a first- or second-order filter would pass 25 to 45 % of the amplitude at 40 Hz \[C\], so balancing remains the main defence. A software notch filter centred on the wheel frequency, which the Hall sensor measures, removes the residual; T-7 and T-8 show whether it is needed.
-- **Heading.** Complementary filter. Integrate the gyro, and pull toward the magnetometer heading with a 2 s time constant \[A, tune in T-9\]. The axle is vertical, so heading is atan2 of the calibrated horizontal field and no tilt compensation is needed when the base is level \[A\]. The motor's magnets rotate at 13 to 67 Hz over the 800 to 4000 rpm range; sampled at only 50 Hz, a component at a multiple of 50 Hz would alias to a steady heading offset that no low-pass filter removes. The QMC5883P is therefore read at its 200 Hz maximum output rate \[V\] and averaged, and T-9 is run at three wheel speeds. Motor current also changes the field with torque, so the filter trusts the gyro over seconds and the magnetometer only over its 2 s time constant.
+- **Box rate.** Gyro Z minus a bias estimated while the box is still in Safe mode. The gyro runs at its ±2000 deg/s full scale (FS\_SEL = 3): the box can reach about 1440 deg/s if the wheel stops from the cap (Section 10.1), which the ±250 and ±500 deg/s ranges would clip (V-9). MPU6050 digital low-pass filter DLPF\_CFG = 4 gives 20 Hz gyro and 21 Hz accel bandwidth at 1 kHz output \[V: register map\], with 8.3 ms of gyro delay \[V\], which only partly reduces the 40 Hz wheel vibration at bias. The register map gives cutoff and delay but not the filter order; a first- or second-order filter would pass 25 to 45 % of the amplitude at 40 Hz \[C\], so balancing remains the main defence. A software notch filter centred on the wheel frequency, which the Hall sensor measures, removes the residual; T-7 and T-8 show whether it is needed.
+- **Heading.** Complementary filter. Integrate the gyro, and pull toward the magnetometer heading with a 2 s time constant \[A, tune in T-9\]. The axle is vertical, so heading is atan2 of the calibrated horizontal field and no tilt compensation is needed when the base is level \[A\]. The motor's magnets rotate at 13 to 67 Hz over the 800 to 4000 rpm range, but a 14-pole rotor and the phase currents produce fields at the electrical frequency, seven times the mechanical one: 93 to 467 Hz \[C on A-6\]. That is above the 100 Hz Nyquist limit of the QMC5883P's 200 Hz maximum output rate \[V\], so these components can alias to a steady heading offset that no low-pass filter removes (V-5). The sensor is still read at 200 Hz and averaged to 50 Hz, which attenuates some of it; the real defences are the 14 cm distance, the sensor's own oversampling filter, the gyro-dominant filter, and T-9 at three wheel speeds. If T-9 shows a speed-dependent offset, the fallback is a heading correction table indexed by wheel speed. Motor current also changes the field with torque, so the filter trusts the gyro over seconds and the magnetometer only over its 2 s time constant.
 - **Sun angle.** Normalised difference (A − B)/(A + B), mapped to angle with the T-10 calibration. Valid only when A + B exceeds a light threshold.
-- **Wheel speed Ω.** Hall period, two pulses per turn (two magnets); median of the last four periods. Bluejay eRPM divided by the pole-pair count is an optional cross-check; the pole-pair count is 7 (14 magnet poles) for a 12N14P motor but must be counted on the actual motor \[M\].
+- **Wheel speed Ω.** Hall period, two pulses per turn (two magnets), kept as two estimates (V-7). The control loop uses the latest single period, because a four-period median spans 50 ms at bias and delays the estimate by about 25 ms, roughly 45 deg of phase at a 5 Hz loop bandwidth \[C\]. The interlocks and telemetry use the median of the last four periods, which rejects single bad edges. Bluejay eRPM divided by the pole-pair count is an optional cross-check; the pole-pair count is 7 (14 magnet poles) for a 12N14P motor but must be counted on the actual motor \[M\].
 
 ### 6.5 Control law
 
 Sign convention: +z points up; heading ψ, box rate ω, and torque on the box τ\_cmd are positive counter-clockwise seen from above. Ω is the wheel's speed in its forward direction, always positive between the low limit and the cap, and every limit and interlock applies to Ω. The wheel's spin about +z is s\_w Ω, where s\_w = ±1 is fixed by the motor wiring and found in T-5. The cascade, outer to inner, with starting gains from the Section 3 plant that are placeholders until G2 \[C on A\]:
 
 1. **Attitude.** ω\_cmd = K\_ψ · wrap(ψ\_ref − ψ̂), limited to ±90 deg/s. K\_ψ = 3.1 s⁻¹ gives about 0.5 Hz attitude bandwidth.
-2. **Rate.** τ\_cmd, the torque wanted on the box, = K\_ω (ω\_cmd − ω̂) + K\_i ∫(…), limited to ±31 mN·m (3 A). K\_ω = 2π · 2 Hz · I\_b = 0.011 N·m·s/rad. The integral term, with anti-windup, handles bearing stick-slip.
+2. **Rate.** τ\_cmd, the torque wanted on the box, = K\_ω (ω\_cmd − ω̂) + K\_i ∫(…), limited to ±31 mN·m (3 A). K\_ω = 2π · 2 Hz · I\_b = 0.0129 N·m·s/rad with I\_b = 1.03e-3 kg·m² (V-1; the earlier 0.011 used the superseded I\_b of 8.9e-4). The integral term, with anti-windup, handles bearing stick-slip.
 3. **Torque to wheel reference.** The motor must apply −τ\_cmd to the wheel to put +τ\_cmd on the box. From Section 3.1 the wheel's spin about +z, relative to the box, then changes at −τ\_cmd (1/I\_w + 1/I\_b), so each tick Ω\_ref changes by −s\_w τ\_cmd (1/I\_w + 1/I\_b) Δt, clamped to \[low limit, cap\]. Getting this sign wrong makes the rate loop unstable; T-15 starts with a small gain to catch it.
 4. **Wheel speed.** throttle = FF(Ω\_ref) + PI(Ω\_ref − Ω). FF is the steady-state throttle-versus-speed map measured in T-5 and T-18. Target bandwidth 5 to 10 Hz, limited by the Hall update rate (80 per second at bias) \[C\] and the motor's response \[M\].
 
@@ -454,24 +454,31 @@ The box only reaches the four demonstration modes through Ready, after the wheel
 
 | From | To | Guard |
 | --- | --- | --- |
-| Boot | Safe | Sensors found (IMU WHO\_AM\_I, QMC5883P chip ID 0x80) and DShot 0 sent for 1 s |
-| Safe | Spin-up | Ground "arm" command, box still (rate under 5 deg/s) and held by the lock pin or the operator, battery above 9.6 V |
-| Spin-up | Ready | Ω within 5 % of the bias speed; Ready holds box rate at zero |
-| Ready | Detumble, Hold, Slew, Sun point | Ground command; Sun point also needs a valid sun angle |
-| Any active mode | Ready | Ground command, or slew complete |
+| Boot | Safe | IMU found (WHO\_AM\_I) and DShot 0 sent for 1 s. A missing magnetometer (QMC5883P chip ID 0x80 not read) is reported and blocks only Hold and Slew |
+| Safe | Spin-up | Ground `arm` command, box still (rate under 5 deg/s) and held by the lock pin or the operator, battery above 9.6 V, no latched fault. The sender becomes the controlling client (Section 6.7) |
+| Spin-up | Ready | Ω within 5 % of the bias speed for 0.5 s; Ready holds box rate at zero |
+| Ready | Detumble | Ground command |
+| Ready | Hold, Slew | Ground command; magnetometer present |
+| Ready | Sun point | Ground command; valid sun angle |
+| Ready | Spin-up | Ground `respin` with the box pinned and still (rate under 5 deg/s). The new wheel start speed must lie between the low limit + 200 rpm and the cap − 200 rpm |
+| Any active mode | Ready | Ground command, or slew complete; Sun point also returns after 0.5 s without a valid sun angle |
+| Spin-up, Ready, any active mode | Safe | Ground `disarm`: the same 5 s ramp-down as an e-stop, without the e-stop latch |
 | Any | Safe | Any interlock in 6.7, or ground e-stop |
+
+**Desaturation.** `respin` is the lock-pin desaturation of Section 3.6, and it replaces the automatic momentum dump once described in Section 10.2 (V-2). When the wheel nears a limit, the ground station prompts the operator to stop and pin the box, then sends `respin`. The firmware returns the wheel to its start speed (the bias by default; 1000 or 3800 rpm for the long one-way spins of Section 3.6) with the reaction going into the bench, and Ready is reached again before the pin comes out.
 
 ### 6.7 Interlocks
 
-Ground e-stop and heartbeat loss ramp the wheel to zero over 5 s, so the box speeds up gently, then send DShot 0. Every other interlock sends DShot 0 within one control tick.
+Ground e-stop, `disarm`, and heartbeat loss ramp the wheel throttle to zero over 5 s, open loop, then send DShot 0. The ramp limits how fast the box speeds up (about 5 rad/s² from the cap), not how fast it ends up turning: momentum conservation fixes that at about 4.0 rev/s from the cap (V-20). Every other interlock sends DShot 0 within one control tick. Event names on the wire are listed in firmware design §14.1.
 
 | Interlock | Threshold | Label |
 | --- | --- | --- |
-| Ground heartbeat lost | No command or ping for 1 s | FR-5 |
+| Ground heartbeat lost | No ping or command from the controlling client for 1 s, in any mode except Safe. The controlling client is the one whose `arm` was last accepted; traffic from other clients does not count, so a read-only viewer cannot keep an armed box alive, and no reconnection resumes motion without a fresh `arm` (V-15) | FR-5 |
 | Wheel overspeed | Ω above cap + 100 rpm (4100 rpm, 5.99 J) | Keeps PR-4 |
 | Wheel underspeed in any mode except Spin-up | Ω below the low limit for 200 ms | \[M\] T-18 sets the limit |
 | Battery low | Below 8.8 V (1.1 V per NiMH cell) for 1 s | \[A\] |
 | IMU silent | No valid read for 50 ms | Design choice |
+| Hall silent | Throttle above the low-limit feed-forward value for 500 ms with no Hall edge. Without it, a disconnected Hall sensor during Spin-up, where the underspeed check is exempt, would let the wheel pass the cap with no overspeed detection (V-11) | Design choice |
 | Tilt | Accelerometer shows more than 30 deg from vertical | Box lifted or falling |
 | Control task stalled | 100 ms watchdog | Resets the MCU; boot path sends DShot 0 |
 | Momentum near limits | Ω within 300 rpm of cap or low limit | Warning only; ground shows it |
@@ -519,12 +526,12 @@ Every message has `v` (schema version), `type`, and `seq` (sender's counter). Ti
 | Type | Direction | Rate | Purpose |
 | --- | --- | --- | --- |
 | `tlm` | box → ground | 50 Hz | State for plots and the 3D view |
-| `cmd` | ground → box | On user action | `arm`, `disarm`, `estop`, `mode`, `set_params`, `zero_heading` |
-| `ack` | box → ground | Per command | `{"v":1,"type":"ack","seq":77,"ok":false,"reason":"wheel not at bias"}`; a refused guard says why |
-| `ping` / `pong` | both | 5 Hz | Heartbeat for FR-5 and round-trip latency for T-11 |
+| `cmd` | ground → box | On user action | `arm`, `disarm`, `estop`, `mode`, `respin`, `set_params`, `zero_heading`, and `wheel_step` (bench mode only) |
+| `ack` | box → ground | Per command | `{"v":1,"type":"ack","seq":77,"ok":false,"reason":"wheel not at bias"}`; a refused guard says why. Its `seq` echoes the command's `seq`; every other box message carries the box's own counter (V-14) |
+| `ping` / `pong` | both | 5 Hz | Heartbeat for FR-5 (only the controlling client's traffic counts) and round-trip latency for T-11 |
 | `event` | box → ground | On change | Mode changes and interlock trips, with the interlock name |
 
-Rules: the box is the authority on mode. The UI shows the mode from `tlm`, never optimistically from a button press. `estop` is accepted in every state and needs no arm. Unknown `v` or `type` is answered with an `ack` carrying `ok:false`.
+Rules: the box is the authority on mode. The UI shows the mode from `tlm`, never optimistically from a button press. `estop` is accepted in every state, from every client, and needs no arm. While the box is armed, commands other than `estop` and `ping` from a client that is not the controlling client are refused. Unknown `v` or `type` is answered with an `ack` carrying `ok:false`. The full field list is in firmware design §15.3 and `protocol/schema-v1.json`.
 
 ### 7.4 User interface
 
@@ -629,7 +636,7 @@ Eighteen tests, run in the order below, replace every \[M\] label with a measure
 | --- | --- | --- | --- | --- |
 | T-1 | Bearing press fit | Press a 608 into each pocket of `bearing_fit_test` | One pocket holds firmly without cracking; set `BRG_POCKET_D` | All pockets loose or all crack: measure the printed bore with calipers |
 | T-2 | Bearing friction | Box on the bolt, motor disarmed. String wound at 50 mm radius, add grams until it turns (0.49 mN·m per gram) | Breakaway under 3 mN·m | A paper clip alone turns it: string is rubbing or not wound at 50 mm |
-| T-3 | Box inertia I\_b | Same string over a pulley to a hanging mass. Run two masses, log gyro rate, fit angular acceleration α. I\_b = (τ₂ − τ₁)/(α₂ − α₁) − m r² corrections; friction cancels in the difference | Within 30 % of 8.9e-4 kg·m²; update `sizing.py` | Gyro reads zero while the box visibly turns: wrong axis or scale |
+| T-3 | Box inertia I\_b | Same string over a pulley to a hanging mass. Run two masses, log gyro rate, fit angular acceleration α. I\_b = (τ₂ − τ₁)/(α₂ − α₁) − m r² corrections; friction cancels in the difference | Within 30 % of 1.03e-3 kg·m² (V-1); update `sizing.py` | Gyro reads zero while the box visibly turns: wrong axis or scale |
 | T-4 | Running friction | Spin the box to about 2 rad/s by hand, motor disarmed; friction torque = (I\_b + I\_w) × deceleration | Under 2 mN·m | Rate does not decay at all: gyro output frozen |
 | T-5 | ESC arming and DShot | Send zero throttle for 1 s, then steps; log Hall speed; record the wheel's forward direction as s\_w (Section 6.5) | Arms on zero (manual sequence: low beep, high beep); speed follows steps | No beeps at power-up: ESC unpowered, not a DShot fault |
 | T-6 | Wheel speed sensing | Compare Hall speed with a phone strobe or optical tachometer at three speeds | Agree within 2 % | Hall reads half or double: magnet count wrong in firmware |
@@ -669,6 +676,7 @@ The hazards worth designing around are the spinning wheel and the battery; every
 | Finger contact with the rim | Open box sides | Cut or bruise at 13 m/s | Guard ring with 5 mm slots | Visual |
 | Box spins after e-stop or in Safe | Any wheel slow-down moves its momentum into the box. At DShot 0 the ESC stays in its run loop for about 8 s with damped light, which likely brakes the wheel quickly \[A from source, M: T-12\]; Brake on stop adds a hard short | Box reaches about 2.4 rev/s if the wheel stops from bias, 4.0 rev/s from the cap; corners move at up to 1.6 m/s \[C\] | E-stop and heartbeat loss ramp the wheel down over 5 s so the box speeds up gently; Brake on stop disabled; operator keeps a hand near the box | Visual; gyro |
 | Battery short or overcurrent | Wiring fault, ESC failure | Hot wiring or holder; a shorted NiMH cell can overheat and vent | 10 A fuse at the pack; strain-relieved leads; no charging on the box | Fuse opens |
+| Wheel overspeeds unseen | Hall sensor disconnected or failed while the throttle is high, for example during Spin-up, where the underspeed check is exempt | Wheel passes the cap with no overspeed detection | Hall-silent interlock (Section 6.7, V-11) | Interlock event |
 | Runaway wheel | Firmware hang while throttle is non-zero | Without new DShot frames the ESC switches motor power off after about 0.3 s \[V: BLHeli\_S source\]; the wheel then coasts, or is braked hard if Brake on stop is enabled \[V: source\] | Task watchdog resets the MCU into Safe; ESC re-arms only on zero throttle \[V\]; T-12 confirms on the LANRC | Telemetry stops; heartbeat timeout on ground |
 | Box falls off the bolt | Lifted while running | Spinning wheel loose on the table | Safe mode on large accelerometer tilt; brief judges | Accelerometer |
 | Base tips | Push at the top of a 258 mm stack | Box and base fall | Base hub screwed to a board clamped to the bench | Visual |
@@ -677,7 +685,7 @@ The hazards worth designing around are the spinning wheel and the battery; every
 
 | Failure | Likely cause | Effect | Mitigation |
 | --- | --- | --- | --- |
-| Wheel saturates | Repeated hand spins in one direction | Box can no longer be controlled that way | Saturation alert, then a momentum dump: the controller turns the box slowly, about 30 deg/s, in the direction of the excess while the wheel returns to bias, and bearing friction removes the excess. About 4 to 11 s for friction of 3 to 1 mN·m \[C on A\]. The demo explains that real spacecraft use magnetorquers for this |
+| Wheel saturates | Repeated hand spins in one direction | Box can no longer be controlled that way | Saturation alert, then lock-pin desaturation: the operator stops and pins the box and the ground station sends `respin`, which returns the wheel to its start speed with the reaction going into the bench (Sections 3.6 and 6.6). This replaces the automatic momentum dump planned earlier (V-2). The demo explains that real spacecraft use magnetorquers for this |
 | Wheel drops below the sensorless low limit | Large spin in the other direction | Commutation stutters or stalls | Warning 300 rpm above the low limit (Section 6.7); refuse commands that would cross the low limit |
 | Stick-slip near standstill | Bearing breakaway torque | Small limit cycle in Hold | Integral term with anti-windup; deadband; shielded not sealed bearings |
 | Heading drift or jumps | Magnetometer disturbed by motor field or nearby steel | Wrong heading reference | Magnetometer 14 cm above the motor; 200 Hz sampling against aliasing; calibrate at three wheel speeds; gyro-dominant filter |
@@ -791,10 +799,10 @@ Twenty-four assumptions carry the design until the tests in Section 9 replace th
 | A-13 | AA cell length | 50.17 mm, measured Oct 10 (Section 4.10) | Battery contact preload | Replaced by measurement |
 | A-14 | Magnet field at the A1104 | above 350 G at 2.5 mm | Speed sensing | T-6 |
 | A-15 | OP550 load resistor | 12 kΩ | Sun sensor range | T-10 |
-| A-16 | ESC MCU speed | unknown: 48 MHz allows DShot300 | DShot rate | ESC Configurator |
+| A-16 | ESC MCU speed | unknown: 48 MHz allows DShot300; the firmware runs DShot150 until it is read | DShot rate | ESC Configurator |
 | A-17 | LANRC runs stock BLHeli\_S: drive stops about 0.3 s after signal loss, and at DShot 0 damped light likely brakes the wheel for up to about 8 s before power-off | per BLHeli\_S source | Safety | T-12 |
 | A-18 | The ESP-IDF v6.0 RMT bytes encoder produces valid DShot frames | unknown | Firmware effort | Build check BC-2 on a logic analyser |
-| A-19 | Magnetometer far enough from motor, no aliasing after 200 Hz sampling | 14 cm | Heading quality | T-9 at three speeds |
+| A-19 | Magnetometer far enough from the motor; motor fields at the 93 to 467 Hz electrical frequency can still alias at 200 Hz sampling (V-5), so distance and filtering must make the residual small | 14 cm | Heading quality | T-9 at three speeds |
 | A-20 | Box CG near the axis, base level | within 5 mm, 1 deg | Gravity torque 0.6 mN·m | T-4 drift check |
 | A-21 | The Bones Reds bearings on hand share the SKF 608-2Z lands | D2 19.2 mm, d1 12.15 mm | Ledge and pad contact | Calipers on the bearings bought |
 | A-22 | 1 s of DShot zeros completes ESC arming | 1 s | Boot sequence | T-5 beeps |

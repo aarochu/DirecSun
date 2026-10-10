@@ -592,13 +592,13 @@ stateDiagram-v2
     SLEW --> READY: slew complete, timeout, or cmd mode READY
     SUN_POINT --> READY: cmd mode READY, or sun invalid 0.5 s
     READY --> SAFE: cmd disarm or estop, or interlock
-    DETUMBLE --> SAFE: estop or interlock
-    HOLD --> SAFE: estop or interlock
-    SLEW --> SAFE: estop or interlock
-    SUN_POINT --> SAFE: estop or interlock
+    DETUMBLE --> SAFE: estop, disarm, or interlock
+    HOLD --> SAFE: estop, disarm, or interlock
+    SLEW --> SAFE: estop, disarm, or interlock
+    SUN_POINT --> SAFE: estop, disarm, or interlock
 ```
 
-Additions to TD §6.6, each recorded in §23: the `disarm` command (TD lists it in §7.3 but not in §6.6), the 0.5 s dwell before `READY`, magnetometer and sun guards, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
+These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the magnetometer and sun guards, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
 
 ### 13.2 Per-mode behaviour
 
