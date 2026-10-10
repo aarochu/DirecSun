@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "event",
+  "seq": 1,
+  "t_ms": 420,
+  "event": "notice",
+  "name": "PARAMS_RESET",
+  "detail": "param_version 1 expected, found 0"
+}

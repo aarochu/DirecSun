@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 12,
+  "cmd": "set_params",
+  "params": {
+    "omega_cap_rpm": 4500
+  }
+}

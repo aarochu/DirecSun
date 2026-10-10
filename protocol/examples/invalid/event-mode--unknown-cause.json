@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "event",
+  "seq": 311,
+  "t_ms": 83500,
+  "event": "mode",
+  "mode": "SAFE",
+  "cause": "gremlins"
+}
