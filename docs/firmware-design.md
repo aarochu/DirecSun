@@ -536,7 +536,7 @@ Tilt angle = `acos(a_z / |a|)` from the averaged accelerometer (20 ms window). I
 flowchart LR
     REF["ψ_ref<br/>(Hold capture,<br/>Slew trapezoid)"] --> A["Attitude P<br/>ω_cmd = K_ψ · wrap(ψ_ref − ψ̂)<br/>limit ±90 deg/s"]
     A --> R["Rate PI<br/>τ_cmd = K_ω e + K_i ∫e<br/>limit ±31 mN·m"]
-    R --> W["Torque → wheel reference<br/>Ω_ref += −s_w τ_cmd (1/I_w + 1/I_b) Δt<br/>clamp [Ω_low, Ω_cap]"]
+    R --> W["Torque → wheel reference<br/>Ω_ref += −s_w τ_cmd (1/I_w + 1/I_b) Δt<br/>clamp [Ω_low + 100, Ω_cap]"]
     W --> S["Wheel speed PI + feed-forward<br/>throttle = FF(Ω_ref) + PI(Ω_ref − Ω̂)"]
     S --> D["DShot throttle"]
     D --> P(("Plant"))
@@ -561,6 +561,7 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 | τ_cmd limit | ±31 mN·m (3 A × 10.38 mN·m/A) | TD §6.5 | [C] |
 | Wheel ref slope at the τ limit | 4842 rpm/s, 9.7 rpm per tick | 0.031 × (1/I_w + 1/I_b) × 60/2π | [C] |
 | Ω_low | 800 rpm | until T-18 | [A] A-8 |
+| Ω_ref floor | Ω_low + 100 rpm (900 rpm) | Margin between the floor of the Ω_ref clamp and the `UNDERSPEED` threshold (Ω_low), as Ω_cap has 100 rpm to `OVERSPEED` (V-52) | [D] |
 | Ω_bias | 2400 rpm | midpoint of low limit and cap | [V] TD §3.4 |
 | Ω_cap | 4000 rpm | PR-4 | [V] TD |
 | Wheel PI bandwidth | start at **2 Hz**, raise toward 5 Hz only after measuring delay | Hall update 80/s at bias; see V-7 | [D] |
@@ -572,7 +573,7 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 
 - **Rate integral:** conditional integration. Stop integrating when τ_cmd is saturated or Ω_ref is clamped at a limit in the direction that would need more [D]. The integral's torque K_i ∫e is then bounded to ±3 mN·m (§12.2), so its bound in rad is 3 mN·m / K_i and widens as `rate_gain_scale` lowers K_i; with K_i = 0 the integral is held at 0 [D].
 - **Stick-slip bleed (finding V-46):** while ω_cmd = 0 and |ω̂| < 1 deg/s, the rate integral decays with a 0.5 s time constant [D].
-- **Ω_ref clamp:** when Ω_ref hits Ω_cap or Ω_low, set the flag `MOMENTUM_SATURATED`, freeze the rate integral, and report through telemetry. The box then cannot be driven further in that direction until desaturation (§13.4).
+- **Ω_ref clamp:** Ω_ref stays within [Ω_low + 100, Ω_cap]; the floor is 100 rpm above the `UNDERSPEED` threshold so that a wheel held on it does not trip (V-52). When Ω_ref hits Ω_cap or the floor, set the flag `MOMENTUM_SATURATED`, freeze the rate integral, and report through telemetry. The box then cannot be driven further in that direction until desaturation (§13.4).
 - **Throttle clamp:** 48..2047 while running; 0 only from the safety layer.
 
 ### 12.4 Slew profile
@@ -870,7 +871,7 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 | `respin` | `wheel_rpm` (optional, default bias) | READY | → SPINUP to the new start speed (§13.4) |
 | `zero_heading` | none | SAFE, READY | Heading offset (§11.3) |
 | `set_params` | `params` object | SAFE only | Validate every key and range; store in NVS; reply with the applied set [D] |
-| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set, wheel loop available | Ω_ref step, clamped to [Ω_low, cap in force], with the attitude and rate loops suspended until `mode READY` is sent again (tlm flag `WHEEL_STEP` meanwhile); for §12.5 and the wheel-loop step response [D]. Refused, in this order, with `bench_mode required`, `not in READY`, or `wheel loop not available` (no Hall, or no `ff_table` yet). Interlocks stay active |
+| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set, wheel loop available | Ω_ref step, clamped to [Ω_low + 100, cap in force] (V-52), with the attitude and rate loops suspended until `mode READY` is sent again (tlm flag `WHEEL_STEP` meanwhile); for §12.5 and the wheel-loop step response [D]. Refused, in this order, with `bench_mode required`, `not in READY`, or `wheel loop not available` (no Hall, or no `ff_table` yet). Interlocks stay active |
 
 #### `ack`: box → sender
 
@@ -1214,6 +1215,7 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-45 | §13.3: spin-up "begins with throttle feed-forward only and closes the wheel PI once the Hall speed exceeds Ω_low" | R3.8 | Ω_ref's [Ω_low, Ω_cap] clamp would jump the reference to Ω_low at once | In SPINUP Ω_ref ramps at 400 rpm/s from the measured speed with only the cap clamping it; the PI is off below Ω_low (feed-forward only) and the integrator is cleared there. READY clamps Ω_ref to [Ω_low, cap in force] [D] | Low (this doc) |
 | V-46 | §12.3: the rate integral only stops while saturated | R3.9 host simulation | Coulomb friction holds a stopped box still while an integral below breakaway remains, and that integral keeps ramping Ω_ref with nothing moving: about 570 rpm in the 15 s after a 1 rev/s detumble at 1 mN·m, until Ω_ref reaches a limit | Stick-slip bleed: with ω_cmd = 0 and ω̂ within ±1 deg/s the integral decays with τ = 0.5 s. A mutant build without it fails its host test. To be re-checked by the R3.9 hold test on the turntable [D] | Low (this doc) |
 | V-47 | §12.5: the sign check runs "at reduced K_ω (×0.2)" | R3.9 | Scaling K_ω alone would leave K_i at full value and move the PI corner up five times | `rate_gain_scale` scales K_ω and K_i together, default 0.2. In the host simulation scale 0.2 damps a push and never amplifies it, but does not meet PR-1; PR-1 is verified at scale 1 (HT-5) [D] | Low (this doc) |
+| V-52 | §12.2: Ω_ref is clamped to [Ω_low, Ω_cap], and `UNDERSPEED` trips when the wheel is below Ω_low for 200 ms (§14.1) | R4.3 host simulation; owner decision 2026-10-10 | The clamp's floor is the trip threshold itself, so a rate loop that holds Ω_ref on Ω_low (`MOMENTUM_SATURATED`) turns into `UNDERSPEED` and `SAFE` as soon as the wheel dips a hair under it for 200 ms; the cap has margin to `OVERSPEED`, the floor has none | The floor of the clamp is Ω_low + 100 rpm, for the rate loop, the bumpless start into `READY`, and `wheel_step`; `UNDERSPEED` stays at Ω_low, and `MOMENTUM_SATURATED` is set while the rate loop holds Ω_ref on the floor. `SPINUP`'s ramp is still clamped only by the cap (V-45). In the host simulation a clockwise 3 rev/s spin pins Ω_ref on the floor: the wheel undershoots to 891 rpm and the box stays in `READY`; the positive control `DIRECSUN_MUTANT_FLOOR_AT_LOW` (floor on Ω_low) undershoots to 798 rpm and trips `UNDERSPEED` within 0.9 s. The MANUAL `wheel` input (§13, not built yet) still clamps to [Ω_low, Ω_cap] and should take the same floor when it is built [D] | Medium (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 | V-60 | §9.2: worst tick "about 0.75 ms of 2 ms" | R3.4 bench, per-stage timing on the XIAO | The worst tick was 1.4 to 1.9 ms: the 16 KB instruction cache thrashed every tick, the magnetometer status and data reads and an ADC read shared ticks, and the first tick logged | 32 KB instruction cache and IRAM placement by linker fragments; magnetometer data on the tick after the status read; ADC on ticks 0, 2, 4; no log inside a tick. Measured 911 to 976 µs, no missed ticks; a once-a-second IMU read delay, probably the barometer read, is open (§9.2) | High (this doc) |
 | V-61 | §11.1: the bias gate needs the accel magnitude "within 0.05 g of 1 g"; §8.2: the bias "is not taken once at boot" | R3.4 bench: the MPU-6050 read 0.871 g at rest, and the boot seed refused a window with a 0.12 deg/s gyro range | The absolute test rejects an uncalibrated accelerometer at rest, so neither the boot seed nor the gate ever ran, and heading drifted with the 2.1 deg/s offset | Stillness relative to the boot window's own mean magnitude, with a 0.7 to 1.3 g plausibility band; the boot seed and its criteria written into §11.1; the boot log names the failed criterion | High (this doc) |

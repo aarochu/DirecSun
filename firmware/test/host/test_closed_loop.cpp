@@ -9,6 +9,7 @@
 
 #include "direcsun/core/control.hpp"
 #include "direcsun/core/controllers.hpp"
+#include "direcsun/core/interlocks.hpp"
 #include "direcsun/core/modes.hpp"
 #include "direcsun/core/params.hpp"
 #include "doctest.h"
@@ -248,7 +249,7 @@ TEST_CASE("HT-6 positive control: with s_w wrong, the same detumble diverges pas
 
 TEST_CASE("R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up")
 {
-    // +30 deg/s against 1 mN m of friction drains the wheel to omega_low in
+    // +30 deg/s against 1 mN m of friction drains the wheel to its floor in
     // about 10 s; the command is held to 20 s, then released. The integral
     // needs about 0.06 rad to carry the friction, well inside its 3 mN m bound
     // (0.18 rad at the design gains), so a wind-up has room to show: the
@@ -375,6 +376,40 @@ TEST_CASE("R3.9 cascade: MOMENTUM_SATURATED is reported while the wheel sits on 
     rig.tick({cmd(CommandKind::Disarm)});
     CHECK((rig.out.flags & kFlagMomentumSaturated) == 0u);
     CHECK(rig.ctl.tau_cmd_nm() == 0.0f);
+}
+
+TEST_CASE("V-52 floor: a reference pinned on the floor does not trip UNDERSPEED")
+{
+    // A clockwise 3 rev/s spin is more momentum than the wheel can give up
+    // between bias and the floor, so the rate loop drives omega_ref down until
+    // it holds on the floor (MOMENTUM_SATURATED) with the box still turning.
+    // The floor sits 100 rpm above omega_low, the UNDERSPEED threshold, so the
+    // wheel settling onto it stays clear of the trip. The
+    // DIRECSUN_MUTANT_FLOOR_AT_LOW build puts the floor back on omega_low and
+    // must fail here.
+    Params p = cascade_params();
+    p.rate_gain_scale = 1.0f;
+    BoxRig rig(p);
+    rig.arm_to_ready();
+    rig.release(-3.0 * kOneRevPerSecondDps);
+    for (int i = 0; i < 1000 && !rig.saw_saturated_flag; ++i) rig.run(1);
+    REQUIRE(rig.saw_saturated_flag);
+    double min_wheel = rig.box.wheel_rpm;
+    int saturated_ticks = 0;
+    const int hold_ticks = static_cast<int>(5.0 / kDt);
+    for (int i = 0; i < hold_ticks && rig.out.mode == Mode::Ready; ++i) {
+        rig.run(1);
+        min_wheel = std::fmin(min_wheel, rig.box.wheel_rpm);
+        if (rig.out.flags & kFlagMomentumSaturated) ++saturated_ticks;
+    }
+    MESSAGE("floor hold: mode " << static_cast<int>(rig.out.mode) << ", wheel min " << min_wheel << " rpm, now "
+                                << rig.box.wheel_rpm << " rpm, box " << rig.box.rate_dps() << " deg/s, saturated "
+                                << saturated_ticks << " of " << hold_ticks << " ticks");
+    CHECK(rig.out.mode == Mode::Ready);
+    CHECK((rig.out.latched & interlock_bit(Interlock::Underspeed)) == 0u);
+    CHECK(min_wheel > p.omega_low_rpm);
+    CHECK(rig.ctl.wheel_ref_rpm() == doctest::Approx(p.omega_low_rpm + 100.0f));
+    CHECK(saturated_ticks == hold_ticks);  // pinned the whole time, and reported so
 }
 
 TEST_CASE("R3.9 cascade: a wheel-step hold suspends the rate loop")
