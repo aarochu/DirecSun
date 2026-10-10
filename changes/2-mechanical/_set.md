@@ -21,7 +21,7 @@ Every feature waits on a measurement in the open questions below.
 - [ ] R2.2 hall-bracket: Hall bracket repositioned to face the wheel's magnets at the 2.5 mm gap
 - [ ] R2.3 rotating-part-safety: TD invariant 8.3, the hazard table, and PR-4 rewritten for the printed wheel; sizing re-run with the real wheel
 - [ ] R2.4 held-parts: motor_deck, power_deck, flywheel_guard, and avionics_deck regenerated from measurements; print plan updated
-- [ ] R2.5 ui-model-export: the CAD assembly exported as the main UI's `/assets/direcsun.glb` (after PR #1 is merged)
+- [~] R2.5 ui-model-export: the CAD assembly exported as the main UI's `/assets/direcsun.glb` (after PR #1 is merged)
 
 ## Open questions / decisions before implementing
 1. **Magnets (R2.1, R2.2):** diameter, thickness, count on hand, and how the south face is identified (a compass, or the A1104 on the breadboard: the south pole pulls its output low). Needed for the pocket size and the sensor gap. Recommendation: two magnets in diametrically opposite pockets on the wheel's underside, south face down, sealed in at the same print pause as the washers.
