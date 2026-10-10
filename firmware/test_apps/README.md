@@ -13,6 +13,8 @@ set(SDKCONFIG_DEFAULTS "${CMAKE_CURRENT_LIST_DIR}/../../sdkconfig.defaults")
 # The real components, not copies.
 set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../components")
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+# Build only what main needs (not direcsun_comms, mDNS, cJSON).
+idf_build_set_property(MINIMAL_BUILD ON)
 # C++17, as in firmware/CMakeLists.txt.
 idf_build_set_property(CXX_COMPILE_OPTIONS "-std=gnu++17" APPEND)
 project(direcsun_<name>)
