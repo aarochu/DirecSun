@@ -1,0 +1,7 @@
+## IDF Component Manager manifest for main.
+## Registry dependencies are declared by the component that uses them
+## (components/direcsun_drivers, components/direcsun_comms). This file only pins
+## the ESP-IDF version the whole project is built and validated against.
+dependencies:
+  idf:
+    version: ">=6.0,<6.1"
