@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "type": "ack",
+  "seq": 12,
+  "ok": true,
+  "applied": {
+    "k_omega": 0.0129,
+    "bench_mode": true
+  }
+}

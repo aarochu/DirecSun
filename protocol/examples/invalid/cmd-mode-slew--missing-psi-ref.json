@@ -1,0 +1,7 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 77,
+  "cmd": "mode",
+  "mode": "SLEW"
+}

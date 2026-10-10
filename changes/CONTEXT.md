@@ -15,14 +15,15 @@ DirecSun (formerly PocketADCS) is a single-axis reaction-wheel attitude trainer 
 | --- | --- | --- |
 | `firmware/` | ESP-IDF v6.0 project (run `idf.py` from here) | Julian |
 | `protocol/` | Wire schema v1, the firmware/ground contract | Shared |
-| `ground/link/` | Dependency-free ES module implementing the client side of schema v1 | Julian |
-| `ground/console/` | Bench console (DirecSun1 page) built on the link module; not the demo UI | Julian |
+| `frontend/` | The main UI: landing page and ground station (React, Vite, TypeScript). It owns the operator client | Aaron |
+| `ground/link/` | Engineering bench client: dependency-free ES module for schema v1 | Julian |
+| `ground/console/` | Engineering bench console built on the link module, for bring-up and characterisation; never shown to judges | Julian |
 | `cad/` | CadQuery sources; `cad/out/` holds generated STL and previews | Design: Julian and agents. Printing and measuring: Aaron |
 | `docs/` | TD, FD, `sizing.py`, reference PDFs | Julian |
 | `tools/` | Bootstrap, build, and check scripts | Shared |
 | `changes/` | Spec-driven-dev sets | Shared |
 
-The demo UI belongs to Aaron and lives outside this repo. It imports `ground/link/`.
+`frontend/` is the main UI as of 2026-10-10 (PR #1). The backend matches the UI: when the UI's expectations of the box differ from the plan, the firmware and `protocol/schema-v1.json` change to fit the UI, and FD §15 follows. Its TypeScript client must keep the safety rules `ground/link` proves: heartbeat, ack by `seq`, an e-stop that is never queued, and no automatic reconnect.
 
 ## Source-of-truth precedence
 
@@ -31,6 +32,8 @@ The demo UI belongs to Aaron and lives outside this repo. It imports `ground/lin
 3. TD.
 4. FD.
 5. `protocol/schema-v1.json` must agree with FD §15. A disagreement is a bug in whichever changed last.
+
+For the wire interface (message fields, units, sign, endpoint), the main UI in `frontend/` leads. The schema encodes what the UI expects; FD §15 and the firmware follow.
 
 The repo markdown is authoritative. The original Claude Doc export and `message.txt` are frozen history.
 
@@ -43,6 +46,7 @@ The repo markdown is authoritative. The original Claude Doc export and `message.
 - ESP-IDF v6.0 does not bundle `json` or `mdns`; both come from the component registry (`espressif/cjson`, `espressif/mdns`).
 - Python 3.12 venv at `.venv` (CadQuery has no 3.13 wheels), created by `tools/bootstrap-venv.sh`.
 - Node 20 or later for `ground/link` tests (`node --test`), with no npm dependencies.
+- `frontend/`: Node 22 or later and npm 10; install with `npm ci` (never `npm install`). Its end-to-end tests run in the installed Google Chrome.
 
 ## Hardware facts agents get wrong
 
@@ -68,8 +72,10 @@ The repo markdown is authoritative. The original Claude Doc export and `message.
 
 ## Conventions
 
-- Sign convention: counter-clockwise positive seen from above, +z up the spin axis (FD §2.3). The wire carries CCW-positive values. A UI converts for display; the link module does not.
-- Wire protocol: schema v1, JSON text frames at `ws://direcsun.local:81/` (mDNS). Additions before the freeze at the end of Set 1 stay v1; any change after it bumps `v`.
+- Sign convention, two layers (2026-10-10):
+  - Inside the firmware, the physics and control math are counter-clockwise positive seen from above, +z up the spin axis (FD §2.3). The sign checks and control law are written in this frame.
+  - On the wire, heading, heading reference, box rate, and slew targets are clockwise positive, matching the main UI ("rotate right" is +90°, and the dial turns clockwise). The firmware converts only in its protocol encode and decode, nowhere else.
+- Wire protocol: schema v1, JSON text frames on port 80 at path `/ws`, matching the UI: `ws://direcsun.local/ws` in station mode (mDNS), `ws://192.168.4.1/ws` in SoftAP mode. Versioning rule (2026-10-10): additive, backward-compatible changes stay v1. These are new optional fields and new flag, event, notice, or parameter names; each one is noted in `protocol/README.md` for Aaron's UI. Breaking changes bump `v`: renamed or removed fields, changed types, units, or meaning.
 - Git: `main` is the integration branch. Set branch `feat/setN-slug` off `main`; feature branch `feat/setN/RN.M-slug` off the set branch. Agents commit and push set and feature branches. Feature branches merge into the set branch locally once their Tests pass (the spec-gate hook enforces this). A set reaches `main` only through a GitHub PR, opened after the agent has verified every feature itself, and merged by Julian.
 - Commit messages carry no agent co-author trailer. Prose and messages use no em dashes.
 - Unrelated defects found while working: fix them inline if the fix is under about five minutes and low-risk, and note it in the feature log. Otherwise add them to the current `_set.md` Open questions, or open an issue on aarochu/DirecSun.
@@ -79,6 +85,8 @@ The repo markdown is authoritative. The original Claude Doc export and `message.
 - Arduino-ESP32 or PlatformIO, the FD's original toolchain: replaced by ESP-IDF v6.0 to match the validated sensor libraries and the drone environment.
 - C, as in the drone repo: C++17 chosen.
 - arduinoWebSockets: replaced by `esp_http_server`, verified in DirecSun1.
+- Counter-clockwise-positive values on the wire, and the WebSocket on port 81 at `/`: replaced on 2026-10-10 to match the main UI.
+- The demo UI living outside this repo: replaced by `frontend/` (PR #1).
 - A static 10.TE.AM.120 address on the OM5P-AC as the only network mode: kept as a menuconfig option. The default is STA with DHCP and mDNS, with SoftAP as a fallback.
 - TD §10.2 automatic momentum dump: replaced by `respin`, the lock-pin desaturation from TD §3.6.
 - "Nothing printed spins with the wheel": dropped for the flywheel, which becomes a printed PETG wheel with sealed washers. Set 2 revisits the hazards and PR-4.

@@ -22,3 +22,6 @@ cad/*_preview.png
 cad/.run_*.json
 cad/.*.log
 cad/out/*.step
+
+# Host build trees (tools/host-test.sh)
+/build/

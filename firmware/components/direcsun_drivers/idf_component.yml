@@ -1,0 +1,8 @@
+## Sensor libraries, at the versions validated on the XIAO ESP32-S3 in
+## ~/projects/{mpu6050,bmp280}-espidf-example (ESP-IDF 6.0.0, esp32s3).
+dependencies:
+  esp-idf-lib/mpu6050: "^2.1.9"
+  esp-idf-lib/bmp280: "^1.0.7"
+  # Transitive dependency of both drivers, pinned to the validated version.
+  # Both drivers ask for "*", which would otherwise pick up newer releases.
+  esp-idf-lib/i2cdev: "==2.1.1"

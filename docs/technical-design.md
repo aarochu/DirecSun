@@ -428,7 +428,7 @@ The firmware is a 500 Hz cascade of four loops on one core, attitude → rate �
 | Sensor drivers | esp-idf-lib `mpu6050` and `bmp280` on the esp-idf-lib `i2cdev` bus manager, plus a vendored `duruofu/qmc5883p` driver that is handed the same bus through `i2cdev_get_shared_handle()`. Every device runs at 400 kHz; the library defaults (1 MHz for the esp-idf-lib drivers, 100 kHz hard-coded in the QMC5883P driver) are overridden | \[V\] defaults read from the driver source; \[A\] the owner validated each driver alone on an ESP32-S3 at SDA GPIO5 and SCL GPIO6, never all three on one bus (A-23) |
 | DShot | RMT peripheral (4 TX channels) \[V\], driven by the ESP-IDF RMT TX channel and its built-in bytes encoder (firmware design §10.6). A 16-symbol custom encoder is the fallback. No external DShot library | \[M\] build check |
 | Control tick | A `gptimer` alarm interrupt notifies the control task every 2 ms (firmware design §7.2) | Design choice |
-| WebSocket and JSON | `esp_http_server` WebSocket on port 81, path `/`; cJSON from the `espressif/cjson` registry component, because ESP-IDF v6.0 no longer bundles it | \[A\]: the owner verified the WebSocket server on an ESP32-C3 (the DirecSun1 prototype), not yet on the S3 (A-24) |
+| WebSocket and JSON | `esp_http_server` WebSocket on port 80, path `/ws`, the main UI's endpoint (U-2); cJSON from the `espressif/cjson` registry component, because ESP-IDF v6.0 no longer bundles it | \[A\]: the owner verified the WebSocket server on an ESP32-C3 (the DirecSun1 prototype), not yet on the S3 (A-24) |
 | Persistent parameters | NVS key-value store | Design choice |
 
 The firmware design, `docs/firmware-design.md`, specifies the firmware in detail and takes precedence on firmware internals only where this document is silent.
@@ -559,11 +559,11 @@ On the OM5P-AC the network has no internet. The ground station page is served fr
 
 ### 7.2 Transport
 
-A WebSocket on the box at `ws://direcsun.local:81/`, or at the printed address (`ws://192.168.4.1:81/` in SoftAP mode \[A\]), served by `esp_http_server` with WebSocket support enabled. Browsers cannot open raw UDP, and WebSocket is the simplest bidirectional browser transport. TCP retransmission can delay single frames; the plots tolerate that and safety does not depend on it, because the box enforces its own heartbeat timeout. JSON at about 250 bytes per frame and 50 frames per second is about 12.5 kB/s \[C\].
+A WebSocket on the box on port 80 at path `/ws`, the endpoint the main UI in `frontend/` expects: `ws://direcsun.local/ws`, or the printed address (`ws://192.168.4.1/ws` in SoftAP mode \[A\]), served by `esp_http_server` with WebSocket support enabled. Other paths are not served (U-2). Browsers cannot open raw UDP, and WebSocket is the simplest bidirectional browser transport. TCP retransmission can delay single frames; the plots tolerate that and safety does not depend on it, because the box enforces its own heartbeat timeout. JSON at about 250 bytes per frame and 50 frames per second is about 12.5 kB/s \[C\].
 
 ### 7.3 Message schema (version 1)
 
-Every message has `v` (schema version), `type`, and `seq` (sender's counter). Times are box milliseconds since boot. Angles are degrees, rates deg/s, wheel speed rpm, torque mN·m, voltage V.
+Every message has `v` (schema version), `type`, and `seq` (sender's counter). Times are box milliseconds since boot. Angles are degrees, rates deg/s, wheel speed rpm, torque mN·m, voltage V. On the wire, every angle, rate, and torque about the spin axis is clockwise positive seen from above, matching the main UI ("rotate right" is +90°). The firmware computes in the counter-clockwise frame of Section 6.5 and converts only when it encodes or decodes a message (U-1).
 
 ```json
 {"v":1,"type":"tlm","seq":1042,"t_ms":83120,"mode":"HOLD",
@@ -593,7 +593,7 @@ Rules: the box is the authority on mode. The UI shows the mode from `tlm`, never
 
 ### 7.4 User interface
 
-The demo UI is owned by Aaron and lives outside this repository. It sends and receives every message through `ground/link/`, which implements the client side of the schema: heartbeat, acknowledgement matching, e-stop, and no automatic reconnection. `ground/console/` is a bench console for firmware bring-up, not the demo UI. The wire is counter-clockwise positive (Section 6.5); a UI that shows clockwise-positive headings converts for display. The list below is the demo UI's scope.
+The main UI is `frontend/`, Aaron's landing page and ground station (PR #1, merged 2026-10-10). The backend matches it: for the wire interface the UI leads, and the firmware and `protocol/schema-v1.json` follow (U-3; firmware design §17). Today its device link is read-only. When it starts sending commands, its client must keep the safety rules that `ground/link/` proves: heartbeat, acknowledgement matching, an e-stop that is never queued, and no automatic reconnection. `ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up, not the demo UI. The wire is clockwise positive, the UI's own frame, so no client converts (U-1). The list below is the UI scope this design originally asked for. Which items the main UI provides is Aaron's call.
 
 - 3D view of the box turning with ψ̂; the CubeSat 2U model file already on hand can be reused.
 - Plots: heading with its reference, box rate, wheel speed with the cap and low-limit band shaded, battery voltage.
@@ -1020,6 +1020,16 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-15 | Open questions on owners and on the network closed | Answered in Sections 11.5 and 7.1 | 12.3 |
 | I-16 | Wi-Fi drop mitigation no longer assumes the OM5P-AC | Network decision | 10.2 |
 | I-17 | `docs/sizing_output.txt` regenerated from the current CAD. The saved output (02:07) predated the Oct 10 03:32 `stack.py` change and later deck edits. Changed by the re-run: box rate per 1000 rpm 356 to 355 deg/s (baseline) and 151 to 150 deg/s (fallback); wheel acceleration at 3 A 4861 to 4860 and 11604 to 11603 rpm/s (output only). Section 3 figures that already disagreed with the old output now match the new one: rate 357 to 355 deg/s; printed parts 253 to 254 g, I\_z 4.50e-4 to 4.54e-4; box mass 844 to 845 g (weight 8.28 to 8.29 N, box 0.84 to 0.85 kg); hand spin 1.59 to 1.58 and 1.26 to 1.25 rev/s; box acceleration 578 to 576 deg/s²; slew wheel swing 639 to 640 and 1510 to 1513 rpm. I\_b stays 1.03e-3 kg·m² at the stated precision, so K\_ω (V-1) is unchanged | `sizing.py` wins over this document's prose (Section 1); a stale output had hidden the drift | 2, 3, 3.2, 3.3, 3.6; firmware design §23.2 |
+
+**Main UI contract, 2026-10-10**
+
+Aaron's `frontend/` (PR #1) became the main UI, and the owner decided that the backend matches it. Firmware design §17 records the UI facts these rows rest on, read from its source at 622150a. The U-rows are numbered separately from the I-rows, because I-18 onward are taken by work on the Set 3 branch.
+
+| # | Change | Why | Where |
+| --- | --- | --- | --- |
+| U-1 | The wire's sign convention becomes clockwise positive for every quantity about the spin axis (heading, heading reference, magnetometer heading, sun angle, box rate, torque on the box). The firmware keeps the counter-clockwise frame of Section 6.5 internally and converts only when it encodes or decodes a message | The main UI draws positive heading clockwise ("rotate right" is +90°). This replaces the earlier rule that the UI converts for display | 7.3, 7.4 |
+| U-2 | The WebSocket moves from port 81, path `/`, to port 80, path `/ws`: `ws://direcsun.local/ws`, or `ws://192.168.4.1/ws` in SoftAP mode | The main UI's endpoint placeholder is `ws://192.168.4.1/ws` | 6.1, 7.2 |
+| U-3 | The demo UI is `frontend/` in this repository and owns its operator client. `ground/link/` and `ground/console/` become bench tools | PR #1 merged; owner decision | 7.4 |
 
 **Confirmed by the independent re-derivation:** K\_t, washer and box inertias, rate per rpm, absorbable spin, slew time and its formula, stored energy, imbalance forces, gravity torque, coin-test factor, structural stresses, all CAD clearances, the battery divider, the A1104 pull-up arrangement, the DLPF table, sensor addresses and registers, ESP32-S3 RMT and ADC facts, BLHeli\_S and DShot facts, radio addressing, and the slew profile settling within PR-2.
 

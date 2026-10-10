@@ -1,0 +1,8 @@
+# ESP-IDF build outputs and generated configuration
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+
+# Local configuration layered on sdkconfig.defaults (Wi-Fi credentials)
+sdkconfig.defaults.local
