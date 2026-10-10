@@ -556,7 +556,8 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 
 ### 12.3 Saturation and anti-windup
 
-- **Rate integral:** conditional integration. Stop integrating when τ_cmd is saturated or Ω_ref is clamped at a limit in the direction that would need more [D].
+- **Rate integral:** conditional integration. Stop integrating when τ_cmd is saturated or Ω_ref is clamped at a limit in the direction that would need more [D]. The integral's torque K_i ∫e is then bounded to ±3 mN·m (§12.2), so its bound in rad is 3 mN·m / K_i and widens as `rate_gain_scale` lowers K_i; with K_i = 0 the integral is held at 0 [D].
+- **Stick-slip bleed (finding V-46):** while ω_cmd = 0 and |ω̂| < 1 deg/s, the rate integral decays with a 0.5 s time constant [D].
 - **Ω_ref clamp:** when Ω_ref hits Ω_cap or Ω_low, set the flag `MOMENTUM_SATURATED`, freeze the rate integral, and report through telemetry. The box then cannot be driven further in that direction until desaturation (§13.4).
 - **Throttle clamp:** 48..2047 while running; 0 only from the safety layer.
 
@@ -571,7 +572,7 @@ Trapezoid in ψ_ref, limited to 60 deg/s and 120 deg/s² [V] TD §6.5. A 90° sl
 TD R-1 notes that a wrong sign in the torque-to-wheel step makes the rate loop unstable. Before T-15:
 
 1. With the box pinned and `bench_mode` on, step Ω_ref from bias to bias + 300 rpm with the attitude and rate loops disabled (bench command `wheel_step`, §15.3). Confirm the wheel follows. The pin stays in for this step.
-2. Unpinned, at reduced K_ω (×0.2), push the box counter-clockwise by hand. Log ω̂ and Ω_ref. Correct behaviour: Ω_ref moves so that the reaction opposes the push, and ω̂ decays. Wrong sign: ω̂ grows; the operator hits e-stop.
+2. Unpinned, at reduced gains (`rate_gain_scale` 0.2, the default, which scales K_ω and K_i together; finding V-47), push the box counter-clockwise by hand. Log ω̂ and Ω_ref. Correct behaviour: Ω_ref moves so that the reaction opposes the push, and ω̂ decays. Wrong sign: ω̂ grows; the operator hits e-stop.
 3. Record s_w in NVS.
 
 ---
@@ -928,6 +929,7 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 | `k_psi` | 3.1 | 0..10 | `set_params` |
 | `k_omega` | 0.0129 | 0..0.05 | `set_params` |
 | `k_i` | 0.0163 | 0..0.1 | `set_params` |
+| `rate_gain_scale` | 0.2 | 0..1 | `set_params`. Multiplies `k_omega` and `k_i`: 0.2 for the first unpinned runs and the sign check (§12.5), 1 once the sign is confirmed. Added in R3.9 with `param_version` 2 [D] |
 | `wheel_kp`, `wheel_ki` | 0 until T-5 [D] | 0..10 | `set_params` |
 | `ff_table` | 8 points | monotonic | `set_params` |
 | `omega_low_rpm` | 800 | 500..1500 | after T-18 |
@@ -1027,7 +1029,7 @@ firmware/                     ESP-IDF v6.0 project; run idf.py from here (or too
 | HT-2 | `wheel_speed` | 30/p conversion; plausibility window; median; staleness bound falls with time |
 | HT-3 | `estimator` | Bias frozen while moving; complementary filter converges to ψ_mag with τ = 2 s; wrap at ±180 |
 | HT-4 | `controllers` | Anti-windup stops integration at saturation; trapezoid gives 2.0 s ± 1 tick for 90° |
-| HT-5 | `controllers` + `plant_sim` | Closed loop on the TD §3.1 plant: detumble 1 rev/s within 5 s; 90° slew within 3 s settling to ±3°; Ω_ref never exceeds 4000 rpm |
+| HT-5 | `controllers` + `plant_sim` | Closed loop on the TD §3.1 plant: detumble 1 rev/s within 5 s; 90° slew within 3 s settling to ±3°; Ω_ref never exceeds 4000 rpm. R3.9 covers the detumble at 0, 1, and 3 mN·m of friction, ±30 deg/s rate tracking, and the Ω_ref bounds; the slew half arrives with the attitude loop (Set 4) |
 | HT-6 | `controllers` sign | With s_w = −1 instead of +1, HT-5's detumble diverges, so the test can see a sign error (positive control) |
 | HT-7 | `modes` | Every row of §13.1, every refused transition with its reason, FR-2 timing in ticks |
 | HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s; no path leaves `SAFE` after a fault without `arm`, with a mutant build that compiles out latching as its positive control |
@@ -1196,6 +1198,8 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-43 | §12.1 step 4 and §16: the wheel PI runs whenever the box is armed, with gains "from T-5" | R3.8 | Before T-5 there is no feed-forward table and the gains are 0, so a closed loop would command nothing sensible | The closed wheel loop runs only when the Hall is fitted and `ff_table` is set (`wheel_loop_available`); until then the box runs rung 1, the open-loop throttle controller (R3.7). `wheel_step` is refused with `wheel loop not available` [D] | Medium (this doc) |
 | V-44 | §19.2: T-18 lowers the UNDERSPEED threshold "via `set_params`"; the overspeed check had no way to lower the cap | R3.8 | No parameter existed for either, and `omega_cap_rpm` is not settable at all (V-35) | Two volatile bench-only keys, `bench_underspeed_rpm` and `bench_cap_rpm` (§16), each able only to make its own test more conservative, both cleared with bench mode and at every boot [D] | Low (this doc) |
 | V-45 | §13.3: spin-up "begins with throttle feed-forward only and closes the wheel PI once the Hall speed exceeds Ω_low" | R3.8 | Ω_ref's [Ω_low, Ω_cap] clamp would jump the reference to Ω_low at once | In SPINUP Ω_ref ramps at 400 rpm/s from the measured speed with only the cap clamping it; the PI is off below Ω_low (feed-forward only) and the integrator is cleared there. READY clamps Ω_ref to [Ω_low, cap in force] [D] | Low (this doc) |
+| V-46 | §12.3: the rate integral only stops while saturated | R3.9 host simulation | Coulomb friction holds a stopped box still while an integral below breakaway remains, and that integral keeps ramping Ω_ref with nothing moving: about 570 rpm in the 15 s after a 1 rev/s detumble at 1 mN·m, until Ω_ref reaches a limit | Stick-slip bleed: with ω_cmd = 0 and ω̂ within ±1 deg/s the integral decays with τ = 0.5 s. A mutant build without it fails its host test. To be re-checked by the R3.9 hold test on the turntable [D] | Low (this doc) |
+| V-47 | §12.5: the sign check runs "at reduced K_ω (×0.2)" | R3.9 | Scaling K_ω alone would leave K_i at full value and move the PI corner up five times | `rate_gain_scale` scales K_ω and K_i together, default 0.2. In the host simulation scale 0.2 damps a push and never amplifies it, but does not meet PR-1; PR-1 is verified at scale 1 (HT-5) [D] | Low (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 
 ### 23.2 Statements re-derived and confirmed
