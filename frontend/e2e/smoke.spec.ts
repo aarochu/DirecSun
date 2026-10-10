@@ -159,4 +159,17 @@ test.describe('responsive', () => {
     const viewport = await page.locator('.viewport').boundingBox();
     expect(viewport!.height).toBeGreaterThanOrEqual(580);
   });
+
+  for (const width of [320, 375, 390, 768, 1440]) {
+    test(`device link URL field shows a full endpoint at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/ground-station');
+      const input = page.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' });
+      for (const url of ['ws://127.0.0.1:8081/ws', 'ws://direcsun.local/ws', 'ws://192.168.4.1/ws']) {
+        await input.fill(url);
+        const fits = await input.evaluate((el: HTMLInputElement) => el.scrollWidth <= el.clientWidth);
+        expect(fits, `${url} at ${width}px`).toBe(true);
+      }
+    });
+  }
 });
