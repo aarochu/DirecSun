@@ -10,8 +10,8 @@ The demonstration modes are detumble (stop a hand spin), hold (keep a heading ag
 | --- | --- |
 | `firmware/` | ESP-IDF v6.0 project for the XIAO ESP32-S3, in C++17 |
 | `protocol/` | Wire schema v1: the contract between the box and any ground station |
-| `ground/link/` | Dependency-free JavaScript module implementing the client side of the protocol |
-| `ground/console/` | Bench console for firmware bring-up (the demo UI lives outside this repo) |
+| `ground/link/` | Engineering bench client: dependency-free JavaScript module for the protocol |
+| `ground/console/` | Engineering bench console for firmware bring-up (the main UI is `frontend/`) |
 | `cad/` | Parametric CadQuery sources; printable STLs and previews in `cad/out/` |
 | `docs/` | Technical design, firmware design, sizing calculations |
 | `tools/` | Bootstrap, build, and check scripts |
@@ -50,6 +50,20 @@ tools/idf.sh -p /dev/ttyACM0 flash monitor       # XIAO ESP32-S3 over USB-C; Ctr
 ```
 
 Build defaults live in `firmware/sdkconfig.defaults`. Wi-Fi credentials go in `firmware/sdkconfig.defaults.local` (copy the `.example`; it is gitignored). After editing either file, delete `firmware/sdkconfig` and rebuild.
+
+### Ground link and console
+
+The bench console and the link module are engineering tools for firmware bring-up and characterisation; the main UI is `frontend/`. Both talk to the box at `ws://direcsun.local/ws` (port 80, SoftAP `ws://192.168.4.1/ws`), or to the protocol stub `tools/mock-box.py` before the firmware speaks schema v1. ES modules do not load over `file://`, so serve the repo over HTTP:
+
+```bash
+tools/mock-box.py                  # stub box on ws://127.0.0.1:8081/ws (needs tools/bootstrap-venv.sh)
+python3 -m http.server 8000        # from the repo root
+# open http://127.0.0.1:8000/ground/console/ and connect to ws://127.0.0.1:8081/ws
+tools/check-schema.py              # protocol fixtures against protocol/schema-v1.json
+tools/check-link.sh                # link module tests, with every sent message schema-checked
+```
+
+The main UI's Device link panel connects to the same stub at `ws://127.0.0.1:8081/ws`. On the wire, every quantity about the spin axis is clockwise positive, as the UI expects (`protocol/README.md`).
 
 ## Working in this repo
 

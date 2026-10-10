@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111820">
+<title>DirecSun Bench Console</title>
+<style>
+:root{color-scheme:dark;--bg:#111820;--panel:#18222c;--line:#2b3946;--text:#e6edf2;--muted:#91a0ad;--blue:#7eb4d8;--blue2:#a9cee5;--green:#78c6a3;--amber:#e0b66d;--red:#e28e8e;--redbg:#5a2328;--redline:#a8474f;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--sans);min-height:100vh}
+button,input{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+.shell{max-width:1440px;margin:auto;padding:0 34px 36px}
+.topbar{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;gap:12px;align-items:center;letter-spacing:.03em;font-size:13px;font-weight:650}
+.mark{width:28px;height:28px;border:1px solid #45637a;display:grid;place-items:center;color:var(--blue);font:12px var(--mono)}
+.brand small{display:block;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:.13em;margin-top:1px}
+.topmeta{color:var(--muted);font:11px var(--mono);letter-spacing:.04em;text-align:right}
+.pagehead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:28px 0 23px}
+.eyebrow{font:10px var(--mono);color:var(--blue);letter-spacing:.14em;text-transform:uppercase}
+.pagehead h1{font-size:26px;letter-spacing:-.03em;font-weight:560;margin:5px 0 2px}
+.pagehead p{margin:0;color:var(--muted);font-size:13px}
+.modebadge{border:1px solid var(--line);padding:7px 12px;font:12px var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;color:var(--muted)}
+.modebadge b{font-weight:600;color:var(--text)}
+.modebadge.armed{border-color:#584c37}.modebadge.armed b{color:var(--amber)}
+.modebadge.safe b{color:var(--green)}
+.connection{display:grid;grid-template-columns:minmax(250px,1fr) auto;gap:18px;align-items:end;border:1px solid var(--line);background:var(--panel);padding:17px 18px;margin-bottom:18px}
+.field-label{display:block;color:var(--muted);font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+.urlrow{display:flex;gap:9px}
+.urlrow input{width:100%;min-width:0;background:#10171e;color:var(--text);border:1px solid #334351;border-radius:2px;padding:10px 12px;outline:none;font:12px var(--mono)}
+input:focus{border-color:#709bb7}
+.btn{border:1px solid #53728a;background:#293d4c;color:#d9e9f3;padding:9px 16px;border-radius:2px;font-size:12px;white-space:nowrap}
+.btn:hover:not(:disabled){background:#334e61}
+.btn.secondary{background:transparent;color:var(--muted);border-color:var(--line)}
+.btn.secondary:hover:not(:disabled){color:var(--text);border-color:#526473;background:transparent}
+.state{display:flex;align-items:center;gap:8px;color:var(--muted);font:11px var(--mono);padding:11px 2px;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:#667583;flex:none}
+.state.online{color:var(--green)}.state.online .dot{background:var(--green);box-shadow:0 0 0 3px #78c6a31a}
+.state.connecting{color:var(--amber)}.state.connecting .dot{background:var(--amber)}
+.state.error{color:var(--red)}.state.error .dot{background:var(--red)}
+.hint{grid-column:1/-1;margin:-6px 0 0;color:#748390;font:10px var(--mono)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.grid.stale .metric{opacity:.45}
+.stalenote{display:none;margin:0 0 10px;color:var(--amber);font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.stalenote.show{display:block}
+.metric{min-height:132px;background:var(--panel);border:1px solid var(--line);padding:15px 16px;min-width:0}
+.metrichead{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.metrichead em{font-style:normal;color:var(--blue);font-size:9px;letter-spacing:.08em}
+.value{font:29px/1.2 var(--mono);letter-spacing:-.05em;margin-top:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit{font-size:13px;color:var(--muted);letter-spacing:0}
+.metricfoot{font:10px var(--mono);color:var(--muted);margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chart{height:19px;margin-top:10px}
+.chart svg{width:100%;height:100%;overflow:visible;display:block}
+.chart polyline{fill:none;stroke:var(--blue);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.lower{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px}
+.panel{background:var(--panel);border:1px solid var(--line);min-width:0}
+.panelhead{min-height:45px;border-bottom:1px solid var(--line);padding:0 15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.paneltitle{font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.panelmeta{font:10px var(--mono);color:var(--muted);display:flex;align-items:center;gap:6px}
+.panelmeta input{margin:0;accent-color:var(--blue)}
+.stream{height:300px;overflow:auto;padding:4px 15px}
+.event{display:grid;grid-template-columns:68px 52px 1fr;gap:10px;border-bottom:1px solid #26333d;padding:8px 0;font:11px/1.4 var(--mono);align-items:start}
+.event:last-child{border-bottom:0}
+.eventtime{color:var(--muted)}
+.tag{font-size:9px;letter-spacing:.08em;color:var(--blue);text-transform:uppercase}
+.tag.rx{color:var(--green)}.tag.tx{color:var(--amber)}.tag.err{color:var(--red)}
+.eventbody{color:#c5d0d9;overflow-wrap:anywhere;min-width:0}
+.empty{color:var(--muted);font-size:12px;padding:20px 0}
+.commands{padding:15px;display:grid;gap:14px}
+.commands p{margin:0;color:var(--muted);font-size:12px}
+.cmdrow{display:flex;flex-wrap:wrap;gap:8px}
+.confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border:1px solid #584c37;background:#211d16;padding:10px 12px;font-size:12px;color:var(--amber)}
+.confirm[hidden]{display:none}
+.confirm span{flex:1 1 180px}
+.estop{width:100%;border:1px solid var(--redline);background:var(--redbg);color:#ffd9d9;padding:16px;border-radius:2px;font:600 15px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.estop:hover:not(:disabled){background:#6d2a30}
+.estop small{display:block;font:500 10px var(--mono);letter-spacing:.1em;color:#e6b3b3;margin-top:4px}
+.result{min-height:20px;font:11px/1.5 var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.result.ok{color:var(--green)}.result.bad{color:var(--red)}
+.flags{display:flex;flex-wrap:wrap;gap:6px;min-height:22px}
+.flag{border:1px solid var(--line);padding:2px 6px;font:10px var(--mono);color:#aab8c3}
+.flag.fault{border-color:var(--redline);color:var(--red)}
+.footnote{color:#748390;font-size:10px;margin-top:17px}
+.footnote span{color:var(--amber)}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lower{grid-template-columns:1fr}}
+@media(max-width:900px){.shell{padding:0 20px 28px}}
+@media(max-width:600px){.shell{padding:0 16px 24px}.topmeta{display:none}.connection{grid-template-columns:1fr;gap:5px}.state{padding:3px 2px}.pagehead{flex-direction:column;align-items:flex-start;gap:12px}.pagehead h1{font-size:22px}.urlrow{flex-wrap:wrap}.urlrow input{flex:1 1 100%}.urlrow .btn{flex:1}.event{grid-template-columns:56px 40px 1fr;gap:7px;font-size:10px}.metric{padding:13px;min-height:118px}.metricfoot{white-space:normal}.hint{margin-top:2px}.confirm span{flex:1 1 100%}.confirm .btn{flex:1}.value{font-size:24px}.cmdrow .btn{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="topbar">
+  <div class="brand"><div class="mark">D/</div><div>DIRECSUN<small>BENCH CONSOLE</small></div></div>
+  <div class="topmeta">SCHEMA V1 &nbsp;/&nbsp; WEBSOCKET &nbsp;/&nbsp; PORT 80 /WS</div>
+</header>
+<main>
+  <section class="pagehead">
+    <div>
+      <div class="eyebrow">Firmware bring-up</div>
+      <h1>Bench console</h1>
+      <p>Schema v1 link to the box or the mock box. Engineering tool, not the demo UI.</p>
+    </div>
+    <div class="modebadge" id="modebadge" aria-live="polite">MODE <b id="badge-mode">NO LINK</b></div>
+  </section>
+
+  <section class="connection">
+    <div>
+      <label class="field-label" for="endpoint">Box WebSocket endpoint</label>
+      <div class="urlrow">
+        <input id="endpoint" spellcheck="false" autocomplete="off" aria-label="Box WebSocket endpoint">
+        <button class="btn" id="connect">Connect</button>
+        <button class="btn secondary" id="disconnect" hidden>Disconnect</button>
+      </div>
+    </div>
+    <div class="state" id="state" aria-live="polite"><i class="dot"></i><span>DISCONNECTED</span></div>
+    <p class="hint">Box: ws://direcsun.local/ws or ws://&lt;address printed on serial&gt;/ws &nbsp;·&nbsp; SoftAP: ws://192.168.4.1/ws &nbsp;·&nbsp; mock box: ws://127.0.0.1:8081/ws</p>
+  </section>
+
+  <p class="stalenote" id="stalenote" aria-live="polite">Link closed: the values below are the last telemetry received, not the box's current state</p>
+  <section class="grid" aria-label="Live telemetry">
+    <article class="metric"><div class="metrichead"><span>Mode</span><em id="m-input"></em></div><div class="value" id="m-mode">-</div><div class="metricfoot" id="m-cause">LAST CHANGE -</div><div class="metricfoot" id="m-seq">TLM SEQ -</div></article>
+    <article class="metric"><div class="metrichead"><span>Heading</span><em>CW +</em></div><div class="value"><span id="m-psi">-</span> <span class="unit">deg</span></div><div class="metricfoot" id="m-psiref">REF - · MAG -</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-psi" points="0,15 220,15"/></svg></div></article>
+    <article class="metric"><div class="metrichead"><span>Box rate</span><em>CW +</em></div><div class="value"><span id="m-rate">-</span> <span class="unit">deg/s</span></div><div class="metricfoot" id="m-tau">TORQUE CMD - mN m</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-rate" points="0,15 220,15"/></svg></div></article>
+    <article class="metric"><div class="metrichead"><span>Wheel</span><em>HALL</em></div><div class="value"><span id="m-wheel">-</span> <span class="unit">rpm</span></div><div class="metricfoot" id="m-wheelref">REF - rpm · THROTTLE -</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-wheel" points="0,15 220,15"/></svg></div></article>
+    <article class="metric"><div class="metrichead"><span>Battery</span><em>1 S AVG</em></div><div class="value"><span id="m-vbat">-</span> <span class="unit">V</span></div><div class="metricfoot">ARM ABOVE 9.6 · LOW BELOW 8.8</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-vbat" points="0,15 220,15"/></svg></div></article>
+    <article class="metric"><div class="metrichead"><span>Control loop</span><em>500 HZ</em></div><div class="value"><span id="m-loop">-</span> <span class="unit">us</span></div><div class="metricfoot">LONGEST TICK IN 20 MS · BUDGET 2000</div><div class="metricfoot" id="m-drop">DROPPED TLM - · EVENTS -</div></article>
+    <article class="metric"><div class="metrichead"><span>Link</span><em>PING 5 HZ</em></div><div class="value"><span id="m-rtt">-</span> <span class="unit">ms rtt</span></div><div class="metricfoot" id="m-rttstats">MIN - · MAX - · N 0</div><div class="metricfoot" id="m-hz">TLM - HZ</div></article>
+    <article class="metric"><div class="metrichead"><span>Flags</span><em>LATCHED IN RED</em></div><div class="flags" id="m-flags" style="margin-top:15px"></div></article>
+  </section>
+
+  <section class="lower">
+    <article class="panel">
+      <div class="panelhead">
+        <span class="paneltitle">Frames</span>
+        <span class="panelmeta"><span><span id="framecount">0</span> logged</span><span aria-hidden="true">&middot;</span><label class="panelmeta"><input type="checkbox" id="verbose"> show every tlm and ping</label></span>
+      </div>
+      <div class="stream" id="stream"><div class="empty">Frames appear here after the WebSocket opens. Telemetry is sampled once a second unless "show every tlm and ping" is on.</div></div>
+    </article>
+    <article class="panel">
+      <div class="panelhead"><span class="paneltitle">Commands</span><span class="panelmeta">ACKED BY SEQ</span></div>
+      <div class="commands">
+        <p>The box is the authority on mode: the badge follows tlm and events, never a button press.</p>
+        <div class="cmdrow">
+          <button class="btn" id="arm" disabled>Arm</button>
+          <button class="btn secondary" id="disarm" disabled>Disarm</button>
+          <button class="btn secondary" id="ready" disabled>Mode READY</button>
+        </div>
+        <div class="confirm" id="armconfirm" hidden>
+          <span>Arming spins the wheel up. Is the lock pin in, or the box held?</span>
+          <button class="btn" id="armyes">Confirm arm</button>
+          <button class="btn secondary" id="armno">Cancel</button>
+        </div>
+        <button class="estop" id="estop">E-stop<small>Space bar, from any state</small></button>
+        <div class="result" id="result" aria-live="assertive"></div>
+      </div>
+    </article>
+  </section>
+  <p class="footnote"><span>BENCH TOOL</span> · Engineering console for bring-up, not the demo UI (that is frontend/). Values are shown as the wire sends them: angles, rates, and torque clockwise positive seen from above, as in the main UI. Verified against tools/mock-box.py; firmware conformance is checked in Set 3.</p>
+</main>
+</div>
+<script type="module">
+import { DEFAULT_URL, DirecSunLink } from "../link/direcsun-link.js";
+
+const $ = (id) => document.getElementById(id);
+const STORAGE_KEY = "direcsun-console-endpoint";
+const ARMED_MODES = new Set(["SPINUP", "READY", "DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"]);
+const INTERLOCKS = new Set(["ESTOP", "HEARTBEAT_LOST", "OVERSPEED", "UNDERSPEED", "BATTERY_LOW", "IMU_SILENT", "TILT", "CONTROL_STALL", "HALL_SILENT"]);
+
+let link = null;
+let holdScroll = false;
+let pointerDown = false;
+let frames = 0;
+let lastTlmLog = 0;
+let lastCause = "-";
+let tlmTimes = [];
+const series = { psi: [], rate: [], wheel: [], vbat: [] };
+
+function readEndpoint() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) || DEFAULT_URL;
+  } catch {
+    return DEFAULT_URL;
+  }
+}
+function saveEndpoint(url) {
+  try {
+    localStorage.setItem(STORAGE_KEY, url);
+  } catch {
+    // Storage can be unavailable (private window); the field still works.
+  }
+}
+
+const clock = () => new Date().toLocaleTimeString([], { hour12: false });
+const stream = $("stream");
+const nearBottom = () => stream.scrollTop + stream.clientHeight >= stream.scrollHeight - 8;
+// Follow the newest frame unless the operator scrolled up. Only user input can stop
+// following, so a resize that changes row heights cannot.
+for (const type of ["wheel", "touchmove", "keydown"]) {
+  stream.addEventListener(type, () => requestAnimationFrame(() => { holdScroll = !nearBottom(); }), { passive: true });
+}
+stream.addEventListener("pointerdown", () => { pointerDown = true; });
+window.addEventListener("pointerup", () => { pointerDown = false; });
+stream.addEventListener("scroll", () => {
+  if (pointerDown) holdScroll = !nearBottom();
+  else if (nearBottom()) holdScroll = false;
+}, { passive: true });
+function logFrame(tag, text, cls = "") {
+  const box = $("stream");
+  box.querySelector(".empty")?.remove();
+  const row = document.createElement("div");
+  row.className = "event";
+  row.innerHTML = `<span class="eventtime"></span><span class="tag ${cls}"></span><span class="eventbody"></span>`;
+  row.children[0].textContent = clock();
+  row.children[1].textContent = tag;
+  row.children[2].textContent = text;
+  box.append(row);
+  while (box.children.length > 200) box.firstElementChild.remove();
+  if (!holdScroll) box.scrollTop = box.scrollHeight;
+  frames += 1;
+  $("framecount").textContent = String(frames);
+}
+
+function setResult(text, ok) {
+  const el = $("result");
+  el.textContent = text;
+  el.className = "result " + (ok === true ? "ok" : ok === false ? "bad" : "");
+}
+
+function setLinkState(kind, label) {
+  $("state").className = "state " + kind;
+  $("state").lastElementChild.textContent = label;
+  const live = kind === "online" || kind === "connecting";
+  $("connect").hidden = live;
+  $("disconnect").hidden = !live;
+  for (const id of ["arm", "disarm", "ready"]) $(id).disabled = kind !== "online";
+  const stale = kind !== "online" && $("m-seq").textContent !== "TLM SEQ -";
+  document.querySelector(".grid").classList.toggle("stale", stale);
+  $("stalenote").classList.toggle("show", stale);
+  if (kind !== "online") {
+    $("armconfirm").hidden = true;
+    $("badge-mode").textContent = "NO LINK";
+    $("modebadge").className = "modebadge";
+  }
+}
+
+// Smallest vertical span per signal, in its own unit: noise below this stays flat.
+const MIN_SPAN = { psi: 10, rate: 5, wheel: 200, vbat: 0.5 };
+
+function plot(key, value, id) {
+  const a = series[key];
+  a.push(Number(value));
+  if (a.length > 60) a.shift();
+  let min = Math.min(...a);
+  let max = Math.max(...a);
+  const pad = Math.max(0, MIN_SPAN[key] - (max - min)) / 2;
+  min -= pad;
+  max += pad;
+  const pts = a.map((n, i) => `${(i * 220) / 59},${19 - ((n - min) / (max - min)) * 17}`).join(" ");
+  $(id).setAttribute("points", pts);
+}
+
+// Rounds first, so a small negative value prints "0.0" rather than "-0.0".
+const fmt = (n, digits = 1) => {
+  if (n === null || n === undefined) return "-";
+  const text = Number(n).toFixed(digits);
+  return Number(text) === 0 ? (0).toFixed(digits) : text;
+};
+
+function showMode(mode) {
+  $("badge-mode").textContent = mode;
+  $("modebadge").className = "modebadge " + (ARMED_MODES.has(mode) ? "armed" : "safe");
+}
+
+function onTlm(t) {
+  const now = performance.now();
+  tlmTimes.push(now);
+  while (tlmTimes.length && now - tlmTimes[0] > 2000) tlmTimes.shift();
+  $("m-mode").textContent = t.mode;
+  $("m-input").textContent = t.manual_input ? `INPUT ${t.manual_input.toUpperCase()}` : "";
+  $("m-seq").textContent = `TLM SEQ ${t.seq} · T ${(t.t_ms / 1000).toFixed(1)} S`;
+  $("m-cause").textContent = `LAST CHANGE ${lastCause}`;
+  showMode(t.mode);
+  $("m-psi").textContent = fmt(t.psi_deg);
+  $("m-psiref").textContent = `REF ${fmt(t.psi_ref_deg)} · MAG ${fmt(t.mag_deg)}`;
+  $("m-rate").textContent = fmt(t.rate_dps);
+  $("m-tau").textContent = `TORQUE CMD ${fmt(t.tau_cmd_mNm, 2)} mN m`;
+  $("m-wheel").textContent = fmt(t.wheel_rpm, 0);
+  $("m-wheelref").textContent = `REF ${fmt(t.wheel_ref_rpm, 0)} rpm · THROTTLE ${t.throttle}`;
+  $("m-vbat").textContent = fmt(t.vbat, 2);
+  $("m-loop").textContent = String(t.loop_us);
+  $("m-drop").textContent = `DROPPED TLM ${t.tlm_dropped} · EVENTS ${t.dropped_events}`;
+  $("m-hz").textContent = `TLM ${tlmTimes.length > 1 ? ((tlmTimes.length - 1) / ((now - tlmTimes[0]) / 1000)).toFixed(0) : "-"} HZ`;
+  const flags = $("m-flags");
+  flags.replaceChildren(...t.flags.map((f) => {
+    const s = document.createElement("span");
+    s.className = "flag" + (INTERLOCKS.has(f) ? " fault" : "");
+    s.textContent = f;
+    return s;
+  }));
+  plot("psi", t.psi_deg, "chart-psi");
+  plot("rate", t.rate_dps, "chart-rate");
+  plot("wheel", t.wheel_rpm, "chart-wheel");
+  plot("vbat", t.vbat, "chart-vbat");
+}
+
+function updateRtt() {
+  const r = link.rtt;
+  $("m-rtt").textContent = fmt(r.last, 1);
+  $("m-rttstats").textContent = `MIN ${fmt(r.min, 1)} · MAX ${fmt(r.max, 1)} · N ${r.count}`;
+}
+
+async function send(name, fields = {}) {
+  if (!link) return;
+  setResult(`${name}: sent, waiting for ack`, null);
+  try {
+    const ack = await link.command(name, fields);
+    setResult(`${name}: ack ok (seq ${ack.seq})`, true);
+  } catch (error) {
+    setResult(`${name}: ${error.code === "REFUSED" ? "refused, " + (error.ack?.reason ?? "") : error.message}`, false);
+  }
+}
+
+function estop() {
+  if (!link || link.state !== "open") {
+    setResult("E-STOP NOT SENT: the link is not open", false);
+    logFrame("ERR", "e-stop not sent: link is not open", "err");
+    return;
+  }
+  try {
+    link.estop()
+      .then((ack) => setResult(`estop: ack ok (seq ${ack.seq})`, true))
+      .catch((error) => setResult(`estop: ${error.message}`, false));
+    setResult("estop: sent", null);
+  } catch (error) {
+    setResult(`E-STOP NOT SENT: ${error.message}`, false);
+  }
+}
+
+function connect() {
+  const url = $("endpoint").value.trim();
+  saveEndpoint(url);
+  link?.close();
+  link = new DirecSunLink(url);
+  tlmTimes = [];
+  link.on("state", ({ state, reason }) => {
+    if (state === "connecting") setLinkState("connecting", "CONNECTING");
+    else if (state === "open") setLinkState("online", "CONNECTED");
+    else if (state === "closed") {
+      setLinkState(reason === "closed by client" ? "" : "error", reason === "closed by client" ? "DISCONNECTED" : `CLOSED · ${String(reason).toUpperCase()}`);
+      logFrame("LINK", `closed: ${reason}`, "err");
+    }
+  });
+  link.on("tlm", (t) => {
+    onTlm(t);
+    if ($("verbose").checked || t.t_ms - lastTlmLog >= 1000) {
+      lastTlmLog = t.t_ms;
+      logFrame("RX", `tlm seq ${t.seq} · ${t.mode} · psi ${fmt(t.psi_deg)} · wheel ${fmt(t.wheel_rpm, 0)}`, "rx");
+    }
+  });
+  link.on("event", (e) => {
+    if (e.event === "mode") {
+      lastCause = `${e.mode} BY ${e.cause}`;
+      $("m-cause").textContent = `LAST CHANGE ${lastCause}`;
+      showMode(e.mode);
+      logFrame("EVENT", `mode ${e.mode} · cause ${e.cause}`, "rx");
+    } else {
+      logFrame("EVENT", `${e.event} ${e.name ?? ""} ${e.detail ?? ""}`.trim(), "rx");
+    }
+  });
+  link.on("ack", (a) => logFrame("ACK", `seq ${a.seq} · ${a.ok ? "ok" : "refused: " + a.reason}`, a.ok ? "rx" : "err"));
+  link.on("pong", () => {
+    updateRtt();
+    if ($("verbose").checked) logFrame("RX", `pong · rtt ${fmt(link.rtt.last, 1)} ms`, "rx");
+  });
+  link.on("raw", (r) => {
+    if (!r.accepted) logFrame("RX", `REJECTED (${r.reason}) · ${String(r.data).slice(0, 200)}`, "err");
+  });
+  link.on("sent", (m) => {
+    if (m.type === "ping" && !$("verbose").checked) return;
+    logFrame("TX", JSON.stringify(m), "tx");
+  });
+  link.connect().catch((error) => setResult(`connect: ${error.message}`, false));
+}
+
+$("endpoint").value = readEndpoint();
+$("connect").onclick = connect;
+$("disconnect").onclick = () => link?.close();
+$("endpoint").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+$("arm").onclick = () => { $("armconfirm").hidden = false; $("armyes").focus(); };
+$("armno").onclick = () => { $("armconfirm").hidden = true; };
+$("armyes").onclick = () => { $("armconfirm").hidden = true; send("arm"); };
+$("disarm").onclick = () => send("disarm");
+$("ready").onclick = () => send("mode", { mode: "READY" });
+$("estop").onclick = estop;
+document.addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || e.repeat) return;
+  const tag = document.activeElement?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+  e.preventDefault();
+  estop();
+});
+</script>
+</body>
+</html>

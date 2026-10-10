@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 7,
+  "cmd": "manual",
+  "throttle": 420,
+  "wheel_rpm": 2600
+}
