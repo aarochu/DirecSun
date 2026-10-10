@@ -155,7 +155,8 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
     {
         Rig rig;
         rig.arm_to_ready();
-        for (Mode m : {Mode::Detumble, Mode::Hold, Mode::Slew, Mode::SunPoint}) {
+        // HOLD and SLEW are implemented from R4.3 (test_slew.cpp).
+        for (Mode m : {Mode::Detumble, Mode::SunPoint}) {
             rig.tick({mode_cmd(m)});
             CHECK(rig.last_reason() == "not implemented");
             CHECK(rig.out.mode == Mode::Ready);

@@ -2,13 +2,17 @@
 
 #include <cmath>
 
+#include "direcsun/core/angles.hpp"
+
 // Mutation-test switches (host selftest builds only), each caught by one test:
 //   NO_WHEEL_ANTIWINDUP  the wheel PI integrates while the throttle is clamped
 //   RATE_SIGN_FLIP       the torque-to-wheel step uses -s_w (TD R-1)
 //   NO_RATE_ANTIWINDUP   the rate integral runs while saturated
 //   NO_RATE_BLEED        no stick-slip bleed
+//   FLIP_KPSI            the attitude loop's gain has the wrong sign (R4.3)
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_WHEEL_ANTIWINDUP) || defined(DIRECSUN_MUTANT_RATE_SIGN_FLIP) || \
-                              defined(DIRECSUN_MUTANT_NO_RATE_ANTIWINDUP) || defined(DIRECSUN_MUTANT_NO_RATE_BLEED))
+                              defined(DIRECSUN_MUTANT_NO_RATE_ANTIWINDUP) || defined(DIRECSUN_MUTANT_NO_RATE_BLEED) || \
+                              defined(DIRECSUN_MUTANT_FLIP_KPSI))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -139,6 +143,73 @@ float WheelSpeedPi::step(float omega_ref_rpm, float omega_rpm, float dt_s, const
     if (!pushing_high && !pushing_low) integrator_ += params.wheel_ki * error * dt_s;
 #endif
     return out;
+}
+
+float attitude_rate_cmd_dps(double psi_ref_deg, double psi_deg, float k_psi)
+{
+    const float error_deg = wrap_deg180(psi_ref_deg - psi_deg);
+#ifdef DIRECSUN_MUTANT_FLIP_KPSI
+    const float cmd = -k_psi * error_deg;
+#else
+    const float cmd = k_psi * error_deg;
+#endif
+    return clampf(cmd, -kAttitudeRateLimitDps, kAttitudeRateLimitDps);
+}
+
+void SlewProfile::start(double from_deg, double to_deg, float vmax_dps, float amax_dps2)
+{
+    from_deg_ = from_deg;
+    const double delta = to_deg - from_deg;
+    sign_ = delta < 0.0 ? -1.0 : 1.0;
+    distance_deg_ = std::fabs(delta);
+    accel_ = amax_dps2;
+    const double t_to_vmax = vmax_dps / accel_;
+    const double d_to_vmax = 0.5 * accel_ * t_to_vmax * t_to_vmax;
+    if (distance_deg_ >= 2.0 * d_to_vmax) {
+        // Trapezoid: accelerate to vmax, cruise, decelerate.
+        t_accel_s_ = t_to_vmax;
+        peak_dps_ = vmax_dps;
+        t_cruise_s_ = (distance_deg_ - 2.0 * d_to_vmax) / vmax_dps;
+    } else {
+        // Triangle: too short to reach vmax.
+        t_accel_s_ = std::sqrt(distance_deg_ / accel_);
+        peak_dps_ = accel_ * t_accel_s_;
+        t_cruise_s_ = 0.0;
+    }
+    duration_s_ = 2.0 * t_accel_s_ + t_cruise_s_;
+}
+
+double SlewProfile::position_deg(double t_s) const
+{
+    double d;
+    if (t_s <= 0.0) {
+        d = 0.0;
+    } else if (t_s < t_accel_s_) {
+        d = 0.5 * accel_ * t_s * t_s;
+    } else if (t_s < t_accel_s_ + t_cruise_s_) {
+        d = 0.5 * accel_ * t_accel_s_ * t_accel_s_ + peak_dps_ * (t_s - t_accel_s_);
+    } else if (t_s < duration_s_) {
+        const double left = duration_s_ - t_s;
+        d = distance_deg_ - 0.5 * accel_ * left * left;
+    } else {
+        d = distance_deg_;
+    }
+    return from_deg_ + sign_ * d;
+}
+
+double SlewProfile::velocity_dps(double t_s) const
+{
+    double v;
+    if (t_s <= 0.0 || t_s >= duration_s_) {
+        v = 0.0;
+    } else if (t_s < t_accel_s_) {
+        v = accel_ * t_s;
+    } else if (t_s < t_accel_s_ + t_cruise_s_) {
+        v = peak_dps_;
+    } else {
+        v = accel_ * (duration_s_ - t_s);
+    }
+    return sign_ * v;
 }
 
 }  // namespace direcsun

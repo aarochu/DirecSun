@@ -81,8 +81,9 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
     // Rung 1 whenever the closed loop cannot run: no Hall (or the bench
     // bypass), or no T-5 feed-forward table yet; and MANUAL throttle always.
     const bool manual_throttle = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Throttle;
+    const bool rate_mode = demand.mode == Mode::Ready || demand.mode == Mode::Hold || demand.mode == Mode::Slew;
     if (!wheel_loop_available(params) || demand.spinup_open_loop || manual_throttle ||
-        (demand.mode != Mode::Spinup && demand.mode != Mode::Ready)) {
+        (demand.mode != Mode::Spinup && !rate_mode)) {
         closed_loop_ = false;
         wheel_pi_.reset();
         stop_rate_loop();
@@ -105,7 +106,7 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
         } else {
             omega_ref_rpm_ = target;
         }
-    } else {  // READY
+    } else {  // READY, HOLD, SLEW: the rate loop runs with demand.omega_cmd_dps
         if (!closed_loop_) {
             // Bumpless start from open-loop throttle: reference at the measured
             // speed, integrator at the last throttle minus the feed-forward.

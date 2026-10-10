@@ -109,4 +109,43 @@ private:
     bool closed_ = false;      // PI active on the last step
 };
 
+// Attitude loop and slew profile (FD sections 12.1 step 1, 12.2, 12.4; R4.3).
+constexpr float kAttitudeRateLimitDps = 90.0f;  // omega_cmd limit
+constexpr float kSlewMaxRateDps = 60.0f;        // trapezoid cruise rate
+constexpr float kSlewMaxAccelDps2 = 120.0f;     // trapezoid acceleration
+constexpr float kSlewSettleDeg = 3.0f;          // complete: |psi_ref - psi| below this
+constexpr float kSlewSettleRateDps = 5.0f;      //           and |omega| below this
+constexpr uint32_t kSlewSettleMs = 500;         //           for this long
+constexpr uint32_t kSlewTimeoutMs = 6000;       // SLEW_TIMEOUT after this
+
+// The attitude loop: omega_cmd = k_psi * wrap(psi_ref - psi), deg/s, limited to
+// +-kAttitudeRateLimitDps. Headings are continuous degrees in the internal
+// frame (counter-clockwise positive); the error is wrapped onto (-180, 180] so a
+// HOLD knocked past a half-turn takes the short way back.
+float attitude_rate_cmd_dps(double psi_ref_deg, double psi_deg, float k_psi);
+
+// The SLEW reference (FD section 12.4): a trapezoid in heading from `from_deg`
+// to `to_deg` limited to vmax and amax, or a triangle when the move is too short
+// to reach vmax. Pure function of time since start.
+class SlewProfile {
+public:
+    void start(double from_deg, double to_deg, float vmax_dps = kSlewMaxRateDps,
+               float amax_dps2 = kSlewMaxAccelDps2);
+    double position_deg(double t_s) const;
+    double velocity_dps(double t_s) const;
+    double duration_s() const { return duration_s_; }
+    double target_deg() const { return from_deg_ + sign_ * distance_deg_; }
+    bool finished(double t_s) const { return t_s >= duration_s_; }
+
+private:
+    double from_deg_ = 0.0;
+    double sign_ = 1.0;
+    double distance_deg_ = 0.0;
+    double accel_ = kSlewMaxAccelDps2;
+    double t_accel_s_ = 0.0;     // time spent accelerating (and decelerating)
+    double t_cruise_s_ = 0.0;    // time at peak rate
+    double peak_dps_ = 0.0;
+    double duration_s_ = 0.0;
+};
+
 }  // namespace direcsun

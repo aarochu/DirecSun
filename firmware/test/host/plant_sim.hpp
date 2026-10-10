@@ -24,7 +24,8 @@ constexpr double kRpmToRadPerS = kTwoPi / 60.0;
 // Box and wheel about the spin axis (TD section 3.1):
 //   (I_b + I_w) d(omega_b)/dt = -I_w alpha_rel + tau_ext
 // where alpha_rel is the wheel's acceleration about +z relative to the box
-// (s_w times the forward acceleration) and tau_ext is bearing friction.
+// (s_w times the forward acceleration) and tau_ext is bearing friction plus
+// any applied disturbance (a poke).
 struct Box {
     double i_b = 1.03e-3;          // kg m^2, TD section 3.2
     double i_w = 6.50e-5;          // kg m^2, baseline washer wheel
@@ -32,12 +33,14 @@ struct Box {
     double friction_nm = 0.0;      // Coulomb friction magnitude
     double omega = 0.0;            // box rate, rad/s
     double wheel_rpm = 2400.0;     // wheel forward speed relative to the box
+    double disturbance_nm = 0.0;   // applied torque about +z, e.g. a poke
+    double heading_deg = 0.0;      // true heading, continuous
 
     // Moves the wheel to `new_wheel_rpm` over `dt` and integrates the box.
     void step(double new_wheel_rpm, double dt)
     {
         const double alpha_rel = s_w * (new_wheel_rpm - wheel_rpm) * kRpmToRadPerS / dt;
-        const double drive = -i_w * alpha_rel;
+        const double drive = -i_w * alpha_rel + disturbance_nm;
         wheel_rpm = new_wheel_rpm;
         if (std::fabs(omega) < 1e-4 && std::fabs(drive) <= friction_nm) {
             omega = 0.0;  // stuck: the drive cannot break the static friction
@@ -47,6 +50,7 @@ struct Box {
         const double next = omega + (drive - friction_nm * direction) / (i_b + i_w) * dt;
         // Friction stops the box; it never reverses it.
         omega = (omega != 0.0 && next * omega < 0.0 && std::fabs(drive) <= friction_nm) ? 0.0 : next;
+        heading_deg += rate_dps() * dt;
     }
 
     double rate_dps() const { return omega * 360.0 / kTwoPi; }

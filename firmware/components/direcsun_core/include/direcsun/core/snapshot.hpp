@@ -77,6 +77,8 @@ struct TelemetrySnapshot {
     bool ramping = false;
 
     float psi_deg = 0.0f;              // gyro-only heading, wrapped (-180, 180] [D]
+    bool psi_ref_valid = false;        // HOLD and SLEW only (R4.3); null on the wire otherwise
+    float psi_ref_deg = 0.0f;          // the heading reference, wrapped (-180, 180]
     float rate_dps = 0.0f;             // box rate estimate
     float gyro_bias_dps = 0.0f;
     float tilt_deg = 0.0f;

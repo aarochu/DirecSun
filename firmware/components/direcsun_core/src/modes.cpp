@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "direcsun/core/angles.hpp"
 #include "direcsun/core/controllers.hpp"
 #include <cstdio>
 
@@ -78,7 +79,12 @@ constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
 
 bool is_later_set_mode(Mode m)
 {
-    return m == Mode::Detumble || m == Mode::Hold || m == Mode::Slew || m == Mode::SunPoint;
+    return m == Mode::Detumble || m == Mode::SunPoint;
+}
+
+bool has_heading_reference(Mode m)
+{
+    return m == Mode::Hold || m == Mode::Slew;
 }
 
 float clampf(float v, float lo, float hi)
@@ -145,6 +151,7 @@ void Supervisor::enter(Mode mode, uint32_t tick)
     spinup_in_band_ticks_ = 0;
     wheel_hold_ = false;
     pending_wheel_step_rpm_ = 0.0f;
+    slew_settled_ticks_ = 0;
 }
 
 void Supervisor::drop_to_safe(ThrottleController &controller)
@@ -260,7 +267,7 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
                 pending_wheel_step_rpm_ = 0.0f;
                 return ack_ok(out, cmd);
             }
-            if (mode_ == Mode::Manual) {
+            if (mode_ == Mode::Manual || has_heading_reference(mode_)) {
                 enter(Mode::Ready, t);
                 post_mode_event(out, "mode");
                 return ack_ok(out, cmd);
@@ -279,6 +286,25 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
             manual_rate_dps_ = 0.0f;
             manual_has_setpoint_ = false;
             manual_fresh_tick_ = t;
+            post_mode_event(out, "mode");
+            return ack_ok(out, cmd);
+        }
+        if (has_heading_reference(target)) {
+            // R4.3. From READY only (FD section 13.1). The attitude loop drives
+            // the rate loop, which needs the closed wheel loop (V-43). Until Set 5
+            // the heading is gyro-only and relative to the last zero_heading
+            // (R4.2's guard amendment, V-48), so no magnetometer is required.
+            if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+            const double psi = in.heading_deg - heading_zero_deg_;
+            enter(target, t);
+            psi_ref_deg_ = psi;
+            if (target == Mode::Slew) {
+                // The shortest wrapped path to the target; a half-turn is
+                // deterministic: wrap onto (-180, 180] sends it to +180.
+                const double end = psi + static_cast<double>(wrap_deg180(static_cast<double>(cmd.psi_ref_deg) - psi));
+                slew_.start(psi, end);
+            }
             post_mode_event(out, "mode");
             return ack_ok(out, cmd);
         }
@@ -401,6 +427,25 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         manual_stale_ = ticks_since(t, manual_fresh_tick_) >= ticks_from_ms(kManualStaleMs);
         if (manual_stale_ && manual_input_ == ManualInput::Rate) manual_rate_dps_ = 0.0f;
     }
+    const double psi = in.heading_deg - heading_zero_deg_;
+    if (mode_ == Mode::Slew) {
+        // FD section 12.4: the reference moves along the trapezoid; the slew is
+        // complete once the profile has ended and the box has sat within 3 deg
+        // and 5 deg/s of the target for 0.5 s, and times out after 6 s.
+        const uint32_t ticks = ticks_since(t, mode_entry_tick_);
+        const double t_s = static_cast<double>(ticks) / static_cast<double>(kTickHz);
+        psi_ref_deg_ = slew_.position_deg(t_s);
+        const bool settled = slew_.finished(t_s) && std::fabs(slew_.target_deg() - psi) < kSlewSettleDeg &&
+                             std::fabs(in.rate_dps) < kSlewSettleRateDps;
+        slew_settled_ticks_ = settled ? slew_settled_ticks_ + 1 : 0;
+        if (slew_settled_ticks_ >= ticks_from_ms(kSlewSettleMs)) {
+            enter(Mode::Ready, t);
+            post_mode_event(out, "slew_complete");
+        } else if (ticks >= ticks_from_ms(kSlewTimeoutMs)) {
+            enter(Mode::Ready, t);
+            post_mode_event(out, "SLEW_TIMEOUT");
+        }
+    }
 
     // 3. Controller request (armed modes only) or the ramp (SAFE).
     int candidate = 0;
@@ -418,7 +463,9 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         d.previous_throttle = prev_throttle_;
         d.wheel_step_rpm = pending_wheel_step_rpm_;
         d.wheel_hold = wheel_hold_;
-        d.omega_cmd_dps = 0.0f;  // READY holds rate (TD section 6.6)
+        // READY holds rate (TD section 6.6); HOLD and SLEW close the attitude
+        // loop around it (FD section 12.1 step 1, R4.3).
+        d.omega_cmd_dps = has_heading_reference(mode_) ? attitude_rate_cmd_dps(psi_ref_deg_, psi, params_.k_psi) : 0.0f;
         pending_wheel_step_rpm_ = 0.0f;
         int request = controller.throttle(d, in, params_);
         if (request < 0) request = 0;
@@ -493,7 +540,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;
     if (armed()) flags |= controller.flags();
-    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual)) {
+    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual || has_heading_reference(mode_))) {
         const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;
         flags |= near ? kFlagMomentumNearLimit : kFlagMomentumOk;
@@ -507,6 +554,8 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     out.latched = latched_;
     out.controlling_client = controlling_client_;
     out.heading_deg = in.heading_deg - heading_zero_deg_;
+    out.psi_ref_valid = has_heading_reference(mode_);
+    out.psi_ref_deg = out.psi_ref_valid ? psi_ref_deg_ : 0.0;
 }
 
 }  // namespace direcsun

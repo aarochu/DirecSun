@@ -15,6 +15,7 @@
 #include <cstdint>
 
 #include "direcsun/core/commands.hpp"
+#include "direcsun/core/controllers.hpp"
 #include "direcsun/core/interlocks.hpp"
 #include "direcsun/core/params.hpp"
 #include "direcsun/core/timebase.hpp"
@@ -92,8 +93,9 @@ struct ControlDemand {
     float wheel_step_rpm = 0.0f;
     bool wheel_hold = false;
     // The rate loop's command, deg/s, internal frame (counter-clockwise
-    // positive). READY holds rate, so it is 0 there (TD section 6.6); the
-    // attitude loop (Set 4) and MANUAL `rate` (Set 5) are what will drive it.
+    // positive). READY holds rate, so it is 0 there (TD section 6.6); in HOLD
+    // and SLEW it is the attitude loop's output (R4.3); MANUAL `rate` (Set 5)
+    // will drive it too.
     float omega_cmd_dps = 0.0f;
 };
 
@@ -121,6 +123,8 @@ struct TickOutputs {
     uint32_t controlling_client = 0;  // 0 when no client has armed the box
     bool params_changed = false;      // persist outside the control loop
     double heading_deg = 0.0;         // heading relative to the last zero_heading, continuous, internal frame (R4.2)
+    bool psi_ref_valid = false;       // a heading reference exists: HOLD and SLEW (R4.3)
+    double psi_ref_deg = 0.0;         // that reference, same frame as heading_deg
     Outbox<Ack, 16> acks;
     Outbox<Event, 8> events;
 };
@@ -174,6 +178,12 @@ private:
 
     bool wheel_hold_ = false;
     float pending_wheel_step_rpm_ = 0.0f;
+
+    // HOLD and SLEW (R4.3): the heading reference, relative to the zero, and
+    // the slew in progress.
+    double psi_ref_deg_ = 0.0;
+    SlewProfile slew_;
+    uint32_t slew_settled_ticks_ = 0;
 
     // zero_heading (R4.2): the estimator's continuous heading at the last zero.
     // The supervisor keeps the offset, not the estimator, so a zero and a HOLD
