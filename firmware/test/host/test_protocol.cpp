@@ -284,6 +284,14 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     ready.latched = interlock_bit(Interlock::Overspeed) | interlock_bit(Interlock::Estop);
     emit(encode_tlm(ready, 2, 3, buf, sizeof buf));
 
+    // tlm: a gyro-relative SLEW exposes the moving reference in wire frame.
+    TelemetrySnapshot slew = ready_snapshot();
+    slew.mode = Mode::Slew;
+    slew.psi_ref_valid = true;
+    slew.psi_ref_deg = -60.0f;
+    slew.flags = kFlagHeadingGyro | kFlagMomentumOk;
+    emit(encode_tlm(slew, 6, 0, buf, sizeof buf));
+
     // tlm: MANUAL throttle in bench mode, barometer present, stale setpoint.
     TelemetrySnapshot manual = ready_snapshot();
     manual.mode = Mode::Manual;
@@ -358,7 +366,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     // pong
     emit(encode_pong(16, 79, 512330.25, 83120, buf, sizeof buf));
 
-    CHECK(written == 15);
+    CHECK(written == 16);
 
     // Positive control for the schema check: the MANUAL tlm with psi_deg turned
     // into a string must be rejected by tools/check-protocol.sh.
@@ -402,4 +410,23 @@ TEST_CASE("R3.9 tlm carries the rate loop torque clockwise positive and MOMENTUM
     parse(R"({"v":1,"type":"cmd","seq":9,"cmd":"set_params","params":{"rate_gain_scale":0.2}})");
     REQUIRE(scratch().kind == InboundKind::Command);
     CHECK(scratch().params.count == 1);
+}
+
+TEST_CASE("R4.3 HOLD and SLEW telemetry carries a clockwise heading reference")
+{
+    TelemetrySnapshot s = ready_snapshot();
+    s.mode = Mode::Slew;
+    s.psi_ref_valid = true;
+    s.psi_ref_deg = -90.0f;
+    char buf[kMaxTlmBytes];
+    REQUIRE(encode_tlm(s, 1, 0, buf, sizeof buf) > 0);
+    Json doc(buf);
+    CHECK(doc.number("psi_ref_deg") == doctest::Approx(90.0));
+    s.mode = Mode::Hold;
+    REQUIRE(encode_tlm(s, 2, 0, buf, sizeof buf) > 0);
+    Json hold(buf);
+    CHECK(hold.number("psi_ref_deg") == doctest::Approx(90.0));
+    s.mode = Mode::Ready;
+    REQUIRE(encode_tlm(s, 3, 0, buf, sizeof buf) > 0);
+    CHECK(std::strstr(buf, "\"psi_ref_deg\":null") != nullptr);
 }

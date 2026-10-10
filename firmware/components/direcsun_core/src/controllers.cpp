@@ -8,7 +8,8 @@
 //   NO_RATE_ANTIWINDUP   the rate integral runs while saturated
 //   NO_RATE_BLEED        no stick-slip bleed
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_WHEEL_ANTIWINDUP) || defined(DIRECSUN_MUTANT_RATE_SIGN_FLIP) || \
-                              defined(DIRECSUN_MUTANT_NO_RATE_ANTIWINDUP) || defined(DIRECSUN_MUTANT_NO_RATE_BLEED))
+                              defined(DIRECSUN_MUTANT_NO_RATE_ANTIWINDUP) || defined(DIRECSUN_MUTANT_NO_RATE_BLEED) || \
+                              defined(DIRECSUN_MUTANT_ATTITUDE_SIGN_FLIP))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -25,7 +26,61 @@ float clampf(float v, float lo, float hi)
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
+float wrap_deg(float angle)
+{
+    float wrapped = std::remainder(angle, 360.0f);
+    if (wrapped <= -180.0f) wrapped += 360.0f;
+    return wrapped;
+}
+
 }  // namespace
+
+void SlewProfile::begin(float start_deg, float target_deg)
+{
+    start_deg_ = start_deg;
+    const float distance = wrap_deg(target_deg - start_deg);
+    direction_ = distance < 0.0f ? -1.0f : 1.0f;
+    goal_deg_ = start_deg + distance;
+    const float magnitude = std::fabs(distance);
+    const float full_acceleration_s = kSlewMaxRateDps / kSlewAccelDps2;
+    const float acceleration_distance = kSlewAccelDps2 * full_acceleration_s * full_acceleration_s;
+    if (magnitude <= acceleration_distance) {
+        acceleration_s_ = std::sqrt(magnitude / kSlewAccelDps2);
+        peak_rate_dps_ = kSlewAccelDps2 * acceleration_s_;
+        cruise_s_ = 0.0f;
+    } else {
+        acceleration_s_ = full_acceleration_s;
+        peak_rate_dps_ = kSlewMaxRateDps;
+        cruise_s_ = (magnitude - acceleration_distance) / kSlewMaxRateDps;
+    }
+    duration_s_ = 2.0f * acceleration_s_ + cruise_s_;
+}
+
+float SlewProfile::reference_deg(float elapsed_s) const
+{
+    if (elapsed_s <= 0.0f) return start_deg_;
+    if (elapsed_s >= duration_s_) return goal_deg_;
+    const float acceleration_distance = 0.5f * kSlewAccelDps2 * acceleration_s_ * acceleration_s_;
+    float distance;
+    if (elapsed_s < acceleration_s_) {
+        distance = 0.5f * kSlewAccelDps2 * elapsed_s * elapsed_s;
+    } else if (elapsed_s < acceleration_s_ + cruise_s_) {
+        distance = acceleration_distance + peak_rate_dps_ * (elapsed_s - acceleration_s_);
+    } else {
+        const float remaining_s = duration_s_ - elapsed_s;
+        distance = std::fabs(goal_deg_ - start_deg_) - 0.5f * kSlewAccelDps2 * remaining_s * remaining_s;
+    }
+    return start_deg_ + direction_ * distance;
+}
+
+float attitude_rate_command(float reference_deg, float heading_deg, float k_psi)
+{
+#ifdef DIRECSUN_MUTANT_ATTITUDE_SIGN_FLIP
+    k_psi = -k_psi;
+#endif
+    return clampf(k_psi * wrap_deg(reference_deg - heading_deg), -kAttitudeRateLimitDps,
+                  kAttitudeRateLimitDps);
+}
 
 bool wheel_loop_available(const Params &params)
 {

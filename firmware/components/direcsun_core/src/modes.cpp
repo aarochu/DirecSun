@@ -77,7 +77,7 @@ constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
 
 bool is_later_set_mode(Mode m)
 {
-    return m == Mode::Detumble || m == Mode::Hold || m == Mode::Slew || m == Mode::SunPoint;
+    return m == Mode::Detumble || m == Mode::SunPoint;
 }
 
 float clampf(float v, float lo, float hi)
@@ -144,6 +144,7 @@ void Supervisor::enter(Mode mode, uint32_t tick)
     spinup_in_band_ticks_ = 0;
     wheel_hold_ = false;
     pending_wheel_step_rpm_ = 0.0f;
+    slew_settle_ticks_ = 0;
 }
 
 void Supervisor::drop_to_safe(ThrottleController &controller)
@@ -259,7 +260,7 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
                 pending_wheel_step_rpm_ = 0.0f;
                 return ack_ok(out, cmd);
             }
-            if (mode_ == Mode::Manual) {
+            if (mode_ == Mode::Manual || mode_ == Mode::Hold || mode_ == Mode::Slew) {
                 enter(Mode::Ready, t);
                 post_mode_event(out, "mode");
                 return ack_ok(out, cmd);
@@ -278,6 +279,17 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
             manual_rate_dps_ = 0.0f;
             manual_has_setpoint_ = false;
             manual_fresh_tick_ = t;
+            post_mode_event(out, "mode");
+            return ack_ok(out, cmd);
+        }
+        if (target == Mode::Hold || target == Mode::Slew) {
+            if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+            if (in.imu_invalid_streak != 0 || !std::isfinite(in.heading_deg)) return ack(out, cmd, kInputNotAvailable);
+            if (target == Mode::Slew && !std::isfinite(cmd.psi_ref_deg)) return ack(out, cmd, kInvalidSetpoint);
+            heading_ref_deg_ = in.heading_deg;
+            if (target == Mode::Slew) slew_.begin(in.heading_deg, cmd.psi_ref_deg);
+            enter(target, t);
             post_mode_event(out, "mode");
             return ack_ok(out, cmd);
         }
@@ -397,6 +409,25 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         manual_stale_ = ticks_since(t, manual_fresh_tick_) >= ticks_from_ms(kManualStaleMs);
         if (manual_stale_ && manual_input_ == ManualInput::Rate) manual_rate_dps_ = 0.0f;
     }
+    if (mode_ == Mode::Slew) {
+        const uint32_t elapsed_ticks = ticks_since(t, mode_entry_tick_);
+        const float elapsed_s = static_cast<float>(elapsed_ticks) / static_cast<float>(kTickHz);
+        heading_ref_deg_ = slew_.reference_deg(elapsed_s);
+        const float error = std::remainder(slew_.goal_deg() - in.heading_deg, 360.0f);
+        if (elapsed_s >= slew_.duration_s() && std::fabs(error) < kSlewSettleErrorDeg &&
+            std::fabs(in.rate_dps) < kSlewSettleRateDps) {
+            ++slew_settle_ticks_;
+        } else {
+            slew_settle_ticks_ = 0;
+        }
+        if (slew_settle_ticks_ >= ticks_from_ms(kSlewSettleMs)) {
+            enter(Mode::Ready, t);
+            post_mode_event(out, "slew_complete");
+        } else if (elapsed_ticks >= ticks_from_ms(kSlewTimeoutMs)) {
+            enter(Mode::Ready, t);
+            post_mode_event(out, "SLEW_TIMEOUT");
+        }
+    }
 
     // 3. Controller request (armed modes only) or the ramp (SAFE).
     int candidate = 0;
@@ -414,7 +445,9 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         d.previous_throttle = prev_throttle_;
         d.wheel_step_rpm = pending_wheel_step_rpm_;
         d.wheel_hold = wheel_hold_;
-        d.omega_cmd_dps = 0.0f;  // READY holds rate (TD section 6.6)
+        d.omega_cmd_dps = (mode_ == Mode::Hold || mode_ == Mode::Slew)
+                              ? attitude_rate_command(heading_ref_deg_, in.heading_deg, params_.k_psi)
+                              : 0.0f;
         pending_wheel_step_rpm_ = 0.0f;
         int request = controller.throttle(d, in, params_);
         if (request < 0) request = 0;
@@ -488,7 +521,8 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;
     if (armed()) flags |= controller.flags();
-    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual)) {
+    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual || mode_ == Mode::Hold ||
+                                   mode_ == Mode::Slew)) {
         const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;
         flags |= near ? kFlagMomentumNearLimit : kFlagMomentumOk;
@@ -499,6 +533,8 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     out.throttle = throttle;
     out.ramping = ramp_.active();
     out.flags = flags;
+    out.heading_ref_valid = mode_ == Mode::Hold || mode_ == Mode::Slew;
+    out.heading_ref_deg = out.heading_ref_valid ? heading_ref_deg_ : 0.0f;
     out.latched = latched_;
     out.controlling_client = controlling_client_;
 }

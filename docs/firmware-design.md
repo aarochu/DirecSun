@@ -567,6 +567,8 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 
 Trapezoid in ψ_ref, limited to 60 deg/s and 120 deg/s² [V] TD §6.5. A 90° slew takes 0.5 s accelerating (15°), 1.0 s at 60 deg/s (60°), and 0.5 s decelerating (15°), 2.0 s in all [C], within PR-2's 3 s. The slew ends (`SLEW` → `READY`, per TD §6.6 "slew complete") when |ψ_ref − ψ̂| < 3° and |ω̂| < 5 deg/s for 0.5 s [D]; a timeout of 6 s ends it with the event `SLEW_TIMEOUT` [D].
 
+Interlocks have priority over the slew timeout. In the R4.3 host plant at 30 mN·m friction, the wheel drains to `UNDERSPEED` and the hard-fault path latches `SAFE` before 6 s. The timeout applies only while no interlock has already ended the slew. This observed behavior requires R4.3's timeout test spec to be revised before that feature can close.
+
 `SLEW` targets arrive as absolute `psi_ref_deg` (TD §7.3). The firmware moves ψ_ref along the **shortest** wrapped path to the target [D]. A ground station that wants a specific direction for a 180° move must send an intermediate target.
 
 ### 12.5 Sign check before closing the loop

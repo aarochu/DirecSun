@@ -6,8 +6,8 @@
 //
 //   drained commands + estimates  ->  step()  ->  final throttle, mode, acks, events
 //
-// step() calls the ThrottleController exactly once in SPINUP, READY, and
-// MANUAL (between the mode step and the interlocks, FD section 9.1) and never
+// step() calls the ThrottleController exactly once in each armed mode
+// (between the mode step and the interlocks, FD section 9.1) and never
 // in SAFE. Everything here is a pure function of its inputs and its own state,
 // so every row of the mode table is host-testable.
 
@@ -15,6 +15,7 @@
 #include <cstdint>
 
 #include "direcsun/core/commands.hpp"
+#include "direcsun/core/controllers.hpp"
 #include "direcsun/core/interlocks.hpp"
 #include "direcsun/core/params.hpp"
 #include "direcsun/core/timebase.hpp"
@@ -28,6 +29,10 @@ constexpr float kSpinupBand = 0.05f;            // within 5 % of the target spee
 constexpr uint32_t kManualStaleMs = 250;        // setpoints stop: rate falls to 0
 constexpr uint32_t kManualMinIntervalMs = 50;   // at most 20 Hz
 constexpr float kManualRateLimitDps = 90.0f;
+constexpr uint32_t kSlewTimeoutMs = 6000;
+constexpr uint32_t kSlewSettleMs = 500;
+constexpr float kSlewSettleErrorDeg = 3.0f;
+constexpr float kSlewSettleRateDps = 5.0f;
 // Open-loop SPINUP throttle ramp (R3.7 uses the same constant), DShot units/s.
 constexpr int kSpinupThrottleRampPerS = 200;
 
@@ -93,14 +98,14 @@ struct ControlDemand {
     bool wheel_hold = false;
     // The rate loop's command, deg/s, internal frame (counter-clockwise
     // positive). READY holds rate, so it is 0 there (TD section 6.6); the
-    // attitude loop (Set 4) and MANUAL `rate` (Set 5) are what will drive it.
+    // HOLD/SLEW attitude and MANUAL `rate` drive it when those modes are active.
     float omega_cmd_dps = 0.0f;
 };
 
 class ThrottleController {
 public:
     virtual ~ThrottleController() = default;
-    // Called once per tick in SPINUP, READY, and MANUAL. The result is clamped
+    // Called once per tick in every armed mode. The result is clamped
     // to 0..2047, to the bypass ceiling when the Hall is bypassed, and then
     // overridden by the interlocks.
     virtual int throttle(const ControlDemand &demand, const TickInputs &in, const Params &params) = 0;
@@ -121,6 +126,8 @@ struct TickOutputs {
     uint32_t controlling_client = 0;  // 0 when no client has armed the box
     bool params_changed = false;      // persist outside the control loop
     bool zero_heading_requested = false;  // apply to estimator after command checks
+    bool heading_ref_valid = false;
+    float heading_ref_deg = 0.0f;  // internal CCW frame, only HOLD/SLEW
     Outbox<Ack, 16> acks;
     Outbox<Event, 8> events;
 };
@@ -174,6 +181,10 @@ private:
 
     bool wheel_hold_ = false;
     float pending_wheel_step_rpm_ = 0.0f;
+
+    SlewProfile slew_;
+    float heading_ref_deg_ = 0.0f;
+    uint32_t slew_settle_ticks_ = 0;
 
     bool pending_reset_notice_ = false;
     const char *reset_detail_ = "";

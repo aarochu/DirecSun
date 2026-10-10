@@ -322,6 +322,8 @@ void control_task(void *)
             snap.manual_input = out.manual_input;
             snap.ramping = out.ramping;
             snap.psi_deg = estimator.heading_deg();
+            snap.psi_ref_valid = out.heading_ref_valid;
+            snap.psi_ref_deg = out.heading_ref_deg;
             snap.rate_dps = estimator.rate_dps();
             snap.gyro_bias_dps = estimator.bias_dps();
             snap.tilt_deg = estimator.tilt_deg();

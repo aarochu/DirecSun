@@ -4,7 +4,9 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "direcsun/core/control.hpp"
@@ -17,6 +19,7 @@
 
 using namespace direcsun;
 using harness::cmd;
+using harness::mode_cmd;
 
 namespace {
 
@@ -124,6 +127,9 @@ struct BoxRig {
     bool pinned = true;
     double peak_tau_nm = 0.0;
     bool saw_saturated_flag = false;
+    double heading_deg = 0.0;
+    double external_torque_nm = 0.0;
+    std::string last_mode_event;
 
     explicit BoxRig(const Params &p) : sup(p)
     {
@@ -138,16 +144,23 @@ struct BoxRig {
         ++now;
         in.tick = now;
         in.rate_dps = static_cast<float>(gyro.read(box.rate_dps()));
+        in.heading_deg = static_cast<float>(heading_deg);
         in.wheel_rpm_safe = static_cast<float>(box.wheel_rpm);
         in.wheel_rpm_fast = static_cast<float>(box.wheel_rpm);
         in.commands = cmds.empty() ? nullptr : cmds.data();
         in.command_count = cmds.size();
         sup.step(in, ctl, out);
+        for (std::size_t i = 0; i < out.events.count; ++i) {
+            if (out.events.items[i].kind == Event::Kind::Mode) last_mode_event = out.events.items[i].cause;
+        }
+        if (out.zero_heading_requested) heading_deg = 0.0;
         in.commands = nullptr;
         in.command_count = 0;
         const double steady = out.throttle <= 48 ? 0.0 : 2.5 * (out.throttle - 48);
         box.step(box.wheel_rpm + (steady - box.wheel_rpm) / 0.8 * kDt, kDt);
+        box.omega += external_torque_nm / (box.i_b + box.i_w) * kDt;
         if (pinned) box.omega = 0.0;
+        heading_deg += box.rate_dps() * kDt;
         peak_tau_nm = std::fmax(peak_tau_nm, std::fabs(ctl.tau_cmd_nm()));
         if (out.flags & kFlagMomentumSaturated) saw_saturated_flag = true;
     }
@@ -401,4 +414,96 @@ TEST_CASE("R3.9 cascade: a wheel-step hold suspends the rate loop")
     CHECK_FALSE(ctl.rate_active());
     CHECK(ctl.tau_cmd_nm() == 0.0f);
     CHECK(ctl.flags() == 0u);
+}
+
+TEST_CASE("HT-5 extension: 90 degree SLEW settles within three seconds across friction and gyro noise")
+{
+    for (double friction : {0.0, 1e-3, 3e-3}) {
+        for (uint32_t seed = 0; seed < 10; ++seed) {
+            CAPTURE(friction);
+            CAPTURE(seed);
+            Params p = cascade_params();
+            p.rate_gain_scale = 1.0f;
+            BoxRig rig(p);
+            rig.box.friction_nm = friction;
+            rig.gyro.rng.seed(seed);
+            rig.arm_to_ready();
+            rig.tick({cmd(CommandKind::ZeroHeading)});
+            rig.release(0.0);
+            Command slew = mode_cmd(Mode::Slew);
+            slew.psi_ref_deg = 90.0f;
+            rig.tick({slew});
+            REQUIRE(rig.out.mode == Mode::Slew);
+            double entered_band_s = 10.0;
+            for (int i = 0; i < static_cast<int>(3.0 / kDt); ++i) {
+                rig.run(1);
+                CHECK(rig.ctl.wheel_ref_rpm() >= p.omega_low_rpm);
+                CHECK(rig.ctl.wheel_ref_rpm() <= p.omega_cap_rpm);
+                if (std::fabs(rig.heading_deg - 90.0) < 3.0 && std::fabs(rig.box.rate_dps()) < 5.0) {
+                    if (entered_band_s > 9.0) entered_band_s = (i + 1) * kDt;
+                } else entered_band_s = 10.0;
+            }
+            MESSAGE("friction " << friction * 1e3 << " mN m, seed " << seed << ": heading " << rig.heading_deg
+                                << " deg, stayed in settle band since " << entered_band_s << " s");
+            CHECK(entered_band_s < 3.0);
+            CHECK(std::fabs(rig.heading_deg - 90.0) < 3.0);
+        }
+    }
+}
+
+TEST_CASE("R4.3 positive control: reversed attitude gain drives away from the target")
+{
+    Params p = cascade_params();
+    p.rate_gain_scale = 1.0f;
+    BoxRig rig(p);
+    rig.arm_to_ready();
+    rig.tick({cmd(CommandKind::ZeroHeading)});
+    rig.release(0.0);
+    Command slew = mode_cmd(Mode::Slew);
+    slew.psi_ref_deg = 90.0f;
+    rig.tick({slew});
+    rig.run(ticks_from_ms(2000));
+    CHECK(rig.heading_deg > 45.0);
+}
+
+TEST_CASE("HT-5 extension: HOLD rejects a short torque pulse within two seconds")
+{
+    Params p = cascade_params();
+    p.rate_gain_scale = 1.0f;
+    BoxRig rig(p);
+    rig.box.friction_nm = 1e-3;
+    rig.arm_to_ready();
+    rig.tick({cmd(CommandKind::ZeroHeading)});
+    rig.release(0.0);
+    rig.tick({mode_cmd(Mode::Hold)});
+    REQUIRE(rig.out.mode == Mode::Hold);
+    rig.external_torque_nm = 10e-3;
+    rig.run(ticks_from_ms(100));
+    rig.external_torque_nm = 0.0;
+    rig.run(ticks_from_ms(2000));
+    CHECK(rig.out.mode == Mode::Hold);
+    CHECK(std::fabs(rig.heading_deg) < 2.0);
+    CHECK(rig.ctl.wheel_ref_rpm() >= p.omega_low_rpm);
+    CHECK(rig.ctl.wheel_ref_rpm() <= p.omega_cap_rpm);
+}
+
+TEST_CASE("R4.3 high-friction plant trips UNDERSPEED rather than bypassing the interlock")
+{
+    Params p = cascade_params();
+    p.rate_gain_scale = 1.0f;
+    BoxRig rig(p);
+    rig.box.friction_nm = 30e-3;
+    rig.arm_to_ready();
+    rig.tick({cmd(CommandKind::ZeroHeading)});
+    rig.release(0.0);
+    Command slew = mode_cmd(Mode::Slew);
+    slew.psi_ref_deg = 90.0f;
+    rig.tick({slew});
+    REQUIRE(rig.out.mode == Mode::Slew);
+    for (int i = 0; i < static_cast<int>(6.0 / kDt) && rig.out.mode == Mode::Slew; ++i) rig.run(1);
+    CHECK(rig.out.mode == Mode::Safe);
+    CHECK(rig.last_mode_event == "UNDERSPEED");
+    CHECK((rig.out.latched & interlock_bit(Interlock::Underspeed)) != 0);
+    CHECK(rig.out.throttle == 0);
+    CHECK(std::fabs(rig.heading_deg) < 87.0);
 }

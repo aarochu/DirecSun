@@ -77,6 +77,7 @@ else
         "no_rate_antiwindup|R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up"
         "no_rate_bleed|R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit"
         "raw_heading|R4.2 a bias-corrected 30 deg/s trace integrates to 90 deg and keeps continuous turns"
+        "attitude_sign_flip|R4.3 positive control: reversed attitude gain drives away from the target"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

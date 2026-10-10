@@ -38,7 +38,7 @@ public:
 //   SPINUP  omega_ref ramps from the measured speed toward the bias at
 //           kWheelRefRampRpmPerS; feed-forward only below omega_low, the PI
 //           closes above it (FD section 13.3). Only the cap clamps the ramp.
-//   READY   the rate loop (R3.9) moves omega_ref to hold demand.omega_cmd_dps
+//   READY/HOLD/SLEW the rate loop moves omega_ref to hold demand.omega_cmd_dps
 //           (0 in READY), clamped to [omega_low, cap in force], and the wheel
 //           loop tracks it. A bench `wheel_step` suspends the rate loop for
 //           the hold and moves omega_ref by the requested amount (FD 15.3).

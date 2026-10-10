@@ -16,6 +16,32 @@
 
 namespace direcsun {
 
+constexpr float kSlewMaxRateDps = 60.0f;
+constexpr float kSlewAccelDps2 = 120.0f;
+constexpr float kAttitudeRateLimitDps = 90.0f;
+
+// A shortest-path, bounded-acceleration reference in the internal CCW frame.
+// The analytic profile makes a 90 degree move exactly 2 s at the design limits.
+class SlewProfile {
+public:
+    void begin(float start_deg, float target_deg);
+    float reference_deg(float elapsed_s) const;
+    float goal_deg() const { return goal_deg_; }
+    float duration_s() const { return duration_s_; }
+
+private:
+    float start_deg_ = 0.0f;
+    float goal_deg_ = 0.0f;
+    float direction_ = 1.0f;
+    float acceleration_s_ = 0.0f;
+    float cruise_s_ = 0.0f;
+    float peak_rate_dps_ = 0.0f;
+    float duration_s_ = 0.0f;
+};
+
+// P attitude loop, with a wrapped heading error and the FD 12.2 rate limit.
+float attitude_rate_command(float reference_deg, float heading_deg, float k_psi);
+
 // Wheel loop constants (FD sections 12.2, 13.2, 13.3).
 constexpr float kWheelRefRampRpmPerS = 400.0f;  // SPINUP omega_ref slope
 constexpr float kWheelPiBandwidthHz = 2.0f;     // starting bandwidth, before measuring the delay

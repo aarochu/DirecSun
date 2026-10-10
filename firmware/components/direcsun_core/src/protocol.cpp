@@ -615,9 +615,13 @@ std::size_t encode_tlm(const TelemetrySnapshot &snap, uint32_t seq, uint32_t tlm
 
     w.raw(",\"psi_deg\":");
     w.num(angle_to_wire(snap.psi_deg), 2);
-    // No heading reference exists until HOLD and SLEW (Set 4), and no calibrated
-    // magnetometer heading or sun angle until Set 5: null, never a fake number.
-    w.raw(",\"psi_ref_deg\":null,\"rate_dps\":");
+    w.raw(",\"psi_ref_deg\":");
+    if (snap.psi_ref_valid && (snap.mode == Mode::Hold || snap.mode == Mode::Slew)) {
+        w.num(angle_to_wire(snap.psi_ref_deg), 2);
+    } else {
+        w.raw("null");
+    }
+    w.raw(",\"rate_dps\":");
     w.num(signed_to_wire(snap.rate_dps), 2);
     w.raw(",\"mag_deg\":null,\"sun_deg\":null,\"sun_valid\":false,\"wheel_rpm\":");
     w.num(snap.wheel_rpm > 0.0f ? snap.wheel_rpm : 0.0f, 1);
