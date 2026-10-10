@@ -279,7 +279,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
 
     // tlm: READY with momentum flags, the Hall bypass flag, and a latched fault.
     TelemetrySnapshot ready = ready_snapshot();
-    ready.flags = kFlagMomentumNearLimit | kFlagHallBypass;
+    ready.flags = kFlagMomentumNearLimit | kFlagHallBypass | kFlagHeadingGyro;  // HEADING_GYRO: every tlm until Set 5 (R4.2)
     ready.latched = interlock_bit(Interlock::Overspeed) | interlock_bit(Interlock::Estop);
     emit(encode_tlm(ready, 2, 3, buf, sizeof buf));
 

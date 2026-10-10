@@ -279,7 +279,7 @@ flowchart TD
     E -- no --> F["Fault: IMU_MISSING<br/>stay in SAFE, keep DShot 0,<br/>report over Wi-Fi when up"]
     E -- yes --> G["Configure MPU-6050:<br/>wake, DLPF_CFG=4, gyro ±2000 dps, accel ±4 g"]
     G --> H{"QMC5883P chip ID 0x00 == 0x80?"}
-    H -- no --> I["Fault: MAG_MISSING<br/>SAFE; HOLD, SLEW, SUN_POINT refused"]
+    H -- no --> I["Fault: MAG_MISSING<br/>SAFE; reported in tlm.<br/>HOLD and SLEW run on gyro heading (R4.2)"]
     H -- yes --> J["Configure QMC5883P continuous 200 Hz"]
     I --> K
     J --> K["BMP280 probe 0x77 then 0x76<br/>(optional, never blocks boot)"]
@@ -297,7 +297,7 @@ flowchart TD
 
 - **DShot 0 starts first.** The ESC arms only after seeing zero throttle [V] TD §5.2, and TD §6.3 asks for about 1 s of zeros [A] A-22. Sending zeros from the first milliseconds also means that a reset caused by the watchdog stops drive quickly. The ESC itself switches drive off about 0.3 s after pulses stop [V] TD §5.2, so the reset gap is bounded either way.
 - **Boot does not wait for Wi-Fi.** The box is safe in `SAFE` without a ground connection; heartbeat rules only apply in active modes (§14.1).
-- **Missing magnetometer** is not fatal: `DETUMBLE` needs only the gyro. Modes that need heading (`HOLD`, `SLEW`, `SUN_POINT`) are refused with a reason [D].
+- **Missing magnetometer** is not fatal: `DETUMBLE` needs only the gyro, and until Set 5 `HOLD` and `SLEW` run on the gyro-only heading for relative use (§13.1, V-48). `SUN_POINT` needs the sun sensors, not the magnetometer [D].
 - **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). It is not taken once at boot, because the box may be moving after a watchdog reset [D, finding V-10].
 
 ---
@@ -495,7 +495,9 @@ every 50 Hz magnetometer step:  ψ̂ ← ψ̂ + k · wrap(ψ_mag − ψ̂),   k 
 | `wrap()` | maps to (−π, π] | [D] |
 | Storage | ψ̂ kept continuous (unwrapped) as `double` for control; wrapped only for display | [D] |
 | Reported | `psi_deg` = wrapped ψ̂ in (−180, 180]; `mag_deg` = wrapped ψ_mag | [D] |
-| `zero_heading` command | Adds an offset so that ψ̂ reads 0 at the current orientation; offset stored in RAM, not NVS | [D] |
+| `zero_heading` command | Accepted in `SAFE` and `READY` only. The supervisor stores the estimator's continuous ψ̂ at that moment as an offset, so the reported heading reads 0 from that tick on; the estimator itself is never reset. RAM only, not NVS (R4.2) | [D] |
+
+**Gyro-only heading until Set 5 (R4.2, finding V-48).** Until the magnetometer calibration of T-9 exists (repository Set 5), the magnetometer step above is skipped: ψ̂ is the integral of the bias-corrected ω̂ alone, reported relative to the last `zero_heading`, and every `tlm` carries the flag `HEADING_GYRO` so no UI presents it as a compass bearing. The bias is learned while still in `SAFE` (§11.1), so the residual drift over the 5 to 6 s judge sequence is expected to sit well inside PR-2's ±3° band [A]; R4.2's hardware test measures it on the turntable [M].
 
 **Aliasing (finding V-5).** TD §6.4 says the motor's magnets rotate at 13 to 67 Hz and that 200 Hz sampling avoids aliasing. The mechanical rotation is 13 to 67 Hz, but a 14-pole rotor and the phase currents produce fields at the electrical frequency, 7 × mechanical = 93 to 467 Hz [C on A-6]. That is above the 100 Hz Nyquist limit of 200 Hz sampling, so components there **can** alias. The firmware still samples at 200 Hz and averages, which attenuates some of it, but the real defences are the 14 cm distance, the QMC5883P's own oversampling filter, the gyro-dominant filter (τ = 2 s), and T-9 at three wheel speeds. If T-9 shows a speed-dependent offset, the fallback is a per-speed heading correction table indexed by Ω̂ [D].
 
@@ -589,8 +591,8 @@ stateDiagram-v2
     SPINUP --> READY: wheel within 5 percent of bias for 0.5 s
     SPINUP --> SAFE: cmd disarm or estop, or interlock
     READY --> DETUMBLE: cmd mode DETUMBLE
-    READY --> HOLD: cmd mode HOLD, magnetometer OK
-    READY --> SLEW: cmd mode SLEW, magnetometer OK
+    READY --> HOLD: cmd mode HOLD, heading available (gyro-only, R4.2)
+    READY --> SLEW: cmd mode SLEW, heading available (gyro-only, R4.2)
     READY --> SUN_POINT: cmd mode SUN_POINT, sun_valid
     READY --> SPINUP: cmd respin (box held), new wheel start speed
     READY --> MANUAL: cmd mode MANUAL with input, input loop built
@@ -607,7 +609,9 @@ stateDiagram-v2
     SUN_POINT --> SAFE: estop, disarm, or interlock
 ```
 
-These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the magnetometer and sun guards, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
+These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the sun guard, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
+
+**Heading guard amendment** (approved by the owner on 2026-10-10, finding V-48). `HOLD` and `SLEW` no longer require a magnetometer. Until Set 5 calibrates it, they run on the gyro-only heading of §11.3 for relative use: `SLEW` targets are interpreted relative to the last `zero_heading`, and `HOLD` holds the heading it captured at entry. A missing magnetometer (`MAG_MISSING`) is reported but blocks neither. Absolute `HOLD` against a compass reference returns with the magnetometer (Set 5).
 
 **Hall bench bypass** (approved by the owner on 2026-10-10 [D], finding V-30). Until the Hall magnets can be mounted (repository Set 2), rung 1 of `MANUAL` is tested with the parameter `hall_installed` set false. It can be set false only by `set_params` in `SAFE` while `bench_mode` is already true, so it takes two separate commands, and every boot sets it true again; it is never persisted. While it is false:
 
@@ -827,7 +831,7 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `tau_cmd_mNm` | number | τ_cmd, clockwise positive (the internal τ_cmd negated) | TD |
 | `vbat` | number | 1 s average battery voltage | TD |
 | `loop_us` | int | Longest tick in the last 20 ms | TD; "longest" [D] |
-| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `IMU_MISSING`, `MAG_MISSING`, `MANUAL_STALE`, `HALL_BYPASS`, then the latched fault names | TD; list [D] |
+| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `IMU_MISSING`, `MAG_MISSING`, `MANUAL_STALE`, `HALL_BYPASS`, `WHEEL_STEP`, `MOMENTUM_SATURATED`, `HEADING_GYRO` (every frame until Set 5: the heading is gyro-only and relative to the last `zero_heading`, R4.2), then the latched fault names | TD; list [D] |
 | `t_c`, `p_pa` | number or null | BMP280, optional | [D] |
 | `tlm_dropped`, `dropped_events` | int | Counters | [D] |
 | `gyro_raw`, `mag_raw`, `sun_a_mv`, `sun_b_mv` | int[3], int[3], int, int | Bench mode only: raw sensor counts in the sensors' own axes (not converted to the wire frame) and the sun sensor millivolts (§19.2) | [D] |
@@ -1131,7 +1135,7 @@ In `changes/`, F-1 is Set 1 (R1.4, R1.5) and the start of Set 3; F-2 to F-6 are 
 | --- | --- | --- | --- |
 | Rate-loop sign error | Box accelerates instead of damping | §12.5 sign check at reduced gain; HT-6 | [C] TD R-1 |
 | Hall disconnect during SPINUP | Wheel overspeeds undetected | `HALL_SILENT` interlock | [D] V-11 |
-| Magnetometer axis map wrong | Heading mirrored; HOLD drifts or runs away | T-9 direction check; HOLD refused until `mag_cal` is set [D] | [M] |
+| Magnetometer axis map wrong | Heading mirrored; HOLD drifts or runs away | T-9 direction check; the magnetometer stays out of the heading until `mag_cal` is set, so until then HOLD uses the gyro heading alone (V-48) [D] | [M] |
 | Wheel loop too slow for the rate loop | Oscillation in DETUMBLE | Start at 2 Hz wheel; lower rate bandwidth if needed (§12.2) | [C] V-8 |
 | Wi-Fi task starves core 0 | Telemetry gaps | Control is on core 1 and never waits; telemetry drops are counted | [A] |
 | I2C forced to 100 kHz | Tick overrun | §9.2 fallback plan | [C] |
@@ -1200,6 +1204,8 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-45 | §13.3: spin-up "begins with throttle feed-forward only and closes the wheel PI once the Hall speed exceeds Ω_low" | R3.8 | Ω_ref's [Ω_low, Ω_cap] clamp would jump the reference to Ω_low at once | In SPINUP Ω_ref ramps at 400 rpm/s from the measured speed with only the cap clamping it; the PI is off below Ω_low (feed-forward only) and the integrator is cleared there. READY clamps Ω_ref to [Ω_low, cap in force] [D] | Low (this doc) |
 | V-46 | §12.3: the rate integral only stops while saturated | R3.9 host simulation | Coulomb friction holds a stopped box still while an integral below breakaway remains, and that integral keeps ramping Ω_ref with nothing moving: about 570 rpm in the 15 s after a 1 rev/s detumble at 1 mN·m, until Ω_ref reaches a limit | Stick-slip bleed: with ω_cmd = 0 and ω̂ within ±1 deg/s the integral decays with τ = 0.5 s. A mutant build without it fails its host test. To be re-checked by the R3.9 hold test on the turntable [D] | Low (this doc) |
 | V-47 | §12.5: the sign check runs "at reduced K_ω (×0.2)" | R3.9 | Scaling K_ω alone would leave K_i at full value and move the PI corner up five times | `rate_gain_scale` scales K_ω and K_i together, default 0.2. In the host simulation scale 0.2 damps a push and never amplifies it, but does not meet PR-1; PR-1 is verified at scale 1 (HT-5) [D] | Low (this doc) |
+| V-48 | §13.1 and TD §6.6: `HOLD` and `SLEW` need "magnetometer OK"; §11.3's heading fuses the calibrated magnetometer | Owner decision 2026-10-10 (repository Set 4, R4.2) | The magnetometer calibration (T-9 at three wheel speeds) belongs to Set 5, but the main UI's judge sequence (turn 90°, hold 1 s, return) needs `HOLD` and `SLEW` now, and lasts only 5 to 6 s | `HOLD` and `SLEW` run on the gyro-only heading for relative use; `SLEW` targets are relative to the last `zero_heading`; `MAG_MISSING` blocks neither; the `HEADING_GYRO` flag marks every `tlm` until Set 5. Absolute `HOLD` returns with the magnetometer | Medium (this doc and TD) |
+| V-49 | §11.3: `zero_heading` "adds an offset so ψ̂ reads 0"; where the offset lives was unstated, and the command was accepted in any state | R4.2 | An offset kept in the estimator would let a zero and a `HOLD` or `SLEW` in the same control tick use different references, and a zero during `SLEW` would move the target under the box | The supervisor keeps the offset and reports the heading relative to it; the estimator integrates and is never reset. `zero_heading` is accepted in `SAFE` and `READY` only, refused elsewhere with `not in SAFE or READY` [D] | Low (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 
 ### 23.2 Statements re-derived and confirmed

@@ -260,8 +260,10 @@ class Box:
             self._ack(conn, seq, True)
             self._set_mode("SPINUP", "respin")
         elif cmd == "zero_heading":
+            # As the firmware (R4.2): SAFE and READY only, so a zero can never move
+            # the reference of a HOLD or SLEW in progress.
             if self.mode not in ("SAFE", "READY"):
-                return self._ack(conn, seq, False, f"not allowed in {self.mode}")
+                return self._ack(conn, seq, False, "not in SAFE or READY")
             self.psi_offset -= self.psi
             self._ack(conn, seq, True)
         elif cmd == "set_params":
@@ -456,6 +458,7 @@ class Box:
             flags.append("HALL_BYPASS")
         if self.wheel_hold:
             flags.append("WHEEL_STEP")
+        flags.append("HEADING_GYRO")   # gyro-only heading, relative to zero_heading, until Set 5 (R4.2)
         flags.extend(self.latched)
 
         # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
@@ -483,7 +486,7 @@ class Box:
             "psi_ref_deg": None if self.psi_ref is None or self.mode in ("SAFE", "SPINUP", "READY", "DETUMBLE")
             else round(wrap_deg(self.psi_ref + self.psi_offset), 2),
             "rate_dps": round(self.rate, 2),
-            "mag_deg": round(wrap_deg(psi_wire + random.uniform(-0.4, 0.4)), 2),
+            "mag_deg": None,   # as the firmware: no magnetometer heading until Set 5
             "sun_deg": None, "sun_valid": False,
             "wheel_rpm": round(max(0.0, self.wheel), 1),
             # As the firmware: the wheel reference is reported only while the closed
@@ -661,6 +664,14 @@ def selftest():
     stepped_ref = box.wheel_ref
     send(a, {"v": 1, "type": "cmd", "seq": 21, "cmd": "mode", "mode": "READY"})                 # ends the hold
     box.tick()
+    # R4.2: zero_heading in READY reads 0 at once; refused in MANUAL with the firmware's reason.
+    box.psi = 33.0
+    send(a, {"v": 1, "type": "cmd", "seq": 22, "cmd": "zero_heading"})
+    box.tick()
+    zeroed_psi = [m for _t, m in box.outbox if m["type"] == "tlm"][-1]["psi_deg"]
+    send(a, {"v": 1, "type": "cmd", "seq": 23, "cmd": "mode", "mode": "MANUAL", "input": "throttle"})
+    send(a, {"v": 1, "type": "cmd", "seq": 24, "cmd": "zero_heading"})                          # refused
+    send(a, {"v": 1, "type": "cmd", "seq": 25, "cmd": "mode", "mode": "READY"})
     kinds = {}
     for _target, message in box.outbox:
         key = message["type"] + (":" + message["event"] if message["type"] == "event" else "") \
@@ -686,7 +697,8 @@ def selftest():
     if not any(m.get("name") == "HALL_BYPASS" for _t, m in box.outbox if m["type"] == "event"):
         problems.append("no HALL_BYPASS notice")
     reasons = {m["seq"]: m.get("reason") for _t, m in box.outbox if m["type"] == "ack" and m.get("ok") is False}
-    expected = {15: "bench_mode required: bench_cap_rpm", 16: "bench_mode required", 18: "not in READY"}
+    expected = {15: "bench_mode required: bench_cap_rpm", 16: "bench_mode required", 18: "not in READY",
+                24: "not in SAFE or READY"}
     for seq, reason in expected.items():
         if reasons.get(seq) != reason:
             problems.append(f"seq {seq} refused with {reasons.get(seq)!r}, expected {reason!r}")
@@ -697,6 +709,10 @@ def selftest():
         problems.append("WHEEL_STEP still set after mode READY")
     if stepped_ref > 2500:
         problems.append(f"wheel step not clamped to the bench cap (ref {stepped_ref})")
+    if not all("HEADING_GYRO" in f for f in tlm_flags):
+        problems.append("HEADING_GYRO missing from a tlm frame")
+    if abs(zeroed_psi) > 1.0:
+        problems.append(f"zero_heading in READY left psi_deg at {zeroed_psi}")
     problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:
         print(f"mock-box selftest: FAILED, {problem}", file=sys.stderr)
