@@ -833,6 +833,8 @@ If a phase stalls, the demo degrades in this order rather than failing: sun poin
 
 ### 11.5 Team and ownership
 
+**Superseded on 2026-10-10 by `WORKSTREAMS.md`** (logged as I-19 in §12.4). Julian owns printing, measuring, bench electronics, firmware, and the wire contract. Aaron owns the frontend (`frontend/`, the main UI) and integration testing. The table below is the original plan, kept for history.
+
 Julian owns firmware and the gates, and Aaron owns the physical build and the ground station page. Adam left the team on Oct 10; the ground station work is cut down and reassigned below. The split follows experience and keeps Julian off the critical path wherever someone else can do the work: the control law and the safety interlocks are the highest-risk work and go to the person with the most firmware experience, while the printing, soldering, and assembly that would otherwise queue behind Julian run in parallel.
 
 | Person | Owns | Work items | Tests | Why |
@@ -1027,6 +1029,7 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-16 | Wi-Fi drop mitigation no longer assumes the OM5P-AC | Network decision | 10.2 |
 | I-17 | `docs/sizing_output.txt` regenerated from the current CAD. The saved output (02:07) predated the Oct 10 03:32 `stack.py` change and later deck edits. Changed by the re-run: box rate per 1000 rpm 356 to 355 deg/s (baseline) and 151 to 150 deg/s (fallback); wheel acceleration at 3 A 4861 to 4860 and 11604 to 11603 rpm/s (output only). Section 3 figures that already disagreed with the old output now match the new one: rate 357 to 355 deg/s; printed parts 253 to 254 g, I\_z 4.50e-4 to 4.54e-4; box mass 844 to 845 g (weight 8.28 to 8.29 N, box 0.84 to 0.85 kg); hand spin 1.59 to 1.58 and 1.26 to 1.25 rev/s; box acceleration 578 to 576 deg/s²; slew wheel swing 639 to 640 and 1510 to 1513 rpm. I\_b stays 1.03e-3 kg·m² at the stated precision, so K\_ω (V-1) is unchanged | `sizing.py` wins over this document's prose (Section 1); a stale output had hidden the drift | 2, 3, 3.2, 3.3, 3.6; firmware design §23.2 |
 | I-18 | Hall bench bypass added: `hall_installed` false only from bench mode, never persisted; open-loop Spin-up; wheel-speed interlocks suspended; compile-time throttle ceiling 400. The Hall-silent threshold becomes the parameter `hall_expect_throttle`, and the latch release rules are stated | Owner decision 2026-10-10 (repository Set 3, R3.6); the Hall magnets cannot be mounted until Set 2; the low-limit feed-forward value does not exist before T-5 | 6.6, 6.7 |
+| I-19 | Team ownership moved to `WORKSTREAMS.md`. Julian: printing, measuring, bench electronics, firmware, wire contract. Aaron: `frontend/` (the main UI) and integration testing. The original table is kept as history | Owner decision 2026-10-10, after Aaron's frontend became the main UI (PR #1) | 11.5 |
 
 **Main UI contract, 2026-10-10**
 

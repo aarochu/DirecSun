@@ -14,16 +14,18 @@ DirecSun (formerly PocketADCS) is a single-axis reaction-wheel attitude trainer 
 | Path | What | Owner |
 | --- | --- | --- |
 | `firmware/` | ESP-IDF v6.0 project (run `idf.py` from here) | Julian |
-| `protocol/` | Wire schema v1, the firmware/ground contract | Shared |
+| `protocol/` | Wire schema v1, the firmware/ground contract | Julian (Aaron requests changes as `Contract:` issues) |
 | `frontend/` | The main UI: landing page and ground station (React, Vite, TypeScript). It owns the operator client | Aaron |
 | `ground/link/` | Engineering bench client: dependency-free ES module for schema v1 | Julian |
 | `ground/console/` | Engineering bench console built on the link module, for bring-up and characterisation; never shown to judges | Julian |
-| `cad/` | CadQuery sources; `cad/out/` holds generated STL and previews | Design: Julian and agents. Printing and measuring: Aaron |
+| `cad/` | CadQuery sources; `cad/out/` holds generated STL and previews | Julian: design (with agents), printing, measuring |
 | `docs/` | TD, FD, `sizing.py`, reference PDFs | Julian |
-| `tools/` | Bootstrap, build, and check scripts | Shared |
+| `tools/` | Bootstrap, build, and check scripts, including the mock box | Julian |
 | `changes/` | Spec-driven-dev sets | Shared |
 
 `frontend/` is the main UI as of 2026-10-10 (PR #1). The backend matches the UI: when the UI's expectations of the box differ from the plan, the firmware and `protocol/schema-v1.json` change to fit the UI, and FD §15 follows. Its TypeScript client must keep the safety rules `ground/link` proves: heartbeat, ack by `seq`, an e-stop that is never queued, and no automatic reconnect.
+
+The full split between Julian and Aaron, and the rules for crossing it, is in `WORKSTREAMS.md`.
 
 ## Source-of-truth precedence
 
