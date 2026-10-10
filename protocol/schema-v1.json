@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/aarochu/DirecSun/blob/main/protocol/schema-v1.json",
   "title": "DirecSun wire protocol, version 1",
-  "description": "Every JSON text frame exchanged between the DirecSun box and a ground station over the WebSocket at ws://direcsun.local:81/. Source of truth for the prose in docs/firmware-design.md section 15; a disagreement between the two is a bug in whichever changed last. Units: angles in degrees, rates in deg/s, wheel speed in rpm, torque in mN m, voltage in V, box time in ms since boot. Angles and rates are counter-clockwise positive seen from above (+z up).",
+  "description": "Every JSON text frame exchanged between the DirecSun box and a ground station over the WebSocket on port 80 at path /ws: ws://direcsun.local/ws in station mode, ws://192.168.4.1/ws in SoftAP mode, matching the main UI in frontend/. Source of truth for the prose in docs/firmware-design.md section 15; a disagreement between the two is a bug in whichever changed last. Units: angles in degrees, rates in deg/s, wheel speed in rpm, torque in mN m, voltage in V, box time in ms since boot. Wire frame: every quantity about the spin axis (heading, heading reference, magnetometer heading, sun angle, box rate, torque on the box) is clockwise positive seen from above, matching the main UI (\"rotate right\" is +90 degrees). The firmware computes in the counter-clockwise frame of FD section 2.3 and converts only when it encodes or decodes a message.",
   "type": "object",
   "required": ["v", "type", "seq"],
   "oneOf": [
@@ -14,7 +14,7 @@
     { "$ref": "#/$defs/event" }
   ],
   "$defs": {
-    "v": { "const": 1, "description": "Schema version. Any change after the Set 1 freeze bumps it." },
+    "v": { "const": 1, "description": "Schema version. Additive, backward-compatible changes stay 1; breaking changes (renamed or removed fields, changed types, units, or meaning) bump it (CONTEXT.md, 2026-10-10)." },
     "seq": {
       "type": "integer",
       "minimum": 0,
@@ -26,7 +26,7 @@
       "type": "number",
       "exclusiveMinimum": -180,
       "maximum": 180,
-      "description": "Wrapped angle in (-180, 180] degrees, counter-clockwise positive."
+      "description": "Wrapped angle in (-180, 180] degrees, clockwise positive seen from above (wire frame)."
     },
     "mode": {
       "enum": ["SAFE", "SPINUP", "READY", "DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"],
@@ -99,22 +99,22 @@
           "description": "Active MANUAL input; null in every other mode.",
           "anyOf": [{ "$ref": "#/$defs/manual_input" }, { "type": "null" }]
         },
-        "psi_deg": { "$ref": "#/$defs/angle_deg", "description": "Estimated heading." },
+        "psi_deg": { "$ref": "#/$defs/angle_deg", "description": "Estimated heading, clockwise positive." },
         "psi_ref_deg": {
-          "description": "Current heading reference; null in SAFE, SPINUP, READY, DETUMBLE.",
+          "description": "Current heading reference, clockwise positive; null in SAFE, SPINUP, READY, DETUMBLE.",
           "anyOf": [{ "$ref": "#/$defs/angle_deg" }, { "type": "null" }]
         },
-        "rate_dps": { "type": "number", "description": "Estimated box rate, deg/s." },
+        "rate_dps": { "type": "number", "description": "Estimated box rate, deg/s, clockwise positive." },
         "mag_deg": {
-          "description": "Magnetometer heading; null if the magnetometer is missing.",
+          "description": "Magnetometer heading, clockwise positive; null if the magnetometer is missing.",
           "anyOf": [{ "$ref": "#/$defs/angle_deg" }, { "type": "null" }]
         },
-        "sun_deg": { "$ref": "#/$defs/nullable_number", "description": "Calibrated sun angle, degrees." },
+        "sun_deg": { "$ref": "#/$defs/nullable_number", "description": "Calibrated sun angle, degrees, clockwise positive." },
         "sun_valid": { "type": "boolean" },
         "wheel_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed (interlock estimate speed_safe), rpm, forward direction." },
         "wheel_ref_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed reference, rpm." },
         "throttle": { "$ref": "#/$defs/throttle", "description": "DShot value sent this tick." },
-        "tau_cmd_mNm": { "type": "number", "description": "Commanded torque on the box, mN m." },
+        "tau_cmd_mNm": { "type": "number", "description": "Commanded torque on the box, mN m, clockwise positive." },
         "vbat": { "type": "number", "minimum": 0, "description": "1 s average battery voltage, V." },
         "loop_us": { "type": "integer", "minimum": 0, "description": "Longest control tick in the last 20 ms, us." },
         "flags": {
@@ -133,14 +133,14 @@
           "minItems": 3,
           "maxItems": 3,
           "items": { "type": "integer", "minimum": -32768, "maximum": 32767 },
-          "description": "Bench mode only (T-8): raw MPU-6050 gyro X, Y, Z counts."
+          "description": "Bench mode only (T-8): raw MPU-6050 gyro X, Y, Z counts, in the sensor's own axes (not converted to the wire frame)."
         },
         "mag_raw": {
           "type": "array",
           "minItems": 3,
           "maxItems": 3,
           "items": { "type": "integer", "minimum": -32768, "maximum": 32767 },
-          "description": "Bench mode only (T-9): raw QMC5883P X, Y, Z counts, before the axis map."
+          "description": "Bench mode only (T-9): raw QMC5883P X, Y, Z counts, before the axis map and in the sensor's own axes (not converted to the wire frame)."
         },
         "sun_a_mv": { "type": "number", "minimum": 0, "description": "Bench mode only (T-10): sun sensor A, mV." },
         "sun_b_mv": { "type": "number", "minimum": 0, "description": "Bench mode only (T-10): sun sensor B, mV." }
@@ -195,7 +195,7 @@
         "seq": { "$ref": "#/$defs/seq" },
         "cmd": { "const": "mode" },
         "mode": { "$ref": "#/$defs/commandable_mode" },
-        "psi_ref_deg": { "$ref": "#/$defs/angle_deg", "description": "Absolute SLEW target; the box takes the shortest wrapped path." },
+        "psi_ref_deg": { "$ref": "#/$defs/angle_deg", "description": "Absolute SLEW target, clockwise positive; the box takes the shortest wrapped path." },
         "input": { "$ref": "#/$defs/manual_input" }
       },
       "allOf": [
@@ -228,7 +228,7 @@
           "description": "Open-loop DShot throttle; the box clamps it to [manual_throttle_min, manual_throttle_max]."
         },
         "wheel_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed target; the box clamps it to [omega_low, omega_cap]." },
-        "rate_dps": { "type": "number", "description": "Box rate target; the box clamps it to +-90 deg/s." }
+        "rate_dps": { "type": "number", "description": "Box rate target, clockwise positive; the box clamps it to +-90 deg/s." }
       },
       "oneOf": [
         { "required": ["throttle"] },

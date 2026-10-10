@@ -16,8 +16,15 @@ Every outbound message is validated against the schema; a violation stops the
 mock, because it would mean the mock teaches the UI the wrong protocol. Inbound
 messages that fail the schema get ack ok:false with the reason.
 
-Port 81 needs root on Linux, so the mock listens on 8081 by default; point the
-console at ws://127.0.0.1:8081/.
+The firmware serves port 80 at path /ws, the main UI's endpoint (protocol/README.md).
+Port 80 needs root on Linux, so the mock listens on 8081 by default, but it serves
+only /ws, like the firmware: point the console or the main UI at
+ws://127.0.0.1:8081/ws. Any other path gets HTTP 404, so a client aimed at the wrong
+path fails here the same way it would against the box.
+
+Wire frame: every quantity about the spin axis is clockwise positive seen from above,
+as the main UI expects. The values here are shapes, not physics, so no conversion
+is involved.
 
 Needs websockets and jsonschema. If this interpreter lacks them, the script
 re-runs itself with $DIRECSUN_PYTHON or the repo's .venv (tools/bootstrap-venv.sh).
@@ -51,11 +58,13 @@ def _reexec_with_repo_python():
 try:
     from jsonschema import Draft202012Validator
     from jsonschema.exceptions import best_match
+    from websockets.asyncio.client import connect
     from websockets.asyncio.server import broadcast, serve
-    from websockets.exceptions import ConnectionClosed
+    from websockets.exceptions import ConnectionClosed, InvalidStatus
 except ImportError:
     _reexec_with_repo_python()
 
+WS_PATH = "/ws"          # the firmware's and the main UI's endpoint path
 TICK_S = 0.02            # 50 Hz telemetry
 HEARTBEAT_S = 1.0        # FD section 14.4
 SPINUP_S = 2.0           # mock shortcut: SPINUP becomes READY after this
@@ -398,8 +407,18 @@ class Box:
         })
 
 
-async def run(args):
-    box = Box(Schema(), set(args.inputs.split(",")))
+def only_ws_path(connection, request):
+    """websockets process_request hook: refuse every path but /ws with HTTP 404."""
+    path = request.path.split("?", 1)[0]
+    if path != WS_PATH:
+        log(f"refusing a client on path {request.path!r}: the box serves only {WS_PATH}")
+        return connection.respond(404, f"DirecSun serves its WebSocket at {WS_PATH}\n")
+    return None
+
+
+async def start_box(host, port, inputs):
+    """Start the mock box. Returns (server, ticker task); the server's port is in server.sockets."""
+    box = Box(Schema(), set(inputs.split(",")))
     clients = set()
 
     def flush():
@@ -436,9 +455,42 @@ async def run(args):
             next_at += TICK_S
             await asyncio.sleep(max(0.0, next_at - time.monotonic()))
 
-    async with serve(handler, args.host, args.port, max_size=4096):
-        log(f"listening on ws://{args.host}:{args.port}/ (inputs: {args.inputs})")
-        await ticker()
+    server = await serve(handler, host, port, max_size=4096, process_request=only_ws_path)
+    bound = server.sockets[0].getsockname()[1]
+    log(f"listening on ws://{host}:{bound}{WS_PATH} (inputs: {inputs})")
+    return server, asyncio.ensure_future(ticker())
+
+
+async def run(args):
+    server, ticker = await start_box(args.host, args.port, args.inputs)
+    async with server:
+        await ticker
+
+
+async def selftest_endpoint():
+    """Positive control for the endpoint: the real server answers on /ws and refuses /."""
+    server, ticker = await start_box("127.0.0.1", 0, "throttle,wheel,rate")
+    port = server.sockets[0].getsockname()[1]
+    problems = []
+    try:
+        async with connect(f"ws://127.0.0.1:{port}{WS_PATH}") as ws:
+            first = json.loads(await asyncio.wait_for(ws.recv(), timeout=2.0))
+            if first.get("type") != "tlm":
+                problems.append(f"first frame on {WS_PATH} was {first.get('type')!r}, not tlm")
+        for wrong in ("/", "/ws/extra"):
+            try:
+                async with connect(f"ws://127.0.0.1:{port}{wrong}"):
+                    problems.append(f"a client on {wrong!r} was accepted")
+            except InvalidStatus as exc:
+                if exc.response.status_code != 404:
+                    problems.append(f"{wrong!r} got HTTP {exc.response.status_code}, not 404")
+    finally:
+        ticker.cancel()
+        server.close()
+        await server.wait_closed()
+    if not problems:
+        print(f"mock-box selftest: endpoint ok, tlm on {WS_PATH}, HTTP 404 on / and /ws/extra")
+    return problems
 
 
 def selftest():
@@ -493,6 +545,7 @@ def selftest():
             problems.append(f"no mode event with cause {cause}")
     if not any("MANUAL_STALE" in m.get("flags", []) for _t, m in box.outbox if m["type"] == "tlm"):
         problems.append("MANUAL_STALE never set")
+    problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:
         print(f"mock-box selftest: FAILED, {problem}", file=sys.stderr)
     return 1 if problems else 0

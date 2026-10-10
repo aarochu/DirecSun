@@ -1,6 +1,8 @@
 // DirecSun ground link: the client side of wire schema v1 (protocol/schema-v1.json,
 // docs/firmware-design.md section 15). Dependency-free ES module for browsers and
-// Node 20+. Aaron's UI and ground/console import it; neither touches raw frames.
+// Node 20+. It is the engineering bench client: ground/console imports it for bring-up
+// and characterisation. The main UI (frontend/) owns its own operator client and must
+// keep the same safety rules (changes/CONTEXT.md).
 //
 // Safety rules this module owns (firmware-design sections 14.4 and 21):
 // - it pings at 5 Hz while open, so the controlling client keeps the heartbeat alive;
@@ -8,11 +10,12 @@
 // - estop() is sent at once, is never queued or rate-limited, and throws if it cannot leave;
 // - it never reconnects by itself: after a close, only an explicit connect() opens it again.
 //
-// Wire values are passed through unchanged, counter-clockwise positive. A UI that
-// shows clockwise-positive headings converts for display (finding V-17).
+// Wire values are passed through unchanged. On the wire, every quantity about the spin
+// axis is clockwise positive seen from above, matching the main UI (protocol/README.md);
+// the firmware converts from its internal frame, so no client converts.
 
 export const PROTOCOL_VERSION = 1;
-export const DEFAULT_URL = "ws://direcsun.local:81/";
+export const DEFAULT_URL = "ws://direcsun.local/ws";
 
 const WS_OPEN = 1;
 const KINDS = ["tlm", "event", "pong", "ack", "state", "raw", "sent"];

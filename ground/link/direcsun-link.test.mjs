@@ -92,7 +92,7 @@ const capturePath = process.env.DIRECSUN_LINK_CAPTURE;
 function makeLink(options = {}) {
   FakeSocket.instances.length = 0;
   const clock = new FakeClock();
-  const link = new DirecSunLink("ws://box.test:81/", { WebSocketImpl: FakeSocket, clock, ...options });
+  const link = new DirecSunLink("ws://box.test/ws", { WebSocketImpl: FakeSocket, clock, ...options });
   if (capturePath) link.on("sent", (message) => appendFileSync(capturePath, JSON.stringify(message) + "\n"));
   return { link, clock };
 }
@@ -111,8 +111,12 @@ const ack = (seq, ok = true, extra = {}) => ({ v: 1, type: "ack", seq, ok, ...ex
 // Lets every queued promise reaction run (a macrotask boundary drains the microtask queue).
 const flushMicrotasks = () => new Promise((resolve) => setImmediate(resolve));
 
-test("default endpoint is the mDNS name on port 81", () => {
-  assert.equal(DEFAULT_URL, "ws://direcsun.local:81/");
+test("default endpoint is the main UI's endpoint: mDNS name, port 80, path /ws", () => {
+  assert.equal(DEFAULT_URL, "ws://direcsun.local/ws");
+  const url = new URL(DEFAULT_URL);
+  assert.equal(url.protocol, "ws:");
+  assert.equal(url.port, "", "no explicit port means port 80 for ws:");
+  assert.equal(url.pathname, "/ws");
 });
 
 test("connect moves idle, connecting, open and reports each state", async () => {
@@ -239,7 +243,7 @@ test("tlm and event are dispatched; wrong v, bad JSON and unknown types surface 
   socket.deliver("ACK from DirecSun");
   socket.deliver({ v: 1, type: "mystery", seq: 4 });
   assert.equal(tlm.length, 1);
-  assert.equal(tlm[0].psi_deg, 10, "wire values pass through unchanged (CCW positive)");
+  assert.equal(tlm[0].psi_deg, 10, "wire values pass through unchanged (clockwise positive on the wire)");
   assert.equal(events.length, 1);
   const rejected = raw.filter((r) => !r.accepted).map((r) => r.reason);
   assert.equal(rejected.length, 3);
