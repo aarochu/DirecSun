@@ -117,12 +117,17 @@ constexpr float kSlewSettleDeg = 3.0f;          // complete: |psi_ref - psi| bel
 constexpr float kSlewSettleRateDps = 5.0f;      //           and |omega| below this
 constexpr uint32_t kSlewSettleMs = 500;         //           for this long
 constexpr uint32_t kSlewTimeoutMs = 6000;       // SLEW_TIMEOUT after this
+// Holding a still reference, an error inside this band commands no rate, so the
+// stick-slip bleed (FD 12.3) lets bearing friction hold the box instead of the
+// wheel creeping it the last fraction of a degree [D] (finding V-51).
+constexpr float kHoldDeadbandDeg = 1.0f;
 
 // The attitude loop: omega_cmd = k_psi * wrap(psi_ref - psi), deg/s, limited to
-// +-kAttitudeRateLimitDps. Headings are continuous degrees in the internal
-// frame (counter-clockwise positive); the error is wrapped onto (-180, 180] so a
-// HOLD knocked past a half-turn takes the short way back.
-float attitude_rate_cmd_dps(double psi_ref_deg, double psi_deg, float k_psi);
+// +-kAttitudeRateLimitDps, and 0 while |wrap(psi_ref - psi)| < deadband_deg.
+// Headings are continuous degrees in the internal frame (counter-clockwise
+// positive); the error is wrapped onto (-180, 180] so a HOLD knocked past a
+// half-turn takes the short way back.
+float attitude_rate_cmd_dps(double psi_ref_deg, double psi_deg, float k_psi, float deadband_deg = 0.0f);
 
 // The SLEW reference (FD section 12.4): a trapezoid in heading from `from_deg`
 // to `to_deg` limited to vmax and amax, or a triangle when the move is too short

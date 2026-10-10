@@ -10,9 +10,10 @@
 //   NO_RATE_ANTIWINDUP   the rate integral runs while saturated
 //   NO_RATE_BLEED        no stick-slip bleed
 //   FLIP_KPSI            the attitude loop's gain has the wrong sign (R4.3)
+//   NO_HOLD_DEADBAND     the attitude loop pushes inside the hold deadband (R4.3)
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_WHEEL_ANTIWINDUP) || defined(DIRECSUN_MUTANT_RATE_SIGN_FLIP) || \
                               defined(DIRECSUN_MUTANT_NO_RATE_ANTIWINDUP) || defined(DIRECSUN_MUTANT_NO_RATE_BLEED) || \
-                              defined(DIRECSUN_MUTANT_FLIP_KPSI))
+                              defined(DIRECSUN_MUTANT_FLIP_KPSI) || defined(DIRECSUN_MUTANT_NO_HOLD_DEADBAND))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -145,9 +146,14 @@ float WheelSpeedPi::step(float omega_ref_rpm, float omega_rpm, float dt_s, const
     return out;
 }
 
-float attitude_rate_cmd_dps(double psi_ref_deg, double psi_deg, float k_psi)
+float attitude_rate_cmd_dps(double psi_ref_deg, double psi_deg, float k_psi, float deadband_deg)
 {
     const float error_deg = wrap_deg180(psi_ref_deg - psi_deg);
+#ifndef DIRECSUN_MUTANT_NO_HOLD_DEADBAND
+    if (std::fabs(error_deg) < deadband_deg) return 0.0f;
+#else
+    (void)deadband_deg;
+#endif
 #ifdef DIRECSUN_MUTANT_FLIP_KPSI
     const float cmd = -k_psi * error_deg;
 #else

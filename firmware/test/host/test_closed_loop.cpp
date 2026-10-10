@@ -1,14 +1,17 @@
 // R3.9: the rate loop closed through the box (FD section 19.1, HT-5 and HT-6),
 // its anti-windup and integral bound, the stick-slip bleed, and the whole
 // cascade (supervisor, rate loop, wheel PI) against the plant of plant_sim.hpp.
+// R4.3: HOLD and SLEW through the same cascade, with the estimator's heading.
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <vector>
 
 #include "direcsun/core/control.hpp"
 #include "direcsun/core/controllers.hpp"
+#include "direcsun/core/estimator.hpp"
 #include "direcsun/core/modes.hpp"
 #include "direcsun/core/params.hpp"
 #include "doctest.h"
@@ -111,11 +114,13 @@ Params cascade_params()
     return p;
 }
 
-// The real supervisor and cascade driving the throttle-driven wheel inside the
-// two-body box. The box is pinned (the lock pin) until release().
+// The real estimator, supervisor, and cascade driving the throttle-driven
+// wheel inside the two-body box, in the control task's order. The box is
+// pinned (the lock pin) until release().
 struct BoxRig {
     Supervisor sup;
     CascadeController ctl;
+    Estimator est;
     plant::Box box;
     plant::Gyro gyro;
     TickInputs in;
@@ -137,7 +142,15 @@ struct BoxRig {
     {
         ++now;
         in.tick = now;
-        in.rate_dps = static_cast<float>(gyro.read(box.rate_dps()));
+        EstimatorInputs e;
+        e.gyro_z_dps = static_cast<float>(gyro.read(box.rate_dps()));
+        e.accel_g[2] = 1.0f;
+        e.safe_mode = out.mode == Mode::Safe;
+        e.wheel_known = true;
+        e.wheel_rpm = static_cast<float>(box.wheel_rpm);
+        est.update(e);
+        in.rate_dps = est.rate_dps();
+        in.heading_deg = est.heading_unwrapped_deg();
         in.wheel_rpm_safe = static_cast<float>(box.wheel_rpm);
         in.wheel_rpm_fast = static_cast<float>(box.wheel_rpm);
         in.commands = cmds.empty() ? nullptr : cmds.data();
@@ -170,6 +183,16 @@ struct BoxRig {
     {
         pinned = false;
         box.omega = rate_dps * plant::kTwoPi / 360.0;
+    }
+
+    bool has_event_cause(const char *cause) const
+    {
+        for (std::size_t i = 0; i < out.events.count; ++i) {
+            if (out.events.items[i].kind == Event::Kind::Mode && std::strcmp(out.events.items[i].cause, cause) == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 
@@ -401,4 +424,193 @@ TEST_CASE("R3.9 cascade: a wheel-step hold suspends the rate loop")
     CHECK_FALSE(ctl.rate_active());
     CHECK(ctl.tau_cmd_nm() == 0.0f);
     CHECK(ctl.flags() == 0u);
+}
+
+namespace {
+
+struct AttitudeRun {
+    double settle_s = 1e9;      // after which the true heading stays inside the band
+    double worst_after_s = 0.0; // the largest error after the deadline
+    double peak_error_deg = 0.0;
+    double end_error_deg = 0.0; // estimator heading against the target at the end
+    double complete_s = -1.0;   // slew_complete, or -1
+    double timeout_s = -1.0;    // SLEW_TIMEOUT, or -1
+    double ref_min = 1e9;       // omega_ref while HOLD or SLEW ran the closed loop
+    double ref_max = -1e9;
+    bool left_safe_modes = false;  // SAFE seen: an interlock or the heartbeat ended the run
+};
+
+// Armed, pinned through SPINUP, released at rest in READY, zeroed. Gyro noise
+// from `seed`.
+BoxRig &ready_and_zeroed(BoxRig &rig, double friction_nm, unsigned seed)
+{
+    rig.gyro.rng.seed(seed);
+    rig.box.friction_nm = friction_nm;
+    rig.arm_to_ready();
+    rig.release(0.0);
+    rig.run(250);
+    rig.tick({cmd(CommandKind::ZeroHeading)});
+    REQUIRE(rig.out.mode == Mode::Ready);
+    return rig;
+}
+
+void track_ref(BoxRig &rig, AttitudeRun &r)
+{
+    if ((rig.out.mode == Mode::Hold || rig.out.mode == Mode::Slew) && rig.ctl.closed_loop()) {
+        r.ref_min = std::fmin(r.ref_min, rig.ctl.wheel_ref_rpm());
+        r.ref_max = std::fmax(r.ref_max, rig.ctl.wheel_ref_rpm());
+    }
+    if (rig.out.mode == Mode::Safe) r.left_safe_modes = true;
+}
+
+// A SLEW to `target_deg` from rest, run for `seconds`. The error is the true
+// heading's, measured from where the zero was taken; `band_deg` sets settle_s.
+AttitudeRun slew_run(double friction_nm, unsigned seed, double target_deg, double seconds, double band_deg,
+                     double deadline_s)
+{
+    Params p = cascade_params();
+    p.rate_gain_scale = 1.0f;
+    BoxRig rig(p);
+    ready_and_zeroed(rig, friction_nm, seed);
+    const double zero_true = rig.box.heading_deg;
+    Command c = harness::mode_cmd(Mode::Slew);
+    c.psi_ref_deg = static_cast<float>(target_deg);
+    rig.tick({c});
+    REQUIRE(rig.out.mode == Mode::Slew);
+    AttitudeRun r;
+    const int n = static_cast<int>(seconds / kDt);
+    for (int i = 0; i < n; ++i) {
+        rig.run(1);
+        const double t = (i + 1) * kDt;
+        const double error = std::fabs(rig.box.heading_deg - zero_true - target_deg);
+        r.peak_error_deg = std::fmax(r.peak_error_deg, error);
+        if (error >= band_deg) r.settle_s = 1e9;
+        else if (r.settle_s > 1e8) r.settle_s = t;
+        if (t >= deadline_s) r.worst_after_s = std::fmax(r.worst_after_s, error);
+        if (r.complete_s < 0.0 && rig.has_event_cause("slew_complete")) r.complete_s = t;
+        if (r.timeout_s < 0.0 && rig.has_event_cause("SLEW_TIMEOUT")) r.timeout_s = t;
+        track_ref(rig, r);
+    }
+    r.end_error_deg = rig.out.heading_deg - target_deg;
+    return r;
+}
+
+}  // namespace
+
+TEST_CASE("HT-5 sim: a 90 deg SLEW settles within 3 deg in under 3 s (PR-2)")
+{
+    // The whole cascade with the estimator's heading, for the planning range
+    // of friction and ten seeds of gyro noise, both directions of the judge
+    // sequence. The DIRECSUN_MUTANT_FLIP_KPSI build must fail here
+    // (tools/host-test.sh --selftest): its slew runs away from the target.
+    double slowest = 0.0;
+    double worst = 0.0;
+    double divergence = 0.0;
+    for (double friction : {0.0, 1e-3, 3e-3}) {
+        for (double target : {90.0, -90.0}) {
+            for (unsigned seed = 1; seed <= 10; ++seed) {
+                CAPTURE(friction);
+                CAPTURE(target);
+                CAPTURE(seed);
+                const AttitudeRun r = slew_run(friction, seed, target, 5.0, 3.0, 3.0);
+                slowest = std::fmax(slowest, r.settle_s);
+                worst = std::fmax(worst, r.worst_after_s);
+                divergence = std::fmax(divergence, r.peak_error_deg - std::fabs(target));
+                if (seed == 1) {
+                    MESSAGE("friction " << friction * 1e3 << " mN m, target " << target << ": settled at "
+                                        << r.settle_s << " s, worst after 3 s " << r.worst_after_s
+                                        << " deg, slew_complete at " << r.complete_s << " s, omega_ref "
+                                        << r.ref_min << ".." << r.ref_max << " rpm");
+                }
+                CHECK(r.settle_s < 3.0);
+                CHECK(r.worst_after_s < 3.0);
+                CHECK(r.complete_s > 0.0);
+                CHECK(r.complete_s < 3.5);
+                CHECK(r.timeout_s < 0.0);
+                CHECK(std::fabs(r.end_error_deg) < 3.0);
+                CHECK(r.ref_min >= 800.0);
+                CHECK(r.ref_max <= 4000.0);
+                CHECK_FALSE(r.left_safe_modes);
+            }
+        }
+    }
+    MESSAGE("60 slews: slowest settle " << slowest << " s, worst error after 3 s " << worst
+                                        << " deg, largest move past the start away from the target "
+                                        << divergence << " deg");
+}
+
+TEST_CASE("HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s")
+{
+    // Then the box must stay put without the wheel creeping it: at 3 mN m a
+    // creep spends about 440 rpm of wheel speed per second, which drained the
+    // wheel into UNDERSPEED within 4 s before the hold deadband (V-51). The
+    // DIRECSUN_MUTANT_NO_HOLD_DEADBAND build must fail here.
+    double slowest = 0.0;
+    double biggest = 0.0;
+    double walk = 0.0;
+    for (double friction : {0.0, 1e-3, 3e-3}) {
+        for (double poke : {10e-3, -10e-3}) {
+            for (unsigned seed = 1; seed <= 10; ++seed) {
+                CAPTURE(friction);
+                CAPTURE(poke);
+                CAPTURE(seed);
+                Params p = cascade_params();
+                p.rate_gain_scale = 1.0f;
+                BoxRig rig(p);
+                ready_and_zeroed(rig, friction, seed);
+                rig.tick({harness::mode_cmd(Mode::Hold)});
+                REQUIRE(rig.out.mode == Mode::Hold);
+                rig.run(500);
+                const double held_true = rig.box.heading_deg;
+                AttitudeRun r;
+                double back_s = 1e9;
+                double ref_at_3s = 0.0;
+                for (int i = 0; i < static_cast<int>(4.0 / kDt); ++i) {
+                    const double t = i * kDt;
+                    rig.box.disturbance_nm = t < 0.1 ? poke : 0.0;
+                    if (i == static_cast<int>(3.0 / kDt)) ref_at_3s = rig.ctl.wheel_ref_rpm();
+                    rig.run(1);
+                    const double error = std::fabs(rig.box.heading_deg - held_true);
+                    r.peak_error_deg = std::fmax(r.peak_error_deg, error);
+                    if (error >= 2.0) back_s = 1e9;
+                    else if (back_s > 1e8) back_s = t + kDt;
+                    track_ref(rig, r);
+                }
+                const double walked = std::fabs(rig.ctl.wheel_ref_rpm() - ref_at_3s);
+                slowest = std::fmax(slowest, back_s);
+                biggest = std::fmax(biggest, r.peak_error_deg);
+                walk = std::fmax(walk, walked);
+                if (seed == 1) {
+                    MESSAGE("friction " << friction * 1e3 << " mN m, poke " << poke * 1e3 << " mN m: peak "
+                                        << r.peak_error_deg << " deg, back within 2 deg at " << back_s
+                                        << " s, omega_ref " << r.ref_min << ".." << r.ref_max
+                                        << " rpm, walked " << walked << " rpm from 3 to 4 s");
+                }
+                CHECK(r.peak_error_deg > 2.0);  // the poke really moved it
+                CHECK(back_s < 2.0);
+                CHECK(walked < 25.0);
+                CHECK(rig.out.mode == Mode::Hold);
+                CHECK(r.ref_min >= 800.0);
+                CHECK(r.ref_max <= 4000.0);
+                CHECK_FALSE(r.left_safe_modes);
+            }
+        }
+    }
+    MESSAGE("60 pokes: largest excursion " << biggest << " deg, slowest return " << slowest
+                                           << " s, largest wheel walk from 3 to 4 s " << walk << " rpm");
+}
+
+TEST_CASE("R4.3 timeout path (sim): at 30 mN m of friction the SLEW times out at 6.0 s, then READY")
+{
+    // Far above the planning range (1 to 3 mN m): the rate loop's torque
+    // cannot break the box free, so the slew can only end by its timeout.
+    const AttitudeRun r = slew_run(30e-3, 1, -90.0, 6.5, 3.0, 6.0);
+    MESSAGE("timeout at " << r.timeout_s << " s, peak error " << r.peak_error_deg << " deg, omega_ref " << r.ref_min
+                          << ".." << r.ref_max << " rpm");
+    CHECK(r.timeout_s >= 6.0 - kDt);
+    CHECK(r.timeout_s <= 6.0 + kDt);
+    CHECK(r.complete_s < 0.0);
+    CHECK_FALSE(r.left_safe_modes);
+    CHECK(r.ref_min >= 800.0);
+    CHECK(r.ref_max <= 4000.0);
 }

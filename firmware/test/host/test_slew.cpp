@@ -160,6 +160,12 @@ TEST_CASE("R4.3 attitude loop: omega_cmd = K_psi wrap(psi_ref - psi), limited to
     CHECK(attitude_rate_cmd_dps(725.0, 0.0, 3.1f) == doctest::Approx(15.5));  // two turns and 5 deg
     CHECK(attitude_rate_cmd_dps(90.0, 0.0, 3.1f) == doctest::Approx(kAttitudeRateLimitDps));
     CHECK(attitude_rate_cmd_dps(-90.0, 0.0, 3.1f) == doctest::Approx(-kAttitudeRateLimitDps));
+    // The hold deadband: nothing inside it, the full law outside it.
+    CHECK(attitude_rate_cmd_dps(0.9, 0.0, 3.1f) == doctest::Approx(2.79));
+    CHECK(attitude_rate_cmd_dps(0.9, 0.0, 3.1f, kHoldDeadbandDeg) == 0.0f);
+    CHECK(attitude_rate_cmd_dps(-0.9, 0.0, 3.1f, kHoldDeadbandDeg) == 0.0f);
+    CHECK(attitude_rate_cmd_dps(1.1, 0.0, 3.1f, kHoldDeadbandDeg) == doctest::Approx(3.41));
+    CHECK(attitude_rate_cmd_dps(0.0, 361.1, 3.1f, kHoldDeadbandDeg) == doctest::Approx(-3.41));
 }
 
 TEST_CASE("R4.3 HOLD: captures the heading at entry and steers back to it until mode READY")
@@ -184,11 +190,16 @@ TEST_CASE("R4.3 HOLD: captures the heading at entry and steers back to it until 
     CHECK(rig.ctl.last_demand.mode == Mode::Hold);
     CHECK(rig.ctl.last_demand.omega_cmd_dps == doctest::Approx(0.0));
 
-    // Pushed 2 deg counter-clockwise: the command turns it back.
+    // Pushed 2 deg counter-clockwise: the command turns it back. Inside the
+    // hold deadband it commands nothing, so friction can hold the box.
     rig.in.heading_deg = 127.0;
     rig.tick();
     CHECK(rig.ctl.last_demand.omega_cmd_dps == doctest::Approx(-3.1 * 2.0).epsilon(1e-4));
     CHECK(rig.out.psi_ref_deg == doctest::Approx(25.0));
+    rig.in.heading_deg = 125.5;
+    rig.tick();
+    CHECK(rig.ctl.last_demand.omega_cmd_dps == 0.0f);
+    rig.in.heading_deg = 125.0;
 
     // HOLD has no timeout.
     rig.run(10 * kTickHz);
@@ -323,6 +334,25 @@ TEST_CASE("R4.3 SLEW: complete 0.5 s after the box settles on the target, then R
     CHECK(n <= 1251);
     CHECK_FALSE(rig.out.psi_ref_valid);
     CHECK(rig.ctl.last_demand.omega_cmd_dps == 0.0f);
+}
+
+TEST_CASE("R4.3 SLEW: the hold deadband applies only once the reference stands still")
+{
+    Rig rig(characterised());
+    rig.arm_to_ready();
+    rig.tick({slew_cmd(90.0f)});
+    rig.run(250);  // 0.5 s in: the reference moves at 60 deg/s
+    rig.in.heading_deg = rig.out.psi_ref_deg - 0.5;
+    rig.tick();
+    CHECK(rig.ctl.last_demand.omega_cmd_dps > 0.0f);
+    rig.run(1000);  // past the profile's end at 2.0 s
+    REQUIRE(rig.out.mode == Mode::Slew);
+    rig.in.heading_deg = 89.5;
+    rig.tick();
+    CHECK(rig.ctl.last_demand.omega_cmd_dps == 0.0f);
+    rig.in.heading_deg = 88.5;
+    rig.tick();
+    CHECK(rig.ctl.last_demand.omega_cmd_dps == doctest::Approx(3.1 * 1.5).epsilon(1e-4));
 }
 
 TEST_CASE("R4.3 SLEW: still turning, or off target, is not complete")

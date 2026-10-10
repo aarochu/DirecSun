@@ -428,6 +428,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         if (manual_stale_ && manual_input_ == ManualInput::Rate) manual_rate_dps_ = 0.0f;
     }
     const double psi = in.heading_deg - heading_zero_deg_;
+    bool reference_still = mode_ == Mode::Hold;
     if (mode_ == Mode::Slew) {
         // FD section 12.4: the reference moves along the trapezoid; the slew is
         // complete once the profile has ended and the box has sat within 3 deg
@@ -435,7 +436,8 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         const uint32_t ticks = ticks_since(t, mode_entry_tick_);
         const double t_s = static_cast<double>(ticks) / static_cast<double>(kTickHz);
         psi_ref_deg_ = slew_.position_deg(t_s);
-        const bool settled = slew_.finished(t_s) && std::fabs(slew_.target_deg() - psi) < kSlewSettleDeg &&
+        reference_still = slew_.finished(t_s);
+        const bool settled = reference_still && std::fabs(slew_.target_deg() - psi) < kSlewSettleDeg &&
                              std::fabs(in.rate_dps) < kSlewSettleRateDps;
         slew_settled_ticks_ = settled ? slew_settled_ticks_ + 1 : 0;
         if (slew_settled_ticks_ >= ticks_from_ms(kSlewSettleMs)) {
@@ -464,8 +466,12 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         d.wheel_step_rpm = pending_wheel_step_rpm_;
         d.wheel_hold = wheel_hold_;
         // READY holds rate (TD section 6.6); HOLD and SLEW close the attitude
-        // loop around it (FD section 12.1 step 1, R4.3).
-        d.omega_cmd_dps = has_heading_reference(mode_) ? attitude_rate_cmd_dps(psi_ref_deg_, psi, params_.k_psi) : 0.0f;
+        // loop around it (FD section 12.1 step 1, R4.3), with the hold deadband
+        // once the reference stands still.
+        d.omega_cmd_dps = has_heading_reference(mode_)
+                              ? attitude_rate_cmd_dps(psi_ref_deg_, psi, params_.k_psi,
+                                                      reference_still ? kHoldDeadbandDeg : 0.0f)
+                              : 0.0f;
         pending_wheel_step_rpm_ = 0.0f;
         int request = controller.throttle(d, in, params_);
         if (request < 0) request = 0;

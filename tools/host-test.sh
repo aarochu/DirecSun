@@ -77,6 +77,8 @@ else
         "no_rate_antiwindup|R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up"
         "no_rate_bleed|R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit"
         "raw_rate_heading|R4.2 heading: a seeded 0.5 deg/s bias is removed before integration"
+        "flip_kpsi|HT-5 sim: a 90 deg SLEW settles within 3 deg in under 3 s (PR-2)"
+        "no_hold_deadband|HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"
