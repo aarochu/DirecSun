@@ -23,6 +23,12 @@ A judge spinning the box by hand in READY sees it come to rest (DETUMBLE behavio
 ## Open questions / decisions before implementing
 1. Who sequences rotate, hold, and return: the UI, sending SLEW commands (FD §17's ground-orchestrated pair), or the firmware (a single "judge" command)? Decided by whatever the finished UI sends, per the backend-matches-UI rule.
 
+2. Known requirements on the UI's client once it starts commanding, from R1.8's look at `frontend/`:
+   - It must send `ping` at 5 Hz while it controls an armed box. Today it sends nothing, so the box would treat it as a passive viewer, and the heartbeat ramp-down would stop any motion it started.
+   - It must match acks by `seq` and send `estop` without queueing it (CONTEXT.md).
+
+   For Aaron, at 375 px the URL field truncates to `ws://127.0.0.1:80`, which reads like a port number.
+
 ## DB changes in this set
 None.
 
