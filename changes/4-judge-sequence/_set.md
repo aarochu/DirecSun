@@ -1,7 +1,7 @@
 # Revision Set 4: Judge sequence (outline)
 
 Bootstrap: read `changes/CONTEXT.md` first for project invariants.
-Outline only. Feature specs are written when Set 3 closes, because they need its measured gains, `ff_table`, s_w, and friction, and when the main UI (`frontend/`) defines the commands it will send. The backend matches the UI (CONTEXT.md, 2026-10-10).
+R4.2 and R4.3 are fully specced, because they depend on neither the UI's commands nor the hardware measurements, so they can be built ahead. R4.1 waits for the UI's command contract. R4.4 and R4.5 are specced when Set 3 closes, because they need its measured gains, `ff_table`, s_w, and friction. The backend matches the UI (CONTEXT.md, 2026-10-10).
 
 **Demo at the end of this set:** the UI's own judge sequence runs on the real box:
 1. From `frontend/`, the operator arms the box and the wheel spins up.
