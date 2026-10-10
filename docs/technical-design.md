@@ -725,7 +725,7 @@ Eighteen tests, run in the order below, replace every \[M\] label with a measure
 | ID | Verifies | Method | Pass |
 | --- | --- | --- | --- |
 | T-15 | PR-1 detumble | Hand spin to about 1 rev/s, enter Detumble | Under 5 deg/s within 5 s, ten trials |
-| T-16 | PR-2 slew | Command 90 deg from Hold | Within 3 s, settled to ±3 deg, ten trials |
+| T-16 | PR-2 slew | Command 90 deg from Ready | Within 3 s, settled to ±3 deg, ten trials |
 | T-17 | PR-3 hold | Hold for 60 s, then three pokes | Heading within ±2 deg outside the 2 s after each poke |
 
 ## 10. Risks, failure modes, and safety
@@ -1028,6 +1028,7 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-17 | `docs/sizing_output.txt` regenerated from the current CAD. The saved output (02:07) predated the Oct 10 03:32 `stack.py` change and later deck edits. Changed by the re-run: box rate per 1000 rpm 356 to 355 deg/s (baseline) and 151 to 150 deg/s (fallback); wheel acceleration at 3 A 4861 to 4860 and 11604 to 11603 rpm/s (output only). Section 3 figures that already disagreed with the old output now match the new one: rate 357 to 355 deg/s; printed parts 253 to 254 g, I\_z 4.50e-4 to 4.54e-4; box mass 844 to 845 g (weight 8.28 to 8.29 N, box 0.84 to 0.85 kg); hand spin 1.59 to 1.58 and 1.26 to 1.25 rev/s; box acceleration 578 to 576 deg/s²; slew wheel swing 639 to 640 and 1510 to 1513 rpm. I\_b stays 1.03e-3 kg·m² at the stated precision, so K\_ω (V-1) is unchanged | `sizing.py` wins over this document's prose (Section 1); a stale output had hidden the drift | 2, 3, 3.2, 3.3, 3.6; firmware design §23.2 |
 | I-18 | Hall bench bypass added: `hall_installed` false only from bench mode, never persisted; open-loop Spin-up; wheel-speed interlocks suspended; compile-time throttle ceiling 400. The Hall-silent threshold becomes the parameter `hall_expect_throttle`, and the latch release rules are stated | Owner decision 2026-10-10 (repository Set 3, R3.6); the Hall magnets cannot be mounted until Set 2; the low-limit feed-forward value does not exist before T-5 | 6.6, 6.7 |
 | I-19 | Hold and Slew no longer need the magnetometer: until Set 5 calibrates it, they use the gyro-only heading for relative moves, Slew targets are relative to the last `zero_heading`, `zero_heading` is accepted in Safe and Ready only, and every telemetry frame carries `HEADING_GYRO` | Owner decision 2026-10-10 (repository Set 4, R4.2): the main UI's judge sequence needs Hold and Slew before the magnetometer calibration (T-9) exists, and lasts only 5 to 6 s | 6.4, 6.6 |
+| I-20 | T-16 commands its slew from Ready, not from Hold | The mode machine (Section 6.6) enters Slew from Ready only, and a finished Slew returns to Ready, so "from Hold" could not be run as written (repository Set 4, R4.3) | 9.3 |
 
 **Main UI contract, 2026-10-10**
 

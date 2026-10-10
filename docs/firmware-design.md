@@ -535,6 +535,8 @@ flowchart LR
 
 `DETUMBLE` bypasses the attitude block (ω_cmd = 0). `READY` also uses ω_cmd = 0 [V] TD §6.6. `SUN_POINT` replaces `wrap(ψ_ref − ψ̂)` with the calibrated sun angle [V] TD §6.5.
 
+`HOLD` and `SLEW` run the attitude block (R4.3). ψ̂ and ψ_ref are relative to the last `zero_heading` (§11.3, V-49). While the reference stands still (`HOLD`, and `SLEW` once its profile has ended), an error under the hold deadband commands ω_cmd = 0, so the stick-slip bleed of §12.3 hands the box to bearing friction instead of the wheel creeping it the last fraction of a degree [D] (V-51).
+
 ### 12.2 Starting gains and limits
 
 All gains are starting points until G2 (plant measured) [V] TD §6.5. Values recomputed here with the current TD plant (I_b = 1.03e-3 kg·m², I_w = 6.50e-5 kg·m²):
@@ -543,6 +545,7 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 | --- | --- | --- | --- |
 | K_ψ | 3.1 s⁻¹ | about 0.49 Hz attitude bandwidth (3.1 / 2π) | [C] TD §6.5 |
 | ω_cmd limit | ±90 deg/s | TD §6.5 | [V] TD |
+| Hold deadband | 1° on a still reference | Inside PR-3's ±2°; at 3 mN·m a creep spends about 440 rpm of wheel speed per second (R4.3 host simulation, V-51); TD §10 lists a deadband against stick-slip | [D] |
 | K_ω | **0.0129 N·m·s/rad** | 2π · 2 Hz · I_b with I_b = 1.03e-3. TD §6.5 states 0.011, which equals 2π · 2 · 8.9e-4, the superseded I_b (finding V-1) | [C] |
 | K_i (rate) | start at K_ω · 2π · 0.2 Hz = 0.0163 N·m/rad | Integral corner a decade below the 2 Hz rate bandwidth [D] | [C on D] |
 | Integral limit | ±3 mN·m equivalent | Covers the planned friction range 1 to 3 mN·m (TD §3.6) without letting the integral command large torque | [D] |
@@ -565,9 +568,9 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 
 ### 12.4 Slew profile
 
-Trapezoid in ψ_ref, limited to 60 deg/s and 120 deg/s² [V] TD §6.5. A 90° slew takes 0.5 s accelerating (15°), 1.0 s at 60 deg/s (60°), and 0.5 s decelerating (15°), 2.0 s in all [C], within PR-2's 3 s. The slew ends (`SLEW` → `READY`, per TD §6.6 "slew complete") when |ψ_ref − ψ̂| < 3° and |ω̂| < 5 deg/s for 0.5 s [D]; a timeout of 6 s ends it with the event `SLEW_TIMEOUT` [D].
+Trapezoid in ψ_ref, limited to 60 deg/s and 120 deg/s² [V] TD §6.5. A 90° slew takes 0.5 s accelerating (15°), 1.0 s at 60 deg/s (60°), and 0.5 s decelerating (15°), 2.0 s in all [C], within PR-2's 3 s; a half-turn takes 3.5 s [C]. A move under 30° never reaches 60 deg/s and is a triangle at 120 deg/s². The slew ends (`SLEW` → `READY`, per TD §6.6 "slew complete", event cause `slew_complete`) once the profile has ended and |ψ_ref − ψ̂| < 3° and |ω̂| < 5 deg/s have held for 0.5 s [D] (V-50); a timeout 6 s after entry ends it with the cause `SLEW_TIMEOUT` [D]. Either way the box is in `READY` holding rate, not heading. The host simulation of R4.3 settles a 90° slew within 3° by 2.36 s and completes it by 3.02 s across 0 to 3 mN·m of friction [C on A: plant model, §23.3].
 
-`SLEW` targets arrive as absolute `psi_ref_deg` (TD §7.3). The firmware moves ψ_ref along the **shortest** wrapped path to the target [D]. A ground station that wants a specific direction for a 180° move must send an intermediate target.
+`SLEW` targets arrive as `psi_ref_deg` in the same frame as `psi_deg`: clockwise positive on the wire and, until Set 5, relative to the last `zero_heading` (§13.1, V-48). The firmware moves ψ_ref along the **shortest** wrapped path to the target [D]. A half-turn is deterministic: it always goes counter-clockwise (internal +180°, wire −180°) [D]. A ground station that wants the other direction must send an intermediate target.
 
 ### 12.5 Sign check before closing the loop
 
@@ -622,7 +625,7 @@ These additions were approved by the owner on 2026-10-10 and written into TD §6
 - the `tlm` flag `HALL_BYPASS` is set on every frame, and a `notice` event `HALL_BYPASS` (`detail` `on` or `off`) is posted when it changes;
 - `OVERSPEED`, `UNDERSPEED`, and `HALL_SILENT` are suspended (§14.1); every other interlock stays active.
 
-**Refusal reasons** [D, V-34]. A refused command's `ack` carries one of these exact strings: `not in SAFE` (`arm` while armed, `set_params` outside `SAFE`), `not armed` (`disarm`, or `mode READY`, in `SAFE`), `ramp-down in progress` (`arm` during a ramp-down), `box not still`, `battery low`, `latched fault: <INTERLOCK>` (a latch whose release condition does not hold, §14.1), `bench_mode required` (`arm` with the Hall bypassed and bench mode off), `not controlling client`, `not in READY` (`mode MANUAL` from any other mode), `input not available`, `wheel not at bias` (`mode READY` during `SPINUP`), `not in MANUAL`, `input mismatch`, `too fast`, `invalid setpoint`, `not implemented` (modes and commands of later repository sets), and for `set_params`: `invalid param: <key>`, `unknown param: <key>`, `not settable: <key>`, `not implemented: <key>`, `bench_mode required: hall_installed`, `no params`. The guards of `arm` are checked in the order `SAFE`, ramp, bench mode, still, battery, latches, and the first that fails names the reason.
+**Refusal reasons** [D, V-34]. A refused command's `ack` carries one of these exact strings: `not in SAFE` (`arm` while armed, `set_params` outside `SAFE`), `not armed` (`disarm`, or `mode READY`, in `SAFE`), `ramp-down in progress` (`arm` during a ramp-down), `box not still`, `battery low`, `latched fault: <INTERLOCK>` (a latch whose release condition does not hold, §14.1), `bench_mode required` (`arm` with the Hall bypassed and bench mode off), `not controlling client`, `not in READY` (`mode MANUAL`, `HOLD`, or `SLEW` from any other mode, including from each other), `wheel loop not available` (`mode HOLD`, `mode SLEW`, or `wheel_step` before the closed wheel loop exists: no Hall or no `ff_table`, V-43), `input not available`, `wheel not at bias` (`mode READY` during `SPINUP`), `not in MANUAL`, `input mismatch`, `too fast`, `invalid setpoint`, `not implemented` (modes and commands of later repository sets), and for `set_params`: `invalid param: <key>`, `unknown param: <key>`, `not settable: <key>`, `not implemented: <key>`, `bench_mode required: hall_installed`, `no params`. The guards of `arm` are checked in the order `SAFE`, ramp, bench mode, still, battery, latches, and the first that fails names the reason.
 
 ### 13.2 Per-mode behaviour
 
@@ -632,8 +635,8 @@ These additions were approved by the owner on 2026-10-10 and written into TD §6
 | `SPINUP` | Ω_ref ramps toward the start speed (default bias) at 400 rpm/s; wheel PI active | Wheel loop only. Rate and attitude off: the box is pinned or held [V] TD §2 | Ω_target | At target → `READY` |
 | `READY` | Wheel loop | Rate loop | ω_cmd = 0 | Mode commands |
 | `DETUMBLE` | Wheel loop | Rate loop | ω_cmd = 0 | `mode READY` |
-| `HOLD` | Wheel loop | Attitude + rate | ψ_ref = ψ̂ at entry | `mode READY` |
-| `SLEW` | Wheel loop | Attitude + rate | Trapezoid to `psi_ref_deg` | complete, timeout, `mode READY` |
+| `HOLD` | Wheel loop | Attitude + rate, hold deadband | ψ_ref = ψ̂ at entry | `mode READY` |
+| `SLEW` | Wheel loop | Attitude + rate, hold deadband after the profile | Trapezoid to `psi_ref_deg` | complete, timeout, `mode READY` |
 | `SUN_POINT` | Wheel loop | Sun error + rate | sun angle → 0 | `mode READY`, invalid sun |
 | `MANUAL` | Open-loop throttle (`throttle`), or the wheel loop (`wheel`, `rate`) | `throttle`: none; `wheel`: wheel loop; `rate`: rate loop over the wheel loop | From `cmd:"manual"` (§13.5) | `mode READY`, `disarm`, `estop`, interlock |
 
@@ -820,7 +823,7 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `mode` | string | Wire mode name (§2.4) | TD |
 | `manual_input` | string or null | `throttle`, `wheel`, or `rate` in `MANUAL`; null otherwise | [D] |
 | `psi_deg` | number | Wrapped heading (−180, 180], clockwise positive (wire frame, §2.3) | TD; wrap [D]; sign [D] U-1 |
-| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE, and MANUAL; until HOLD and SLEW exist in Set 4 it is always null) | TD; null rule [D] |
+| `psi_ref_deg` | number or null | Current reference, clockwise positive and relative to the last `zero_heading`: a number in HOLD and SLEW (R4.3), null in SAFE, SPINUP, READY, DETUMBLE, and MANUAL | TD; null rule [D] |
 | `rate_dps` | number | ω̂, clockwise positive (the internal ω̂ negated) | TD |
 | `mag_deg` | number or null | ψ_mag, clockwise positive (null if the magnetometer is missing, and null until magnetometer heading exists in Set 5) | TD; [D] V-40 |
 | `sun_deg` | number or null | Calibrated sun angle, clockwise positive | TD |
@@ -974,7 +977,7 @@ The table records facts read from the `frontend/` source at PR #1 head 622150a (
 | It does not reconnect automatically | Matches §14.4 |
 | Its endpoint placeholder is `ws://192.168.4.1/ws`, and it saves whatever URL the user enters | The firmware serves port 80 at `/ws` (§15.1, §15.2): SoftAP mode is exactly that default, and station mode is `ws://direcsun.local/ws` (finding U-2) |
 | **Positive heading is clockwise seen from above.** "Rotate right" commands +90°, the dial's needle is drawn at (sin ψ, -cos ψ) in screen coordinates, and the 3D model turns by `rotation.y = -ψ` | The wire is clockwise positive and the firmware converts in its protocol layer (§2.3, finding U-1). A box turning clockwise by hand must turn the UI's dial clockwise |
-| Its judge sequence turns 90° left or right, holds 1.0 s, and returns to the start heading, at 60 deg/s and 120 deg/s² (`src/simulation/constants.ts`), with Stop and Reset | The same trapezoid limits as §12.4. On hardware it needs HOLD and SLEW. Whether the UI sends a pair of `SLEW` commands or one sequence command is decided by what the finished UI sends (repository Set 4) |
+| Its judge sequence turns 90° left or right, holds 1.0 s, and returns to the start heading, at 60 deg/s and 120 deg/s² (`src/simulation/constants.ts`), with Stop and Reset | The same trapezoid limits as §12.4. The UI sequences the turn itself (frontend PR #10): it captures `psi_deg`, sends `SLEW` to start ± 90 wrapped onto (−180, 180], waits for `slew_complete`, holds 1.0 s in `READY`, and sends `SLEW` back to the captured start; it stops on `SLEW_TIMEOUT`, a refusal, or `SAFE`, and "Stop turn" sends `mode READY`. R4.3 provides each step |
 | It loads `/assets/direcsun.glb` when present, and otherwise draws a schematic box ("SCHEMATIC MODEL, CAD NOT LOADED") | The CAD pipeline exports that model (repository Set 2, R2.5) |
 | While device telemetry is live, the simulation controls are locked and the header reads "DEVICE CONNECTED, RECEIVING TELEMETRY" | No firmware consequence |
 
@@ -1206,6 +1209,9 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-47 | §12.5: the sign check runs "at reduced K_ω (×0.2)" | R3.9 | Scaling K_ω alone would leave K_i at full value and move the PI corner up five times | `rate_gain_scale` scales K_ω and K_i together, default 0.2. In the host simulation scale 0.2 damps a push and never amplifies it, but does not meet PR-1; PR-1 is verified at scale 1 (HT-5) [D] | Low (this doc) |
 | V-48 | §13.1 and TD §6.6: `HOLD` and `SLEW` need "magnetometer OK"; §11.3's heading fuses the calibrated magnetometer | Owner decision 2026-10-10 (repository Set 4, R4.2) | The magnetometer calibration (T-9 at three wheel speeds) belongs to Set 5, but the main UI's judge sequence (turn 90°, hold 1 s, return) needs `HOLD` and `SLEW` now, and lasts only 5 to 6 s | `HOLD` and `SLEW` run on the gyro-only heading for relative use; `SLEW` targets are relative to the last `zero_heading`; `MAG_MISSING` blocks neither; the `HEADING_GYRO` flag marks every `tlm` until Set 5. Absolute `HOLD` returns with the magnetometer | Medium (this doc and TD) |
 | V-49 | §11.3: `zero_heading` "adds an offset so ψ̂ reads 0"; where the offset lives was unstated, and the command was accepted in any state | R4.2 | An offset kept in the estimator would let a zero and a `HOLD` or `SLEW` in the same control tick use different references, and a zero during `SLEW` would move the target under the box | The supervisor keeps the offset and reports the heading relative to it; the estimator integrates and is never reset. `zero_heading` is accepted in `SAFE` and `READY` only, refused elsewhere with `not in SAFE or READY` [D] | Low (this doc) |
+| V-50 | §12.4: `SLEW` ends when \|ψ_ref − ψ̂\| < 3° and \|ω̂\| < 5 deg/s for 0.5 s; the target's direction for a half-turn was left to the ground station | R4.3 | Read literally, the test holds while ψ_ref is still moving, so a short slew could report `slew_complete` before ψ_ref reached the target; a 180° target had two shortest paths | The test starts only once the profile has ended, so it compares ψ̂ with the target itself; a half-turn always goes counter-clockwise. The 6 s timeout counts from entry, which is tick 0 [D] | Low (this doc) |
+| V-51 | §12.1 and §12.3: ω_cmd = K_ψ · wrap(ψ_ref − ψ̂) everywhere in `HOLD`; the stick-slip bleed runs only while ω_cmd = 0 | R4.3 host simulation | At 3 mN·m, after a 10 mN·m, 100 ms poke, the box returned within 2° in 0.3 s and then crept the last 1.6° at under 1 deg/s with the rate loop holding about 2.8 mN·m against friction. The wheel absorbed that friction impulse, about 440 rpm per second, and reached Ω_low and `UNDERSPEED` 3.9 s after the poke | A 1° hold deadband on a still reference: inside it ω_cmd = 0, the bleed clears the integral, and friction holds the box. The same poke then costs about 800 rpm once and the wheel stays put (7 rpm in the next second). The positive control `DIRECSUN_MUTANT_NO_HOLD_DEADBAND` fails the HOLD simulation test [D] | Medium (this doc) |
+| V-52 | §12.2: Ω_ref is clamped to [Ω_low, Ω_cap], and `UNDERSPEED` trips when the wheel is below Ω_low for 200 ms (§14.1) | R4.3 host simulation | The clamp's floor is the trip threshold itself, so a rate loop that holds Ω_ref on Ω_low (`MOMENTUM_SATURATED`) turns into `UNDERSPEED` and `SAFE` as soon as the wheel dips a hair under it for 200 ms; the cap has margin to `OVERSPEED`, the floor has none | Open: raise the floor of the clamp above Ω_low (for example Ω_low + 100 rpm), or accept `SAFE` as the end of a saturated low wheel. Not changed by R4.3 | Medium (this doc), open |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 
 ### 23.2 Statements re-derived and confirmed
