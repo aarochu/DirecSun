@@ -53,6 +53,14 @@ Two people, each with their own agent sessions, work in this repository. This fi
 
 ## Crossing the line
 
+### Proposed R5.2 handoff (draft; not yet approved)
+
+Aaron has offered to take the bounded R5.2 teleop-extras feature to reduce Julian's firmware workload. This proposal does **not** change the ownership table above until Julian reviews and accepts it. If accepted, the exception covers only the R5.2 feature spec, MANUAL `wheel` and `rate` firmware inputs, and their host-side tests; it does not transfer ownership of other firmware features, the wire protocol, mock box, or design documents. Julian remains the reviewer and merges the set PR.
+
+Before implementation, R5.2 needs its own approved feature spec under `changes/5-pointing/`, following `.agents/skills/spec-driven-dev/SKILL.md`. The Set 5 outline says to write feature specs after Set 4 closes, using measured plant and magnetometer results. Aaron must not treat this handoff proposal as that approval or start firmware code from the outline alone. The existing FD §13.5 and `protocol/schema-v1.json` remain binding; any needed contract change follows the issue and review process below.
+
+No bench command, flash, arm, or motor test is authorized by this handoff. Motor-turning steps still require Julian's explicit go each time under `changes/CONTEXT.md`.
+
 - **Aaron needs something from the box or the contract** (a new command, field, or mock behaviour): open a GitHub issue titled `Contract: <what>`, with the `contract` label, assigned to Julian. Describe what the UI will send and expect. Julian's agent specs it in `changes/`, then changes the schema, the firmware, and the mock box together, and adds an entry to `protocol/README.md` "Changes". Until it lands, the UI can code against the request; nothing in `protocol/` is edited from Aaron's side.
 - **Julian changes the contract:**
   - Additive v1 changes are listed in `protocol/README.md` "Changes" and in the PR description.
