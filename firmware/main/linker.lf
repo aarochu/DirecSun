@@ -1,0 +1,6 @@
+# Run the control task's tick from IRAM (R3.4 bench timing, Oct 10). The boot
+# sequence and the background services stay in flash.
+[mapping:direcsun_main]
+archive: libmain.a
+entries:
+    control_task (noflash_text)

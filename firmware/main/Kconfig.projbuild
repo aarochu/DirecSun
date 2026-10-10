@@ -22,4 +22,16 @@ menu "DirecSun bench options"
         default 200
         range 120 2000
 
+    config DIRECSUN_BENCH_STAGE_TIMING
+        bool "Per-stage control tick timing (bench diagnostic)"
+        default n
+        help
+            Bench diagnostic for the control tick budget (R3.4): measures the
+            longest time each stage of the tick took in every second (IMU burst,
+            magnetometer poll, ADC read, Hall drain, estimator, supervisor,
+            DShot frame, outbound queues, telemetry snapshot) and has the status
+            task print one "stages" line per second. Adds a few esp_timer reads
+            per tick; leave it off in flight builds. firmware/sdkconfig.diag
+            turns it on.
+
 endmenu

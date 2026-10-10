@@ -23,6 +23,13 @@ constexpr float kWheelThrottleMin = 48.0f;      // running throttle range while 
 constexpr float kWheelThrottleMax = 2047.0f;
 constexpr float kWheelStepMaxRpm = 500.0f;      // bench `wheel_step` limit (FD section 15.3)
 
+// Outside SPINUP, omega_ref is clamped to [omega_ref_floor_rpm, cap in force].
+// The floor sits kOmegaRefFloorMarginRpm above omega_low, the UNDERSPEED
+// threshold, so a wheel held on it (MOMENTUM_SATURATED) has margin to the trip
+// as the cap has to OVERSPEED [D, FD section 12.2, V-52].
+constexpr float kOmegaRefFloorMarginRpm = 100.0f;
+float omega_ref_floor_rpm(const Params &params);
+
 // True when the closed wheel loop can run: the Hall sensor is fitted and the
 // T-5 feed-forward table has been set. Until then the box runs rung 1, the
 // open-loop throttle controller [D].
@@ -62,7 +69,7 @@ constexpr float kRateStillDps = 1.0f;
 constexpr float kRateBleedTauS = 0.5f;
 
 struct RateLoopStep {
-    float omega_ref_rpm = 0.0f;       // the new wheel reference, inside [omega_low, cap]
+    float omega_ref_rpm = 0.0f;       // the new wheel reference, inside [floor, cap]
     float tau_cmd_nm = 0.0f;          // torque wanted on the box, internal frame
     bool torque_saturated = false;    // tau_cmd at its limit
     bool momentum_saturated = false;  // omega_ref on a limit in the direction the loop needs

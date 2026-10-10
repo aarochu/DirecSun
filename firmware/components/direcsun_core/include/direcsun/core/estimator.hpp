@@ -18,7 +18,7 @@ struct EstimatorConfig {
     float dt_s = 0.002f;               // one control tick
     float bias_tau_s = 5.0f;           // FD 11.1: slow exponential average
     float still_rate_dps = 2.0f;       // FD 11.1: |g_z - b_z| below this
-    float still_accel_tol_g = 0.05f;   // FD 11.1: | |a| - 1 g | below this
+    float still_accel_tol_g = 0.05f;   // FD 11.1 as amended: | |a| - reference | below this
     float still_wheel_rpm = 200.0f;    // FD 11.1: wheel below this, or not reported
     float min_accel_norm_g = 0.2f;     // below this the box is falling: tilt reads 90 deg
 };
@@ -43,6 +43,14 @@ public:
     // (GyroBiasSeed). Without a seed the bias starts at 0.
     void seed_bias(float bias_dps);
 
+    // The accelerometer norm that counts as "still" for the bias gate [D]: the
+    // boot seed's own mean norm (GyroBiasSeed::reference_norm_g). An
+    // uncalibrated MPU-6050 can read well off 1 g at rest (0.871 g on the
+    // XIAO bench, Oct 10), so FD 11.1's absolute 1 g test would never open
+    // the gate. 1 g until set.
+    void set_accel_reference(float norm_g) { accel_ref_g_ = norm_g; }
+    float accel_reference_g() const { return accel_ref_g_; }
+
     // One valid IMU sample. Invalid samples are not fed: every output holds
     // its last value and the supervisor counts the streak (IMU_SILENT).
     void update(const EstimatorInputs &in);
@@ -65,6 +73,7 @@ public:
 private:
     EstimatorConfig config_;
     float bias_dps_ = 0.0f;
+    float accel_ref_g_ = 1.0f;
     float rate_dps_ = 0.0f;
     double heading_deg_ = 0.0;
     bool bias_updating_ = false;
@@ -81,15 +90,21 @@ private:
 // that (the register map's tolerance is +-20 deg/s), so starting from b_z = 0
 // the gate might never open and the offset would read as a permanent rotation.
 // The boot path therefore averages the gyro over the 1 s DShot-0 window and
-// seeds the bias, but only when that window proves the box was still: the gyro
-// stayed within a small range (a hand-turned or coasting box changes rate),
-// the mean is inside the sensor's offset tolerance, and every accelerometer
-// sample was within the stillness tolerance of 1 g.
+// seeds the bias, but only when that window proves the box was still:
+//   - the gyro stayed within a small range (a hand-turned or coasting box
+//     changes rate), and its mean is inside the sensor's offset tolerance;
+//   - every accelerometer norm stayed within the stillness tolerance of the
+//     window's own mean norm (relative, as amended: an uncalibrated
+//     accelerometer reads off 1 g at rest), and that mean is plausible for
+//     gravity (a dead accelerometer reading a constant near 0 g is not still).
+// The mean norm becomes the estimator's accel reference (set_accel_reference).
 struct GyroBiasSeedConfig {
     std::size_t min_samples = 250;     // at least 0.5 s of samples
     float max_range_dps = 0.5f;        // max - min of g_z over the window
     float max_abs_mean_dps = 25.0f;    // beyond the sensor's +-20 deg/s offset tolerance plus margin
-    float accel_tol_g = 0.05f;
+    float accel_tol_g = 0.05f;         // each norm within this of the window's mean norm
+    float min_ref_norm_g = 0.7f;       // plausible gravity for an uncalibrated MPU-6050
+    float max_ref_norm_g = 1.3f;
 };
 
 class GyroBiasSeed {
@@ -101,8 +116,15 @@ public:
     // True and the mean in `bias_dps` if the window qualifies; false otherwise.
     bool result(float &bias_dps) const;
 
+    // Why result() refuses, for the boot log: nullptr when the window qualifies.
+    const char *failure() const;
+
     std::size_t samples() const { return count_; }
     float range_dps() const { return count_ == 0 ? 0.0f : max_ - min_; }
+    // Mean accelerometer norm over the window (0 before the first sample).
+    float reference_norm_g() const { return count_ == 0 ? 0.0f : static_cast<float>(norm_sum_ / static_cast<double>(count_)); }
+    float norm_min_g() const { return norm_min_; }
+    float norm_max_g() const { return norm_max_; }
 
 private:
     GyroBiasSeedConfig config_;
@@ -110,7 +132,9 @@ private:
     double sum_ = 0.0;
     float min_ = 0.0f;
     float max_ = 0.0f;
-    bool accel_ok_ = true;
+    double norm_sum_ = 0.0;
+    float norm_min_ = 0.0f;
+    float norm_max_ = 0.0f;
 };
 
 }  // namespace direcsun

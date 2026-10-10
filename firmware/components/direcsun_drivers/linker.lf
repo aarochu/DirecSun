@@ -1,0 +1,7 @@
+# Run the drivers' code from IRAM: the control tick calls the IMU, magnetometer,
+# ADC, Hall, and DShot paths every 2 ms, and cache misses there added tens of
+# microseconds to the worst tick (R3.4 bench, Oct 10).
+[mapping:direcsun_drivers]
+archive: libdirecsun_drivers.a
+entries:
+    * (noflash_text)
