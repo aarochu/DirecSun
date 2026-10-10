@@ -33,8 +33,8 @@ Then R3.4 wires everything into the control task, and R3.5 adds comms. R3.7, R3.
 - [~] R3.1 dshot-output: DShot frame encoder (HT-1) and RMT driver, with an on-chip loopback self-test
 - [~] R3.2 sensor-bus: MPU-6050, QMC5883P, and BMP280 on one i2cdev-owned bus at 400 kHz
 - [~] R3.3 hall-and-adc: Hall edge capture and wheel-speed estimates (HT-2), battery and sun ADC
-- [ ] R3.4 control-task: 500 Hz control task, boot sequence, estimator subset, control-stall watchdog
-- [ ] R3.5 comms: Wi-Fi and mDNS, WebSocket server, schema v1 protocol, controlling client
+- [~] R3.4 control-task: 500 Hz control task, boot sequence, estimator subset, control-stall watchdog
+- [~] R3.5 comms: Wi-Fi and mDNS, WebSocket server, schema v1 protocol, controlling client
 - [x] R3.6 modes-and-interlocks: SAFE/SPINUP/READY/MANUAL machine, interlock table, ramp-down, parameters, Hall bench bypass
 - [ ] R3.7 manual-throttle: rung 1, open-loop spin-up and MANUAL throttle, console teleop panel
 - [ ] R3.8 wheel-loop: wheel-speed PI with feed-forward, bench characterisation (T-5, T-18)
