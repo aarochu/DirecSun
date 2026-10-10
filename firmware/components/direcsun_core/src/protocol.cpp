@@ -618,7 +618,15 @@ std::size_t encode_tlm(const TelemetrySnapshot &snap, uint32_t seq, uint32_t tlm
     w.num(snap.wheel_rpm > 0.0f ? snap.wheel_rpm : 0.0f, 1);
     w.raw(",\"wheel_ref_rpm\":");
     w.num(snap.wheel_ref_rpm > 0.0f ? snap.wheel_ref_rpm : 0.0f, 1);
-    w.fmt(",\"throttle\":%d,\"tau_cmd_mNm\":", legal_throttle(snap.throttle));
+    w.fmt(",\"throttle\":%d,\"throttle_band\":", legal_throttle(snap.throttle));
+    // null until the control task has filled the band from the parameters.
+    if (snap.throttle_band_lo >= kDshotMinThrottle && snap.throttle_band_hi >= snap.throttle_band_lo &&
+        snap.throttle_band_hi <= kDshotMaxThrottle) {
+        w.fmt("[%d,%d]", snap.throttle_band_lo, snap.throttle_band_hi);
+    } else {
+        w.raw("null");
+    }
+    w.raw(",\"tau_cmd_mNm\":");
     w.num(signed_to_wire(snap.tau_cmd_mNm), 3);
     w.raw(",\"vbat\":");
     w.num(snap.vbat_v > 0.0f ? snap.vbat_v : 0.0f, 2);

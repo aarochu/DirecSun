@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "direcsun/core/control.hpp"
 #include "direcsun/core/estimator.hpp"
 #include "direcsun/core/modes.hpp"
 #include "direcsun/core/snapshot.hpp"
@@ -66,14 +67,6 @@ gptimer_handle_t s_timer = nullptr;
 std::atomic<uint32_t> s_alarms_pending{0};
 
 ControlContext s_context;
-
-// Rungs R3.7 to R3.9 replace this. Until then nothing can command throttle,
-// and the supervisor's SAFE path sends DShot 0 whatever the mode.
-class ZeroThrottleController final : public ThrottleController {
-public:
-    int throttle(const ControlDemand &, const TickInputs &, const Params &) override { return 0; }
-    void reset() override {}
-};
 
 // The gptimer ISR. Not placed in IRAM on purpose [D]: CONFIG_GPTIMER_ISR_CACHE_SAFE
 // is off, so while a flash write disables the cache (parameter persistence,
@@ -149,7 +142,9 @@ void control_task(void *)
     static Supervisor supervisor(ctx.params, ctx.params_reset, ctx.params_reset_detail);
     static Estimator estimator;
     static WheelSpeed wheel;
-    static ZeroThrottleController controller;
+    // Rung 1 (R3.7): open-loop spin-up, READY hold, and MANUAL throttle. The
+    // supervisor clamps and the interlocks override whatever it proposes.
+    static OpenLoopThrottleController controller;
     static TickOutputs out;
     static Command commands[kCommandQueueDepth];
     static TelemetrySnapshot snap;
@@ -290,7 +285,7 @@ void control_task(void *)
         in.estop_requested = shared_take_estop();
         in.command_count = shared_drain_commands(commands, kCommandQueueDepth);
         in.commands = commands;
-        in.built_inputs = 0;  // no MANUAL input exists until R3.7
+        in.built_inputs = kRungOneBuiltInputs;  // MANUAL throttle; wheel and rate come later
         supervisor.step(in, controller, out);
         outbox_dropped_total = saturating_add(outbox_dropped_total, out.acks.dropped + out.events.dropped);
 
@@ -331,6 +326,9 @@ void control_task(void *)
             snap.wheel_rpm_fast = wheel_fast;
             snap.wheel_ref_rpm = 0.0f;
             snap.throttle = out.throttle;
+            const ThrottleBand band = manual_throttle_band(supervisor.params());
+            snap.throttle_band_lo = band.lo;
+            snap.throttle_band_hi = band.hi;
             snap.tau_cmd_mNm = 0.0f;
             snap.vbat_v = battery.average();
             snap.loop_us = loop_us_window;

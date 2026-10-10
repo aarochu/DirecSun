@@ -75,6 +75,8 @@ TelemetrySnapshot ready_snapshot()
     s.wheel_rpm = 2504.0f;
     s.wheel_ref_rpm = 2510.0f;
     s.throttle = 412;
+    s.throttle_band_lo = 150;
+    s.throttle_band_hi = 400;
     s.vbat_v = 10.1f;
     s.loop_us = 740;
     s.flags = kFlagMomentumOk;

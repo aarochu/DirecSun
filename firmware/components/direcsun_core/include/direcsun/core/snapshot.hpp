@@ -85,6 +85,8 @@ struct TelemetrySnapshot {
     float wheel_rpm_fast = 0.0f;
     float wheel_ref_rpm = 0.0f;        // 0 until the wheel loop exists (R3.8)
     int throttle = 0;                  // DShot value sent this tick
+    int throttle_band_lo = 0;          // manual_throttle_band() at this tick;
+    int throttle_band_hi = 0;          // 0 until filled (encoded as null)
     float tau_cmd_mNm = 0.0f;          // 0 until the rate loop exists (R3.9)
 
     float vbat_v = 0.0f;               // 1 s average

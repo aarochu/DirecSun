@@ -42,6 +42,17 @@ enum Flag : uint32_t {
 // Wire name of a single flag bit, or nullptr.
 const char *flag_wire_name(uint32_t flag_bit);
 
+// The band every MANUAL throttle setpoint is clamped into (FD section 13.5):
+// [manual_throttle_min, manual_throttle_max], with the top capped at
+// kBypassThrottleMax while the Hall is bypassed. The supervisor's clamp and the
+// tlm `throttle_band` field both come from here, so what the operator sees is
+// what the box enforces.
+struct ThrottleBand {
+    int lo = 0;
+    int hi = 0;
+};
+ThrottleBand manual_throttle_band(const Params &params);
+
 struct TickInputs {
     uint32_t tick = 0;                          // monotonic 2 ms tick counter
     float rate_dps = 0.0f;                      // box rate estimate
