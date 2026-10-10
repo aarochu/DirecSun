@@ -10,7 +10,7 @@ Branch: `feat/set1-foundation`. Order: R1.1 first, because every other feature n
 
 ## Status
 <!-- markers: [ ] not started · [~] in progress · [t] tests passing, awaiting merge · [x] merged -->
-- [ ] R1.1 scaffold-and-skills: monorepo skeleton, skill submodules, spec-gate hooks, README, AGENTS.md
+- [~] R1.1 scaffold-and-skills: monorepo skeleton, skill submodules, spec-gate hooks, README, AGENTS.md
 - [ ] R1.2 docs-import: TD and FD into docs/, renamed, diagrams rebuilt, approved amendments and the MANUAL mode applied
 - [ ] R1.3 cad-import: CadQuery sources, cad/out pipeline, venv bootstrap, staleness check
 - [ ] R1.4 firmware-skeleton: ESP-IDF v6.0 C++17 project that builds and boots on the XIAO ESP32-S3
@@ -19,11 +19,11 @@ Branch: `feat/set1-foundation`. Order: R1.1 first, because every other feature n
 - [ ] R1.7 ci: GitHub Actions running every check in this set
 
 ## Open questions / decisions before implementing
-1. **Mock box (R1.6):** add `tools/mock-box.py`, a protocol stub (not a plant model) that streams schema v1 `tlm` at 50 Hz, acks commands, and enforces the heartbeat. Without it, the console's end-to-end test and Aaron's UI have nothing to talk to until Set 3's firmware speaks v1. It adds the `websockets` Python package to the tools venv. Recommendation: yes. Confirm before implementing.
-2. **MANUAL setpoint staleness (R1.2, binding once written into the TD):** when `cmd:"manual"` setpoints stop for 250 ms while pings continue, the `rate` input falls to ω_cmd = 0 (the box stops turning), while `throttle` and `wheel` hold their last value (the wheel holds speed, so the box does not move). The 1 s heartbeat rule still ramps everything down. Recommendation: accept. Confirm before implementing.
+None. Both questions were answered 2026-10-10: the mock box is in (R1.6), and the MANUAL staleness rule is accepted as recommended (R1.2).
 
 ## DB changes in this set
 None.
 
 ## Log
 - 2026-10-10: Set scaffolded from the grilling session (layout, C++17, repo-authoritative docs, cad/out policy, link module, network, sets by demo milestone, hardware policy, git flow, CI, MANUAL mode).
+- 2026-10-10: Specs approved by Julian; open questions resolved.
