@@ -93,6 +93,7 @@ struct TelemetrySnapshot {
     uint32_t flags = 0;                // supervisor Flag bits
     InterlockSet latched = 0;          // latched faults
     uint32_t controlling_client = 0;
+    bool bench_mode = false;           // tlm then carries the bench fields (FD section 19.2)
 
     // Sensor presence from the boot probe.
     bool imu_present = false;
