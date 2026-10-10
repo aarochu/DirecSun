@@ -12,7 +12,9 @@ The UI's judge sequence (Set 4) stands on both. E-stop, heartbeat loss, and ever
 
 **Replan 2026-10-10:** `frontend/` (PR #1) is the main UI and the backend matches it. The MANUAL `wheel` and `rate` teleop inputs move to Set 5. Rung 1 (open-loop throttle through the bench console) stays, because it is how the wheel is first spun and characterised.
 
-**Hardware assumed (2026-10-10):**
+**Bench rig as it actually is (Julian, 2026-10-10, evening):** the XIAO ESP32-S3 (MAC e0:72:a1:fc:49:5c) and the three Adafruit I2C sensors on a breadboard. Not wired yet: the ESC and motor, the battery divider on D9, the A1104 Hall sensor on D10, and the OP550s on D0/D1. The battery, sun, and Hall inputs are floating, so their readings mean nothing until wired; any check that reads them must first prove the input follows a known source.
+
+**Hardware assumed by the specs (2026-10-10):**
 - Electronics: a breadboarded bench rig with the XIAO ESP32-S3, the three Adafruit sensors on STEMMA QT, the ESC, and the 2212 motor clamped to the bench. It moves to perfboard when ready.
 - Power: a current-limited bench supply at about 10 V with a 2 A limit, until the printed NiMH holder exists.
 - Instruments: an oscilloscope and a multimeter; no logic analyzer.
