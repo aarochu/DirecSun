@@ -65,6 +65,17 @@ tools/idf.sh -p /dev/ttyACM0 flash monitor       # XIAO ESP32-S3 over USB-C; Ctr
 
 Build defaults live in `firmware/sdkconfig.defaults`. Wi-Fi credentials go in `firmware/sdkconfig.defaults.local` (copy the `.example`; it is gitignored). After editing either file, delete `firmware/sdkconfig` and rebuild.
 
+## Checks
+
+`tools/check-all.sh` runs every repository check in a fixed order, the same way locally and in CI (`.github/workflows/ci.yml`). Each check that has a `--selftest` mode runs it too, proving the check can fail.
+
+```bash
+tools/check-all.sh              # purity, host tests, schema, link, mock box, CAD staleness
+tools/check-all.sh --firmware   # also builds the firmware (needs ESP-IDF v6.0)
+```
+
+Logs land in `build/check-all/`. CI also builds the firmware in the `espressif/idf:v6.0` container and uploads `direcsun.bin`.
+
 ## Working in this repo
 
 Read [AGENTS.md](AGENTS.md) and [changes/CONTEXT.md](changes/CONTEXT.md) before changing anything. Work is planned and tracked in `changes/` with the spec-driven-dev workflow: every feature has a spec, and its test scheme is the gate for merging.

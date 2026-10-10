@@ -1,0 +1,79 @@
+# Every repository check, on every feature push and every PR to main.
+# The same script runs locally: tools/check-all.sh (see README, Checks).
+name: ci
+
+on:
+  push:
+    branches: ["main", "feat/**"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: checks (purity, host tests, schema, link, mock box, CAD staleness)
+    runs-on: ubuntu-24.04
+    steps:
+      # No job needs the agent-skill submodules.
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Only the tool packages; CadQuery is not needed because the CAD
+      # staleness check compares hashes. Pins come from tools/requirements.txt.
+      - name: Tool packages
+        run: |
+          python -m venv "$RUNNER_TEMP/tools-venv"
+          "$RUNNER_TEMP/tools-venv/bin/pip" install --quiet $(grep -E '^(jsonschema|websockets)==' tools/requirements.txt)
+          echo "DIRECSUN_PYTHON=$RUNNER_TEMP/tools-venv/bin/python" >> "$GITHUB_ENV"
+
+      - name: tools/check-all.sh
+        run: tools/check-all.sh
+
+      - name: Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-all-logs
+          path: build/check-all/
+
+  firmware:
+    name: firmware (esp32s3, ESP-IDF v6.0)
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v6.0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Build
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          . "$IDF_PATH/export.sh"
+          cd firmware
+          idf.py set-target esp32s3
+          idf.py build
+          idf.py size | tee build/size.txt
+
+      - name: Firmware image
+        uses: actions/upload-artifact@v4
+        with:
+          name: direcsun-firmware
+          path: |
+            firmware/build/direcsun.bin
+            firmware/build/size.txt
