@@ -792,11 +792,13 @@ The ESP-IDF task watchdog is configured for 100 ms on the control task [V] TD §
 | Item | Choice | Label |
 | --- | --- | --- |
 | Library | ESP-IDF `esp_http_server` with `CONFIG_HTTPD_WS_SUPPORT=y`, URI `/ws` registered as a WebSocket handler on port 80, the main UI's endpoint (finding U-2). Other paths are not served. Outbound frames go through `httpd_queue_work` and `httpd_ws_send_frame_async`, the pattern of the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3; build check BC-4 on the S3 |
-| Max clients | 3 | [D] |
-| Outbound policy | Telemetry is broadcast to all clients. If a client's send would block (buffer full), that frame is skipped for that client and `tlm_dropped` increments. Acks and events are never skipped | [D] |
-| Inbound size limit | 512 bytes per message; larger messages are dropped with `ack ok:false reason:"too large"` | [D] |
-| JSON | Encode `tlm` with `snprintf` into a fixed buffer (no heap). Parse commands with cJSON from the `espressif/cjson` registry component (ESP-IDF v6.0 no longer bundles it) | [D]; library [A] |
-| Contract check | Every message kind is described by `protocol/schema-v1.json`; host test HT-9 validates encoder output against it | [D] |
+| Max clients | 3 (`max_open_sockets`), with LRU purge off, so a fourth connection is refused rather than evicting a connected (possibly controlling) client. Client ids are never reused, so a reconnect is a new client and resumes nothing | [D] |
+| Threads | The httpd task (core 0) owns every socket and the client table: handshakes, inbound frames, pongs and parse refusals sent inline, and every outbound send. The comms task (core 0, 50 Hz, below httpd priority) drains acks and events from control, encodes the newest snapshot, and hands both over through a queue and a latest-tlm buffer | [D] R3.5 |
+| Outbound policy | `tlm` goes to every client; a client whose socket is not writable at that moment skips the frame and `tlm_dropped` increments. An `ack` goes to the client that sent the command. An `event` goes only to clients that have sent at least one message, so a read-only viewer (the main UI's device link, which counts every non-`tlm` frame as ignored) receives only `tlm`, which carries the mode in every frame. Acks and events are not skipped for a slow socket; a send that fails closes that client | [D] R3.5 (finding V-38) |
+| Inbound size limit | 512 bytes per message; 513 to 1024 bytes are read and refused with `ack ok:false reason:"too large"` and `seq` 0; anything larger closes the session, because skipping it would desynchronise the stream | [D] |
+| JSON | Encode every message with `snprintf` into fixed buffers (no heap). Parse commands with cJSON 1.7.19, vendored in `direcsun_core/third_party/cjson` so the firmware and the host tests run the same parser (the `espressif/cjson` registry dependency is gone); `CJSON_NESTING_LIMIT` = 8 | [D] R3.5 (finding V-39) |
+| Wire sign | `direcsun_core/src/protocol.cpp` is the only code that converts between the internal counter-clockwise frame and the clockwise wire frame (§2.3, U-1); host test "sign conversion" pins it, and the `no_wire_sign` mutant proves the test can fail | [D] R3.5 |
+| Contract check | Every message kind is described by `protocol/schema-v1.json`. Host test HT-9 parses every client-direction schema fixture through the real parser and writes one of every encoded message kind for `tools/check-protocol.sh`, which validates them against the schema and requires a deliberately malformed `tlm` to fail | [D] |
 
 ### 15.3 Message schema, version 1
 
@@ -813,9 +815,9 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `mode` | string | Wire mode name (§2.4) | TD |
 | `manual_input` | string or null | `throttle`, `wheel`, or `rate` in `MANUAL`; null otherwise | [D] |
 | `psi_deg` | number | Wrapped heading (−180, 180], clockwise positive (wire frame, §2.3) | TD; wrap [D]; sign [D] U-1 |
-| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE) | TD; null rule [D] |
+| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE, and MANUAL; until HOLD and SLEW exist in Set 4 it is always null) | TD; null rule [D] |
 | `rate_dps` | number | ω̂, clockwise positive (the internal ω̂ negated) | TD |
-| `mag_deg` | number or null | ψ_mag, clockwise positive (null if magnetometer missing) | TD |
+| `mag_deg` | number or null | ψ_mag, clockwise positive (null if the magnetometer is missing, and null until magnetometer heading exists in Set 5) | TD; [D] V-40 |
 | `sun_deg` | number or null | Calibrated sun angle, clockwise positive | TD |
 | `sun_valid` | bool | n/a | TD |
 | `wheel_rpm` | number | `speed_safe` | TD |
@@ -824,9 +826,10 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `tau_cmd_mNm` | number | τ_cmd, clockwise positive (the internal τ_cmd negated) | TD |
 | `vbat` | number | 1 s average battery voltage | TD |
 | `loop_us` | int | Longest tick in the last 20 ms | TD; "longest" [D] |
-| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `MAG_MISSING`, `MANUAL_STALE`, latched fault names | TD; list [D] |
+| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `IMU_MISSING`, `MAG_MISSING`, `MANUAL_STALE`, `HALL_BYPASS`, then the latched fault names | TD; list [D] |
 | `t_c`, `p_pa` | number or null | BMP280, optional | [D] |
 | `tlm_dropped`, `dropped_events` | int | Counters | [D] |
+| `gyro_raw`, `mag_raw`, `sun_a_mv`, `sun_b_mv` | int[3], int[3], int, int | Bench mode only: raw sensor counts in the sensors' own axes (not converted to the wire frame) and the sun sensor millivolts (§19.2) | [D] |
 
 Example (values illustrative, not measurements; `vbat` chosen inside the NiMH range, finding V-3):
 
@@ -860,13 +863,19 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 {"v":1,"type":"ack","seq":77,"ok":false,"reason":"wheel not at bias"}
 ```
 
-`seq` echoes the command's `seq` [V] TD §7.3. Unknown `v`, unknown `type`, unknown `cmd`, a malformed message, or a failed guard → `ok:false` with a reason [V] TD §7.3.
+`seq` echoes the command's `seq` [V] TD §7.3, or is 0 when the refused frame had no readable `seq` (too large, malformed JSON). Unknown `v`, unknown `type`, unknown `cmd`, a malformed message, or a failed guard → `ok:false` with a reason [V] TD §7.3. The reasons are fixed strings [D] (finding V-41):
+
+- parse refusals, from the comms layer: `too large`, `malformed JSON`, `missing v`, `unsupported v`, `invalid seq`, `unknown type`, `unexpected type <t>` (a box-to-client type sent by a client), `unknown cmd`, `missing field: <f>`, `unexpected field: <f>`, `invalid field: <f>`, `two setpoints`, `missing setpoint`, `unknown param: <k>`, `invalid param: <k>`, `too many params`;
+- `busy`, when the command queue is full (an `estop` is still applied through its flag and acked `ok:true`);
+- guard refusals from the supervisor (§13.1): for example `not in SAFE`, `not controlling client`, `box not still`, `battery low`, `latched fault: <NAME>`, `input not available`, `too fast`, `not implemented`.
+
+A `set_params` ack with `ok:true` carries `applied`, the parameter object as received: updates are all-or-nothing, so what was applied is exactly what was sent.
 
 > **Ambiguity resolved (finding V-14).** TD defines `seq` as "the sender's counter" for every message, but the ack example uses the command's `seq` (77). The firmware therefore puts the **echoed command seq** in `seq` for `ack` messages only. Every other box message uses the box's own counter.
 
 #### `ping` / `pong`
 
-Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] TD §7.3. Box replies `{"v":1,"type":"pong","seq":<box seq>,"ping_seq":79,"t_client_ms":512330,"t_ms":83120}` [D field names], which lets the client compute round-trip time for T-11.
+Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] TD §7.3. Box replies `{"v":1,"type":"pong","seq":<box seq>,"ping_seq":79,"t_client_ms":512330,"t_ms":83120}` [D field names], which lets the client compute round-trip time for T-11. Comms answers the pong itself and forwards every ping to the supervisor as a command, so the supervisor alone decides whose pings keep an armed box alive (V-32).
 
 #### `event`: box → all clients
 
@@ -874,7 +883,14 @@ Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] T
 {"v":1,"type":"event","seq":311,"t_ms":83500,"event":"mode","mode":"SAFE","cause":"HEARTBEAT_LOST"}
 ```
 
-Sent on every mode change and every interlock trip [V] TD §7.3. `cause` is an interlock name, a command name, or `"slew_complete"` [D].
+Sent on every mode change and every interlock trip [V] TD §7.3, to every client that has sent at least one message (§15.2). The catalogue [D] (finding V-42):
+
+| `event` | Fields | When |
+| --- | --- | --- |
+| `mode` | `mode`, `cause` | Every mode change. `cause` is an interlock name (`ESTOP`, `HEARTBEAT_LOST`, `OVERSPEED`, ...), the command that caused it (`arm`, `disarm`, `mode`, `respin`), or an automatic transition: `boot`, `spinup_complete`, `slew_complete`, `SLEW_TIMEOUT`, `sun_invalid` |
+| `notice` | `name`, optional `detail` | `PARAMS_RESET` (detail `missing`, `version`, or `invalid`): the stored parameters were not usable and the defaults loaded. `HALL_BYPASS` (detail `on` or `off`): the Hall bench bypass changed |
+
+`t_ms` of an event is the time comms encoded it, at most 20 ms after the supervisor posted it. "Too fast" for MANUAL setpoints (§13.5) is measured when the supervisor drains the command, within one 2 ms tick of its arrival.
 
 ### 15.4 Command handling sequence
 
@@ -1170,6 +1186,11 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | U-1 | §2.3, §15.3, §17: the wire is counter-clockwise positive and the UI negates for display (V-17, V-24) | Main UI source at PR #1 622150a; owner decision 2026-10-10 | `frontend/` became the main UI, and the backend matches it. The UI draws positive heading clockwise ("rotate right" = +90°, dial at (sin ψ, -cos ψ), model `rotation.y = -ψ`) | The wire is clockwise positive for every quantity about the spin axis, including `tau_cmd_mNm`, which the spec list did not name but which is a torque about the same axis. The firmware converts only in its protocol encode and decode; the internal frame of §2.3 is unchanged. A v1 correction, not a v2 break: no backend had emitted v1, and the only consumer already assumed clockwise. Supersedes V-17 and the sign half of V-24 | High (wire contract) |
 | U-2 | §15.1, §15.2, §17, §19.3: WebSocket on port 81 at `/` (V-16 asked the UI to change its placeholder) | Main UI placeholder `ws://192.168.4.1/ws`; owner decision 2026-10-10 | The backend matches the UI | Port 80 at `/ws`: `ws://direcsun.local/ws` in station mode, `ws://192.168.4.1/ws` in SoftAP mode. `ground/link/` default, console hints, and `tools/mock-box.py` (serves only `/ws`, 404 elsewhere) follow. Supersedes V-16 | Medium (wire contract) |
 | U-3 | Header, §3, §17, §24 Q4: the demo UI is Aaron's, lives outside the repository, and talks through `ground/link/` | PR #1 merged 2026-10-10 (7136f6a) | `frontend/` is in the repository and is the main UI; it owns its operator client | §17 rewritten as the integration contract with `frontend/`, from its source. `ground/link/` and `ground/console/` are bench tools. §3 says the UI leads the wire interface | Medium |
+| V-38 | §15.2: "telemetry is broadcast to all clients" and events to all clients | R1.8 found the main UI counts every non-`tlm` frame as ignored and never sends | A read-only viewer would see its ignored count climb with every event | Events go only to clients that have sent at least one message; read-only viewers receive only `tlm`, which carries the mode (R3.5) | Low (this doc) |
+| V-39 | §15.2: cJSON from the `espressif/cjson` registry component | Host tests need the same parser | Two copies at different versions would let host tests pass against code the firmware does not run | cJSON 1.7.19 vendored in `direcsun_core/third_party/cjson`, compiled by both builds; the registry dependency is dropped (R3.5) | Low (this doc) |
+| V-40 | §15.3: `mag_deg` null only if the magnetometer is missing | No calibrated magnetometer heading exists until Set 5 | A raw atan2 of uncalibrated counts would be a misleading heading | `mag_deg` is null until Set 5 builds the calibrated heading (R3.5) | Low (this doc) |
+| V-41 | §15.3: refusals carry "a reason" without the strings | Implementation of the parser (R3.5) and supervisor (R3.6) | The UI and the tests need exact strings | Fixed list in §15.3; `seq` 0 for an unreadable frame | Low (this doc) |
+| V-42 | §15.3: `cause` limited to interlocks, commands, and `slew_complete`; no notice catalogue | R1.6 schema and R3.6 supervisor | The schema already had `boot`, `spinup_complete`, `SLEW_TIMEOUT`, `sun_invalid`, and `notice` | Event catalogue in §15.3, with `HALL_BYPASS` added as an additive v1 change (CONTEXT.md, 2026-10-10) | Low (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 
 ### 23.2 Statements re-derived and confirmed

@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "direcsun/comms/comms.hpp"
 #include "direcsun/core/commands.hpp"
 #include "direcsun/core/params.hpp"
 #include "direcsun/core/snapshot.hpp"
@@ -38,13 +39,9 @@ namespace direcsun::app {
 constexpr std::size_t kCommandQueueDepth = 16;
 constexpr std::size_t kOutboundQueueDepth = 16;
 
-// One item on the control-to-comms queue.
-struct Outbound {
-    enum class Kind : uint8_t { Ack, Event };
-    Kind kind = Kind::Ack;
-    Ack ack;      // kind == Ack: reply to ack.client
-    Event event;  // kind == Event: broadcast; its strings are static
-};
+// One item on the control-to-comms queue; defined in the core so the comms
+// component can consume it without depending on main.
+using direcsun::Outbound;
 
 // BMP280 reading, published at 1 Hz by the barometer task (never by control).
 struct BaroReading {
@@ -70,6 +67,9 @@ std::size_t shared_drain_commands(Command *out, std::size_t capacity);
 bool shared_post_outbound(const Outbound &item);
 // Acks and events dropped because the queue was full (tlm dropped_events).
 uint32_t shared_dropped_outbound();
+
+// The comms component's view of the channels above (R3.5).
+comms::Backend &shared_comms_backend();
 
 // ---- published state -----------------------------------------------------
 SeqlockBuffer<TelemetrySnapshot> &telemetry();   // writer: control, 50 Hz

@@ -9,11 +9,13 @@
 //      to prime the battery average and to seed the gyro bias from a still box.
 //   4. Background tasks on core 0, then the control task on core 1, which takes
 //      the DShot output over from the zero sender.
-//   5. Comms (R3.5) starts here once it exists. Wi-Fi never delays control.
+//   5. Comms (R3.5): Wi-Fi, mDNS, the WebSocket on port 80 at /ws. Wi-Fi never
+//      delays control.
 
 #include <cinttypes>
 
 #include "control_task.hpp"
+#include "direcsun/comms/comms.hpp"
 #include "direcsun/core/estimator.hpp"
 #include "direcsun/core/params.hpp"
 #include "direcsun/drivers/adc_inputs.hpp"
@@ -219,4 +221,7 @@ extern "C" void app_main(void)
     app::control_task_start(ctx, persist);
 
     // ---- 5. Comms (R3.5) ----------------------------------------------------
+    // Wi-Fi, mDNS, and the WebSocket server on core 0. Returns at once: the box
+    // is safe without a network, and control never waits for one.
+    comms::start(app::shared_comms_backend());
 }

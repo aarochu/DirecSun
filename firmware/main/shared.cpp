@@ -107,4 +107,25 @@ SeqlockBuffer<Params> &params_to_persist()
     return s_params_to_persist;
 }
 
+namespace {
+
+// The channels above, as the comms component sees them. Every call is
+// non-blocking, as the Backend contract requires.
+class SharedBackend final : public comms::Backend {
+public:
+    bool push_command(const Command &cmd) override { return shared_push_command(cmd); }
+    void request_estop() override { shared_request_estop(); }
+    bool pop_outbound(Outbound &item) override { return shared_pop_outbound(item); }
+    bool read_snapshot(TelemetrySnapshot &snap) override { return telemetry().read(snap); }
+    uint32_t snapshot_sequence() override { return telemetry().sequence(); }
+};
+
+}  // namespace
+
+comms::Backend &shared_comms_backend()
+{
+    static SharedBackend backend;
+    return backend;
+}
+
 }  // namespace direcsun::app

@@ -337,6 +337,7 @@ void control_task(void *)
             snap.flags = out.flags;
             snap.latched = out.latched;
             snap.controlling_client = out.controlling_client;
+            snap.bench_mode = supervisor.params().bench_mode;
             snap.imu_present = ctx.imu_present;
             snap.mag_present = ctx.mag_present;
             snap.baro_present = ctx.baro_present;
