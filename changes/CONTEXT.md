@@ -69,7 +69,7 @@ The repo markdown is authoritative. The original Claude Doc export and `message.
 ## Conventions
 
 - Sign convention: counter-clockwise positive seen from above, +z up the spin axis (FD §2.3). The wire carries CCW-positive values. A UI converts for display; the link module does not.
-- Wire protocol: schema v1, JSON text frames at `ws://direcsun.local:81/` (mDNS). Additions before the freeze at the end of Set 1 stay v1; any change after it bumps `v`.
+- Wire protocol: schema v1, JSON text frames at `ws://direcsun.local:81/` (mDNS). Versioning rule (2026-10-10): additive, backward-compatible changes stay v1. These are new optional fields and new flag, event, notice, or parameter names; each one is noted in `protocol/README.md` for Aaron's UI. Breaking changes bump `v`: renamed or removed fields, changed types, units, or meaning.
 - Git: `main` is the integration branch. Set branch `feat/setN-slug` off `main`; feature branch `feat/setN/RN.M-slug` off the set branch. Agents commit and push set and feature branches. Feature branches merge into the set branch locally once their Tests pass (the spec-gate hook enforces this). A set reaches `main` only through a GitHub PR, opened after the agent has verified every feature itself, and merged by Julian.
 - Commit messages carry no agent co-author trailer. Prose and messages use no em dashes.
 - Unrelated defects found while working: fix them inline if the fix is under about five minutes and low-risk, and note it in the feature log. Otherwise add them to the current `_set.md` Open questions, or open an issue on aarochu/DirecSun.
