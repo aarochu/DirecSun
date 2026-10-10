@@ -1,8 +1,8 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
-import { DeviceLink, parseTelemetry, validateLinkUrl } from '../hardware/deviceLink';
+import { DeviceLink, flagSeverity, parseTelemetry, validateLinkUrl } from '../hardware/deviceLink';
 
 class FakeSocket {
   static instances: FakeSocket[] = [];
@@ -58,12 +58,50 @@ describe('parseTelemetry', () => {
       targetDeg: 47,
       rateDegS: 0.3,
       wheelRpm: 2504,
+      wheelRefRpm: null,
+      throttleBand: null,
+      flags: [],
       batteryV: 10.1,
     });
   });
 
   it('tolerates missing optional fields', () => {
-    expect(parseTelemetry(tlm({ psi_deg: 10 }))).toMatchObject({ headingDeg: 10, wheelRpm: null, batteryV: null });
+    expect(parseTelemetry(tlm({ psi_deg: 10 }))).toMatchObject({
+      headingDeg: 10,
+      wheelRpm: null,
+      wheelRefRpm: null,
+      throttleBand: null,
+      flags: [],
+      batteryV: null,
+    });
+  });
+
+  it('reads flags, the wheel speed reference and the optional throttle band', () => {
+    expect(
+      parseTelemetry(
+        tlm({
+          psi_deg: 0,
+          wheel_ref_rpm: 2400,
+          throttle_band: [200, 600],
+          flags: ['MOMENTUM_NEAR_LIMIT', 'HALL_BYPASS', 'ESTOP', 'ESTOP', 7, ''],
+        }),
+      ),
+    ).toMatchObject({ wheelRefRpm: 2400, throttleBand: [200, 600], flags: ['MOMENTUM_NEAR_LIMIT', 'HALL_BYPASS', 'ESTOP'] });
+    expect(parseTelemetry(tlm({ psi_deg: 0, throttle_band: [200] }))!.throttleBand).toBeNull();
+    expect(parseTelemetry(tlm({ psi_deg: 0, throttle_band: [200, 'x'] }))!.throttleBand).toBeNull();
+    expect(parseTelemetry(tlm({ psi_deg: 0, flags: 'ESTOP' }))!.flags).toEqual([]);
+  });
+});
+
+describe('flagSeverity', () => {
+  it('marks latched interlocks as faults, MOMENTUM_OK as ok, and everything else as a warning', () => {
+    for (const fault of ['ESTOP', 'HEARTBEAT_LOST', 'OVERSPEED', 'UNDERSPEED', 'BATTERY_LOW', 'IMU_SILENT', 'TILT', 'CONTROL_STALL', 'HALL_SILENT']) {
+      expect(flagSeverity(fault)).toBe('fault');
+    }
+    expect(flagSeverity('MOMENTUM_OK')).toBe('ok');
+    for (const warning of ['MOMENTUM_NEAR_LIMIT', 'MOMENTUM_SATURATED', 'LOOP_OVERRUN', 'MAG_MISSING', 'IMU_MISSING', 'MANUAL_STALE', 'HALL_BYPASS', 'SOMETHING_NEW']) {
+      expect(flagSeverity(warning)).toBe('warning');
+    }
   });
 
   it('ignores acks, other versions, malformed JSON and frames without a heading', () => {
@@ -175,6 +213,49 @@ describe('ground station with a device link', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(screen.getByText('SIMULATED — NO DEVICE CONNECTION')).toBeTruthy();
+    expect(socket.sent).toEqual([]);
+  });
+
+  it('shows device flags, the wheel reference and the throttle band; none of them in simulation', async () => {
+    vi.stubGlobal('WebSocket', FakeSocket);
+    render(
+      <MemoryRouter initialEntries={['/ground-station']}>
+        <App />
+      </MemoryRouter>,
+    );
+    const rail = () => screen.getByRole('region', { name: 'TELEMETRY' });
+    expect(within(rail()).queryByRole('list', { name: 'Device flags' })).toBeNull();
+    expect(within(rail()).queryByText('THROTTLE BAND')).toBeNull();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }), { target: { value: 'ws://192.168.4.1/ws' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    const socket = FakeSocket.instances[0]!;
+    act(() => {
+      socket.open();
+      socket.message(
+        tlm({
+          t_ms: 0,
+          psi_deg: 10,
+          mode: 'MANUAL',
+          wheel_rpm: 2380,
+          wheel_ref_rpm: 2400,
+          throttle_band: [200, 600],
+          flags: ['MOMENTUM_OK', 'HALL_BYPASS', 'HEARTBEAT_LOST'],
+        }),
+      );
+    });
+    const flags = within(rail()).getByRole('list', { name: 'Device flags' });
+    expect(within(flags).getByText('MOMENTUM OK').className).toBe('flag flag--ok');
+    expect(within(flags).getByText('HALL BYPASS').className).toBe('flag flag--warning');
+    expect(within(flags).getByText('LATCHED HEARTBEAT LOST').className).toBe('flag flag--fault');
+    expect(within(rail()).getByText('REF 2400 RPM')).toBeTruthy();
+    expect(within(rail()).getByText('THROTTLE BAND')).toBeTruthy();
+    expect(within(rail()).getByText('200–600')).toBeTruthy();
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 10, mode: 'READY', flags: [] })));
+    expect(within(rail()).queryByRole('list', { name: 'Device flags' })).toBeNull();
+    expect(within(rail()).queryByText('THROTTLE BAND')).toBeNull();
     expect(socket.sent).toEqual([]);
   });
 

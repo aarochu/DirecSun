@@ -1,5 +1,8 @@
+import { flagSeverity } from '../hardware/deviceLink';
 import { formatHeading, formatRate, formatRpm } from '../lib/format';
 import type { DisplayTelemetry } from './displaySource';
+
+const flagLabel = (flag: string) => flag.replace(/_/g, ' ');
 
 export function TelemetryReadouts({ telemetry }: { telemetry: DisplayTelemetry }) {
   return (
@@ -9,6 +12,18 @@ export function TelemetryReadouts({ telemetry }: { telemetry: DisplayTelemetry }
         <dd>
           <span className="readout__phase">{telemetry.statusWord}</span>
           <span className="readout__suffix"> / {telemetry.statusSuffix}</span>
+          {telemetry.flags.length > 0 && (
+            <ul className="flags" aria-label="Device flags">
+              {telemetry.flags.map((flag) => {
+                const severity = flagSeverity(flag);
+                return (
+                  <li key={flag} className={`flag flag--${severity}`}>
+                    {severity === 'fault' ? `LATCHED ${flagLabel(flag)}` : flagLabel(flag)}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </dd>
       </div>
       <div className="readout">
@@ -30,6 +45,15 @@ export function TelemetryReadouts({ telemetry }: { telemetry: DisplayTelemetry }
           <span className="readout__note">{telemetry.wheelNote}</span>
         </dd>
       </div>
+      {telemetry.throttleBand !== null && (
+        <div className="readout">
+          <dt className="mono-label">THROTTLE BAND</dt>
+          <dd className="readout__value">
+            {Math.round(telemetry.throttleBand[0])}–{Math.round(telemetry.throttleBand[1])}
+            <span className="readout__note">MANUAL CLAMP / DSHOT</span>
+          </dd>
+        </div>
+      )}
       {telemetry.batteryV !== null && (
         <div className="readout">
           <dt className="mono-label">BATTERY</dt>

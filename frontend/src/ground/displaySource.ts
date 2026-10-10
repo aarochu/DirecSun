@@ -18,6 +18,9 @@ export interface DisplayTelemetry {
   readonly rateDegS: number | null;
   readonly wheelRpm: number | null;
   readonly wheelNote: string;
+  readonly wheelRefRpm: number | null;
+  readonly throttleBand: readonly [number, number] | null;
+  readonly flags: readonly string[];
   readonly batteryV: number | null;
   readonly history: readonly HistorySample[];
   readonly nowS: number;
@@ -42,6 +45,9 @@ export function simulationTelemetry({ state, history }: PlantSnapshot): DisplayT
     rateDegS: state.rateDegS,
     wheelRpm: state.wheelRpm,
     wheelNote: state.wheelLimited ? 'SIMULATED LIMIT' : 'MOMENTUM MODEL',
+    wheelRefRpm: null,
+    throttleBand: null,
+    flags: [],
     batteryV: null,
     history,
     nowS: state.timeS,

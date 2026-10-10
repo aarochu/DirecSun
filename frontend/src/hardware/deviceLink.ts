@@ -12,7 +12,29 @@ export interface DeviceTelemetry {
   readonly targetDeg: number | null;
   readonly rateDegS: number | null;
   readonly wheelRpm: number | null;
+  readonly wheelRefRpm: number | null;
+  readonly throttleBand: readonly [number, number] | null;
+  readonly flags: readonly string[];
   readonly batteryV: number | null;
+}
+
+export type FlagSeverity = 'ok' | 'warning' | 'fault';
+
+const FAULT_FLAGS = new Set([
+  'ESTOP',
+  'HEARTBEAT_LOST',
+  'OVERSPEED',
+  'UNDERSPEED',
+  'BATTERY_LOW',
+  'IMU_SILENT',
+  'TILT',
+  'CONTROL_STALL',
+  'HALL_SILENT',
+]);
+
+export function flagSeverity(flag: string): FlagSeverity {
+  if (flag === 'MOMENTUM_OK') return 'ok';
+  return FAULT_FLAGS.has(flag) ? 'fault' : 'warning';
 }
 
 export interface LinkState {
@@ -25,6 +47,17 @@ export interface LinkState {
 
 const finite = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
+
+function band(value: unknown): readonly [number, number] | null {
+  if (!Array.isArray(value) || value.length !== 2) return null;
+  const [lo, hi] = value.map(finite);
+  return lo === null || hi === null || lo === undefined || hi === undefined ? null : [lo, hi];
+}
+
+function flagList(value: unknown): readonly string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((flag): flag is string => typeof flag === 'string' && flag.length > 0))];
+}
 
 export function parseTelemetry(raw: unknown): DeviceTelemetry | null {
   if (typeof raw !== 'string') return null;
@@ -48,6 +81,9 @@ export function parseTelemetry(raw: unknown): DeviceTelemetry | null {
     targetDeg: finite(message.psi_ref_deg),
     rateDegS: finite(message.rate_dps),
     wheelRpm: finite(message.wheel_rpm),
+    wheelRefRpm: finite(message.wheel_ref_rpm),
+    throttleBand: band(message.throttle_band),
+    flags: flagList(message.flags),
     batteryV: finite(message.vbat),
   };
 }
@@ -222,7 +258,10 @@ export class DeviceLink implements DisplaySource {
       targetDeg: reading ? this.unwrappedTarget(reading) : this.unwrappedHeading,
       rateDegS: reading?.rateDegS ?? null,
       wheelRpm: reading?.wheelRpm ?? null,
-      wheelNote: 'DEVICE REPORTED',
+      wheelNote: reading?.wheelRefRpm == null ? 'DEVICE REPORTED' : `REF ${Math.round(reading.wheelRefRpm)} RPM`,
+      wheelRefRpm: reading?.wheelRefRpm ?? null,
+      throttleBand: reading?.throttleBand ?? null,
+      flags: reading?.flags ?? [],
       batteryV: reading?.batteryV ?? null,
       history: [...this.history],
       nowS: this.nowS,
