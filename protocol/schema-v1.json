@@ -116,6 +116,13 @@
         "wheel_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed (interlock estimate speed_safe), rpm, forward direction." },
         "wheel_ref_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed reference, rpm." },
         "throttle": { "$ref": "#/$defs/throttle", "description": "DShot value sent this tick." },
+        "throttle_band": {
+          "description": "Optional (added in R3.7, additive v1). The band the box clamps MANUAL throttle setpoints into: [manual_throttle_min, manual_throttle_max], with the top capped at kBypassThrottleMax (400) while the Hall is bypassed. null until the box has loaded its parameters. The bench console draws its slider from it.",
+          "oneOf": [
+            { "type": "null" },
+            { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": 48, "maximum": 2047 } }
+          ]
+        },
         "tau_cmd_mNm": { "type": "number", "description": "Commanded torque on the box, mN m, clockwise positive." },
         "vbat": { "type": "number", "minimum": 0, "description": "1 s average battery voltage, V." },
         "loop_us": { "type": "integer", "minimum": 0, "description": "Longest control tick in the last 20 ms, us." },

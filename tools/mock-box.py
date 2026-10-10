@@ -78,7 +78,10 @@ MAX_CLIENTS = 3
 MAX_INBOUND_BYTES = 512
 
 OMEGA_LOW, OMEGA_BIAS, OMEGA_CAP = 800.0, 2400.0, 4000.0
-THROTTLE_MIN, THROTTLE_MAX = 200, 600     # stand-in for the T-5 band
+THROTTLE_MIN, THROTTLE_MAX = 150, 400     # the firmware's defaults until T-5 (FD section 16)
+BYPASS_THROTTLE_MAX = 400                 # kBypassThrottleMax in the firmware
+SPINUP_THROTTLE = 300                     # spinup_throttle default; rung 1 holds it in READY
+SPINUP_RAMP_PER_S = 200                   # open-loop ramp, DShot units per second (R3.7)
 ACTIVE_MODES = {"DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"}
 SETPOINT_KEY = {"throttle": "throttle", "wheel": "wheel_rpm", "rate": "rate_dps"}
 
@@ -131,6 +134,7 @@ class Box:
         self.ramp = None                  # (start time, start wheel) while ramping down
         self.manual_value = None
         self.manual_last = -1.0
+        self.last_throttle = 0
         self.params = {"bench_mode": False, "hall_installed": True,
                        "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX}
         self.talkers = set()              # clients that have sent anything get events (R3.5)
@@ -303,6 +307,10 @@ class Box:
             self._set_mode("MANUAL", "mode")
             self.manual_input = message["input"]
             self.manual_value = None
+            if self.manual_input == "throttle":
+                # Start from the throttle being sent now, so entry is not a step (FD 13.5).
+                lo, hi = self._throttle_band()
+                self.manual_value = float(min(hi, max(lo, self.last_throttle)))
             self.manual_last = time.monotonic()
             return
         self._ack(conn, seq, True)
@@ -313,18 +321,27 @@ class Box:
             self.psi_ref = wrap_deg(self.psi)
             self.slew = (self.psi, message["psi_ref_deg"], time.monotonic())
 
+    def _throttle_band(self):
+        # Same rule as manual_throttle_band() in the firmware core.
+        hi = self.params["manual_throttle_max"]
+        if not self.params["hall_installed"]:
+            hi = min(hi, BYPASS_THROTTLE_MAX)
+        lo = min(self.params["manual_throttle_min"], hi)
+        return lo, hi
+
     def _manual(self, conn, seq, message):
         if self.mode != "MANUAL":
-            return self._ack(conn, seq, False, f"not allowed in {self.mode}")
+            return self._ack(conn, seq, False, "not in MANUAL")
         key = SETPOINT_KEY[self.manual_input]
         if key not in message:
-            return self._ack(conn, seq, False, f"input is {self.manual_input}")
+            return self._ack(conn, seq, False, "input mismatch")
         now = time.monotonic()
         if now - self.manual_last < MANUAL_MIN_SPACING_S and self.manual_value is not None:
             return self._ack(conn, seq, False, "too fast")
         value = float(message[key])
         if key == "throttle":
-            value = min(self.params["manual_throttle_max"], max(self.params["manual_throttle_min"], value))
+            lo, hi = self._throttle_band()
+            value = min(hi, max(lo, value))
         elif key == "wheel_rpm":
             value = min(OMEGA_CAP, max(OMEGA_LOW, value))
         else:
@@ -403,11 +420,21 @@ class Box:
             flags.append("HALL_BYPASS")
         flags.extend(self.latched)
 
+        # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
+        # spin-up throttle held in READY, the setpoint in MANUAL throttle.
         throttle = 0
-        if self.wheel_ref > 1.0 or self.wheel > 50.0:
-            throttle = int(min(2047, max(48, 48 + self.wheel_ref * 0.17)))
+        if self.mode == "SPINUP":
+            throttle = int(min(SPINUP_THROTTLE, (now - self.mode_since) * SPINUP_RAMP_PER_S))
+        elif self.mode != "SAFE":
+            throttle = SPINUP_THROTTLE
+        elif self.ramp:
+            throttle = int(48 + self.wheel_ref * 0.17)
+        if 0 < throttle < 48:
+            throttle = 0
         if self.mode == "MANUAL" and self.manual_input == "throttle" and self.manual_value is not None:
             throttle = int(self.manual_value)
+        self.last_throttle = throttle
+        band_lo, band_hi = self._throttle_band()
         psi_wire = wrap_deg(self.psi + self.psi_offset)
         self._emit(None, {
             "v": 1, "type": "tlm", "seq": self._next_seq(), "t_ms": self._t_ms(), "mode": self.mode,
@@ -419,7 +446,7 @@ class Box:
             "mag_deg": round(wrap_deg(psi_wire + random.uniform(-0.4, 0.4)), 2),
             "sun_deg": None, "sun_valid": False,
             "wheel_rpm": round(max(0.0, self.wheel), 1), "wheel_ref_rpm": round(max(0.0, self.wheel_ref), 1),
-            "throttle": throttle, "tau_cmd_mNm": round(-reaction * 2.0, 2),
+            "throttle": throttle, "throttle_band": [band_lo, band_hi], "tau_cmd_mNm": round(-reaction * 2.0, 2),
             "vbat": round(10.1 + random.uniform(-0.03, 0.03), 2),
             "loop_us": random.randint(690, 790), "flags": flags,
             "t_c": 23.5, "p_pa": 101300.0, "tlm_dropped": 0, "dropped_events": 0,
