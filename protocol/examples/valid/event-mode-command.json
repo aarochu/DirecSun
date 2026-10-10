@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "event",
+  "seq": 312,
+  "t_ms": 90000,
+  "event": "mode",
+  "mode": "MANUAL",
+  "cause": "mode"
+}

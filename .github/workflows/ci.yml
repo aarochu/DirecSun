@@ -1,0 +1,121 @@
+# Every repository check, on every feature push and every PR to main.
+# The same script runs locally: tools/check-all.sh (see README, Checks).
+name: ci
+
+on:
+  push:
+    branches: ["main", "feat/**"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: checks (purity, host tests, schema, link, mock box, CAD staleness)
+    runs-on: ubuntu-24.04
+    steps:
+      # No job needs the agent-skill submodules.
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Only the tool packages; CadQuery is not needed because the CAD
+      # staleness check compares hashes. Pins come from tools/requirements.txt.
+      - name: Tool packages
+        run: |
+          python -m venv "$RUNNER_TEMP/tools-venv"
+          "$RUNNER_TEMP/tools-venv/bin/pip" install --quiet $(grep -E '^(jsonschema|websockets)==' tools/requirements.txt)
+          echo "DIRECSUN_PYTHON=$RUNNER_TEMP/tools-venv/bin/python" >> "$GITHUB_ENV"
+
+      - name: tools/check-all.sh
+        run: tools/check-all.sh
+
+      - name: Logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: check-all-logs
+          path: build/check-all/
+
+  firmware:
+    name: firmware (esp32s3, ESP-IDF v6.0)
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v6.0
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - name: Build
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          . "$IDF_PATH/export.sh"
+          cd firmware
+          idf.py set-target esp32s3
+          idf.py build
+          idf.py size | tee build/size.txt
+
+      - name: Firmware image
+        uses: actions/upload-artifact@v7
+        with:
+          name: direcsun-firmware
+          path: |
+            firmware/build/direcsun.bin
+            firmware/build/size.txt
+
+  frontend:
+    name: frontend (typecheck, unit, e2e in Chrome)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # The Playwright config uses the installed Google Chrome (channel: chrome).
+      # Fail loudly if the runner image ever stops shipping it, rather than
+      # letting the e2e step error out on a missing browser.
+      - name: Google Chrome present
+        run: google-chrome --version
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Playwright results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-results
+          path: frontend/test-results/

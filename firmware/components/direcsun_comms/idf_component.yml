@@ -1,0 +1,4 @@
+## ESP-IDF v6.0 no longer bundles mDNS or cJSON; both come from the registry.
+dependencies:
+  espressif/mdns: "^1.14.0"
+  espressif/cjson: "^1.7.19"
