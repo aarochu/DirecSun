@@ -1,5 +1,7 @@
 # DirecSun
 
+[![ci](https://github.com/aarochu/DirecSun/actions/workflows/ci.yml/badge.svg)](https://github.com/aarochu/DirecSun/actions/workflows/ci.yml)
+
 DirecSun (formerly PocketADCS) is a single-axis reaction-wheel attitude trainer in a 3D-printed 2U CubeSat frame. The box turns on two 608 bearings around a fixed bolt. Inside it, a 2212 brushless motor spins a flywheel; speeding the wheel up or slowing it down turns the box the other way, the way a satellite's reaction wheel does. A Seeed XIAO ESP32-S3 closes the loop from a gyro, a magnetometer, and a two-element sun sensor, and a browser ground station on Wi-Fi commands it and plots telemetry.
 
 The demonstration modes are detumble (stop a hand spin), hold (keep a heading against pokes), slew (turn to a commanded heading), sun point (track a lamp), and manual teleoperation. The full system design is in [docs/technical-design.md](docs/technical-design.md) and the firmware design in [docs/firmware-design.md](docs/firmware-design.md).
@@ -64,6 +66,17 @@ tools/idf.sh -p /dev/ttyACM0 flash monitor       # XIAO ESP32-S3 over USB-C; Ctr
 ```
 
 Build defaults live in `firmware/sdkconfig.defaults`. Wi-Fi credentials go in `firmware/sdkconfig.defaults.local` (copy the `.example`; it is gitignored). After editing either file, delete `firmware/sdkconfig` and rebuild.
+
+## Checks
+
+`tools/check-all.sh` runs every repository check in a fixed order, the same way locally and in CI (`.github/workflows/ci.yml`). Each check that has a `--selftest` mode runs it too, proving the check can fail.
+
+```bash
+tools/check-all.sh              # purity, host tests, schema, link, mock box, CAD staleness
+tools/check-all.sh --firmware   # also builds the firmware (needs ESP-IDF v6.0)
+```
+
+Logs land in `build/check-all/`. CI also builds the firmware in the `espressif/idf:v6.0` container and uploads `direcsun.bin`.
 
 ## Working in this repo
 
