@@ -1,10 +1,10 @@
-# PocketADCS Technical Design
+# DirecSun Technical Design
 
-Oct 9, 2026 · @Julian V
+Oct 9, 2026 · Julian V. Formerly PocketADCS; imported into the repository on Oct 10, 2026 (Section 12.4, repository import).
 
 ## 1. Purpose, scope, and conventions
 
-This document specifies PocketADCS, a single-axis reaction wheel attitude trainer built in a 3D-printed 2U CubeSat frame, and the plan to build it during a weekend hackathon. Nothing described here has been built or measured yet. Every number is either sourced, calculated from stated inputs, or an assumption to be measured.
+This document specifies DirecSun, a single-axis reaction wheel attitude trainer built in a 3D-printed 2U CubeSat frame, and the plan to build it during a weekend hackathon. Nothing described here has been built or measured yet. Every number is either sourced, calculated from stated inputs, or an assumption to be measured.
 
 **Audience.** Software and firmware engineers who will write the flight and ground code, architects deciding module boundaries, and AI agents that will modify the CAD, firmware, or this document. Sections 6, 7, 8, and 12 are written so an agent can act on them without the conversation that produced them.
 
@@ -21,11 +21,11 @@ This document specifies PocketADCS, a single-axis reaction wheel attitude traine
 
 **Precedence.** Where this document disagrees with earlier chat messages or the two design web pages, this document wins. Section 12 logs every earlier statement that adversarial review found to be wrong, and what replaced it.
 
-**Source of truth.** Geometry lives in `~/projects/pocketadcs/cad/stack.py` and the part scripts. Sizing numbers live in `~/projects/pocketadcs/docs/sizing.py`. If this document and those files disagree, the files win and this document has a bug.
+**Source of truth.** Geometry lives in `cad/stack.py` and the part scripts. Sizing numbers live in `docs/sizing.py`. Paths in this document are relative to the repository root. If this document and those files disagree, the files win and this document has a bug.
 
 ## 2. System overview and requirements
 
-PocketADCS is a 0.7 kg box that turns about one vertical axis on two 608 bearings, pointed by a reaction wheel inside it. A brushless motor spins a steel washer flywheel; changing the wheel's speed turns the box the opposite way, as a satellite's reaction wheel does. An ESP32-S3 on the box closes the loop from a gyro, a magnetometer, and a two-element sun sensor. A browser ground station on a private Wi-Fi network commands it and plots telemetry.
+DirecSun is an 0.84 kg box that turns about one vertical axis on two 608 bearings, pointed by a reaction wheel inside it. A brushless motor spins a steel washer flywheel; changing the wheel's speed turns the box the opposite way, as a satellite's reaction wheel does. An ESP32-S3 on the box closes the loop from a gyro, a magnetometer, and a two-element sun sensor. A browser ground station on a private Wi-Fi network commands it and plots telemetry.
 
 &#91;embedded content: system architecture · power, sensing, control, and the radio link\]
 
@@ -59,11 +59,11 @@ Power flows left to right along the top row; sensing flows up into the XIAO; the
 
 **Constraints.** The build must finish in one weekend, mostly from parts already owned. Printed parts must fit a 220 mm print bed. Nothing printed may spin with the wheel. The design must survive a judge pushing or spinning the box by hand.
 
-**Hardware on hand** (owner's statement, not inspected) \[A\]: Seeed XIAO ESP32-S3 and ESP32-C3 boards (6 each), Adafruit STEMMA QT sensor boards (MPU-6050 #3886, BMP280 #2651, QMC5883P #6388, confirmed by the owner), four 2212 920KV motors, LANRC 35A/45A BLHeli\_S ESCs, an Open Mesh OM5P-AC radio, and the component bins listed in `Electronics_Component_Inventory_with_Robotics.pdf` (OP550 phototransistors, A1104 Hall switches, 1N5817 Schottky diodes, solder breadboards).
+**Hardware on hand** (owner's statement, not inspected) \[A\]: Seeed XIAO ESP32-S3 and ESP32-C3 boards (6 each), Adafruit STEMMA QT sensor boards (MPU-6050 #3886, BMP280 #2651, QMC5883P #6388, confirmed by the owner), four 2212 920KV motors, LANRC 35A/45A BLHeli\_S ESCs, an Open Mesh OM5P-AC radio, and the component bins listed in `docs/reference/Electronics_Component_Inventory_with_Robotics.pdf` (OP550 phototransistors, A1104 Hall switches, 1N5817 Schottky diodes, solder breadboards).
 
 **To buy:** an M8 × 60 hex bolt (bought, with an M8 × 70 as a spare), four #8-32 threaded rods cut to about 245 mm with eight #8-32 nylon-insert lock nuts (Home Depot had no M3 rod), three 2.5 in fender washers, about 40 cm of 18 to 22 AWG stranded wire for the printed battery holder (Section 4.12), a 5 V buck module, a 10 A fuse with holder, two 200 mm STEMMA QT cables, and one STEMMA QT to header cable for the XIAO. Already on hand: eight Energizer Recharge NiMH AA cells, two Bones Reds 608 bearings, and a screw kit (M2 to M5 button-head screws, nuts, and washers) that covers every small fastener in the design.
 
-**From the EE parts closet:** the pick list with bin labels and photo numbers is on its own tab, Parts closet pick list.
+**From the EE parts closet:** the pick list with bin labels and photo numbers was a separate tab of the original document and was not imported into the repository.
 
 ## 3. Physics and sizing
 
@@ -83,7 +83,7 @@ With τ\_ext = 0, total momentum is conserved, which gives the box rate change f
 (I_b + I_w)\,\omega_b + I_w\,\Omega = H \;\Rightarrow\; \Delta\omega_b = -\frac{I_w}{I_b + I_w}\,\Delta\Omega
 ```
 
-Motor torque follows from the KV rating for an ideal brushless motor: K\_t = 60 / (2π KV) = 10.38 mN·m/A for 9202KV \[C\]. This is per amp of phase current, not ESC input current, and real motors fall a few percent short \[A\].
+Motor torque follows from the KV rating for an ideal brushless motor: K\_t = 60 / (2π KV) = 10.38 mN·m/A for 920 KV \[C\]. This is per amp of phase current, not ESC input current, and real motors fall a few percent short \[A\].
 
 ### 3.2 Inputs
 
@@ -187,7 +187,7 @@ I\_b depends on the 0.55 fill factor and on hardware masses that were not weighe
 
 The box is a stack of six printed decks clamped by four #8-32 threaded rods and nylon-insert lock nuts through 8.5 mm corner columns, matching the CubeSat 2U envelope of 100 × 100 × 227 mm. It turns on two 608 bearings riding on a fixed M8 bolt held by a printed base hub. Thirteen printed parts and two test prints exist as parametric CadQuery scripts; all are watertight \[V: skill runner, `--strict`\], and review of each six-view preview found none that needs supports. The assembly check finds no overlaps among 47 solids, including the lock pin inserted, the three Adafruit boards with a screw through every hole, and the battery holder with all eight cells and every contact screw, and the six deliberate collisions built into the script as positive controls are all detected \[V: `cad/assembly.py`\].
 
-&#91;image: PocketADCS stack rendered from the CAD with the Adafruit boards, the printed battery holder, and stand-in hardware\]
+&#91;image: DirecSun stack rendered from the CAD with the Adafruit boards, the printed battery holder, and stand-in hardware\]
 
 Render of `cad/assembly_view.stl`: printed parts, the inserted lock pin, the three Adafruit boards on their standoffs, and the printed battery holder with its cells and contact hardware, and stand-ins for the motor, 63.5 mm washer wheel, bearings, bolt, ESC, and perfboards. The 258 mm bounding box runs from the base hub's underside to the top deck; the QMC5883P and BMP280 hang inside the 227 mm box. The "not watertight" note applies only to this multi-body viewing model, not to the printable parts.
 
@@ -246,7 +246,7 @@ Imbalance is the main dynamic risk (Section 3.5). The procedure, in order:
 
 Acceptance: vibration amplitude at the bias frequency below the level that disturbs the gyro after filtering \[M\]; Section 9 sets the test.
 
-### d4.7 Guard ring
+### 4.7 Guard ring
 
 A 76 mm ID, 2.4 mm wall PETG ring sits in a 1 mm groove in the motor deck and stops 0.5 mm short of the power deck, so the corner columns carry the rod clamp. Fifteen 5 mm slots let judges see the wheel while keeping fingers out. A notch at −38 deg passes the motor leads toward the ESC lead slot. The 63.5 mm wheel clears the ring by 6.25 mm radially \[C\]; `cad/assembly.py` finds no overlap with the ring, and its built-in positive control flags a 78 mm wheel \[V\].
 
@@ -274,7 +274,7 @@ If the wheel stops from the cap, for example after an e-stop, the box can reach 
 | Motor bell diameter | 28 mm | Hall sensor radius | `BELL_D` in `stack.py` |
 | Motor body height to washer seat | 31 mm | Nut-stack clearance | `MOTOR_BODY_H` in `assembly.py` (check only) |
 | Prop thread and washer hole | M5–M6 thread, 8 mm hole | Centring, imbalance | Hardware choice |
-| AA cell length, longest cell | 50.17 mm, measured | Contact preload, 0.45 mm per end | `CELL_L in sta``ck.py` |
+| AA cell length, longest cell | 50.17 mm, measured | Contact preload, 0.45 mm per end | `CELL_L` in `stack.py` |
 | Bearing press fit | 22.4 mm, measured | Bottom cap pocket | `BRG_POCKET_D` after the fit test |
 | Perfboard size | 50 × 70 × 1.6 mm | Card guides | `BOARD_W`, `BOARD_L`, `BOARD_T` |
 
@@ -500,7 +500,7 @@ Every message has `v` (schema version), `type`, and `seq` (sender's counter). Ti
 {"v":1,"type":"tlm","seq":1042,"t_ms":83120,"mode":"HOLD",
  "psi_deg":47.2,"psi_ref_deg":47.0,"rate_dps":0.3,"mag_deg":46.8,
  "sun_deg":null,"sun_valid":false,"wheel_rpm":2504,"wheel_ref_rpm":2510,
- "throttle":412,"tau_cmd_mNm":0.8,"vbat":11.6,"loop_us":740,
+ "throttle":412,"tau_cmd_mNm":0.8,"vbat":10.1,"loop_us":740,
  "flags":["MOMENTUM_OK"]}
 ```
 
@@ -774,7 +774,7 @@ Twenty-two assumptions carry the design until the tests in Section 9 replace the
 | A-10 | Bearing friction | 1 to 3 mN·m | Hold precision, spin-up drift | T-2, T-4 |
 | A-11 | PETG press fit | 22.4 mm pocket (fit test, Oct 9) | Bottom cap | T-1 |
 | A-12 | Perfboard size | 50 × 70 × 1.6 mm | Card guides | Calipers |
-| A-13 | AA cell length | at most 81 × 63 mm | Battery contact preload | Calipers |
+| A-13 | AA cell length | 50.17 mm, measured Oct 10 (Section 4.10) | Battery contact preload | Replaced by measurement |
 | A-14 | Magnet field at the A1104 | above 350 G at 2.5 mm | Speed sensing | T-6 |
 | A-15 | OP550 load resistor | 12 kΩ | Sun sensor range | T-10 |
 | A-16 | ESC MCU speed | unknown: 48 MHz allows DShot300 | DShot rate | ESC Configurator |
@@ -938,5 +938,5 @@ Every page below was opened during this work; facts taken only from search snipp
 
 **Project files**
 
-- `~/projects/pocketadcs/cad/` (CAD sources and `README.md`), `~/projects/pocketadcs/docs/sizing.py` and `sizing_output.txt`.
-- `~/Downloads/Electronics_Component_Inventory_with_Robotics.pdf` (parts on hand).
+- `cad/` (CAD sources and `README.md`), `docs/sizing.py` and `docs/sizing_output.txt`.
+- `docs/reference/Electronics_Component_Inventory_with_Robotics.pdf` (parts on hand).

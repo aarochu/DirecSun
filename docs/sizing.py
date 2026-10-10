@@ -1,4 +1,4 @@
-"""PocketADCS sizing calculations.
+"""DirecSun (formerly PocketADCS) sizing calculations.
 
 Every number in Section 3 of the technical design document comes from this
 script. Inputs marked [A] are assumptions; replace them with measurements

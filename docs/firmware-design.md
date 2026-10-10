@@ -1,4 +1,4 @@
-# DirecSun Flight Firmware — Technical Design and Implementation Plan
+# DirecSun Flight Firmware: Technical Design and Implementation Plan
 
 **Status:** Design for implementation. No firmware has been written, built, flashed, or run. No hardware has been measured.
 **Parent document:** *DirecSun Technical Design* (referred to below as **TD**). Section numbers such as "TD §6.5" point into that document.
@@ -208,12 +208,12 @@ Derived wheel timing (two Hall edges per turn) [C]:
 | Context | Core | Priority (FreeRTOS) | Period | Work | Label |
 | --- | --- | --- | --- | --- | --- |
 | `control` task | 1 | Highest application priority (e.g. `configMAX_PRIORITIES − 2`) | 2 ms (500 Hz) | Sensor reads, estimator, mode machine, controllers, interlocks, DShot frame, telemetry snapshot | [D]; rate [V] TD §6.2 |
-| Tick source | — | ISR | 2 ms | `gptimer` alarm ISR gives a task notification to `control` | [D]; API [A] |
+| Tick source | n/a | ISR | 2 ms | `gptimer` alarm ISR gives a task notification to `control` | [D]; API [A] |
 | Hall ISR | any (registered from core 1) | ISR, IRAM | per edge | Store `esp_timer_get_time()` in a ring buffer | [D]; API [A] |
 | `comms` task | 0 | Above `loop()`, below Wi-Fi driver | event-driven + 50 Hz | WebSocket server, JSON encode/decode, ping/pong, client management | [D] |
-| Wi-Fi/lwIP | 0 | System | — | Provided by ESP-IDF | [A] default core 0 |
+| Wi-Fi/lwIP | 0 | System | n/a | Provided by ESP-IDF | [A] default core 0 |
 | Arduino `loop()` | 1 | 1 | idle | Empty except a `vTaskDelay`; or deleted | [D] |
-| Task watchdog | system | — | 100 ms | Resets the MCU if `control` stops feeding it | [V] TD §6.2 for the 100 ms |
+| Task watchdog | system | n/a | 100 ms | Resets the MCU if `control` stops feeding it | [V] TD §6.2 for the 100 ms |
 
 Why a hardware timer instead of `vTaskDelayUntil(2)`: Arduino-ESP32 runs FreeRTOS at a 1 kHz tick [A], so `vTaskDelayUntil` could produce a 2 ms period, but its jitter is a full tick. A `gptimer` alarm gives sub-tick jitter [A]. Either works; the timer is the default and `vTaskDelayUntil` is the fallback if the timer API does not build (build check BC-3, §19.3).
 
@@ -409,7 +409,7 @@ flowchart LR
 | Channel | GPIO | Rate | Processing | Label |
 | --- | --- | --- | --- | --- |
 | Sun A | 1 (ADC1 ch0) | 50 Hz | Calibrated mV, 4-sample average | [V] pin; [D] averaging |
-| Sun B | 2 (ADC1 ch1) | 50 Hz | Same | — |
+| Sun B | 2 (ADC1 ch1) | 50 Hz | Same | n/a |
 | Battery | 8 (ADC1 ch7) | 50 Hz | mV / 0.1803, then a 1 s moving average for the undervoltage interlock | [C] ratio |
 
 Use the ESP-IDF `adc_oneshot` driver with `ADC_ATTEN_DB_12` and the `adc_cali` curve-fitting scheme for mV conversion [A]. Arduino's `analogReadMilliVolts()` wraps the same calibration and is an acceptable shortcut [A]. ADC2 must not be used, because it is unavailable with Wi-Fi on [V] TD §5.4.
@@ -600,7 +600,7 @@ Additions to TD §6.6, each recorded in §23: the `disarm` command (TD lists it 
 
 | Mode | Wheel | Controller active | Setpoint | Exits |
 | --- | --- | --- | --- | --- |
-| `SAFE` | Ramp-down (§14.3) then DShot 0; or DShot 0 at once (hard faults) | None | — | `arm` |
+| `SAFE` | Ramp-down (§14.3) then DShot 0; or DShot 0 at once (hard faults) | None | n/a | `arm` |
 | `SPINUP` | Ω_ref ramps toward the start speed (default bias) at 400 rpm/s; wheel PI active | Wheel loop only. Rate and attitude off: the box is pinned or held [V] TD §2 | Ω_target | At target → `READY` |
 | `READY` | Wheel loop | Rate loop | ω_cmd = 0 | Mode commands |
 | `DETUMBLE` | Wheel loop | Rate loop | ω_cmd = 0 | `mode READY` |
@@ -676,7 +676,7 @@ Every interlock is evaluated every tick, after the controller, so it can overrid
 | `TILT` | Averaged accel more than 30° from vertical | DShot 0 at once → SAFE | Until upright and `arm` | TD §6.7 |
 | `CONTROL_STALL` | 25 consecutive missed ticks | DShot 0 → SAFE; if the task is fully stuck, the 100 ms watchdog resets the MCU | Reboot | TD §6.7; [D] for the soft stage |
 | `HALL_SILENT` | Throttle above the low-limit FF value for 500 ms with no Hall edge | DShot 0 at once → SAFE | Until next `arm` | [D] new, finding V-11 |
-| `MOMENTUM_NEAR_LIMIT` | Ω within 300 rpm of a limit | Warning flag only | — | TD §6.7 |
+| `MOMENTUM_NEAR_LIMIT` | Ω within 300 rpm of a limit | Warning flag only | n/a | TD §6.7 |
 
 **Why `HALL_SILENT` is added.** Without it, a disconnected Hall sensor makes `speed_safe` go stale. The staleness bound in §10.4 then drives the speed estimate toward zero, so `UNDERSPEED` would trip after 200 ms, which is safe. But during `SPINUP`, where `UNDERSPEED` is exempt, the wheel PI would push throttle up without bound while the real wheel accelerates past the cap with no overspeed detection. `HALL_SILENT` closes that gap (finding V-11).
 
@@ -755,12 +755,12 @@ The ESP-IDF task watchdog is configured for 100 ms on the control task [V] TD §
 
 All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is the sender's own counter. Times are box milliseconds since boot. Units are those in §2.2.
 
-#### `tlm` — box → all clients, 50 Hz
+#### `tlm`: box → all clients, 50 Hz
 
 | Field | Type | Meaning | Source |
 | --- | --- | --- | --- |
 | `v` | int | 1 | TD |
-| `type` | `"tlm"` | — | TD |
+| `type` | `"tlm"` | n/a | TD |
 | `seq` | int | Box telemetry counter | TD |
 | `t_ms` | int | Box time since boot | TD |
 | `mode` | string | Wire mode name (§2.4) | TD |
@@ -769,7 +769,7 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `rate_dps` | number | ω̂ | TD |
 | `mag_deg` | number or null | ψ_mag (null if magnetometer missing) | TD |
 | `sun_deg` | number or null | Calibrated sun angle | TD |
-| `sun_valid` | bool | — | TD |
+| `sun_valid` | bool | n/a | TD |
 | `wheel_rpm` | number | `speed_safe` | TD |
 | `wheel_ref_rpm` | number | Ω_ref | TD |
 | `throttle` | int | DShot value sent (0..2047) | TD |
@@ -792,20 +792,20 @@ Example (values illustrative, not measurements; `vbat` chosen inside the NiMH ra
 
 At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 15 kB/s, about 0.1 Mb/s [C], far below the radio's 4 Mb/s default limit [V] TD §7.
 
-#### `cmd` — client → box
+#### `cmd`: client → box
 
 | `cmd` | Fields | Accepted in | Effect |
 | --- | --- | --- | --- |
-| `arm` | — | SAFE | → SPINUP if guards pass; sender becomes the controlling client |
-| `disarm` | — | SPINUP, READY, active modes | Ramp-down → SAFE (same as e-stop, without the ESTOP latch) [D] |
-| `estop` | — | Any state, any client | Ramp-down → SAFE, ESTOP latch |
+| `arm` | none | SAFE | → SPINUP if guards pass; sender becomes the controlling client |
+| `disarm` | none | SPINUP, READY, active modes | Ramp-down → SAFE (same as e-stop, without the ESTOP latch) [D] |
+| `estop` | none | Any state, any client | Ramp-down → SAFE, ESTOP latch |
 | `mode` | `mode`; `psi_ref_deg` for SLEW | READY (and active modes for `READY`) | Transition per §13.1 |
 | `respin` | `wheel_rpm` (optional, default bias) | READY | → SPINUP to the new start speed (§13.4) |
-| `zero_heading` | — | SAFE, READY | Heading offset (§11.3) |
+| `zero_heading` | none | SAFE, READY | Heading offset (§11.3) |
 | `set_params` | `params` object | SAFE only | Validate every key and range; store in NVS; reply with the applied set [D] |
 | `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set | Ω_ref step with the attitude and rate loops suspended until `mode READY` is sent again; for §12.5, T-5 and T-18 [D]; refused unless `bench_mode` is true. Interlocks stay active |
 
-#### `ack` — box → sender
+#### `ack`: box → sender
 
 ```json
 {"v":1,"type":"ack","seq":77,"ok":false,"reason":"wheel not at bias"}
@@ -819,7 +819,7 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 
 Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] TD §7.3. Box replies `{"v":1,"type":"pong","seq":<box seq>,"ping_seq":79,"t_client_ms":512330,"t_ms":83120}` [D field names], which lets the client compute round-trip time for T-11.
 
-#### `event` — box → all clients
+#### `event`: box → all clients
 
 ```json
 {"v":1,"type":"event","seq":311,"t_ms":83500,"event":"mode","mode":"SAFE","cause":"HEARTBEAT_LOST"}
@@ -869,11 +869,11 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 | `omega_bias_rpm` | 2400 | low+400 .. cap−400 | after T-18 |
 | `omega_cap_rpm` | 4000 | **≤ 4000, cannot be raised over the wire** | firmware rebuild only (TD §10.3: changing the cap requires re-running Section 3) |
 | `s_w`, `s_gyro` | +1 | ±1 | after T-5, T-8 |
-| `mag_axis_map`, `mag_cal` | see §10.2 | — | after T-9 |
-| `sun_cal`, `light_threshold` | identity, 0 | — | after T-10 |
+| `mag_axis_map`, `mag_cal` | see §10.2 | n/a | after T-9 |
+| `sun_cal`, `light_threshold` | identity, 0 | n/a | after T-10 |
 | `dshot_rate` | 150 | 150 or 300 | after reading the ESC MCU (TD §5.2) |
 | `bench_mode` | false | bool | `set_params` in SAFE |
-| Wi-Fi SSID, password, team number, SoftAP flag | — | — | USB serial only |
+| Wi-Fi SSID, password, team number, SoftAP flag | n/a | n/a | USB serial only |
 
 `dshot_rate` defaults to the slower, always-supported DShot150 until the ESC's MCU is read [D]. TD says DShot150 works on 24 MHz MCUs and DShot300 needs 48 MHz [V].
 
@@ -1022,7 +1022,7 @@ flowchart TD
 
 | ID | Item | Depends on | Done when | Owner (TD §11.5) |
 | --- | --- | --- | --- | --- |
-| F-1 | Toolchain, BC-1..BC-6 | — | All six pass | Julian |
+| F-1 | Toolchain, BC-1..BC-6 | n/a | All six pass | Julian |
 | F-2 | `core/` + host tests | F-1 (compiler only) | HT-1..HT-10 pass | Julian; an agent can draft |
 | F-3 | Drivers | F-1, assembled electronics (W-3) | Raw values on serial | Julian |
 | F-4 | Control task skeleton, SAFE only | F-2, F-3 | `loop_us` < 1000 for 10 min, DShot 0 verified on scope | Julian |
