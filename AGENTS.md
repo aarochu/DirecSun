@@ -31,6 +31,10 @@ Change these only through a spec that says so:
 
 FD is `docs/firmware-design.md`; TD is `docs/technical-design.md`.
 
+## The main UI
+
+`frontend/` (Aaron) is the main UI. The backend matches it: when the UI's expectations of the box differ from the plan, change the firmware and `protocol/schema-v1.json`, not the UI, and record the change in FD §15 and §17. Do not edit `frontend/` from backend work. `ground/link` and `ground/console` are engineering bench tools.
+
 ## Hardware safety
 
 Agents may build, flash, and monitor the bench rig freely. Any step that can turn the motor stops, states exactly what will happen, and waits for Julian's explicit go, every time. See `changes/CONTEXT.md` for what counts.
