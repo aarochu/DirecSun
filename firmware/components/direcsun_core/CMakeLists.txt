@@ -1,5 +1,6 @@
 # Pure C++17 control logic: estimator, controllers, mode machine, interlocks,
 # protocol, DShot framing. No ESP-IDF, FreeRTOS, or driver headers, so the same
 # sources build in firmware/test/host (tools/check-core-purity.sh enforces it).
-# Header-only until R1.5 adds the first source file.
-idf_component_register(INCLUDE_DIRS "include")
+# SRC_DIRS picks up every source in src/, matching the host build's glob, so a
+# new file cannot end up tested on the desktop but missing from the firmware.
+idf_component_register(SRC_DIRS "src" INCLUDE_DIRS "include")
