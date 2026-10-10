@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "direcsun/core/angles.hpp"
 #include "direcsun/core/control.hpp"
 #include "direcsun/core/estimator.hpp"
 #include "direcsun/core/modes.hpp"
@@ -276,6 +277,7 @@ void control_task(void *)
         TickInputs in;
         in.tick = tick;
         in.rate_dps = estimator.rate_dps();
+        in.heading_deg = estimator.heading_unwrapped_deg();
         in.wheel_rpm_safe = wheel_safe;
         in.wheel_rpm_fast = wheel_fast;
         in.hall_edge_age_ms = edge_age_us < 0 ? UINT32_MAX : static_cast<uint32_t>(edge_age_us / 1000);
@@ -319,7 +321,7 @@ void control_task(void *)
             snap.mode = out.mode;
             snap.manual_input = out.manual_input;
             snap.ramping = out.ramping;
-            snap.psi_deg = estimator.heading_deg();
+            snap.psi_deg = wrap_deg180(out.heading_deg);  // relative to the last zero_heading (R4.2)
             snap.rate_dps = estimator.rate_dps();
             snap.gyro_bias_dps = estimator.bias_dps();
             snap.tilt_deg = estimator.tilt_deg();

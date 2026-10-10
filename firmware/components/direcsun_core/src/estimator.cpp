@@ -4,7 +4,7 @@
 
 #include "direcsun/core/angles.hpp"
 
-#if defined(ESP_PLATFORM) && defined(DIRECSUN_MUTANT_NO_STILL_GATE)
+#if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_STILL_GATE) || defined(DIRECSUN_MUTANT_RAW_RATE_HEADING))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -12,7 +12,6 @@ namespace direcsun {
 
 namespace {
 
-constexpr double kRadPerDeg = 3.14159265358979323846 / 180.0;
 constexpr double kDegPerRad = 180.0 / 3.14159265358979323846;
 
 }  // namespace
@@ -75,15 +74,17 @@ void Estimator::update(const EstimatorInputs &in)
 
     const float sign = in.s_gyro < 0 ? -1.0f : 1.0f;
     rate_dps_ = sign * (in.gyro_z_dps - bias_dps_);
+#ifdef DIRECSUN_MUTANT_RAW_RATE_HEADING
+    // Positive control (R4.2): integrate the raw gyro, bias included.
+    heading_deg_ += static_cast<double>(sign * in.gyro_z_dps) * config_.dt_s;
+#else
     heading_deg_ += static_cast<double>(rate_dps_) * config_.dt_s;
+#endif
 }
 
 float Estimator::heading_deg() const
 {
-    // Reduce in double first so a long-running heading keeps its precision,
-    // then wrap onto (-180, 180] with the core's wrap.
-    const double reduced = std::remainder(heading_deg_, 360.0);
-    return static_cast<float>(wrap_pi(static_cast<float>(reduced * kRadPerDeg)) * kDegPerRad);
+    return wrap_deg180(heading_deg_);
 }
 
 void GyroBiasSeed::add(float gyro_z_dps, const float accel_g[3])

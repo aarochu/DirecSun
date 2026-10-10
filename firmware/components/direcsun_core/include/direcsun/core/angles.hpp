@@ -7,4 +7,9 @@ namespace direcsun {
 // representation. Non-finite input returns NaN.
 float wrap_pi(float angle_rad);
 
+// Wrap an angle in degrees onto (-180, 180], reducing in double first so a
+// long-running continuous heading keeps its precision. For display and for the
+// wire; control keeps headings continuous (FD section 11.3).
+float wrap_deg180(double angle_deg);
+
 }  // namespace direcsun

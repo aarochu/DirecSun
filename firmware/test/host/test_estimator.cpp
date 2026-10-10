@@ -154,9 +154,6 @@ TEST_CASE("HT-3 s_gyro flips the box rate and the heading integrates it")
     run(est, in, 2 * kTicksPerS);  // +200 deg: 190 deg unwrapped, -170 wrapped
     CHECK(est.heading_unwrapped_deg() == doctest::Approx(190.0).epsilon(1e-4));
     CHECK(est.heading_deg() == doctest::Approx(-170.0f).epsilon(1e-3));
-
-    est.zero_heading();
-    CHECK(est.heading_deg() == 0.0f);
 }
 
 TEST_CASE("boot bias seed: a still window seeds, a moving or tilted one does not")

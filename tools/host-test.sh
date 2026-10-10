@@ -76,6 +76,7 @@ else
         "rate_sign_flip|HT-5 sim: READY detumbles a 1 rev/s spin within 5 s at the design gains"
         "no_rate_antiwindup|R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up"
         "no_rate_bleed|R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit"
+        "raw_rate_heading|R4.2 heading: a seeded 0.5 deg/s bias is removed before integration"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

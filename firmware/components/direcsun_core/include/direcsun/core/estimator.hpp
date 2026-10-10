@@ -53,14 +53,14 @@ public:
     float tilt_deg() const { return tilt_deg_; }      // from vertical, 0..180
     float accel_norm_g() const { return accel_norm_g_; }
 
-    // Gyro-only heading integrated from the box rate [D]: Set 5 adds the
-    // magnetometer. Kept continuous (unwrapped) for control; wrapped to
-    // (-180, 180] for display.
+    // Gyro-only heading (R4.2, FD section 11.3): the bias-corrected box rate
+    // integrated every tick, counter-clockwise positive, kept continuous
+    // (unwrapped) as double. Set 5 adds the magnetometer. It is never reset:
+    // `zero_heading` is an offset the supervisor keeps, so one tick can zero
+    // the heading and start a HOLD or SLEW against the same reference.
     double heading_unwrapped_deg() const { return heading_deg_; }
+    // The same, wrapped to (-180, 180] for display.
     float heading_deg() const;
-
-    // Adds an offset so the wrapped heading reads 0 now (`zero_heading`).
-    void zero_heading() { heading_deg_ = 0.0; }
 
 private:
     EstimatorConfig config_;
