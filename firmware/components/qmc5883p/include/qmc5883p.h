@@ -67,26 +67,30 @@ typedef enum {
 } qmc5883p_osr_t;
 
 /**
- * Field range
- * Note: Check datasheet for exact mapping.
- * Commonly: 00=2G, 01=8G, 10=12G, 11=30G
+ * Field range, RNG<1:0> in CTRL2 (0x0B) bits 3:2.
+ * Values per QST QMC5883P datasheet Rev A (doc 13-52-19), Table 18:
+ * 00 = 30 G, 01 = 12 G, 10 = 8 G, 11 = 2 G.
+ * DirecSun local patch: upstream 0.1.0 had this mapping inverted.
  */
 typedef enum {
-    QMC5883P_RNG_2G  = 0, // 00
-    QMC5883P_RNG_8G  = 1, // 01
-    QMC5883P_RNG_12G = 2, // 10
-    QMC5883P_RNG_30G = 3  // 11
+    QMC5883P_RNG_30G = 0, // 00
+    QMC5883P_RNG_12G = 1, // 01
+    QMC5883P_RNG_8G  = 2, // 10
+    QMC5883P_RNG_2G  = 3  // 11
 } qmc5883p_range_t;
 
 /**
- * Operation mode
+ * Operation mode, MODE<1:0> in CTRL1 (0x0A) bits 1:0.
+ * Values per QST QMC5883P datasheet Rev A, Table 17:
+ * 00 = suspend, 01 = normal (measures at ODR), 10 = single, 11 = continuous
+ * (runs without sleep at the maximum rate, ODR ignored).
+ * DirecSun local patch: upstream 0.1.0 named 01 "continuous".
  */
 typedef enum {
     QMC5883P_MODE_SUSPEND    = 0, // 00
-    QMC5883P_MODE_CONTINUOUS = 1, // 01
-    // 10 and 11 are reserved usually, but some drivers use them differently.
-    // We will stick to 01 for Continuous.
-    QMC5883P_MODE_NORMAL     = 1  // Alias
+    QMC5883P_MODE_NORMAL     = 1, // 01
+    QMC5883P_MODE_SINGLE     = 2, // 10
+    QMC5883P_MODE_CONTINUOUS = 3  // 11
 } qmc5883p_mode_t;
 
 /**
@@ -115,14 +119,24 @@ typedef struct {
 } qmc5883p_data_t;
 
 /**
+ * SCL speed used when qmc5883p_init() is given 0 (the upstream default).
+ */
+#define QMC5883P_SCL_SPEED_DEFAULT_HZ 100000
+
+/**
  * @brief Initialize QMC5883P device
- * 
+ *
+ * Sets 8 G range, normal mode, ODR 200 Hz (the datasheet's normal-mode setup).
+ *
  * @param dev Pointer to device structure
  * @param bus_handle I2C bus handle
  * @param i2c_addr I2C address (default 0x2C)
+ * @param scl_speed_hz SCL speed for this device; 0 selects QMC5883P_SCL_SPEED_DEFAULT_HZ.
+ *        The chip supports 100 kHz and 400 kHz (datasheet section 5.4).
+ *        DirecSun local patch: upstream 0.1.0 hard-coded 100 kHz.
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t qmc5883p_init(qmc5883p_dev_t *dev, i2c_master_bus_handle_t bus_handle, uint8_t i2c_addr);
+esp_err_t qmc5883p_init(qmc5883p_dev_t *dev, i2c_master_bus_handle_t bus_handle, uint8_t i2c_addr, uint32_t scl_speed_hz);
 
 /**
  * @brief Write register
