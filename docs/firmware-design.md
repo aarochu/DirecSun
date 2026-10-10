@@ -307,10 +307,13 @@ flowchart TD
     T0["Task notified by timer"] --> T1["t = esp_timer_get_time()<br/>record loop start"]
     T1 --> T2["Read MPU-6050 14 bytes from 0x3B<br/>(accel, temp, gyro)"]
     T2 --> T3{"Even tick?"}
-    T3 -- yes --> T4["Read QMC5883P status; if DRDY,<br/>read 6 data bytes, add to 20 ms average"]
-    T3 -- no --> T5
-    T4 --> T5{"Every 10th tick?"}
-    T5 -- yes --> T6["Read sun A, sun B, battery ADC<br/>(spread over ticks 0, 3, 6 of each 10)"]
+    T3 -- yes --> T4["Read QMC5883P status;<br/>remember DRDY"]
+    T3 -- no --> T3b{"DRDY on the<br/>previous tick?"}
+    T3b -- yes --> T4b["Read 6 data bytes,<br/>add to 20 ms average"]
+    T3b -- no --> T5
+    T4 --> T5{"Tick 0, 2, or 4<br/>of each 10?"}
+    T4b --> T5
+    T5 -- yes --> T6["Read one ADC input:<br/>battery, sun A, sun B in turn"]
     T5 -- no --> T7
     T6 --> T7["Drain Hall ring buffer;<br/>update wheel speed estimate"]
     T7 --> T8["Estimator update:<br/>rate, heading (mag fused at 50 Hz), sun angle"]
@@ -330,12 +333,19 @@ flowchart TD
 | Step | Estimate | Label |
 | --- | --- | --- |
 | IMU burst read, 14 bytes at 400 kHz | 0.39 ms (155 bit times) | [C] |
-| Magnetometer status + 6 bytes (every 2nd tick) | about 0.25 ms | [C] |
+| Magnetometer status (even ticks) or 6 data bytes (the odd tick after DRDY), never both on one tick | about 0.25 ms | [C] |
 | One ADC read with calibration (at most one per tick) | tens of µs | [A] |
 | Estimator + controllers + interlocks (float) | < 50 µs | [A] |
 | DShot encode + RMT start | < 20 µs; the 53 µs DShot300 frame is sent by hardware | [A]; frame [V] |
 | JSON is **not** on this core | 0 | [D] |
 | **Worst tick** | **about 0.75 ms of 2 ms** | [C on A] |
+
+**Measured on the XIAO (R3.4 bench, 2026-10-10) [V].** The first build ran its worst tick at 1.4 to 1.9 ms, and its first tick at 6.9 ms with 2 missed ticks. Per-stage timing (the bench Kconfig `DIRECSUN_BENCH_STAGE_TIMING`) found three causes:
+- The ESP32-S3's default 16 KB instruction cache could not hold the tick's code (core, drivers, the I2C and RMT drivers, libc math), so it refilled from flash every tick: the estimator took 43 µs and the telemetry snapshot 99 µs. The firmware uses the 32 KB instruction cache (`CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB`) and places `direcsun_core`, `direcsun_drivers`, and the control task in IRAM through linker fragments (`linker.lf`), so the core's sources stay free of ESP-IDF attributes (§18).
+- The magnetometer status and data reads shared a tick with each other and with an ADC read. They are now on separate ticks, with the ADC reads next to the short status read (§9.1).
+- The first tick logged a line on the console, which blocks for milliseconds. The line is logged before the tick timer starts.
+
+After the fixes, per stage, mean (max) in µs: IMU 455 (473), magnetometer 207 (282), ADC 48, estimator 6 (11), supervisor 4 (9), DShot 17, snapshot 7. The worst tick is 770 to 780 µs in every second including the first, with no missed ticks [D, V-60].
 
 At 100 kHz I2C the IMU read alone is 1.55 ms [C], and an IMU + magnetometer tick would exceed 2 ms, which is why TD §5.3 runs the bus at 400 kHz. Every tick reads the IMU, so there is no tick free for the magnetometer at 100 kHz. If the oscilloscope check in TD §5.3 forces 100 kHz, the control rate falls to 250 Hz (4 ms ticks: IMU 1.55 ms, plus magnetometer status and data on alternate ticks, about 0.8 ms), and the gains in §12.2 are rechecked for the longer step [D, finding V-6].
 
@@ -374,7 +384,7 @@ Axis mapping: the board sits face up, centred on the spin axis (TD §4.8), so se
 
 Driver: the vendored `duruofu/qmc5883p` 0.1.0 in `firmware/components/qmc5883p`, given the i2cdev bus through `i2cdev_get_shared_handle(I2C_NUM_0, ...)` after the first i2cdev transaction has created it [D]. The driver hard-codes a 100 kHz device clock, and its own comments flag its 8 G sensitivity value as uncertain; both are corrected by documented local patches after checking the QST datasheet [A].
 
-Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). It reads data only when data-ready is set, which yields every new 200 Hz sample once, and averages all new samples in each 20 ms window into one 50 Hz heading measurement [D].
+Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). When data-ready is set it reads the data on the next tick, so the two transactions never share a tick (§9.2, V-60); this yields every new 200 Hz sample once, and all new samples in each 20 ms window are averaged into one 50 Hz heading measurement [D].
 
 Mounting: the board hangs upside down under the flipped top deck (TD §4.8). Turning a board over is a 180° rotation about a horizontal axis, which flips **Z and one horizontal axis**, not Z alone (finding V-4). Heading uses only the horizontal components, so the horizontal flip matters and the Z flip does not. The driver applies a configurable axis map `mag_axis_map` (default: negate Y and Z, keep X), and T-9 confirms it: rotating the box counter-clockwise must make magnetic heading increase in the same direction as the integrated gyro [M].
 
@@ -1156,6 +1166,7 @@ Each statement below was challenged by recomputing it from TD's inputs, by check
 | V-35 | §16: `omega_cap_rpm` "cannot be raised over the wire"; persistence of `bench_mode` unstated | Implementation | Lowering it over the wire was also unclear | The cap is not settable over the wire at all and not persisted; `bench_mode` and `hall_installed` are volatile [D] | Low (this doc) |
 | V-36 | §14.3: e-stop always ramps from throttle_0 | Implementation | A ramp from zero throttle only blocks the next `arm` for 5 s | No ramp when the last throttle was below 48 [D] | Low (this doc) |
 | V-37 | §10.3: the BMP280 "is read at 1 Hz on a spare tick" | R3.2 read the esp-idf-lib i2cdev source | A bus error makes `bmp280_read_float` retry three times with 40 to 160 ms backoff, about 0.3 s, which would stall the 2 ms control loop | Read by a low-priority core-0 task and published through a seqlock; the control task never calls it (R3.4) | Medium (this doc) |
+| V-60 | §9.2: worst tick "about 0.75 ms of 2 ms" | R3.4 bench, per-stage timing on the XIAO | The worst tick was 1.4 to 1.9 ms: the 16 KB instruction cache thrashed every tick, the magnetometer status and data reads and an ADC read shared ticks, and the first tick logged | 32 KB instruction cache and IRAM placement by linker fragments; magnetometer data on the tick after the status read; ADC on ticks 0, 2, 4; no log inside a tick. Measured 770 to 780 µs, no missed ticks (§9.2) | High (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
