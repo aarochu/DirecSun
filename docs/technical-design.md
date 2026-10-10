@@ -25,7 +25,7 @@ This document specifies DirecSun, a single-axis reaction wheel attitude trainer 
 
 ## 2. System overview and requirements
 
-DirecSun is an 0.84 kg box that turns about one vertical axis on two 608 bearings, pointed by a reaction wheel inside it. A brushless motor spins a steel washer flywheel; changing the wheel's speed turns the box the opposite way, as a satellite's reaction wheel does. An ESP32-S3 on the box closes the loop from a gyro, a magnetometer, and a two-element sun sensor. A browser ground station on a private Wi-Fi network commands it and plots telemetry.
+DirecSun is a 0.85 kg box that turns about one vertical axis on two 608 bearings, pointed by a reaction wheel inside it. A brushless motor spins a steel washer flywheel; changing the wheel's speed turns the box the opposite way, as a satellite's reaction wheel does. An ESP32-S3 on the box closes the loop from a gyro, a magnetometer, and a two-element sun sensor. A browser ground station on a private Wi-Fi network commands it and plots telemetry.
 
 ```mermaid
 flowchart TB
@@ -89,7 +89,7 @@ Power flows from the pack through the fuse to the ESC and the 5 V buck; sensing 
 
 ## 3. Physics and sizing
 
-The baseline wheel (three 2.5 in steel fender washers) gives the box about 357 deg/s of rate per 1000 rpm of wheel speed change and can absorb a 1.59 rev/s hand spin in either direction before reaching a speed limit \[C\]. Neither torque nor momentum limits the demonstration: 1 A of motor current accelerates the box at about 578 deg/s² \[C\]. The binding constraints are imbalance vibration and stored energy, which set the bias and cap speeds. All values come from `docs/sizing.py`; its output is saved in `docs/sizing_output.txt`.
+The baseline wheel (three 2.5 in steel fender washers) gives the box about 355 deg/s of rate per 1000 rpm of wheel speed change and can absorb a 1.58 rev/s hand spin in either direction before reaching a speed limit \[C\]. Neither torque nor momentum limits the demonstration: 1 A of motor current accelerates the box at about 576 deg/s² \[C\]. The binding constraints are imbalance vibration and stored energy, which set the bias and cap speeds. All values come from `docs/sizing.py`; its output is saved in `docs/sizing_output.txt`.
 
 ### 3.1 Model
 
@@ -111,11 +111,11 @@ Motor torque follows from the KV rating for an ideal brushless motor: K\_t = 60 
 
 | Input | Value | Label | Source |
 | --- | --- | --- | --- |
-| Printed rotating parts | 253 g, I\_z 4.50e-4 kg·m² | \[C\] from CAD, \[A\] fill 0.55 | CAD solids × PLA 1240 kg/m³ × fill factor |
+| Printed rotating parts | 254 g, I\_z 4.54e-4 kg·m² | \[C\] from CAD, \[A\] fill 0.55 | CAD solids × PLA 1240 kg/m³ × fill factor |
 | Threaded rods | 4 × 21.8 g at 64.7 mm radius, I\_z 3.65e-4 | \[C\] | Steel #8-32, modelled as a 3.8 mm solid rod, 245 mm |
 | Other hardware | 361 g, I\_z 2.14e-4 | \[A\] | Battery 243 g (8 × AA NiMH and 16 contact screw sets; the printed holder is counted with the printed parts), boards 45 g, wiring 35 g, stator 30 g, ESC 8 g |
 | Box inertia I\_b | 1.03e-3 kg·m² | \[C\] on \[A\] inputs | Sum of the three rows |
-| Box mass with wheel | 844 g | \[C\] | Weight 8.28 N |
+| Box mass with wheel | 845 g | \[C\] | Weight 8.29 N |
 | Baseline wheel | 3 × 63.5 mm OD, 8 mm ID, 1.6 mm steel; 117 g | \[A\] | Typical 2.5 in fender washer |
 | Motor bell | 25 g at 14 mm radius | \[A\] | Not measured |
 | Sensorless low-speed limit | 800 rpm | \[A\] \[M\] | Below this BLHeli\_S commutation is assumed unreliable |
@@ -130,10 +130,10 @@ The threaded rods contribute about a third of I\_b because they sit at the corne
 | I\_w / I\_b | 0.063 | 0.026 |
 | Bias / cap / overspeed trip (rpm) | 2400 / 4000 / 4100 | 3000 / 6000 / 6100 |
 | Wheel momentum at cap (N·m·s) | 0.0272 | 0.0167 |
-| Box rate per 1000 rpm of wheel change | 357 deg/s | 151 deg/s |
-| Hand spin absorbable, toward cap / toward low limit | 1.59 / 1.59 rev/s | 1.26 / 0.92 rev/s |
-| Box acceleration at 1 A | 578 deg/s² | 578 deg/s² |
-| 90 deg rest-to-rest slew, bang-bang at 1 A | 0.79 s, peak 228 deg/s, wheel swing 639 rpm | 0.79 s, wheel swing 1510 rpm |
+| Box rate per 1000 rpm of wheel change | 355 deg/s | 150 deg/s |
+| Hand spin absorbable, toward cap / toward low limit | 1.58 / 1.58 rev/s | 1.25 / 0.92 rev/s |
+| Box acceleration at 1 A | 576 deg/s² | 576 deg/s² |
+| 90 deg rest-to-rest slew, bang-bang at 1 A | 0.79 s, peak 228 deg/s, wheel swing 640 rpm | 0.79 s, wheel swing 1513 rpm |
 | Stored energy at cap / at overspeed trip | 5.7 / 5.99 J | 5.2 / 5.42 J |
 | Rim speed at cap | 13.3 m/s | 15.7 m/s |
 | Imbalance force at bias, 0.1 mm stack offset | 0.74 N | 0.67 N |
@@ -173,7 +173,7 @@ Stored energy is 5.7 J at the cap and 5.99 J at the 4100 rpm overspeed trip (bas
 
 The coin test converts a hanging mass to torque: a string wound at 50 mm radius gives 0.49 mN·m per gram \[C\]. Friction matters only near standstill, where breakaway torque produces stick-slip; it limits pointing precision, not slew capability.
 
-Whether the motor can turn the box: the SKF constant-coefficient model, M = 0.5 μ P d with μ = 0.0015 for deep groove ball bearings \[V\], gives 0.05 mN·m for the 844 g box on one 608 \[C\]. Grease, shields, and the printed fit can raise that many times, so the planning range in the table stays 1 to 3 mN·m \[A\]. At 1 A the motor gives 3.5 to 10 times that range, and at 3 A 10 to 31 times \[C\]. Overcoming friction takes 0.1 to 0.3 A of motor current \[C\]. The heavier box (NiMH pack, printed holder, and steel #8-32 rods) raises the bearing load by 19 % and I\_b by 16 %; neither changes this conclusion \[C\].
+Whether the motor can turn the box: the SKF constant-coefficient model, M = 0.5 μ P d with μ = 0.0015 for deep groove ball bearings \[V\], gives 0.05 mN·m for the 845 g box on one 608 \[C\]. Grease, shields, and the printed fit can raise that many times, so the planning range in the table stays 1 to 3 mN·m \[A\]. At 1 A the motor gives 3.5 to 10 times that range, and at 3 A 10 to 31 times \[C\]. Overcoming friction takes 0.1 to 0.3 A of motor current \[C\]. The heavier box (NiMH pack, printed holder, and steel #8-32 rods) raises the bearing load by 19 % and I\_b by 16 %; neither changes this conclusion \[C\].
 
 Friction draws on the wheel's momentum margin only while the box is turning. During one-way rotation it moves the wheel from bias to a speed limit in 3.6 to 11 s \[C\], so continuous spinning in one direction is limited to a few turns. Back-and-forth slews cancel, because friction reverses with the direction of motion, and one 90 deg slew of 0.79 s uses at most 22 % of the margin \[C\]. Gravity torque from a tilted axle is a steady load at any heading other than the low point: at 1 deg tilt with the CG 5 mm off axis it uses the margin in 15 s \[C\]. Level the base to well under 1 deg.
 
@@ -1019,6 +1019,7 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-14 | Flywheel decision recorded: printed PETG wheel with sealed washers; repository Set 2 revises invariant 8.3, the hazards, and PR-4 | Owner decision 2026-10-10, answering S-15 (the design itself is still open) | 4.5 |
 | I-15 | Open questions on owners and on the network closed | Answered in Sections 11.5 and 7.1 | 12.3 |
 | I-16 | Wi-Fi drop mitigation no longer assumes the OM5P-AC | Network decision | 10.2 |
+| I-17 | `docs/sizing_output.txt` regenerated from the current CAD. The saved output (02:07) predated the Oct 10 03:32 `stack.py` change and later deck edits. Changed by the re-run: box rate per 1000 rpm 356 to 355 deg/s (baseline) and 151 to 150 deg/s (fallback); wheel acceleration at 3 A 4861 to 4860 and 11604 to 11603 rpm/s (output only). Section 3 figures that already disagreed with the old output now match the new one: rate 357 to 355 deg/s; printed parts 253 to 254 g, I\_z 4.50e-4 to 4.54e-4; box mass 844 to 845 g (weight 8.28 to 8.29 N, box 0.84 to 0.85 kg); hand spin 1.59 to 1.58 and 1.26 to 1.25 rev/s; box acceleration 578 to 576 deg/s²; slew wheel swing 639 to 640 and 1510 to 1513 rpm. I\_b stays 1.03e-3 kg·m² at the stated precision, so K\_ω (V-1) is unchanged | `sizing.py` wins over this document's prose (Section 1); a stale output had hidden the drift | 2, 3, 3.2, 3.3, 3.6; firmware design §23.2 |
 
 **Confirmed by the independent re-derivation:** K\_t, washer and box inertias, rate per rpm, absorbable spin, slew time and its formula, stored energy, imbalance forces, gravity torque, coin-test factor, structural stresses, all CAD clearances, the battery divider, the A1104 pull-up arrangement, the DLPF table, sensor addresses and registers, ESP32-S3 RMT and ADC facts, BLHeli\_S and DShot facts, radio addressing, and the slew profile settling within PR-2.
 

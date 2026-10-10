@@ -6,10 +6,10 @@ Hardware (non-wheel): 361 g, Iz 2.14e-04; rods 4 x 21.8 g, Iz 3.65e-04
   washer mass 117 g, wheel Iz (washers+bell) 6.50e-05 kg*m2, rim speed at cap 13.3 m/s
   box mass (incl. wheel) 845 g, weight 8.29 N, box Iz (excl. wheel) 1.03e-03 kg*m2
   inertia ratio wheel/box 0.063
-  box rate per 1000 rpm wheel change: 356 deg/s
+  box rate per 1000 rpm wheel change: 355 deg/s
   absorbable box spin from bias: 1.58 rev/s one way, 1.58 rev/s the other
   at 1 A: torque 10.4 mN*m, box accel 576 deg/s2, wheel accel relative to box 1620 rpm/s
-  at 3 A: torque 31.1 mN*m, box accel 1728 deg/s2, wheel accel relative to box 4861 rpm/s
+  at 3 A: torque 31.1 mN*m, box accel 1728 deg/s2, wheel accel relative to box 4860 rpm/s
   90 deg bang-bang slew at 1 A: 0.79 s, peak box rate 228 deg/s, wheel excursion 640 rpm
   2400 rpm: energy 2.1 J, imbalance force at 0.1 mm 0.74 N, at 0.2 mm 1.48 N, vibration 40 Hz, Hall 80 pulses/s, eRPM 16800
   4000 rpm: energy 5.7 J, imbalance force at 0.1 mm 2.06 N, at 0.2 mm 4.12 N, vibration 67 Hz, Hall 133 pulses/s, eRPM 28000
@@ -35,7 +35,7 @@ Hardware (non-wheel): 361 g, Iz 2.14e-04; rods 4 x 21.8 g, Iz 3.65e-04
   washer mass 68 g, wheel Iz (washers+bell) 2.66e-05 kg*m2, rim speed at cap 15.7 m/s
   box mass (incl. wheel) 796 g, weight 7.81 N, box Iz (excl. wheel) 1.03e-03 kg*m2
   inertia ratio wheel/box 0.026
-  box rate per 1000 rpm wheel change: 151 deg/s
+  box rate per 1000 rpm wheel change: 150 deg/s
   absorbable box spin from bias: 1.25 rev/s one way, 0.92 rev/s the other
   at 1 A: torque 10.4 mN*m, box accel 576 deg/s2, wheel accel relative to box 3827 rpm/s
   at 3 A: torque 31.1 mN*m, box accel 1728 deg/s2, wheel accel relative to box 11480 rpm/s
@@ -96,7 +96,7 @@ Hardware (non-wheel): 361 g, Iz 2.14e-04; rods 4 x 21.8 g, Iz 3.65e-04
   box rate per 1000 rpm wheel change: 149 deg/s
   absorbable box spin from bias: 1.08 rev/s one way, 1.08 rev/s the other
   at 1 A: torque 10.4 mN*m, box accel 576 deg/s2, wheel accel relative to box 3868 rpm/s
-  at 3 A: torque 31.1 mN*m, box accel 1728 deg/s2, wheel accel relative to box 11604 rpm/s
+  at 3 A: torque 31.1 mN*m, box accel 1728 deg/s2, wheel accel relative to box 11603 rpm/s
   90 deg bang-bang slew at 1 A: 0.79 s, peak box rate 228 deg/s, wheel excursion 1529 rpm
   3400 rpm: energy 1.7 J, imbalance force at 0.1 mm 1.45 N, at 0.2 mm 2.89 N, vibration 57 Hz, Hall 113 pulses/s, eRPM 23800
   6000 rpm: energy 5.2 J, imbalance force at 0.1 mm 4.50 N, at 0.2 mm 9.01 N, vibration 100 Hz, Hall 200 pulses/s, eRPM 42000

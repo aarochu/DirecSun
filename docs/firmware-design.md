@@ -1128,14 +1128,14 @@ Each statement below was challenged by recomputing it from TD's inputs, by check
 
 ### 23.2 Statements re-derived and confirmed
 
-All [C], recomputed from TD §3.2 inputs while writing this document:
+All [C], recomputed from TD §3.2 inputs while writing this document. On 2026-10-10 the TD-value column was updated to the regenerated `docs/sizing_output.txt` (TD §12.4, I-17); the Recomputed column is the original derivation from the rounded inputs (I_b = 1.03e-3) and is left as it was, so small differences in the last digit are expected:
 
 | Quantity | TD value | Recomputed |
 | --- | --- | --- |
 | K_t | 10.38 mN·m/A | 10.380 |
-| Box rate per 1000 rpm of wheel change | 357 deg/s | 356.2 |
-| Box acceleration at 1 A | 578 deg/s² | 577.4 |
-| 90° bang-bang slew at 1 A | 0.79 s, 228 deg/s peak, 639 rpm swing | 0.790 s, 228.0 deg/s, 640 rpm |
+| Box rate per 1000 rpm of wheel change | 355 deg/s | 356.2 |
+| Box acceleration at 1 A | 576 deg/s² | 577.4 |
+| 90° bang-bang slew at 1 A | 0.79 s, 228 deg/s peak, 640 rpm swing | 0.790 s, 228.0 deg/s, 640 rpm |
 | Stored energy at 4000 / 4100 rpm | 5.7 / 5.99 J | 5.70 / 5.99 |
 | Box spin if the wheel stops from bias / cap | about 2.4 / 4.0 rev/s | 2.37 / 3.96 |
 | Board load at 35 mm, 4.0 rev/s | 2.2 g | 2.21 |
