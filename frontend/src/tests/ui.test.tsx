@@ -83,11 +83,19 @@ describe('landing page', () => {
     expect(toggles.every((t) => t.getAttribute('aria-expanded') === 'false')).toBe(true);
   });
 
-  it('MISSING_CAD: truthful placeholders, no photos or renders', () => {
+  it('CAD_VIEWS: every row shows a labeled CAD view of its own part, never a photo or a placeholder', () => {
     renderAt('/');
-    expect(document.querySelectorAll('img')).toHaveLength(0);
-    expect(screen.getAllByText('CAD RENDER NOT PROVIDED')).toHaveLength(1);
-    expect(screen.getAllByText('HARDWARE IMAGE NOT PROVIDED')).toHaveLength(9);
+    const media = [...document.querySelectorAll<HTMLElement>('.hardware-row__media')];
+    expect(media).toHaveLength(hardwareParts.length);
+    for (const figure of media) {
+      const image = figure.querySelector('img')!;
+      expect(image.getAttribute('alt')).toMatch(/^CAD view of /);
+      expect(image.getAttribute('src')).toMatch(/^\/assets\/hardware\/[a-z0-9-]+\.webp$/);
+      expect(figure.querySelector('figcaption')!.textContent).toMatch(/^CAD (ASSEMBLY PREVIEW|COMPONENT VIEW) \/ DESIGN MODEL.*HIGHLIGHTED: /);
+    }
+    expect(media[0]!.querySelector('figcaption')!.textContent).toContain('NOT BUILT');
+    expect(screen.queryByText(/NOT PROVIDED/)).toBeNull();
+    expect(document.querySelectorAll('canvas')).toHaveLength(0);
   });
 
   it('keeps the BMP280 off the control path in the diagram', () => {

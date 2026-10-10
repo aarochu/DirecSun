@@ -1106,6 +1106,105 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transition: opacity 200ms var(--ease);
+}
+
+.media-frame.is-live img,
+.media-frame.is-live .missing-asset {
+  opacity: 0;
+}
+
+.hardware-row__media figcaption {
+  display: grid;
+  gap: 4px;
+}
+
+.hardware-row__shows {
+  color: var(--text-muted);
+}
+
+.part-view {
+  position: absolute;
+  inset: 0;
+}
+
+.part-view__stage {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+
+.part-view__stage:active {
+  cursor: grabbing;
+}
+
+.part-view__stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.part-view__actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.part-view__button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 0.6);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 120ms var(--ease),
+    border-color 120ms var(--ease);
+}
+
+.part-view__button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.part-view__button:hover,
+.part-view__button[aria-pressed='true'] {
+  color: var(--text);
+  border-color: #666666;
+}
+
+.part-view__button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.part-view__hint {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  right: 12px;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.part-view__hint-coarse {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .part-view__hint-fine {
+    display: none;
+  }
+
+  .part-view__hint-coarse {
+    display: inline;
+  }
 }
 
 .missing-asset {

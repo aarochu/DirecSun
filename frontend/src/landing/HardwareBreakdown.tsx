@@ -1,11 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HardwareRow } from '../components/HardwareRow';
 import { SectionHeading } from '../components/SectionHeading';
 import { hardwareParts } from '../data/hardware';
+import { isWebGLAvailable } from '../lib/environment';
+import { useInView } from '../lib/useInView';
 
 export function HardwareBreakdown() {
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set());
   const allOpen = openIds.size === hardwareParts.length;
+  const [sectionRef, near] = useInView<HTMLElement>('1500px');
+
+  useEffect(() => {
+    if (!near || !isWebGLAvailable()) return;
+    const idle = window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 200));
+    idle(() => void import('../components/PartModel').then((module) => module.preloadStack()));
+  }, [near]);
 
   const toggle = (id: string) =>
     setOpenIds((current) => {
@@ -15,7 +24,7 @@ export function HardwareBreakdown() {
     });
 
   return (
-    <section className="section" id="hardware" tabIndex={-1} aria-labelledby="hardware-title">
+    <section className="section" id="hardware" ref={sectionRef} tabIndex={-1} aria-labelledby="hardware-title">
       <div className="container">
         <SectionHeading
           index="002 / HARDWARE"
