@@ -60,7 +60,7 @@ Two people, each with their own agent sessions, work in this repository. This fi
 - **Never edit the other person's paths.** If an agent finds a defect there, it opens an issue assigned to the owner (as with #2).
 - **Branches and merges:**
   - Julian: `feat/setN-slug` and `feat/setN/RN.M-slug`.
-  - Aaron: `feature/<topic>` off `main`.
+  - Aaron: `feat/ui-<topic>` off `main` (stacked PRs are fine, as with #10 on #9).
   - Everything reaches `main` by PR with CI green (checks, firmware, frontend).
 - **Where status lives:**
   - open sets in `changes/*/_set.md`;

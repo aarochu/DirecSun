@@ -1,6 +1,8 @@
-# Claude Code per-user settings (.claude is a symlink to .agents)
+# Claude Code per-user settings and runtime files (.claude is a symlink to .agents)
 .agents/settings.local.json
 .claude/settings.local.json
+.agents/scheduled_tasks.lock
+.claude/scheduled_tasks.lock
 
 # Python
 .venv/
