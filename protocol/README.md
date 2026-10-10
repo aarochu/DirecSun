@@ -1,6 +1,16 @@
 # Wire protocol
 
-`schema-v1.json` is the machine-checkable contract between the DirecSun box and any ground station: every JSON text frame on the WebSocket at `ws://direcsun.local:81/`. The prose version is `docs/firmware-design.md` section 15; when the two disagree, whichever changed last has the bug.
+`schema-v1.json` is the machine-checkable contract between the DirecSun box and any ground station: every JSON text frame on the WebSocket on port 80 at path `/ws`. The prose version is `docs/firmware-design.md` section 15; when the two disagree, whichever changed last has the bug.
+
+The main UI is `frontend/` (Aaron's), and the backend matches it (`changes/CONTEXT.md`). For the wire interface the UI leads: the schema encodes what the UI expects, and FD section 15 and the firmware follow.
+
+| Item | Value |
+| --- | --- |
+| Endpoint, station mode | `ws://direcsun.local/ws` (mDNS), or `ws://<address printed on serial>/ws` |
+| Endpoint, SoftAP mode | `ws://192.168.4.1/ws`, the UI's default |
+| Sign (wire frame) | Clockwise positive seen from above, +z up the spin axis, for every quantity about the spin axis: `psi_deg`, `psi_ref_deg`, `mag_deg`, `sun_deg`, `rate_dps`, `tau_cmd_mNm`, the SLEW `psi_ref_deg`, and the MANUAL `rate_dps`. "Rotate right" in the UI is +90 degrees |
+| Firmware frame | Counter-clockwise positive (FD section 2.3). The firmware converts only in its protocol encode and decode |
+| Not converted | `gyro_raw` and `mag_raw` (bench only) are raw sensor counts in the sensor's own axes |
 
 | Message | Direction | When |
 | --- | --- | --- |
@@ -32,4 +42,15 @@ tools/check-schema.py capture.jsonl # validate every line of a JSON-lines captur
 
 ## Changing the protocol
 
-Additions before the end of Set 1 stay `v: 1`. After that, any change bumps `v`, and the schema, FD section 15, `ground/link/`, `tools/mock-box.py`, and the firmware encoder change together.
+Versioning rule (`changes/CONTEXT.md`, 2026-10-10):
+
+- **Additive, backward-compatible changes stay `v: 1`.** These are new optional fields and new flag, event, notice, or parameter names. Each one is listed under Changes below, so Aaron's UI can pick it up.
+- **Breaking changes bump `v`.** These are renamed or removed fields, and changed types, units, or meaning.
+
+Either way, the schema, FD section 15, `ground/link/`, `tools/mock-box.py`, and the firmware encoder change together.
+
+## Changes
+
+| Date | Change | Kind |
+| --- | --- | --- |
+| 2026-10-10 | The sign of every quantity about the spin axis flips to clockwise positive, and the endpoint moves from port 81 at `/` to port 80 at `/ws` (R1.8). The UI already expected both. | v1 correction. Not a `v: 2` break, because no backend had emitted v1 yet, and the only consumer (the main UI) already assumed clockwise positive and `/ws` |

@@ -93,7 +93,7 @@ input:focus{border-color:#709bb7}
 <div class="shell">
 <header class="topbar">
   <div class="brand"><div class="mark">D/</div><div>DIRECSUN<small>BENCH CONSOLE</small></div></div>
-  <div class="topmeta">SCHEMA V1 &nbsp;/&nbsp; WEBSOCKET &nbsp;/&nbsp; PORT 81</div>
+  <div class="topmeta">SCHEMA V1 &nbsp;/&nbsp; WEBSOCKET &nbsp;/&nbsp; PORT 80 /WS</div>
 </header>
 <main>
   <section class="pagehead">
@@ -115,14 +115,14 @@ input:focus{border-color:#709bb7}
       </div>
     </div>
     <div class="state" id="state" aria-live="polite"><i class="dot"></i><span>DISCONNECTED</span></div>
-    <p class="hint">Box: ws://direcsun.local:81/ or ws://&lt;address printed on serial&gt;:81/ &nbsp;·&nbsp; mock box: ws://127.0.0.1:8081/</p>
+    <p class="hint">Box: ws://direcsun.local/ws or ws://&lt;address printed on serial&gt;/ws &nbsp;·&nbsp; SoftAP: ws://192.168.4.1/ws &nbsp;·&nbsp; mock box: ws://127.0.0.1:8081/ws</p>
   </section>
 
   <p class="stalenote" id="stalenote" aria-live="polite">Link closed: the values below are the last telemetry received, not the box's current state</p>
   <section class="grid" aria-label="Live telemetry">
     <article class="metric"><div class="metrichead"><span>Mode</span><em id="m-input"></em></div><div class="value" id="m-mode">-</div><div class="metricfoot" id="m-cause">LAST CHANGE -</div><div class="metricfoot" id="m-seq">TLM SEQ -</div></article>
-    <article class="metric"><div class="metrichead"><span>Heading</span><em>CCW +</em></div><div class="value"><span id="m-psi">-</span> <span class="unit">deg</span></div><div class="metricfoot" id="m-psiref">REF - · MAG -</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-psi" points="0,15 220,15"/></svg></div></article>
-    <article class="metric"><div class="metrichead"><span>Box rate</span><em>CCW +</em></div><div class="value"><span id="m-rate">-</span> <span class="unit">deg/s</span></div><div class="metricfoot" id="m-tau">TORQUE CMD - mN m</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-rate" points="0,15 220,15"/></svg></div></article>
+    <article class="metric"><div class="metrichead"><span>Heading</span><em>CW +</em></div><div class="value"><span id="m-psi">-</span> <span class="unit">deg</span></div><div class="metricfoot" id="m-psiref">REF - · MAG -</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-psi" points="0,15 220,15"/></svg></div></article>
+    <article class="metric"><div class="metrichead"><span>Box rate</span><em>CW +</em></div><div class="value"><span id="m-rate">-</span> <span class="unit">deg/s</span></div><div class="metricfoot" id="m-tau">TORQUE CMD - mN m</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-rate" points="0,15 220,15"/></svg></div></article>
     <article class="metric"><div class="metrichead"><span>Wheel</span><em>HALL</em></div><div class="value"><span id="m-wheel">-</span> <span class="unit">rpm</span></div><div class="metricfoot" id="m-wheelref">REF - rpm · THROTTLE -</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-wheel" points="0,15 220,15"/></svg></div></article>
     <article class="metric"><div class="metrichead"><span>Battery</span><em>1 S AVG</em></div><div class="value"><span id="m-vbat">-</span> <span class="unit">V</span></div><div class="metricfoot">ARM ABOVE 9.6 · LOW BELOW 8.8</div><div class="chart"><svg viewBox="0 0 220 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="chart-vbat" points="0,15 220,15"/></svg></div></article>
     <article class="metric"><div class="metrichead"><span>Control loop</span><em>500 HZ</em></div><div class="value"><span id="m-loop">-</span> <span class="unit">us</span></div><div class="metricfoot">LONGEST TICK IN 20 MS · BUDGET 2000</div><div class="metricfoot" id="m-drop">DROPPED TLM - · EVENTS -</div></article>
@@ -157,7 +157,7 @@ input:focus{border-color:#709bb7}
       </div>
     </article>
   </section>
-  <p class="footnote"><span>BENCH TOOL</span> · Values are shown as the wire sends them: angles and rates counter-clockwise positive. Verified against tools/mock-box.py; firmware conformance is checked in Set 3.</p>
+  <p class="footnote"><span>BENCH TOOL</span> · Engineering console for bring-up, not the demo UI (that is frontend/). Values are shown as the wire sends them: angles, rates, and torque clockwise positive seen from above, as in the main UI. Verified against tools/mock-box.py; firmware conformance is checked in Set 3.</p>
 </main>
 </div>
 <script type="module">
@@ -261,7 +261,12 @@ function plot(key, value, id) {
   $(id).setAttribute("points", pts);
 }
 
-const fmt = (n, digits = 1) => (n === null || n === undefined ? "-" : Number(n).toFixed(digits));
+// Rounds first, so a small negative value prints "0.0" rather than "-0.0".
+const fmt = (n, digits = 1) => {
+  if (n === null || n === undefined) return "-";
+  const text = Number(n).toFixed(digits);
+  return Number(text) === 0 ? (0).toFixed(digits) : text;
+};
 
 function showMode(mode) {
   $("badge-mode").textContent = mode;
