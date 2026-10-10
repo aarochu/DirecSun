@@ -1,8 +1,8 @@
 # DirecSun Flight Firmware: Technical Design and Implementation Plan
 
-**Status:** Design for implementation. No firmware has been written, built, flashed, or run. No hardware has been measured.
-**Parent document:** *DirecSun Technical Design* (referred to below as **TD**). Section numbers such as "TD §6.5" point into that document.
-**Related artifact:** the browser frontend in `direcsun/` (landing page and ground station), described in §17.
+**Status:** Design for implementation. No firmware has been written, built, flashed, or run. No hardware has been measured. Imported into the repository on 2026-10-10, when the toolchain changed from Arduino-ESP32 to ESP-IDF v6.0 with C++17; §23.1 rows V-22 onward record every edit made then.
+**Parent document:** *DirecSun Technical Design*, `docs/technical-design.md` (referred to below as **TD**). Section numbers such as "TD §6.5" point into that document.
+**Related code:** the wire schema in `protocol/schema-v1.json`, the client side of the protocol in `ground/link/`, and the bench console in `ground/console/`. The demo UI is Aaron's and lives outside this repository (§17).
 **Audience:** firmware and software engineers, software architects, agentic architects, and AI agents that will write, review, or change the firmware.
 
 ---
@@ -57,7 +57,7 @@ This document reuses the TD labels and adds one.
 | **[M]** | Must be measured on the hardware | Measure, record in TD §12.2 |
 | **[D]** | Design decision made in this document | Change only with a reason recorded in §23 |
 
-**Important limitation.** While this document was written, no datasheet, library header, or source page was opened. Every hardware fact labelled [V] here inherits its [V] from TD. Every ESP-IDF or Arduino API fact is labelled [A] and is checked by the build or a bench test listed in §19.
+**Important limitation.** While this document was written, no datasheet, library header, or source page was opened. Every hardware fact labelled [V] here inherits its [V] from TD. Every ESP-IDF API fact is labelled [A] and is checked by the build or a bench test listed in §19.
 
 ### 2.2 Units and representation
 
@@ -86,7 +86,7 @@ Taken from TD §4.1 and TD §6.5. They are restated because a sign error makes t
 | Ω | Wheel speed in its **forward** direction. Always positive, between the low limit and the cap. Every limit and interlock applies to Ω |
 | s_w | ±1, the sign of the wheel's spin about +z when running forward. Fixed by motor wiring; found in T-5 |
 
-> **Integration warning:** the current browser frontend treats positive heading as clockwise ("rotate right"). See §17.2 and finding V-17. The firmware convention above is authoritative; the frontend must convert.
+> **Integration rule (decided 2026-10-10):** the wire carries the convention above, counter-clockwise positive. The earlier `direcsun/` frontend treated positive heading as clockwise ("rotate right"; §17, finding V-17). Any UI that displays clockwise-positive values converts for display. `ground/link/` passes wire values through unchanged.
 
 ### 2.4 Naming
 
@@ -101,7 +101,7 @@ Taken from TD §4.1 and TD §6.5. They are restated because a sign error makes t
 1. Measurements recorded in TD §12.2 (none exist yet).
 2. TD, including `cad/stack.py` and `docs/sizing.py`, which TD says win over TD's prose.
 3. This document.
-4. The frontend implementation in `direcsun/` (it must follow 1–3 for anything about the device).
+4. Ground code: `ground/link/`, `ground/console/`, and Aaron's UI. They must follow 1 to 3 for anything about the device, and `protocol/schema-v1.json` must agree with §15.
 
 ---
 
@@ -129,7 +129,7 @@ flowchart LR
         ESC -- "3 phases" --> MOTOR["2212 motor + washer flywheel"]
         MOTOR -. "magnets pass sensor" .-> HALL
     end
-    XIAO <-- "Wi-Fi, WebSocket JSON v1" --> AP["OM5P-AC access point<br/>10.TE.AM.1"]
+    XIAO <-- "Wi-Fi, WebSocket JSON v1" --> AP["Wi-Fi access point, 2.4 GHz<br/>(OM5P-AC, hotspot, or venue)"]
     AP <--> LAPTOP["Laptop browser<br/>ground station"]
 ```
 
@@ -173,8 +173,8 @@ The PR-1 requirement needs the gyro range to cover at least 360 deg/s, and TD §
 | Item | Value | Label |
 | --- | --- | --- |
 | MCU | ESP32-S3, dual core | [V] TD §6.1 |
-| Framework | Arduino-ESP32 core 3.x on ESP-IDF 5.x, FreeRTOS tasks | [V] TD §6.1 for the choice; [A] for the IDF version under it |
-| I2C | SDA GPIO5, SCL GPIO6, 400 kHz; fallback 100 kHz | [V] TD §5.3–5.4 |
+| Framework | ESP-IDF v6.0, C++17 application code, FreeRTOS tasks | [D] 2026-10-10, replacing Arduino-ESP32 (TD §6.1) |
+| I2C | SDA GPIO5, SCL GPIO6 on port 0, owned by esp-idf-lib `i2cdev`; every device at 400 kHz, fallback 100 kHz. The library defaults (1 MHz for the esp-idf-lib drivers, 100 kHz hard-coded in the QMC5883P driver) are overridden | [V] TD §5.3 to 5.4 for pins and rate; [V] defaults read from the driver source, 2026-10-10 |
 | DShot | DShot300 if ESC MCU is 48 MHz ("H" in its name), DShot150 if 24 MHz ("L") | [V] TD §5.2; [M] read in ESC Configurator |
 | DShot frame | 11-bit throttle, 1 telemetry bit, 4-bit CRC; 0 = disarm, 1–47 commands, 48–2047 throttle | [V] TD §6.3 |
 | Hall | 2 magnets, both south-out → 2 falling edges per wheel turn | [V] TD §4.6 |
@@ -210,12 +210,12 @@ Derived wheel timing (two Hall edges per turn) [C]:
 | `control` task | 1 | Highest application priority (e.g. `configMAX_PRIORITIES − 2`) | 2 ms (500 Hz) | Sensor reads, estimator, mode machine, controllers, interlocks, DShot frame, telemetry snapshot | [D]; rate [V] TD §6.2 |
 | Tick source | n/a | ISR | 2 ms | `gptimer` alarm ISR gives a task notification to `control` | [D]; API [A] |
 | Hall ISR | any (registered from core 1) | ISR, IRAM | per edge | Store `esp_timer_get_time()` in a ring buffer | [D]; API [A] |
-| `comms` task | 0 | Above `loop()`, below Wi-Fi driver | event-driven + 50 Hz | WebSocket server, JSON encode/decode, ping/pong, client management | [D] |
+| `comms` task | 0 | Above the main task, below the Wi-Fi driver | event-driven + 50 Hz | WebSocket server, JSON encode/decode, ping/pong, client management | [D] |
 | Wi-Fi/lwIP | 0 | System | n/a | Provided by ESP-IDF | [A] default core 0 |
-| Arduino `loop()` | 1 | 1 | idle | Empty except a `vTaskDelay`; or deleted | [D] |
+| `app_main` | 0 | Default main-task priority | once | Runs the boot sequence (§8), creates the tasks, returns | [D] |
 | Task watchdog | system | n/a | 100 ms | Resets the MCU if `control` stops feeding it | [V] TD §6.2 for the 100 ms |
 
-Why a hardware timer instead of `vTaskDelayUntil(2)`: Arduino-ESP32 runs FreeRTOS at a 1 kHz tick [A], so `vTaskDelayUntil` could produce a 2 ms period, but its jitter is a full tick. A `gptimer` alarm gives sub-tick jitter [A]. Either works; the timer is the default and `vTaskDelayUntil` is the fallback if the timer API does not build (build check BC-3, §19.3).
+Why a hardware timer instead of `vTaskDelayUntil(2)`: the project runs FreeRTOS at a 1 kHz tick (`CONFIG_FREERTOS_HZ=1000` in `firmware/sdkconfig.defaults`), so `vTaskDelayUntil` could produce a 2 ms period, but its jitter is a full tick. A `gptimer` alarm gives sub-tick jitter [A]. Either works; the timer is the default and `vTaskDelayUntil` is the fallback if the timer API does not build (build check BC-3, §19.3).
 
 ### 7.3 Module and data-flow diagram
 
@@ -283,7 +283,7 @@ flowchart TD
     M --> N{"At least 1 s of DShot 0 sent?"}
     N -- no --> N
     N -- yes --> O["Start control task on core 1<br/>mode = SAFE"]
-    O --> P["Start Wi-Fi STA, static IP 10.TE.AM.120<br/>start comms task on core 0"]
+    O --> P["Start Wi-Fi STA: DHCP, mDNS direcsun.local<br/>(static IP or SoftAP if configured)<br/>start comms task on core 0"]
     P --> Q["Enable 100 ms task watchdog on control"]
     F --> P
 ```
@@ -356,6 +356,8 @@ At 100 kHz I2C the IMU read alone is 1.55 ms [C], and an IMU + magnetometer tick
 | Data | 0x3B..0x48 | 14-byte burst: accel XYZ, temperature, gyro XYZ, big-endian | One transaction per tick | [A] |
 | WHO_AM_I | 0x75 | expect 0x68 | Boot check (TD §6.6) | [A] value; TD names the check |
 
+Driver: esp-idf-lib `mpu6050` ^2.1.9 on `i2cdev`, validated alone on the S3 by the owner. Its device clock is set to 400 kHz before the first transaction, overriding the library's 1 MHz default [D]. Whether `mpu6050_get_motion()` issues the single 14-byte burst §9.2 assumes is [A]; if it does not, the driver wrapper reads 0x3B to 0x48 with one register read.
+
 Error handling: an I2C error or a timeout of more than 1 ms marks the sample invalid. 25 consecutive invalid samples (50 ms) trip `IMU_SILENT` [V] TD §6.7 threshold. After three consecutive errors the driver runs bus recovery (nine SCL clock pulses, then STOP) once [A] standard I2C practice.
 
 Axis mapping: the board sits face up, centred on the spin axis (TD §4.8), so sensor +Z is taken as box +z [A]. T-8 confirms by rotating the box counter-clockwise by hand and checking that ω reads positive [M].
@@ -369,13 +371,15 @@ Axis mapping: the board sits face up, centred on the spin axis (TD §4.8), so se
 | Status | 0x09, data-ready bit | [V] register; bit position [A] |
 | Control | 0x0A, 0x0B: continuous mode, output data rate 200 Hz, oversampling and range | [V] registers; **bit values [A]: read them from the QST datasheet before writing the driver** |
 
+Driver: the vendored `duruofu/qmc5883p` 0.1.0 in `firmware/components/qmc5883p`, given the i2cdev bus through `i2cdev_get_shared_handle(I2C_NUM_0, ...)` after the first i2cdev transaction has created it [D]. The driver hard-codes a 100 kHz device clock, and its own comments flag its 8 G sensitivity value as uncertain; both are corrected by documented local patches after checking the QST datasheet [A].
+
 Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). It reads data only when data-ready is set, which yields every new 200 Hz sample once, and averages all new samples in each 20 ms window into one 50 Hz heading measurement [D].
 
 Mounting: the board hangs upside down under the flipped top deck (TD §4.8). Turning a board over is a 180° rotation about a horizontal axis, which flips **Z and one horizontal axis**, not Z alone (finding V-4). Heading uses only the horizontal components, so the horizontal flip matters and the Z flip does not. The driver applies a configurable axis map `mag_axis_map` (default: negate Y and Z, keep X), and T-9 confirms it: rotating the box counter-clockwise must make magnetic heading increase in the same direction as the integrated gyro [M].
 
 ### 10.3 BMP280 (I2C 0x77, optional)
 
-Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz on a spare tick if present, and reported in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`.
+Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz on a spare tick if present, and reported in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`. Driver: esp-idf-lib `bmp280` ^1.0.7 at 400 kHz.
 
 ### 10.4 A1104 Hall sensor and wheel speed
 
@@ -412,7 +416,7 @@ flowchart LR
 | Sun B | 2 (ADC1 ch1) | 50 Hz | Same | n/a |
 | Battery | 8 (ADC1 ch7) | 50 Hz | mV / 0.1803, then a 1 s moving average for the undervoltage interlock | [C] ratio |
 
-Use the ESP-IDF `adc_oneshot` driver with `ADC_ATTEN_DB_12` and the `adc_cali` curve-fitting scheme for mV conversion [A]. Arduino's `analogReadMilliVolts()` wraps the same calibration and is an acceptable shortcut [A]. ADC2 must not be used, because it is unavailable with Wi-Fi on [V] TD §5.4.
+Use the ESP-IDF `adc_oneshot` driver with `ADC_ATTEN_DB_12` and the `adc_cali` curve-fitting scheme for mV conversion [A]. ADC2 must not be used, because it is unavailable with Wi-Fi on [V] TD §5.4.
 
 ### 10.6 DShot output
 
@@ -433,7 +437,7 @@ flowchart LR
 | '0' high time (37.5 %) | 1.25 µs | 2.50 µs | [A] |
 | RMT ticks at 40 MHz resolution | bit 133, '1' 100 high + 33 low, '0' 50 high + 83 low | ×2 | [C] |
 
-Implementation choice [D]: use the ESP-IDF 5.x RMT TX channel with the built-in **bytes encoder** (configurable `bit0`/`bit1` symbols, MSB first) on the 2-byte frame [A]. This avoids a custom encoder and avoids depending on DShotRMT building on core 3.x (TD A-18). If the bytes encoder is unavailable, write the 16-symbol encoder TD §6.1 describes.
+Implementation choice [D]: use the ESP-IDF 5.x RMT TX channel with the built-in **bytes encoder** (configurable `bit0`/`bit1` symbols, MSB first) on the 2-byte frame [A]. This avoids a custom encoder and any external DShot library (TD A-18). If the bytes encoder is unavailable, write the 16-symbol encoder TD §6.1 describes.
 
 Test vectors for the host test HT-1 [C, computed]:
 
@@ -733,23 +737,24 @@ The ESP-IDF task watchdog is configured for 100 ms on the control task [V] TD §
 
 | Item | Value | Label |
 | --- | --- | --- |
-| Mode | Wi-Fi station on the OM5P-AC network | [V] TD §7.1 |
-| Address | Static 10.TE.AM.120, gateway 10.TE.AM.1, /24 | [V] TD §7.1 |
-| SSID, password, team number | NVS, set over USB serial; never in source control | [D] |
-| Power save | Disabled (`WiFi.setSleep(false)` or `esp_wifi_set_ps(WIFI_PS_NONE)`) to keep latency low | [A] |
-| Fallback | SoftAP selected by an NVS flag at boot (default address 192.168.4.1 [A]); never an automatic switch during a session | [D] TD §7.1 names the fallback; automatic switching is rejected because it would change the box address mid-demo |
-| Endpoint | `ws://10.TE.AM.120:81/` | [V] TD §7.2 |
+| Mode | Wi-Fi station with DHCP, 2.4 GHz | [D] 2026-10-10; TD §7.1 |
+| Discovery | mDNS hostname `direcsun` (`espressif/mdns`), so the box answers at `direcsun.local`; the assigned address is also logged on the serial console at connect | [D] |
+| Credentials, static address, SoftAP flag | menuconfig, from `firmware/sdkconfig.defaults.local` (gitignored); never in source control and never over the wire | [D] |
+| Static address (option) | 10.TE.AM.120 on the OM5P-AC, gateway 10.TE.AM.1, /24 | [V] TD §7.1 |
+| Power save | Disabled with `esp_wifi_set_ps(WIFI_PS_NONE)` to keep latency low, as in the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3 |
+| Fallback | SoftAP selected in menuconfig at build time (default address 192.168.4.1 [A]); never an automatic switch during a session | [D] TD §7.1 names the fallback; automatic switching is rejected because it would change the box address mid-demo |
+| Endpoint | `ws://direcsun.local:81/`, or `ws://<printed address>:81/` | [D] TD §7.2 |
 
 ### 15.2 WebSocket server
 
 | Item | Choice | Label |
 | --- | --- | --- |
-| Library | `arduinoWebSockets` (Links2004) `WebSocketsServer` on port 81, polled from the comms task | [A]; build check BC-4 |
-| Alternative | ESP-IDF `esp_http_server` with WebSocket support, if enabled in the Arduino core's sdkconfig | [A]; BC-4 |
+| Library | ESP-IDF `esp_http_server` with `CONFIG_HTTPD_WS_SUPPORT=y`, URI `/` registered as a WebSocket handler on port 81. Outbound frames go through `httpd_queue_work` and `httpd_ws_send_frame_async`, the pattern of the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3; build check BC-4 on the S3 |
 | Max clients | 3 | [D] |
 | Outbound policy | Telemetry is broadcast to all clients. If a client's send would block (buffer full), that frame is skipped for that client and `tlm_dropped` increments. Acks and events are never skipped | [D] |
 | Inbound size limit | 512 bytes per message; larger messages are dropped with `ack ok:false reason:"too large"` | [D] |
-| JSON | Encode `tlm` with `snprintf` into a fixed buffer (no heap). Parse commands with ArduinoJson 7 into a stack document | [D]; library [A] |
+| JSON | Encode `tlm` with `snprintf` into a fixed buffer (no heap). Parse commands with cJSON from the `espressif/cjson` registry component (ESP-IDF v6.0 no longer bundles it) | [D]; library [A] |
+| Contract check | Every message kind is described by `protocol/schema-v1.json`; host test HT-9 validates encoder output against it | [D] |
 
 ### 15.3 Message schema, version 1
 
@@ -873,24 +878,26 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 | `sun_cal`, `light_threshold` | identity, 0 | n/a | after T-10 |
 | `dshot_rate` | 150 | 150 or 300 | after reading the ESC MCU (TD §5.2) |
 | `bench_mode` | false | bool | `set_params` in SAFE |
-| Wi-Fi SSID, password, team number, SoftAP flag | n/a | n/a | USB serial only |
+| Wi-Fi SSID, password, static address, SoftAP flag | n/a | n/a | menuconfig, from `firmware/sdkconfig.defaults.local` (gitignored); never over the wire |
 
 `dshot_rate` defaults to the slower, always-supported DShot150 until the ESC's MCU is read [D]. TD says DShot150 works on 24 MHz MCUs and DShot300 needs 48 MHz [V].
 
 ---
 
-## 17. Integration with the existing browser frontend
+## 17. Integration with the ground station
 
-Facts about `direcsun/` as currently implemented, read from its source [V: source in this workspace]:
+The demo UI is Aaron's and lives outside this repository. It talks to the box only through `ground/link/`, a dependency-free ES module that implements the client side of §15: it pings at 5 Hz, matches each `ack` to its command by `seq`, sends `estop` immediately and never queues it, and never reconnects on its own. Importing it makes the UI the controlling client after an accepted `arm` (§14.4). `ground/console/` is a bench console built on the same module, for firmware bring-up.
 
-| Frontend fact | Firmware consequence |
+The table below records facts read from the earlier `direcsun/` frontend source on 2026-10-09 [V at that date]. It is kept as the integration checklist for Aaron's UI.
+
+| Frontend fact (2026-10-09) | Consequence |
 | --- | --- |
-| The device link is read-only: it opens a WebSocket, parses `type:"tlm"` messages with `v` 1 or absent, requires a numeric `psi_deg`, and never sends | The firmware's `tlm` (§15.3) satisfies it. Because it never sends `ping`, it can never be the controlling client (§14.4) |
-| It reads `psi_deg`, `psi_ref_deg`, `rate_dps`, `wheel_rpm`, `vbat`, `mode`, `t_ms`, `seq` | All present in §15.3. `psi_ref_deg` may be `null`; the frontend then treats the target as equal to the heading |
-| It does not reconnect automatically | Matches §14.4 |
-| Its placeholder URL is `ws://192.168.4.1/ws` | The firmware endpoint is `ws://10.TE.AM.120:81/` (station) or `ws://192.168.4.1:81/` (SoftAP). The placeholder should be changed to match (finding V-16) |
-| **It treats positive heading as clockwise** ("rotate right" = +90°), and its 3D view turns the body clockwise for positive values | The firmware sends counter-clockwise-positive `psi_deg` (§2.3). Without a change, the frontend's model would turn opposite to the real box (finding V-17). Fix in the frontend: negate `psi_deg`, `psi_ref_deg`, and `rate_dps` for display when the source is the device, or adopt CCW-positive throughout |
-| Its simulated judge sequence (turn 90°, hold 1 s, return) | On hardware this is a ground-orchestrated pair of `SLEW` commands with acks, not a firmware command (TD frontend spec §7.1). Not implemented in the frontend today |
+| The device link was read-only: it opened a WebSocket, parsed `type:"tlm"` messages with `v` 1 or absent, required a numeric `psi_deg`, and never sent | Through `ground/link/` the UI sends `ping` and `cmd` and can be the controlling client. A read-only viewer remains harmless (§14.4) |
+| It read `psi_deg`, `psi_ref_deg`, `rate_dps`, `wheel_rpm`, `vbat`, `mode`, `t_ms`, `seq` | All present in §15.3. `psi_ref_deg` may be `null`; the UI then treats the target as equal to the heading |
+| It did not reconnect automatically | Matches §14.4 and `ground/link/` |
+| Its placeholder URL was `ws://192.168.4.1/ws` | The endpoint is `ws://direcsun.local:81/` in station mode or `ws://192.168.4.1:81/` in SoftAP mode (finding V-16) |
+| **It treated positive heading as clockwise** ("rotate right" = +90°), and its 3D view turned the body clockwise for positive values | The wire stays counter-clockwise positive (§2.3, decided 2026-10-10). The UI negates `psi_deg`, `psi_ref_deg`, and `rate_dps` for display (finding V-17) |
+| Its simulated judge sequence (turn 90°, hold 1 s, return) | On hardware this is a ground-orchestrated pair of `SLEW` commands with acks, not a firmware command (TD frontend spec §7.1) |
 
 ---
 
@@ -899,50 +906,41 @@ Facts about `direcsun/` as currently implemented, read from its source [V: sourc
 ### 18.1 Layout
 
 ```text
-firmware/
-  platformio.ini            # or arduino-cli sketch config (see 18.2)
-  include/
-    config.h                # pins, compile-time limits (cap), loop rate
-  src/
-    main.cpp                # boot sequence (§8), task creation
-    app/
-      control_task.cpp/.h   # tick orchestration (§9)
-      comms_task.cpp/.h     # Wi-Fi, WebSocket, JSON (§15)
-      shared.h              # queues, seqlock snapshot, atomics (§7.4)
-    drivers/                # hardware access only
-      i2c_bus.cpp/.h        # Wire wrapper, timeouts, bus recovery
-      mpu6050.cpp/.h
-      qmc5883p.cpp/.h
-      bmp280.cpp/.h
-      hall.cpp/.h           # ISR + ring buffer
-      adc_inputs.cpp/.h
-      dshot_rmt.cpp/.h      # RMT channel + bytes encoder
-    core/                   # pure logic, no Arduino/IDF includes
-      dshot_frame.h         # encode + CRC
-      wheel_speed.h         # period → rpm, median, staleness
-      estimator.h           # bias, heading filter, sun, tilt
-      controllers.h         # P, PI with anti-windup, trapezoid, torque→wheel
-      modes.h               # state machine, guards
-      interlocks.h          # §14.1 table
-      protocol.h            # message structs, parse/validate, tlm encode
-      params.h              # defaults, ranges, validation
-  test/
-    host/                   # doctest or Unity, built with the host compiler
-      test_dshot.cpp test_wheel_speed.cpp test_estimator.cpp
-      test_controllers.cpp test_modes.cpp test_interlocks.cpp test_protocol.cpp
-      plant_sim.h           # two-body plant from TD §3.1 for closed-loop host tests
+firmware/                     ESP-IDF v6.0 project; run idf.py from here (or tools/idf.sh)
+  CMakeLists.txt              project, C++17, SDKCONFIG_DEFAULTS (+ sdkconfig.defaults.local if present)
+  sdkconfig.defaults          tracked, annotated line by line
+  sdkconfig.defaults.local    gitignored: Wi-Fi credentials, static address, SoftAP flag
+  dependencies.lock           committed, for reproducible builds
+  main/
+    app_main.cpp              boot sequence (§8), task creation
+    control_task.cpp/.hpp     tick orchestration (§9)
+    shared.hpp                queues, seqlock snapshot, atomics (§7.4)
+    idf_component.yml         esp-idf-lib/mpu6050, esp-idf-lib/bmp280, espressif/mdns, espressif/cjson
+  components/
+    direcsun_core/            pure logic: no ESP-IDF, FreeRTOS, or driver headers
+      include/direcsun/core/  angles, dshot_frame, wheel_speed, estimator, controllers,
+                              modes, interlocks, protocol, params (.hpp)
+      src/
+    direcsun_drivers/         hardware access only: i2c_bus (i2cdev, recovery), imu, mag,
+                              baro, hall (ISR + ring buffer), adc_inputs, dshot_rmt
+    direcsun_comms/           wifi (STA, DHCP, mDNS, SoftAP), ws_server (esp_http_server),
+                              comms task, JSON (cJSON)
+    qmc5883p/                 vendored duruofu/qmc5883p 0.1.0 with documented local patches
+  test/host/                  CMake + doctest, host compiler, ASan and UBSan
+    test_*.cpp                one file per core module (HT-1 to HT-11)
+    plant_sim.hpp             two-body plant from TD §3.1 for closed-loop host tests
 ```
 
-The `core/` directory must not include any Arduino or ESP-IDF header. That rule is what makes host testing possible; check it in CI with a grep [D].
+`direcsun_core` must not include any ESP-IDF, FreeRTOS, or driver header. That rule is what makes host testing possible; `tools/check-core-purity.sh` enforces it in CI [D]. C++ code uses the namespace `direcsun` with one nested namespace per module.
 
 ### 18.2 Toolchain
 
-| Option | Notes | Label |
+| Item | Choice | Label |
 | --- | --- | --- |
-| Arduino CLI with the `esp32` core 3.x | Directly supported by Espressif | [A] |
-| PlatformIO | The upstream `espressif32` platform has lagged Arduino core 3.x; the community `pioarduino` platform provides it | [A]; BC-1 |
-
-Pick one in the first hour (TD §11.1 frozen interfaces) and record it here.
+| SDK | ESP-IDF v6.0 installed with EIM; `tools/idf.sh` activates it and runs `idf.py` in `firmware/` | [D] 2026-10-10 (§24 Q1) |
+| Target | `esp32s3` | [V] TD §6.1 |
+| Language | C++17 (`gnu++17`), exceptions and RTTI off; the vendored drivers are C | [D] 2026-10-10 |
+| Host tests | CMake + doctest (vendored single header) with the host g++ | [D] |
 
 ---
 
@@ -987,12 +985,12 @@ These map firmware features onto TD §9:
 
 | ID | Check | Unblocks |
 | --- | --- | --- |
-| BC-1 | Toolchain builds an empty sketch for the XIAO ESP32-S3 on core 3.x | Everything |
+| BC-1 | ESP-IDF v6.0 builds the skeleton (every driver library linked) for esp32s3, and it boots on the XIAO | Everything |
 | BC-2 | RMT bytes encoder produces the four §10.6 frames; verify on a logic analyser or oscilloscope at both DShot rates | DShot |
 | BC-3 | `gptimer` alarm notifies a task at 500 Hz; log jitter for 10 s | Control timing |
-| BC-4 | WebSocket server on port 81 accepts the frontend and a test client; 50 Hz broadcast for 10 min | Comms |
+| BC-4 | `esp_http_server` WebSocket on port 81 accepts the console and a test client; 50 Hz broadcast for 10 min | Comms |
 | BC-5 | Task watchdog at 100 ms resets the board when the control task is deliberately blocked | Safety |
-| BC-6 | I2C at 400 kHz reads all three Adafruit boards; scope the edges (TD §5.3) | Sensors |
+| BC-6 | I2C at 400 kHz reads all three Adafruit boards on one i2cdev-owned bus, with the QMC5883P on the shared handle; scope the edges (TD §5.3) | Sensors |
 
 ---
 
@@ -1032,19 +1030,21 @@ flowchart TD
 | F-8 | Attitude, HOLD, SLEW, SUN_POINT, respin | G3 | T-16, T-17 | Julian |
 | F-9 | Interlock verification | F-7 | T-13 | Both |
 
+In `changes/`, F-1 is Set 1 (R1.4, R1.5) and the start of Set 3; F-2 to F-6 are Set 3 (teleop); F-7 and F-9 are Set 4 (detumble); F-8 is Set 5 (pointing).
+
 ---
 
 ## 21. Rules for AI agents changing this firmware
 
 1. **Never** send DShot commands 1–47 from flight code, and never add a wire command that changes ESC settings.
 2. **Never** raise `omega_cap_rpm` above 4000, add a way to raise it over the network, or weaken an interlock threshold, without a TD revision that re-runs TD §3 and PR-4.
-3. Keep `core/` free of hardware headers. If logic needs hardware, add a driver interface and inject it.
+3. Keep `direcsun_core` free of hardware headers (`tools/check-core-purity.sh`). If logic needs hardware, add a driver interface and inject it.
 4. Every new interlock gets a host test that shows it trips, and a test that shows it does not trip 1 % inside the threshold.
 5. A passing test suite counts only if HT-6 (the deliberate sign error) still fails as expected. Do not delete or weaken positive controls.
 6. Keep claim labels honest. When a number changes, update §23 with the old value, the new value, and why.
 7. Do not change the wire schema without bumping `v` and updating §15, §17, and the frontend parser.
 8. Do not add automatic reconnection, automatic re-arming, or any path that resumes wheel motion without a fresh `arm` from an operator.
-9. Commit only when the owner asks (TD §8.5).
+9. Follow the git flow in `changes/CONTEXT.md` (TD §8.5).
 
 ---
 
@@ -1058,7 +1058,7 @@ flowchart TD
 | Wheel loop too slow for the rate loop | Oscillation in DETUMBLE | Start at 2 Hz wheel; lower rate bandwidth if needed (§12.2) | [C] V-8 |
 | Wi-Fi task starves core 0 | Telemetry gaps | Control is on core 1 and never waits; telemetry drops are counted | [A] |
 | I2C forced to 100 kHz | Tick overrun | §9.2 fallback plan | [C] |
-| Arduino core 3.x incompatibility (RMT, WebSocket library) | Delay | BC-2, BC-4 on day one; fallbacks named | [A] |
+| ESP-IDF v6.0 API or registry surprises (RMT bytes encoder, `i2c_master`, cJSON and mDNS now registry components) | Delay | Set 1 links every library in the skeleton build; BC-2, BC-4, BC-6 early | [A] |
 | NVS corruption or stale params | Wrong gains or signs after reflash | `param_version`, range checks, `PARAMS_RESET` event | [D] |
 
 ---
@@ -1123,12 +1123,12 @@ All [C], recomputed from TD §3.2 inputs while writing this document:
 
 ## 24. Open questions
 
-1. Toolchain: Arduino CLI or PlatformIO (pioarduino)? (§18.2)
-2. Team number for the 10.TE.AM addressing. (TD §12.3)
+1. ~~Toolchain~~: closed 2026-10-10, ESP-IDF v6.0 with C++17 (§18.2).
+2. Team number for the 10.TE.AM addressing: needed only if the OM5P-AC static-address option is used (§15.1).
 3. ESC MCU type (H or L) → DShot rate. (TD §5.2)
-4. Should the frontend become the controlling ground station (send `ping`, `cmd`, show acks), or stay a read-only viewer next to a separate control page? (§17)
-5. Frontend sign convention: convert at the link, or adopt CCW-positive in the whole UI? (V-17)
-6. Owner approval for the additions recorded in §13.1 (`disarm` semantics, `respin`, guards) and §14.1 (`HALL_SILENT`).
+4. ~~Controlling ground station~~: closed 2026-10-10. Aaron's UI becomes the controlling client through `ground/link/` (§17).
+5. ~~Sign convention~~: closed 2026-10-10. The wire stays CCW-positive; the UI converts for display (§2.3).
+6. ~~Owner approval of the additions~~: closed 2026-10-10. `disarm`, the READY dwell, the magnetometer and sun guards, `respin`, `HALL_SILENT`, and the controlling-client heartbeat are approved and written into TD §6.6 and §6.7.
 
 ---
 

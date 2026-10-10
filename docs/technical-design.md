@@ -399,10 +399,15 @@ The firmware is a 500 Hz cascade of four loops on one core, attitude → rate �
 
 | Item | Choice | Label |
 | --- | --- | --- |
-| MCU | ESP32-S3 on the XIAO, dual core | \[V\] |
-| Framework | Arduino-ESP32 core 3.x with FreeRTOS tasks, built with PlatformIO or Arduino IDE | Design choice |
-| DShot | RMT peripheral (4 TX channels) \[V\]. Use the DShotRMT library if it builds on the chosen core (it targets the ESP-IDF 5.5 RMT encoder API \[V\]); otherwise write a 16-symbol RMT encoder directly | \[M\] build check |
+| MCU | ESP32-S3 on the XIAO, dual core, 8 MB flash | \[V\]; flash size \[A\], read with esptool during repository Set 1 |
+| Framework | ESP-IDF v6.0 with FreeRTOS tasks, application code in C++17, built with `idf.py` from an EIM install (`tools/idf.sh`). Chosen Oct 10 to match the sensor drivers the owner validated on this MCU; it replaces Arduino-ESP32 with PlatformIO | Design choice |
+| Sensor drivers | esp-idf-lib `mpu6050` and `bmp280` on the esp-idf-lib `i2cdev` bus manager, plus a vendored `duruofu/qmc5883p` driver that is handed the same bus through `i2cdev_get_shared_handle()`. Every device runs at 400 kHz; the library defaults (1 MHz for the esp-idf-lib drivers, 100 kHz hard-coded in the QMC5883P driver) are overridden | \[V\] defaults read from the driver source; \[A\] the owner validated each driver alone on an ESP32-S3 at SDA GPIO5 and SCL GPIO6, never all three on one bus (A-23) |
+| DShot | RMT peripheral (4 TX channels) \[V\], driven by the ESP-IDF RMT TX channel and its built-in bytes encoder (firmware design §10.6). A 16-symbol custom encoder is the fallback. No external DShot library | \[M\] build check |
+| Control tick | A `gptimer` alarm interrupt notifies the control task every 2 ms (firmware design §7.2) | Design choice |
+| WebSocket and JSON | `esp_http_server` WebSocket on port 81, path `/`; cJSON from the `espressif/cjson` registry component, because ESP-IDF v6.0 no longer bundles it | \[A\]: the owner verified the WebSocket server on an ESP32-C3 (the DirecSun1 prototype), not yet on the S3 (A-24) |
 | Persistent parameters | NVS key-value store | Design choice |
+
+The firmware design, `docs/firmware-design.md`, specifies the firmware in detail and takes precedence on firmware internals only where this document is silent.
 
 ### 6.2 Tasks and timing
 
@@ -473,24 +478,25 @@ Ground e-stop and heartbeat loss ramp the wheel to zero over 5 s, so the box spe
 
 ## 7. Ground station and networking
 
-The box and a laptop join a private network run by the OM5P-AC in its home access-point mode; the laptop's browser talks to the box over one WebSocket carrying JSON. Telemetry at 50 Hz needs about 0.1 Mb/s, far under the radio's default 4 Mb/s limit \[C, V\]. The ground station is written against a software plant simulator first, so it does not wait for hardware.
+The box and a laptop join one 2.4 GHz Wi-Fi network as stations, and the laptop's browser talks to the box over one WebSocket carrying JSON. Any access point works: the OM5P-AC in its home access-point mode, a phone hotspot, or the venue network. Telemetry at 50 Hz needs about 0.1 Mb/s, far under the OM5P-AC's default 4 Mb/s limit \[C, V\]. The plant simulator first planned here was dropped on Oct 10 (Section 7.5); a protocol stub stands in for the box while the UI is built.
 
 ### 7.1 Network
 
 | Item | Value | Label |
 | --- | --- | --- |
-| Radio mode | FRC Radio Configuration Utility, home configuration (access point), 5 GHz recommended | \[V\] WPILib 2024 radio docs |
-| Radio address | 10.TE.AM.1, where TE.AM is the team number entered in the utility | \[V\] |
-| DHCP | On; wireless clients get 10.TE.AM.138 to .237 | \[V\] |
-| Bandwidth limit | 4 Mb/s by default; can be disabled for home use | \[V\] |
-| Box address | Static 10.TE.AM.120, outside both DHCP pools (wired .11 to .111, wireless .138 to .237) \[V\], so the ground page has a fixed target | Design choice |
-| Fallback | XIAO SoftAP with the same WebSocket service if the radio is unavailable | Design choice |
+| Band | 2.4 GHz only. The ESP32-S3 has no 5 GHz radio, so a 5 GHz-only access point cannot carry the box | \[A\] |
+| Mode | Wi-Fi station with DHCP | Design choice |
+| Discovery | mDNS hostname `direcsun`, so the box answers at `direcsun.local`. The assigned address is also printed on the serial console when the box connects, as in the DirecSun1 prototype | Design choice |
+| Credentials | SSID and password in `firmware/sdkconfig.defaults.local`, which is gitignored, read through menuconfig at build time | Design choice |
+| Static address (option) | A menuconfig setting. On the OM5P-AC use 10.TE.AM.120, outside both DHCP pools (wired .11 to .111, wireless .138 to .237), where TE.AM is the team number entered in the radio utility | \[V\] pools; design choice |
+| OM5P-AC (option) | FRC Radio Configuration Utility, home configuration (access point) at 10.TE.AM.1, DHCP on; bandwidth limited to 4 Mb/s by default, which can be disabled for home use. Configure its 2.4 GHz band | \[V\] WPILib 2024 radio docs |
+| Fallback | XIAO SoftAP with the same WebSocket service, selected in menuconfig at build time. The firmware never switches modes by itself during a session, because that would move the box's address mid-demo | Design choice |
 
-The network has no internet. The ground station page is served from the laptop, not from the XIAO's flash, to keep firmware updates small.
+On the OM5P-AC the network has no internet. The ground station page is served from the laptop, not from the XIAO's flash, to keep firmware updates small.
 
 ### 7.2 Transport
 
-A WebSocket on the box at `ws://10.TE.AM.120:81/`. Browsers cannot open raw UDP, and WebSocket is the simplest bidirectional browser transport. TCP retransmission can delay single frames; the plots tolerate that and safety does not depend on it, because the box enforces its own heartbeat timeout. JSON at about 250 bytes per frame and 50 frames per second is about 12.5 kB/s \[C\].
+A WebSocket on the box at `ws://direcsun.local:81/`, or at the printed address (`ws://192.168.4.1:81/` in SoftAP mode \[A\]), served by `esp_http_server` with WebSocket support enabled. Browsers cannot open raw UDP, and WebSocket is the simplest bidirectional browser transport. TCP retransmission can delay single frames; the plots tolerate that and safety does not depend on it, because the box enforces its own heartbeat timeout. JSON at about 250 bytes per frame and 50 frames per second is about 12.5 kB/s \[C\].
 
 ### 7.3 Message schema (version 1)
 
@@ -522,6 +528,8 @@ Rules: the box is the authority on mode. The UI shows the mode from `tlm`, never
 
 ### 7.4 User interface
 
+The demo UI is owned by Aaron and lives outside this repository. It sends and receives every message through `ground/link/`, which implements the client side of the schema: heartbeat, acknowledgement matching, e-stop, and no automatic reconnection. `ground/console/` is a bench console for firmware bring-up, not the demo UI. The wire is counter-clockwise positive (Section 6.5); a UI that shows clockwise-positive headings converts for display. The list below is the demo UI's scope.
+
 - 3D view of the box turning with ψ̂; the CubeSat 2U model file already on hand can be reused.
 - Plots: heading with its reference, box rate, wheel speed with the cap and low-limit band shaded, battery voltage.
 - Mode buttons, enabled only when the box reports the mode's guard can pass; a large e-stop button also bound to the space bar.
@@ -531,7 +539,7 @@ Rules: the box is the authority on mode. The UI shows the mode from `tlm`, never
 
 ### 7.5 Simulator
 
-A JavaScript plant model implements the two equations of Section 3.1, the cascade of Section 6.5, and the schema above, and serves it on a local WebSocket. The ground station connects to it unchanged. The simulator lets the UI be built and tested while parts print, and gives agents a target to check UI changes against. It is not evidence about the hardware.
+Dropped on Oct 10 (Section 11.5). Two narrower tools replace it. `tools/mock-box.py` is a protocol stub with no plant model: it streams schema-conformant telemetry and answers commands, so the UI can be built before the firmware speaks the protocol. The closed-loop host simulation in `firmware/test/host` (firmware design, test HT-5) runs the control code against the two equations of Section 3.1. Neither is evidence about the hardware.
 
 ## 8. CAD repository and build pipeline
 
@@ -540,41 +548,44 @@ All geometry is generated from Python; STL and STEP files are build outputs and 
 ### 8.1 Layout
 
 ```
-~/projects/pocketadcs/
-  .agents/skills/cad-skill/   CadQuery skill: run_cadquery_model.py, preview.py, design-review.md
-  .venv/                      Python 3.12, cadquery 2.8.0 (from the skill's requirements.txt)
+DirecSun/                      repository root; paths below are relative to it
+  .agents/skills/cad-skill/    CadQuery skill (git submodule): run_cadquery_model.py, preview.py, design-review.md
+  .venv/                       Python 3.12, pinned by tools/requirements.txt, created by tools/bootstrap-venv.sh
   cad/
-    stack.py                  ALL shared dimensions and helper geometry
+    stack.py                   ALL shared dimensions and helper geometry
     bottom_cap.py ... top_deck.py, base_hub.py, hall_bracket.py,
-    flywheel_guard.py, lock_pin.py, battery_holder_body.py, battery_holder_cap.py, hole_gauge.py, bearing_fit_test.py   one script per printed part
-    assembly.py               places parts + stand-in hardware, collision check, assembly.step
-    README.md                 print list, hardware, assembly order
-    *.stl *.step *_preview.png   generated
+    flywheel_guard.py, lock_pin.py, battery_holder_body.py, battery_holder_cap.py,
+    hole_gauge.py, hole_ladder.py, bearing_fit_test.py, washer_stack_test.py   one script per printed part
+    assembly.py                places parts + stand-in hardware, collision check, assembly.step
+    README.md                  print list, hardware, assembly order
+    out/                       generated: *.stl and *_preview.png committed, *.step gitignored, manifest.json
   docs/
-    sizing.py                 every number in Section 3
-    sizing_output.txt         last run of sizing.py
+    sizing.py                  every number in Section 3
+    sizing_output.txt          last run of sizing.py
+  tools/
+    build-cad.sh               the only producer of cad/out/
+    check-cad-stale.py         fails when cad/out/ is older than its sources
 ```
 
-The project is a git repository on branch `feature/printed-2u-cad`. Nothing is committed yet; commits are made only when the owner asks.
+Work follows the git flow in `changes/CONTEXT.md`: set and feature branches, each feature merged only after its tests pass, and `main` reached only through a pull request the owner merges.
 
 ### 8.2 Commands
 
 ```bash
-cd ~/projects/pocketadcs
-# one part: build, render a 6-view preview, fail if the mesh is not watertight
-.venv/bin/python .agents/skills/cad-skill/run_cadquery_model.py cad/bottom_cap.py --preview --strict
-# every part
-for p in bottom_cap motor_deck hall_bracket flywheel_guard lock_pin power_deck battery_deck \
-         avionics_deck top_deck base_hub bearing_fit_test; do
-  .venv/bin/python .agents/skills/cad-skill/run_cadquery_model.py cad/$p.py --preview --strict > cad/.run_$p.json
-done
-# collision check and clearances
-.venv/bin/python cad/assembly.py
+# once: Python 3.12 venv with the pinned CadQuery toolchain
+tools/bootstrap-venv.sh
+# every part: build, render a 6-view preview, fail if any mesh is not watertight,
+# move STL and previews into cad/out/, run the assembly check, write the manifest
+tools/build-cad.sh
+# one or more parts
+tools/build-cad.sh bottom_cap motor_deck
+# fail if a script or stack.py changed since cad/out/ was built (needs no CadQuery)
+tools/check-cad-stale.py
 # sizing numbers
 .venv/bin/python docs/sizing.py > docs/sizing_output.txt
 ```
 
-The runner prints JSON; `success` and `watertight` must both be true. `assembly.py` prints one line per overlapping pair above 0.5 mm³, then the clearance list.
+`tools/build-cad.sh` runs `.agents/skills/cad-skill/run_cadquery_model.py <part> --preview --strict` for each part. The runner prints JSON; `success` and `watertight` must both be true. `assembly.py` prints one line per overlapping pair above 0.5 mm³, then the clearance list.
 
 ### 8.3 Invariants
 
@@ -588,24 +599,25 @@ The runner prints JSON; `success` and `watertight` must both be true. `assembly.
 | Column height of each deck = next deck's z minus this deck's top | Derived in each script, never typed |
 | Stack height is 227 mm | `STACK_H` in `stack.py` |
 | Nothing printed rotates with the wheel | Design rule; review |
+| Committed outputs in `cad/out/` match their sources | `tools/check-cad-stale.py`, also run in CI |
 | No supports needed | Preview review against `design-review.md` |
 
 ### 8.4 Changing a dimension
 
 1. Edit the parameter in `stack.py` or in the part script's PARAMETERS block.
-2. Rebuild every part that imports it. When unsure, rebuild all eleven.
-3. Run `assembly.py`. Any new overlap is a design error, not a tolerance to raise.
+2. Rebuild every part that imports it with `tools/build-cad.sh <part>...`. When unsure, run `tools/build-cad.sh` with no arguments, which rebuilds every part.
+3. Read the `assembly.py` result in that run. Any new overlap is a design error, not a tolerance to raise.
 4. If the change touches mass or radius of anything that turns, re-run `sizing.py` and update Section 3.
 5. Update the tables in Sections 4 and 12 that quote the value.
 
 ### 8.5 Guidance for AI agents
 
 - **Treat an empty result as suspect.** "No overlaps" is meaningful only because the built-in positive controls fire on the same run. After changing `assembly.py` or `interference_report`, keep at least one control that must be detected, and never remove the exit-on-miss check.
-- **Do not edit STL or STEP files.** Edit the script and rebuild.
+- **Do not edit STL or STEP files.** Edit the script and rebuild. `tools/check-cad-stale.py` detects a hand-edited STL.
 - **Stand-ins are approximate.** Motor, ESC, battery, and boards in `assembly.py` are boxes and cylinders sized from assumptions in Section 4.10. A clean check proves the parts fit the stand-ins, not the real hardware.
 - **Fillet failures mean a wrong edge.** CadQuery selector `NearestToPointSelector` can pick a cylinder's seam line; pick a point off the seam rather than wrapping fillets in try/except.
 - **Keep claim labels.** When a number in this document changes, keep its \[V\]/\[C\]/\[A\]/\[M\] label honest and add a row to Section 12.4.
-- **Commit policy.** Work on the feature branch; do not commit, push, or merge unless the owner asks.
+- **Commit policy.** Follow the git flow in `changes/CONTEXT.md`: work on set and feature branches, gate each merge on the feature's tests, and reach `main` only through a pull request the owner merges.
 
 ## 9. Verification and test plan
 
@@ -688,6 +700,8 @@ The hazards worth designing around are the spinning wheel and the battery; every
 
 The critical path is print → assemble → characterise → close the loop, so printing starts before the hackathon and software is written against frozen interfaces while parts print. Four gates separate the phases; a phase does not start until the previous gate's tests pass. Hackathon start and end times were not given, so phases are ordered, not timed.
 
+In the repository, firmware and tooling work is planned as spec-driven sets in `changes/`: Set 1 foundation, Set 2 mechanical, Set 3 teleop (manual mode), Set 4 detumble, Set 5 pointing. Each set ends in something that can be demonstrated, building up the fallback order of Section 11.4 from the bottom. The work items and gates below remain the plan for the hardware.
+
 &#91;embedded content: build roadmap · 5 phases, 4 gates\]
 
 Phases are ordered, not timed. G2 is marked because tuning gains against the calculated plant instead of the measured one is the most likely way to lose an afternoon.
@@ -712,7 +726,7 @@ These are fixed in the first hour so four people or agents can work in parallel.
 | W-3 | Solder the power-deck board and the XIAO carrier; mount the three Adafruit boards on their standoffs | Electrical | Section 5 | Continuity and power-on checks pass |
 | W-4 | Assemble stack, balance wheel | Mechanical | W-2, W-3, W-5 | T-1 and T-2 pass; T-5 and T-7 need the DShot output from W-5 |
 | W-5 | Sensor drivers, DShot output, Hall capture, telemetry stub | Firmware | Pin map | Values stream to a serial console |
-| W-6 | Ground station: connect, plot, command, e-stop | Ground | Schema | Works against the firmware simulator (7.5) |
+| W-6 | Ground station: connect, plot, command, e-stop | Ground | Schema | Works against `tools/mock-box.py`, then the firmware (7.5) |
 | W-7 | Characterisation T-3 to T-10, T-18 | All | W-4, W-5 | Section 12.2 filled; `sizing.py` re-run |
 | W-8 | Wheel speed loop, then attitude loops, then modes | Firmware | W-7 | T-15, T-16, T-17 pass |
 | W-9 | Safety tests T-11 to T-14 | All | W-8 | All pass or limits documented |
@@ -750,13 +764,13 @@ Julian owns firmware and the gates, and Aaron owns the physical build and the gr
 - Julian checks the ground page's e-stop and heartbeat handling before the first closed-loop run.
 - Aaron checks the physical wiring against Julian's pin map before the XIAO is plugged in.
 
-**Scope after Oct 10.** With two people, the simulator (7.5) is dropped and the ground station is one page: live heading, box-rate, and wheel-speed plots, the command buttons of 7.3, and a CSV download. The balancing tool, the inertia fit for T-3, and the sun-sensor calibration view are dropped; balancing uses the manual procedure in 4.6.
+**Scope after Oct 10.** With two people, the simulator (7.5) is dropped and the ground station is one page, owned by Aaron and kept outside this repository (Section 7.4): live heading, box-rate, and wheel-speed plots, the command buttons of 7.3, and a CSV download. The balancing tool, the inertia fit for T-3, and the sun-sensor calibration view are dropped; balancing uses the manual procedure in 4.6.
 
 **Load risk.** Julian carries the most work. If firmware falls behind, Aaron takes Hall and sun-sensor bring-up, and sun point is dropped first (11.4).
 
 ## 12. Assumptions, measurements, open questions, and validation
 
-Twenty-two assumptions carry the design until the tests in Section 9 replace them. Only one, if wrong by a plausible margin, breaks a requirement: the sensorless low-speed limit, which sets the bias speed. It is the first measurement to make after assembly (T-18).
+Twenty-four assumptions carry the design until the tests in Section 9 replace them. Only one, if wrong by a plausible margin, breaks a requirement: the sensorless low-speed limit, which sets the bias speed. It is the first measurement to make after assembly (T-18).
 
 ### 12.1 Assumptions register
 
@@ -779,11 +793,13 @@ Twenty-two assumptions carry the design until the tests in Section 9 replace the
 | A-15 | OP550 load resistor | 12 kΩ | Sun sensor range | T-10 |
 | A-16 | ESC MCU speed | unknown: 48 MHz allows DShot300 | DShot rate | ESC Configurator |
 | A-17 | LANRC runs stock BLHeli\_S: drive stops about 0.3 s after signal loss, and at DShot 0 damped light likely brakes the wheel for up to about 8 s before power-off | per BLHeli\_S source | Safety | T-12 |
-| A-18 | DShotRMT builds on Arduino-ESP32 3.x | unknown | Firmware effort | Build check |
+| A-18 | The ESP-IDF v6.0 RMT bytes encoder produces valid DShot frames | unknown | Firmware effort | Build check BC-2 on a logic analyser |
 | A-19 | Magnetometer far enough from motor, no aliasing after 200 Hz sampling | 14 cm | Heading quality | T-9 at three speeds |
 | A-20 | Box CG near the axis, base level | within 5 mm, 1 deg | Gravity torque 0.6 mN·m | T-4 drift check |
 | A-21 | The Bones Reds bearings on hand share the SKF 608-2Z lands | D2 19.2 mm, d1 12.15 mm | Ledge and pad contact | Calipers on the bearings bought |
 | A-22 | 1 s of DShot zeros completes ESC arming | 1 s | Boot sequence | T-5 beeps |
+| A-23 | The MPU-6050, QMC5883P, and BMP280 drivers work together on one i2cdev-owned bus at 400 kHz | each validated alone by the owner | Sensor reads, timing budget | Build check BC-6 |
+| A-24 | The `esp_http_server` WebSocket verified on an ESP32-C3 behaves the same on the ESP32-S3 | verified on the C3 only | Telemetry, commands | Build check BC-4 |
 
 ### 12.2 Measurements to record
 
@@ -805,8 +821,8 @@ Twenty-two assumptions carry the design until the tests in Section 9 replace the
 ### 12.3 Open questions
 
 - [ ] Hackathon start and end times, to turn the phase order in Section 11 into a schedule.
-- [ ] Owner for each workstream (mechanical, electrical, firmware, ground station).
-- [ ] Team number to enter in the radio utility, and whether the venue allows a 5 GHz access point.
+- [x] Owner for each workstream: answered in Section 11.5.
+- [x] Network: any 2.4 GHz access point with DHCP and mDNS (Section 7.1). The ESP32-S3 cannot use 5 GHz. The team number matters only if the OM5P-AC static-address option is used.
 - [x] Battery: eight Energizer Recharge NiMH AA cells are on hand; they sit in a printed holder with screw-kit contacts (Section 4.12).
 - [ ] Whether to flash Bluejay for RPM telemetry, or rely on the Hall sensor alone.
 - [ ] A lamp for sun pointing at the venue.
