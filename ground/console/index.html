@@ -304,6 +304,15 @@ input:focus{border-color:#709bb7}
           <button class="btn secondary" id="disarm" disabled>Disarm</button>
           <button class="btn secondary" id="ready" disabled>Mode READY</button>
         </div>
+        <div class="subhead">Heading · relative to the last zero</div>
+        <p>Zero in SAFE or READY. HOLD and SLEW start from READY once the wheel loop runs; SLEW targets are clockwise positive. Mode READY ends either.</p>
+        <div class="cmdrow">
+          <button class="btn secondary" id="hd-zero" disabled>Zero heading</button>
+          <button class="btn secondary" id="hd-hold" disabled>HOLD</button>
+          <button class="btn secondary" data-slew="-90" disabled>SLEW -90</button>
+          <button class="btn secondary" data-slew="0" disabled>SLEW 0</button>
+          <button class="btn secondary" data-slew="90" disabled>SLEW +90</button>
+        </div>
         <div class="confirm" id="armconfirm" hidden>
           <span>Arming spins the wheel up. Is the lock pin in, or the box held?</span>
           <button class="btn" id="armyes">Confirm arm</button>
@@ -413,6 +422,7 @@ function setLinkState(kind, label) {
   $("connect").hidden = live;
   $("disconnect").hidden = !live;
   for (const id of ["arm", "disarm", "ready"]) $(id).disabled = kind !== "online";
+  if (kind !== "online") for (const b of document.querySelectorAll("#hd-zero, #hd-hold, [data-slew]")) b.disabled = true;
   const stale = kind !== "online" && $("m-seq").textContent !== "TLM SEQ -";
   document.querySelector(".grid").classList.toggle("stale", stale);
   $("stalenote").classList.toggle("show", stale);
@@ -491,6 +501,7 @@ function onTlm(t) {
   recordTlm(t);
   updateTeleop(t);
   updateBench(t);
+  updateHeading(t);
 }
 
 function scheduleDraw() {
@@ -664,6 +675,14 @@ function updateBench(t) {
     : t.flags.includes("MOMENTUM_OK") ? "ok" : "-";
   for (const b of document.querySelectorAll("[data-param]")) b.disabled = !(open && safe);
   if (sweep) sweepTick(t);
+}
+
+// Heading commands (R4.2, R4.3): enabled where the box would accept them.
+function updateHeading(t) {
+  const open = Boolean(link && link.state === "open");
+  $("hd-zero").disabled = !(open && (t.mode === "SAFE" || t.mode === "READY"));
+  $("hd-hold").disabled = !(open && t.mode === "READY");
+  for (const b of document.querySelectorAll("[data-slew]")) b.disabled = !(open && t.mode === "READY");
 }
 
 function sweepNote(text, cls = "") {
@@ -867,6 +886,9 @@ $("armno").onclick = () => { $("armconfirm").hidden = true; };
 $("armyes").onclick = () => { $("armconfirm").hidden = true; send("arm"); };
 $("disarm").onclick = () => send("disarm");
 $("ready").onclick = () => send("mode", { mode: "READY" });
+$("hd-zero").onclick = () => send("zero_heading");
+$("hd-hold").onclick = () => send("mode", { mode: "HOLD" });
+for (const b of document.querySelectorAll("[data-slew]")) b.onclick = () => send("mode", { mode: "SLEW", psi_ref_deg: Number(b.dataset.slew) });
 $("estop").onclick = estop;
 $("csv").onclick = downloadCsv;
 $("tp-enter").onclick = () => send("mode", { mode: "MANUAL", input: "throttle" });

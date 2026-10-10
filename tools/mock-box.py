@@ -319,7 +319,7 @@ class Box:
             # the reference of a HOLD or SLEW in progress.
             if self.mode not in ("SAFE", "READY"):
                 return self._ack(conn, seq, False, "not in SAFE or READY")
-            self.psi_offset -= self.psi
+            self.psi_offset = -self.psi   # the wire heading is psi + offset: 0 now, whatever came before
             self._ack(conn, seq, True)
         elif cmd == "set_params":
             if self.mode != "SAFE":
@@ -759,9 +759,14 @@ def selftest_attitude(schema):
         problems.append(f"HOLD from MANUAL refused with {reason!r}, expected 'not in READY'")
 
     # The judge's turn: zero, SLEW to 90 (clockwise on the wire), then back to 0.
+    # Zeroed twice, the second time somewhere else: each zero reads 0.
     box, conn, clock = armed()
-    box.psi = 40.0
-    send(box, conn, 2, cmd="zero_heading")
+    for seq, where in ((90, 25.0), (2, 40.0)):
+        box.psi = where
+        send(box, conn, seq, cmd="zero_heading")
+        tlm, _events = run(box, clock, TICK_S)
+        if abs(tlm[-1]["psi_deg"]) > 0.5:
+            problems.append(f"zero_heading at {where} left psi_deg at {tlm[-1]['psi_deg']}")
     t_start = clock.t
     send(box, conn, 3, cmd="mode", mode="SLEW", psi_ref_deg=90)
     tlm, events = run(box, clock, 4.0)
@@ -793,7 +798,35 @@ def selftest_attitude(schema):
     tlm, _events = run(box, clock, 0.5)
     if not tlm[-1]["psi_ref_deg"] < -1.0:
         problems.append(f"a half-turn SLEW moved psi_ref to {tlm[-1]['psi_ref_deg']}, not counter-clockwise")
-    send(box, conn, 6, cmd="mode", mode="READY")
+    # mode READY interrupts a SLEW: ack, event cause mode, no reference, and the box stops there.
+    ack = send(box, conn, 6, cmd="mode", mode="READY")
+    tlm, events = run(box, clock, 1.0)
+    if not ack["ok"] or [e.get("cause") for e in events] != [] or tlm[-1]["mode"] != "READY" \
+            or tlm[-1]["psi_ref_deg"] is not None or abs(tlm[-1]["rate_dps"]) > 1.0:
+        problems.append(f"mode READY did not end the SLEW cleanly: {ack}, {events}, {tlm[-1]}")
+    if not any(m.get("cause") == "mode" and m.get("mode") == "READY" for _t, m in box.outbox[-80:]
+               if m["type"] == "event"):
+        problems.append("mode READY during a SLEW posted no mode event with cause mode")
+
+    # The main UI's judge turn (frontend PR #10): capture psi_deg, SLEW to start + 90
+    # wrapped onto (-180, 180] with two decimals, wait for slew_complete, hold 1.0 s
+    # in READY, SLEW back to the captured start. Started near the wrap, unzeroed.
+    box.psi = 150.0 - box.psi_offset
+    tlm, _events = run(box, clock, 0.2)
+    origin = tlm[-1]["psi_deg"]
+    seq = 30
+    for target in (round(wrap_deg(origin + 90.0), 2), origin):
+        seq += 1
+        send(box, conn, seq, cmd="mode", mode="SLEW", psi_ref_deg=target)
+        tlm, events = run(box, clock, 4.0)
+        causes = [e.get("cause") for e in events if e["event"] == "mode"]
+        if causes != ["slew_complete"] or abs(wrap_deg(tlm[-1]["psi_deg"] - target)) > SLEW_SETTLE_DEG:
+            problems.append(f"UI turn leg to {target}: causes {causes}, psi {tlm[-1]['psi_deg']}")
+        tlm, events = run(box, clock, 1.0)
+        if events or tlm[-1]["mode"] != "READY":
+            problems.append(f"UI turn hold after the leg to {target}: {events}, mode {tlm[-1]['mode']}")
+    print(f"mock-box selftest: UI turn from {origin}: out to {round(wrap_deg(origin + 90.0), 2)} and back, "
+          f"psi {tlm[-1]['psi_deg']}")
 
     # HOLD: poked 10 deg off, back within 2 deg in under 2 s; the reference stays.
     run(box, clock, 1.0)
