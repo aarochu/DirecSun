@@ -10,10 +10,11 @@ The demonstration modes are detumble (stop a hand spin), hold (keep a heading ag
 
 | Path | What |
 | --- | --- |
+| `frontend/` | The main UI: landing page and ground station (React, Vite, TypeScript) |
 | `firmware/` | ESP-IDF v6.0 project for the XIAO ESP32-S3, in C++17 |
 | `protocol/` | Wire schema v1: the contract between the box and any ground station |
-| `ground/link/` | Dependency-free JavaScript module implementing the client side of the protocol |
-| `ground/console/` | Bench console for firmware bring-up (the demo UI lives outside this repo) |
+| `ground/link/` | Engineering bench client: dependency-free JavaScript module for the protocol |
+| `ground/console/` | Engineering bench console for firmware bring-up and characterisation, never shown to judges |
 | `cad/` | Parametric CadQuery sources; printable STLs and previews in `cad/out/` |
 | `docs/` | Technical design, firmware design, sizing calculations |
 | `tools/` | Bootstrap, build, and check scripts |
@@ -28,6 +29,14 @@ git clone --recurse-submodules git@github.com:aarochu/DirecSun.git
 ```
 
 Each area adds its commands here as it lands.
+
+### Frontend (main UI)
+
+The landing page and ground station live in `frontend/`. The backend matches what this UI expects. Setup and commands are in [frontend/README.md](frontend/README.md); in short:
+
+```bash
+cd frontend && npm ci && npm run dev     # http://localhost:5173
+```
 
 ### CAD
 
