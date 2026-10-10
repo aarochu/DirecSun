@@ -1,0 +1,7 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 10,
+  "cmd": "respin",
+  "wheel_rpm": 1000
+}

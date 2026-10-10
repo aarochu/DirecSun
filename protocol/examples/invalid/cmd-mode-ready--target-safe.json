@@ -1,0 +1,7 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 5,
+  "cmd": "mode",
+  "mode": "SAFE"
+}

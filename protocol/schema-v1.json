@@ -1,0 +1,440 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aarochu/DirecSun/blob/main/protocol/schema-v1.json",
+  "title": "DirecSun wire protocol, version 1",
+  "description": "Every JSON text frame exchanged between the DirecSun box and a ground station over the WebSocket at ws://direcsun.local:81/. Source of truth for the prose in docs/firmware-design.md section 15; a disagreement between the two is a bug in whichever changed last. Units: angles in degrees, rates in deg/s, wheel speed in rpm, torque in mN m, voltage in V, box time in ms since boot. Angles and rates are counter-clockwise positive seen from above (+z up).",
+  "type": "object",
+  "required": ["v", "type", "seq"],
+  "oneOf": [
+    { "$ref": "#/$defs/tlm" },
+    { "$ref": "#/$defs/cmd" },
+    { "$ref": "#/$defs/ack" },
+    { "$ref": "#/$defs/ping" },
+    { "$ref": "#/$defs/pong" },
+    { "$ref": "#/$defs/event" }
+  ],
+  "$defs": {
+    "v": { "const": 1, "description": "Schema version. Any change after the Set 1 freeze bumps it." },
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295,
+      "description": "The sender's own message counter, except in ack, where it echoes the command's seq (FD finding V-14)."
+    },
+    "t_ms": { "type": "integer", "minimum": 0, "description": "Box time since boot, ms." },
+    "angle_deg": {
+      "type": "number",
+      "exclusiveMinimum": -180,
+      "maximum": 180,
+      "description": "Wrapped angle in (-180, 180] degrees, counter-clockwise positive."
+    },
+    "mode": {
+      "enum": ["SAFE", "SPINUP", "READY", "DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"],
+      "description": "Wire mode names (FD section 2.4). BOOT never appears on the wire: comms starts after the control task enters SAFE."
+    },
+    "commandable_mode": {
+      "enum": ["READY", "DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"],
+      "description": "Targets of cmd mode. SAFE is reached with disarm or estop, SPINUP with arm or respin."
+    },
+    "manual_input": {
+      "enum": ["throttle", "wheel", "rate"],
+      "description": "MANUAL mode input (FD section 13.5)."
+    },
+    "interlock": {
+      "enum": [
+        "ESTOP",
+        "HEARTBEAT_LOST",
+        "OVERSPEED",
+        "UNDERSPEED",
+        "BATTERY_LOW",
+        "IMU_SILENT",
+        "TILT",
+        "CONTROL_STALL",
+        "HALL_SILENT"
+      ],
+      "description": "Interlock names on the wire (FD section 14.1). MOMENTUM_NEAR_LIMIT is a warning flag, not an interlock trip."
+    },
+    "command_name": {
+      "enum": ["arm", "disarm", "estop", "mode", "manual", "respin", "zero_heading", "set_params", "wheel_step"]
+    },
+    "flag": {
+      "anyOf": [
+        {
+          "enum": [
+            "MOMENTUM_OK",
+            "MOMENTUM_NEAR_LIMIT",
+            "MOMENTUM_SATURATED",
+            "LOOP_OVERRUN",
+            "MAG_MISSING",
+            "IMU_MISSING",
+            "MANUAL_STALE"
+          ]
+        },
+        { "$ref": "#/$defs/interlock", "description": "A latched fault." }
+      ]
+    },
+    "throttle": {
+      "type": "integer",
+      "description": "DShot value: 0 is disarm, 48..2047 is throttle. 1..47 are ESC commands that flight code never sends (FD section 21 rule 1).",
+      "anyOf": [{ "const": 0 }, { "minimum": 48, "maximum": 2047 }]
+    },
+    "nullable_number": { "type": ["number", "null"] },
+
+    "tlm": {
+      "type": "object",
+      "description": "Telemetry, box to all clients at 50 Hz (FD section 15.3). Every documented field is always present; values the box cannot provide are null.",
+      "additionalProperties": false,
+      "required": [
+        "v", "type", "seq", "t_ms", "mode", "manual_input", "psi_deg", "psi_ref_deg", "rate_dps",
+        "mag_deg", "sun_deg", "sun_valid", "wheel_rpm", "wheel_ref_rpm", "throttle", "tau_cmd_mNm",
+        "vbat", "loop_us", "flags", "t_c", "p_pa", "tlm_dropped", "dropped_events"
+      ],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "tlm" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "t_ms": { "$ref": "#/$defs/t_ms" },
+        "mode": { "$ref": "#/$defs/mode" },
+        "manual_input": {
+          "description": "Active MANUAL input; null in every other mode.",
+          "anyOf": [{ "$ref": "#/$defs/manual_input" }, { "type": "null" }]
+        },
+        "psi_deg": { "$ref": "#/$defs/angle_deg", "description": "Estimated heading." },
+        "psi_ref_deg": {
+          "description": "Current heading reference; null in SAFE, SPINUP, READY, DETUMBLE.",
+          "anyOf": [{ "$ref": "#/$defs/angle_deg" }, { "type": "null" }]
+        },
+        "rate_dps": { "type": "number", "description": "Estimated box rate, deg/s." },
+        "mag_deg": {
+          "description": "Magnetometer heading; null if the magnetometer is missing.",
+          "anyOf": [{ "$ref": "#/$defs/angle_deg" }, { "type": "null" }]
+        },
+        "sun_deg": { "$ref": "#/$defs/nullable_number", "description": "Calibrated sun angle, degrees." },
+        "sun_valid": { "type": "boolean" },
+        "wheel_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed (interlock estimate speed_safe), rpm, forward direction." },
+        "wheel_ref_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed reference, rpm." },
+        "throttle": { "$ref": "#/$defs/throttle", "description": "DShot value sent this tick." },
+        "tau_cmd_mNm": { "type": "number", "description": "Commanded torque on the box, mN m." },
+        "vbat": { "type": "number", "minimum": 0, "description": "1 s average battery voltage, V." },
+        "loop_us": { "type": "integer", "minimum": 0, "description": "Longest control tick in the last 20 ms, us." },
+        "flags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/flag" },
+          "description": "Warning flags and latched fault names."
+        },
+        "t_c": { "$ref": "#/$defs/nullable_number", "description": "BMP280 temperature, degrees C; null without a BMP280." },
+        "p_pa": { "$ref": "#/$defs/nullable_number", "description": "BMP280 pressure, Pa; null without a BMP280." },
+        "tlm_dropped": { "type": "integer", "minimum": 0 },
+        "dropped_events": { "type": "integer", "minimum": 0 },
+        "accel_rms_g": { "type": "number", "minimum": 0, "description": "Bench mode only (T-7): accelerometer RMS on the avionics deck, g." },
+        "gyro_raw": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+          "description": "Bench mode only (T-8): raw MPU-6050 gyro X, Y, Z counts."
+        },
+        "mag_raw": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+          "description": "Bench mode only (T-9): raw QMC5883P X, Y, Z counts, before the axis map."
+        },
+        "sun_a_mv": { "type": "number", "minimum": 0, "description": "Bench mode only (T-10): sun sensor A, mV." },
+        "sun_b_mv": { "type": "number", "minimum": 0, "description": "Bench mode only (T-10): sun sensor B, mV." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "MANUAL" } } },
+          "then": { "properties": { "manual_input": { "$ref": "#/$defs/manual_input" } } },
+          "else": { "properties": { "manual_input": { "type": "null" } } }
+        },
+        {
+          "if": { "properties": { "mode": { "enum": ["SAFE", "SPINUP", "READY", "DETUMBLE"] } } },
+          "then": { "properties": { "psi_ref_deg": { "type": "null" } } }
+        }
+      ]
+    },
+
+    "cmd": {
+      "description": "Command, client to box (FD section 15.3). The box answers every cmd with an ack carrying the same seq.",
+      "type": "object",
+      "required": ["v", "type", "seq", "cmd"],
+      "properties": { "type": { "const": "cmd" }, "cmd": { "$ref": "#/$defs/command_name" } },
+      "oneOf": [
+        { "$ref": "#/$defs/cmd_bare" },
+        { "$ref": "#/$defs/cmd_mode" },
+        { "$ref": "#/$defs/cmd_manual" },
+        { "$ref": "#/$defs/cmd_respin" },
+        { "$ref": "#/$defs/cmd_set_params" },
+        { "$ref": "#/$defs/cmd_wheel_step" }
+      ]
+    },
+    "cmd_bare": {
+      "type": "object",
+      "description": "arm (SAFE to SPINUP; the sender becomes the controlling client), disarm (ramp-down to SAFE without the ESTOP latch), estop (any state, any client), zero_heading (SAFE, READY).",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "cmd"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "cmd" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "cmd": { "enum": ["arm", "disarm", "estop", "zero_heading"] }
+      }
+    },
+    "cmd_mode": {
+      "type": "object",
+      "description": "Mode change. psi_ref_deg is required for SLEW and forbidden otherwise; input is required for MANUAL and forbidden otherwise.",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "cmd", "mode"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "cmd" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "cmd": { "const": "mode" },
+        "mode": { "$ref": "#/$defs/commandable_mode" },
+        "psi_ref_deg": { "$ref": "#/$defs/angle_deg", "description": "Absolute SLEW target; the box takes the shortest wrapped path." },
+        "input": { "$ref": "#/$defs/manual_input" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "SLEW" } } },
+          "then": { "required": ["psi_ref_deg"] },
+          "else": { "not": { "required": ["psi_ref_deg"] } }
+        },
+        {
+          "if": { "properties": { "mode": { "const": "MANUAL" } } },
+          "then": { "required": ["input"] },
+          "else": { "not": { "required": ["input"] } }
+        }
+      ]
+    },
+    "cmd_manual": {
+      "type": "object",
+      "description": "MANUAL setpoint (FD section 13.5): exactly one of throttle, wheel_rpm, rate_dps, matching the active input. The box clamps it, refuses one within 50 ms of the previous accepted one, and counts it as a heartbeat.",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "cmd"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "cmd" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "cmd": { "const": "manual" },
+        "throttle": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2047,
+          "description": "Open-loop DShot throttle; the box clamps it to [manual_throttle_min, manual_throttle_max]."
+        },
+        "wheel_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed target; the box clamps it to [omega_low, omega_cap]." },
+        "rate_dps": { "type": "number", "description": "Box rate target; the box clamps it to +-90 deg/s." }
+      },
+      "oneOf": [
+        { "required": ["throttle"] },
+        { "required": ["wheel_rpm"] },
+        { "required": ["rate_dps"] }
+      ]
+    },
+    "cmd_respin": {
+      "type": "object",
+      "description": "READY to SPINUP with a new wheel start speed (desaturation, FD section 13.4). Default is the bias speed; the box accepts [omega_low + 200, omega_cap - 200].",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "cmd"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "cmd" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "cmd": { "const": "respin" },
+        "wheel_rpm": { "type": "number", "minimum": 0 }
+      }
+    },
+    "cmd_set_params": {
+      "type": "object",
+      "description": "SAFE only. The box validates every key and range, stores the set in NVS, and returns the applied set in the ack. omega_cap_rpm and the Wi-Fi settings can never be set over the wire, so they are not accepted here.",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "cmd", "params"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "cmd" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "cmd": { "const": "set_params" },
+        "params": { "$ref": "#/$defs/params" }
+      }
+    },
+    "cmd_wheel_step": {
+      "type": "object",
+      "description": "Bench only: step the wheel speed reference from READY with bench_mode set; interlocks stay active.",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "cmd", "delta_rpm"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "cmd" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "cmd": { "const": "wheel_step" },
+        "delta_rpm": { "type": "number", "minimum": -500, "maximum": 500 }
+      }
+    },
+    "params": {
+      "type": "object",
+      "description": "Parameters of FD section 16. Ranges that depend on other parameters (bias between the limits, a monotonic feed-forward table, min below max) are checked by the box, not here.",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "k_psi": { "type": "number", "minimum": 0, "maximum": 10 },
+        "k_omega": { "type": "number", "minimum": 0, "maximum": 0.05 },
+        "k_i": { "type": "number", "minimum": 0, "maximum": 0.1 },
+        "wheel_kp": { "type": "number", "minimum": 0 },
+        "wheel_ki": { "type": "number", "minimum": 0 },
+        "ff_table": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "description": "Steady-state throttle versus wheel speed, 8 points from T-5 and T-18, increasing in rpm.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rpm", "throttle"],
+            "properties": {
+              "rpm": { "type": "number", "minimum": 0 },
+              "throttle": { "type": "integer", "minimum": 48, "maximum": 2047 }
+            }
+          }
+        },
+        "omega_low_rpm": { "type": "number", "minimum": 500, "maximum": 1500 },
+        "omega_bias_rpm": { "type": "number", "minimum": 0 },
+        "s_w": { "enum": [-1, 1] },
+        "s_gyro": { "enum": [-1, 1] },
+        "mag_axis_map": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "Box X, Y, Z in terms of sensor axes; default [\"+x\", \"-y\", \"-z\"] for the flipped top deck (FD section 10.2).",
+          "items": { "enum": ["+x", "-x", "+y", "-y", "+z", "-z"] }
+        },
+        "mag_cal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["offset", "soft_iron"],
+          "description": "Hard-iron offset (3 values, counts) and the 2 x 2 soft-iron matrix for the horizontal plane (FD section 11.3).",
+          "properties": {
+            "offset": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
+            "soft_iron": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }
+            }
+          }
+        },
+        "sun_cal": {
+          "type": "array",
+          "minItems": 2,
+          "description": "Piecewise-linear map from the normalised difference d = (A - B)/(A + B) to sun angle, from T-10.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["d", "deg"],
+            "properties": {
+              "d": { "type": "number", "minimum": -1, "maximum": 1 },
+              "deg": { "type": "number", "minimum": -90, "maximum": 90 }
+            }
+          }
+        },
+        "light_threshold": { "type": "number", "minimum": 0, "description": "Minimum A + B for a valid sun angle, mV." },
+        "dshot_rate": { "enum": [150, 300] },
+        "bench_mode": { "type": "boolean" },
+        "manual_throttle_min": { "type": "integer", "minimum": 48, "maximum": 2047 },
+        "manual_throttle_max": { "type": "integer", "minimum": 48, "maximum": 2047 }
+      }
+    },
+
+    "ack": {
+      "type": "object",
+      "description": "Box to the sender of a cmd. seq echoes the command's seq. ok:false carries the reason, for example \"busy\", \"too large\", \"too fast\", \"not controlling client\", \"input not available\", or a failed guard.",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "ok"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "ack" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "ok": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "applied": { "$ref": "#/$defs/params", "description": "set_params only: the parameter set the box applied." }
+      },
+      "if": { "properties": { "ok": { "const": false } } },
+      "then": { "required": ["reason"] }
+    },
+
+    "ping": {
+      "type": "object",
+      "description": "Client heartbeat at 5 Hz. Only the controlling client's pings keep an armed box alive (FD section 14.4).",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "t_client_ms"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "ping" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "t_client_ms": { "type": "number", "minimum": 0, "description": "Client clock, echoed in the pong for round-trip time." }
+      }
+    },
+
+    "pong": {
+      "type": "object",
+      "description": "Box reply to a ping.",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "ping_seq", "t_client_ms", "t_ms"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "pong" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "ping_seq": { "$ref": "#/$defs/seq", "description": "seq of the ping being answered." },
+        "t_client_ms": { "type": "number", "minimum": 0 },
+        "t_ms": { "$ref": "#/$defs/t_ms" }
+      }
+    },
+
+    "event": {
+      "description": "Box to all clients, on every mode change (including every interlock trip, which changes the mode to SAFE) and on notices.",
+      "type": "object",
+      "required": ["v", "type", "seq", "t_ms", "event"],
+      "properties": { "type": { "const": "event" } },
+      "oneOf": [{ "$ref": "#/$defs/event_mode" }, { "$ref": "#/$defs/event_notice" }]
+    },
+    "event_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "t_ms", "event", "mode", "cause"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "event" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "t_ms": { "$ref": "#/$defs/t_ms" },
+        "event": { "const": "mode" },
+        "mode": { "$ref": "#/$defs/mode", "description": "The new mode." },
+        "cause": {
+          "description": "An interlock name, the command that caused the change, or an automatic transition.",
+          "anyOf": [
+            { "$ref": "#/$defs/interlock" },
+            { "$ref": "#/$defs/command_name" },
+            { "enum": ["boot", "spinup_complete", "slew_complete", "SLEW_TIMEOUT", "sun_invalid"] }
+          ]
+        }
+      }
+    },
+    "event_notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "type", "seq", "t_ms", "event", "name"],
+      "properties": {
+        "v": { "$ref": "#/$defs/v" },
+        "type": { "const": "event" },
+        "seq": { "$ref": "#/$defs/seq" },
+        "t_ms": { "$ref": "#/$defs/t_ms" },
+        "event": { "const": "notice" },
+        "name": { "enum": ["PARAMS_RESET"], "description": "PARAMS_RESET: NVS parameters had a stale version and the defaults were loaded (FD section 16)." },
+        "detail": { "type": "string", "maxLength": 200 }
+      }
+    }
+  }
+}

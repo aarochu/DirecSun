@@ -1,0 +1,18 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 12,
+  "cmd": "set_params",
+  "params": {
+    "k_omega": 0.0129,
+    "bench_mode": true,
+    "dshot_rate": 150,
+    "mag_axis_map": [
+      "+x",
+      "-y",
+      "-z"
+    ],
+    "manual_throttle_min": 200,
+    "manual_throttle_max": 600
+  }
+}
