@@ -5,6 +5,7 @@
 idf_component_register(
     SRC_DIRS "src"
     INCLUDE_DIRS "include"
+    LDFRAGMENTS "linker.lf"  # code in IRAM, see the file
     REQUIRES direcsun_core
              esp-idf-lib__mpu6050 esp-idf-lib__bmp280 esp-idf-lib__i2cdev qmc5883p
              esp_driver_i2c esp_driver_rmt esp_driver_gpio esp_adc esp_timer

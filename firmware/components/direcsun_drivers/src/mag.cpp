@@ -24,6 +24,8 @@ qmc5883p_dev_t s_dev = {};
 MagConfig s_config;
 MagStats s_stats = {};
 uint8_t s_chip_id = 0;
+uint8_t s_status = 0;        // last status byte read by mag_poll_status()
+int64_t s_status_t_us = 0;  // when that status read started
 
 void remove_device()
 {
@@ -78,13 +80,13 @@ uint8_t mag_chip_id()
     return s_chip_id;
 }
 
-bool mag_poll(MagSample &out)
+bool mag_poll_status()
 {
     if (s_dev.dev_handle == nullptr) {
         return false;
     }
     ++s_stats.polls;
-    out.t_us = esp_timer_get_time();
+    s_status_t_us = esp_timer_get_time();
 
     uint8_t reg = QMC5883P_REG_STATUS;
     uint8_t status = 0;
@@ -92,17 +94,25 @@ bool mag_poll(MagSample &out)
         ++s_stats.errors;
         return false;
     }
-    if ((status & kStatusDrdy) == 0) {
+    s_status = status;
+    return (status & kStatusDrdy) != 0;
+}
+
+bool mag_read_data(MagSample &out)
+{
+    if (s_dev.dev_handle == nullptr) {
         return false;
     }
+    out.t_us = s_status_t_us;
+    const int64_t start = esp_timer_get_time();
 
     uint8_t buf[6];
-    reg = QMC5883P_REG_X_L;
+    const uint8_t reg = QMC5883P_REG_X_L;
     if (i2c_master_transmit_receive(s_dev.dev_handle, &reg, 1, buf, sizeof buf, s_config.xfer_timeout_ms) != ESP_OK) {
         ++s_stats.errors;
         return false;
     }
-    out.xfer_us = static_cast<uint32_t>(esp_timer_get_time() - out.t_us);
+    out.xfer_us = static_cast<uint32_t>(esp_timer_get_time() - start);
     if (out.xfer_us > s_config.max_xfer_us) {
         ++s_stats.slow;
         return false;
@@ -112,11 +122,25 @@ bool mag_poll(MagSample &out)
     for (int i = 0; i < 3; ++i) {
         out.raw[i] = static_cast<int16_t>((static_cast<uint16_t>(buf[2 * i + 1]) << 8) | buf[2 * i]);
     }
-    out.overflow = (status & kStatusOvfl) != 0;
+    out.overflow = (s_status & kStatusOvfl) != 0;
     if (out.overflow) {
         ++s_stats.overflows;
     }
     ++s_stats.ready;
+    return true;
+}
+
+bool mag_poll(MagSample &out)
+{
+    if (!mag_poll_status()) {
+        return false;
+    }
+    const int64_t status_us = esp_timer_get_time() - s_status_t_us;
+    if (!mag_read_data(out)) {
+        return false;
+    }
+    // mag_poll() reports status plus data, as before the split.
+    out.xfer_us += static_cast<uint32_t>(status_us);
     return true;
 }
 

@@ -23,6 +23,14 @@ CONFIG_IDF_TARGET="esp32s3"
 # Both cores at full speed. Nothing here is power constrained.
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 
+# 32 KB instruction cache (the default is 16 KB). The control tick's code
+# (core, drivers, I2C and RMT drivers, libc math) does not fit in 16 KB, so it
+# thrashed the cache every tick: measured on the XIAO, the estimator took 43 us
+# per tick at 16 KB and 7 us at 32 KB, the telemetry snapshot 99 us and 10 us,
+# and the worst tick fell from 1.4-1.9 ms to about 1.1 ms (R3.4 bench, Oct 10).
+# Costs 16 KB of internal RAM, of which there is plenty.
+CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB=y
+
 # The XIAO ESP32-S3 carries 8 MB of flash. The validated sensor examples ran
 # with the 2 MB default, which leaves a 1 MB app partition; Wi-Fi, httpd, and
 # mDNS together do not fit comfortably in that.
