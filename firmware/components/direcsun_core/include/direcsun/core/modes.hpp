@@ -37,10 +37,23 @@ enum Flag : uint32_t {
     kFlagMomentumNearLimit = 1u << 1,
     kFlagManualStale = 1u << 2,
     kFlagHallBypass = 1u << 3,
+    kFlagWheelStep = 1u << 4,        // bench wheel_step hold: rate and attitude loops suspended (R3.8)
+    kFlagMomentumSaturated = 1u << 5,  // omega_ref on a limit in the direction the loop needs (R3.9)
 };
 
 // Wire name of a single flag bit, or nullptr.
 const char *flag_wire_name(uint32_t flag_bit);
+
+// The band every MANUAL throttle setpoint is clamped into (FD section 13.5):
+// [manual_throttle_min, manual_throttle_max], with the top capped at
+// kBypassThrottleMax while the Hall is bypassed. The supervisor's clamp and the
+// tlm `throttle_band` field both come from here, so what the operator sees is
+// what the box enforces.
+struct ThrottleBand {
+    int lo = 0;
+    int hi = 0;
+};
+ThrottleBand manual_throttle_band(const Params &params);
 
 struct TickInputs {
     uint32_t tick = 0;                          // monotonic 2 ms tick counter
@@ -70,6 +83,16 @@ struct ControlDemand {
     float manual_rate_dps = 0.0f;    // 0 once stale
     bool manual_stale = false;
     int previous_throttle = 0;       // the throttle sent last tick
+    // Bench wheel step (R3.8, FD section 15.3): `wheel_step_rpm` is added to
+    // omega_ref once, on the tick the command was accepted; `wheel_hold` stays
+    // true until `mode READY` is sent again or the mode changes, and suspends
+    // the rate and attitude loops so the step is the only input.
+    float wheel_step_rpm = 0.0f;
+    bool wheel_hold = false;
+    // The rate loop's command, deg/s, internal frame (counter-clockwise
+    // positive). READY holds rate, so it is 0 there (TD section 6.6); the
+    // attitude loop (Set 4) and MANUAL `rate` (Set 5) are what will drive it.
+    float omega_cmd_dps = 0.0f;
 };
 
 class ThrottleController {
@@ -81,6 +104,9 @@ public:
     virtual int throttle(const ControlDemand &demand, const TickInputs &in, const Params &params) = 0;
     // Called whenever the box drops to SAFE, so integrators restart clean.
     virtual void reset() = 0;
+    // tlm flags the controller owns (MOMENTUM_SATURATED), for the tick just
+    // run. The supervisor reports them only while armed.
+    virtual uint32_t flags() const { return 0; }
 };
 
 struct TickOutputs {
@@ -142,6 +168,9 @@ private:
     uint32_t manual_last_setpoint_tick_ = 0;
     uint32_t manual_fresh_tick_ = 0;  // last setpoint, or MANUAL entry
     bool manual_stale_ = false;
+
+    bool wheel_hold_ = false;
+    float pending_wheel_step_rpm_ = 0.0f;
 
     bool pending_reset_notice_ = false;
     const char *reset_detail_ = "";

@@ -1,0 +1,11 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 21,
+  "cmd": "set_params",
+  "params": {
+    "bench_mode": true,
+    "bench_underspeed_rpm": 300,
+    "bench_cap_rpm": 4001
+  }
+}

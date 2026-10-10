@@ -2,15 +2,14 @@
 # layers that file over sdkconfig.defaults. After creating or editing it, delete
 # firmware/sdkconfig and rebuild so the values are picked up.
 #
-# The DIRECSUN_* Kconfig menu that reads these keys arrives with the comms work
-# in Set 3. Until then this file only documents the intended keys; a key whose
-# symbol does not exist yet is ignored by the build.
+# These keys belong to the "DirecSun network" menu (components/direcsun_comms/Kconfig).
+# Never put real credentials in a tracked file.
 
 # Wi-Fi station (STA with DHCP is the default network mode).
 CONFIG_DIRECSUN_WIFI_SSID="your-network"
 CONFIG_DIRECSUN_WIFI_PASSWORD="your-password"
 
-# mDNS hostname: the box answers at ws://<hostname>.local:81/
+# mDNS hostname: the box answers at ws://<hostname>.local/ws (port 80).
 CONFIG_DIRECSUN_HOSTNAME="direcsun"
 
 # Optional static address instead of DHCP (for example on the OM5P-AC radio).
@@ -19,5 +18,10 @@ CONFIG_DIRECSUN_HOSTNAME="direcsun"
 # CONFIG_DIRECSUN_WIFI_GATEWAY="10.0.0.1"
 # CONFIG_DIRECSUN_WIFI_NETMASK="255.255.255.0"
 
-# Fallback: the box runs its own access point instead of joining a network.
+# Fallback: the box runs its own access point instead of joining a network, and
+# serves ws://192.168.4.1/ws, the main UI's default endpoint. The station keys
+# above are then ignored.
 # CONFIG_DIRECSUN_WIFI_SOFTAP=y
+# CONFIG_DIRECSUN_SOFTAP_SSID="DirecSun"
+# CONFIG_DIRECSUN_SOFTAP_PASSWORD="at-least-8-chars"
+# CONFIG_DIRECSUN_SOFTAP_CHANNEL=6

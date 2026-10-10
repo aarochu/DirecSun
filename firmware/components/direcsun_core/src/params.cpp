@@ -51,6 +51,7 @@ ParamsResult validate_params(const Params &p)
     if (!finite_in(p.k_psi, 0.0f, 10.0f)) return invalid("k_psi");
     if (!finite_in(p.k_omega, 0.0f, 0.05f)) return invalid("k_omega");
     if (!finite_in(p.k_i, 0.0f, 0.1f)) return invalid("k_i");
+    if (!finite_in(p.rate_gain_scale, 0.0f, 1.0f)) return invalid("rate_gain_scale");
     if (!finite_in(p.wheel_kp, 0.0f, 10.0f)) return invalid("wheel_kp");
     if (!finite_in(p.wheel_ki, 0.0f, 10.0f)) return invalid("wheel_ki");
 
@@ -82,7 +83,29 @@ ParamsResult validate_params(const Params &p)
     // The Hall bench bypass exists only inside bench mode.
     if (!p.hall_installed && !p.bench_mode) return fail("bench_mode required", "hall_installed");
 
+    // Bench-only overrides (R3.8): 0 when unused; otherwise only in bench mode,
+    // and each may only make its limit more conservative for its test.
+    if (p.bench_underspeed_rpm != 0.0f) {
+        if (!p.bench_mode) return fail("bench_mode required", "bench_underspeed_rpm");
+        if (!finite_in(p.bench_underspeed_rpm, 100.0f, p.omega_low_rpm)) return invalid("bench_underspeed_rpm");
+    }
+    if (p.bench_cap_rpm != 0.0f) {
+        if (!p.bench_mode) return fail("bench_mode required", "bench_cap_rpm");
+        if (!finite_in(p.bench_cap_rpm, p.omega_bias_rpm, p.omega_cap_rpm)) return invalid("bench_cap_rpm");
+    }
+
     return ParamsResult{};
+}
+
+float effective_cap_rpm(const Params &params)
+{
+    return params.bench_cap_rpm > 0.0f && params.bench_cap_rpm < params.omega_cap_rpm ? params.bench_cap_rpm
+                                                                                       : params.omega_cap_rpm;
+}
+
+float effective_underspeed_rpm(const Params &params)
+{
+    return params.bench_underspeed_rpm > 0.0f ? params.bench_underspeed_rpm : params.omega_low_rpm;
 }
 
 ParamsResult apply_param_update(const Params &current, const ParamUpdate &update, Params &out)
@@ -139,8 +162,10 @@ ParamsResult apply_param_update(const Params &current, const ParamUpdate &update
 
         bool bad = false;
         if (set_float("k_psi", c.k_psi) || set_float("k_omega", c.k_omega) || set_float("k_i", c.k_i) ||
-            set_float("wheel_kp", c.wheel_kp) || set_float("wheel_ki", c.wheel_ki) ||
-            set_float("omega_low_rpm", c.omega_low_rpm) || set_float("omega_bias_rpm", c.omega_bias_rpm)) {
+            set_float("rate_gain_scale", c.rate_gain_scale) || set_float("wheel_kp", c.wheel_kp) || set_float("wheel_ki", c.wheel_ki) ||
+            set_float("omega_low_rpm", c.omega_low_rpm) || set_float("omega_bias_rpm", c.omega_bias_rpm) ||
+            set_float("bench_underspeed_rpm", c.bench_underspeed_rpm) ||
+            set_float("bench_cap_rpm", c.bench_cap_rpm)) {
             // Non-numbers became NaN and fail validation below with this key.
             if (!is_number(v)) return invalid(kv.key);
             continue;
@@ -177,6 +202,20 @@ ParamsResult apply_param_update(const Params &current, const ParamUpdate &update
         return fail("unknown param", kv.key);
     }
 
+    // Turning bench mode off clears the bench-only overrides with it [D], unless
+    // the same update also names one: that contradiction is refused below by
+    // validation ("bench_mode required"), never silently dropped.
+    if (current.bench_mode && !c.bench_mode) {
+        bool names_underspeed = false;
+        bool names_cap = false;
+        for (std::size_t i = 0; i < update.count; ++i) {
+            names_underspeed = names_underspeed || key_is(update.items[i], "bench_underspeed_rpm");
+            names_cap = names_cap || key_is(update.items[i], "bench_cap_rpm");
+        }
+        if (!names_underspeed) c.bench_underspeed_rpm = 0.0f;
+        if (!names_cap) c.bench_cap_rpm = 0.0f;
+    }
+
     ParamsResult r = validate_params(c);
     if (r.ok) out = c;
     return r;
@@ -190,7 +229,7 @@ namespace {
 
 constexpr const char *kKeyVersion = "param_version";
 constexpr const char *kKeyBlob = "params";
-constexpr std::size_t kBlobSize = 5 * 4 + 1 + 2 * kFfPoints * 4 + 2 * 4 + 2 * 1 + 5 * 2;
+constexpr std::size_t kBlobSize = 6 * 4 + 1 + 2 * kFfPoints * 4 + 2 * 4 + 2 * 1 + 5 * 2;
 
 class Writer {
 public:
@@ -254,6 +293,7 @@ void encode(const Params &p, Writer &w)
     w.f32(p.k_psi);
     w.f32(p.k_omega);
     w.f32(p.k_i);
+    w.f32(p.rate_gain_scale);
     w.f32(p.wheel_kp);
     w.f32(p.wheel_ki);
     w.u8(p.ff_count);
@@ -273,7 +313,7 @@ void encode(const Params &p, Writer &w)
 bool decode(Reader &r, Params &p)
 {
     uint8_t sw = 0, sg = 0;
-    bool ok = r.f32(p.k_psi) && r.f32(p.k_omega) && r.f32(p.k_i) && r.f32(p.wheel_kp) && r.f32(p.wheel_ki) &&
+    bool ok = r.f32(p.k_psi) && r.f32(p.k_omega) && r.f32(p.k_i) && r.f32(p.rate_gain_scale) && r.f32(p.wheel_kp) && r.f32(p.wheel_ki) &&
               r.u8(p.ff_count);
     for (float &v : p.ff_rpm) ok = ok && r.f32(v);
     for (float &v : p.ff_throttle) ok = ok && r.f32(v);

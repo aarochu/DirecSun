@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "event",
+  "seq": 2,
+  "t_ms": 3120,
+  "event": "notice",
+  "name": "HALL_BYPASS",
+  "detail": "on"
+}

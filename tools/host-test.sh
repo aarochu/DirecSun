@@ -69,6 +69,13 @@ else
     mutants=(
         "no_latch|HT-8 latch: no path leaves SAFE after a fault without a new arm"
         "no_bypass_clamp|bypass property: throttle never exceeds kBypassThrottleMax while bypassed"
+        "no_still_gate|HT-3 positive control: a spinning box in SAFE leaves the bias unchanged"
+        "no_wire_sign|sign conversion: internal CCW encodes as wire CW and decodes back"
+        "no_spinup_ramp|rung 1: SPINUP ramps at 200 DShot units per second through the supervisor"
+        "no_wheel_antiwindup|R3.8 positive control: a saturating step overshoots under 10 % with anti-windup"
+        "rate_sign_flip|HT-5 sim: READY detumbles a 1 rev/s spin within 5 s at the design gains"
+        "no_rate_antiwindup|R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up"
+        "no_rate_bleed|R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

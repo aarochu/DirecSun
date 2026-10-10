@@ -1,6 +1,8 @@
 #include "direcsun/core/modes.hpp"
 
 #include <cmath>
+
+#include "direcsun/core/controllers.hpp"
 #include <cstdio>
 
 // Mutation-test switches remove one safety mechanism so the host selftest can
@@ -44,6 +46,8 @@ const char *flag_wire_name(uint32_t flag_bit)
     case kFlagMomentumNearLimit: return "MOMENTUM_NEAR_LIMIT";
     case kFlagManualStale: return "MANUAL_STALE";
     case kFlagHallBypass: return "HALL_BYPASS";
+    case kFlagWheelStep: return "WHEEL_STEP";
+    case kFlagMomentumSaturated: return "MOMENTUM_SATURATED";
     default: return nullptr;
     }
 }
@@ -68,6 +72,7 @@ constexpr const char *kWheelNotAtBias = "wheel not at bias";
 constexpr const char *kInvalidMode = "invalid mode";
 constexpr const char *kInvalidSetpoint = "invalid setpoint";
 constexpr const char *kNoParams = "no params";
+constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
 
 bool is_later_set_mode(Mode m)
 {
@@ -88,6 +93,8 @@ Supervisor::Supervisor(const Params &params, bool params_were_reset, const char 
     // the caller passes: the bypass needs two deliberate commands after boot.
     params_.hall_installed = true;
     params_.bench_mode = false;
+    params_.bench_underspeed_rpm = 0.0f;
+    params_.bench_cap_rpm = 0.0f;
     pending_reset_notice_ = params_were_reset;
     reset_detail_ = reset_detail ? reset_detail : "";
     // A set that fails validation (for example a cap above kOmegaCapMaxRpm)
@@ -134,6 +141,8 @@ void Supervisor::enter(Mode mode, uint32_t tick)
     if (mode != Mode::Manual) manual_input_ = ManualInput::None;
     manual_stale_ = false;
     spinup_in_band_ticks_ = 0;
+    wheel_hold_ = false;
+    pending_wheel_step_rpm_ = 0.0f;
 }
 
 void Supervisor::drop_to_safe(ThrottleController &controller)
@@ -158,13 +167,23 @@ bool Supervisor::input_available(ManualInput input, ManualInputSet built) const
     return params_.hall_installed || input == ManualInput::Throttle;
 }
 
+ThrottleBand manual_throttle_band(const Params &params)
+{
+    ThrottleBand band;
+    band.hi = params.manual_throttle_max;
+    if (!params.hall_installed && band.hi > kBypassThrottleMax) band.hi = kBypassThrottleMax;
+    // A minimum above the bypass ceiling collapses the band onto the ceiling.
+    band.lo = params.manual_throttle_min < band.hi ? params.manual_throttle_min : band.hi;
+    return band;
+}
+
 int Supervisor::clamp_manual_throttle(float requested) const
 {
+    const ThrottleBand band = manual_throttle_band(params_);
     // Clamp before rounding so huge or negative requests cannot overflow lround.
     long v = std::lround(clampf(requested, 0.0f, static_cast<float>(kDshotMaxThrottle)));
-    if (v < params_.manual_throttle_min) v = params_.manual_throttle_min;
-    if (v > params_.manual_throttle_max) v = params_.manual_throttle_max;
-    if (!params_.hall_installed && v > kBypassThrottleMax) v = kBypassThrottleMax;
+    if (v < band.lo) v = band.lo;
+    if (v > band.hi) v = band.hi;
     return static_cast<int>(v);
 }
 
@@ -233,7 +252,12 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
         const Mode target = cmd.target_mode;
         if (is_later_set_mode(target)) return ack(out, cmd, kNotImplemented);
         if (target == Mode::Ready) {
-            if (mode_ == Mode::Ready) return ack_ok(out, cmd);
+            if (mode_ == Mode::Ready) {
+                // Also ends a bench wheel-step hold (FD section 15.3).
+                wheel_hold_ = false;
+                pending_wheel_step_rpm_ = 0.0f;
+                return ack_ok(out, cmd);
+            }
             if (mode_ == Mode::Manual) {
                 enter(Mode::Ready, t);
                 post_mode_event(out, "mode");
@@ -300,9 +324,21 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
         }
         return ack_ok(out, cmd);
     }
+    case CommandKind::WheelStep:
+        // Bench only (FD section 15.3, R3.8): a step of omega_ref with the rate
+        // and attitude loops suspended until `mode READY`. Interlocks stay on.
+        if (!params_.bench_mode) return ack(out, cmd, kBenchRequired);
+        if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+        if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+        if (!std::isfinite(cmd.delta_rpm) || std::fabs(cmd.delta_rpm) > kWheelStepMaxRpm) {
+            return ack(out, cmd, kInvalidSetpoint);
+        }
+        wheel_hold_ = true;
+        pending_wheel_step_rpm_ += cmd.delta_rpm;
+        return ack_ok(out, cmd);
+
     case CommandKind::Respin:
     case CommandKind::ZeroHeading:
-    case CommandKind::WheelStep:
         return ack(out, cmd, kNotImplemented);
     case CommandKind::Estop:
     case CommandKind::Ping:
@@ -371,6 +407,10 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         d.manual_rate_dps = manual_rate_dps_;
         d.manual_stale = manual_stale_;
         d.previous_throttle = prev_throttle_;
+        d.wheel_step_rpm = pending_wheel_step_rpm_;
+        d.wheel_hold = wheel_hold_;
+        d.omega_cmd_dps = 0.0f;  // READY holds rate (TD section 6.6)
+        pending_wheel_step_rpm_ = 0.0f;
         int request = controller.throttle(d, in, params_);
         if (request < 0) request = 0;
         if (request > kDshotMaxThrottle) request = kDshotMaxThrottle;
@@ -441,8 +481,10 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     uint32_t flags = 0;
     if (!params_.hall_installed) flags |= kFlagHallBypass;
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
+    if (wheel_hold_) flags |= kFlagWheelStep;
+    if (armed()) flags |= controller.flags();
     if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual)) {
-        const bool near = in.wheel_rpm_safe > params_.omega_cap_rpm - kMomentumWarnRpm ||
+        const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;
         flags |= near ? kFlagMomentumNearLimit : kFlagMomentumOk;
     }
