@@ -380,7 +380,7 @@ Mounting: the board hangs upside down under the flipped top deck (TD §4.8). Tur
 
 ### 10.3 BMP280 (I2C 0x77, optional)
 
-Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz on a spare tick if present, and reported in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`. Driver: esp-idf-lib `bmp280` ^1.0.7 at 400 kHz.
+Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz by a low-priority task on core 0 if present, never on a control tick, because the esp-idf-lib read path retries a failed transaction with backoff and can block for about 0.3 s [D, V-37]. The task publishes through a seqlock that the control task copies into the telemetry snapshot, and the readings appear in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`. Driver: esp-idf-lib `bmp280` ^1.0.7 at 400 kHz.
 
 ### 10.4 A1104 Hall sensor and wheel speed
 
@@ -1155,6 +1155,7 @@ Each statement below was challenged by recomputing it from TD's inputs, by check
 | V-34 | §15.3: "a failed guard → ok:false with a reason" without the reason strings | Implementation | The UI and tests need exact strings | Fixed list in §13.1 [D] | Low (this doc) |
 | V-35 | §16: `omega_cap_rpm` "cannot be raised over the wire"; persistence of `bench_mode` unstated | Implementation | Lowering it over the wire was also unclear | The cap is not settable over the wire at all and not persisted; `bench_mode` and `hall_installed` are volatile [D] | Low (this doc) |
 | V-36 | §14.3: e-stop always ramps from throttle_0 | Implementation | A ramp from zero throttle only blocks the next `arm` for 5 s | No ramp when the last throttle was below 48 [D] | Low (this doc) |
+| V-37 | §10.3: the BMP280 "is read at 1 Hz on a spare tick" | R3.2 read the esp-idf-lib i2cdev source | A bus error makes `bmp280_read_float` retry three times with 40 to 160 ms backoff, about 0.3 s, which would stall the 2 ms control loop | Read by a low-priority core-0 task and published through a seqlock; the control task never calls it (R3.4) | Medium (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
