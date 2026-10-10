@@ -68,9 +68,10 @@
             "MAG_MISSING",
             "IMU_MISSING",
             "MANUAL_STALE",
-            "HALL_BYPASS"
+            "HALL_BYPASS",
+            "WHEEL_STEP"
           ],
-          "description": "HALL_BYPASS: the Hall bench bypass is on (bench only, FD section 14.1): the Hall interlocks are suspended and the throttle is capped at a compile-time ceiling."
+          "description": "HALL_BYPASS: the Hall bench bypass is on (bench only, FD section 14.1): the Hall interlocks are suspended and the throttle is capped at a compile-time ceiling. WHEEL_STEP: a bench wheel_step hold is active (R3.8): omega_ref was stepped and the rate and attitude loops are suspended until `mode READY`."
         },
         { "$ref": "#/$defs/interlock", "description": "A latched fault." }
       ]
@@ -357,7 +358,9 @@
         "manual_throttle_max": { "type": "integer", "minimum": 48, "maximum": 2047 },
         "spinup_throttle": { "type": "integer", "minimum": 48, "maximum": 2047, "description": "Open-loop throttle that SPINUP ramps to (FD section 16)." },
         "hall_expect_throttle": { "type": "integer", "minimum": 48, "maximum": 2047, "description": "Throttle above which the wheel must be turning: HALL_SILENT arms above it (FD section 14.1)." },
-        "hall_installed": { "type": "boolean", "description": "false turns on the Hall bench bypass; accepted only in SAFE with bench_mode already true; never persisted, true again at every boot (FD section 16)." }
+        "hall_installed": { "type": "boolean", "description": "false turns on the Hall bench bypass; accepted only in SAFE with bench_mode already true; never persisted, true again at every boot (FD section 16)." },
+        "bench_underspeed_rpm": { "type": "number", "minimum": 0, "maximum": 1500, "description": "Bench only (R3.8, FD section 19.2): UNDERSPEED threshold for the T-18 low-speed search, 100 rpm up to omega_low_rpm; 0 clears it. Accepted only in SAFE with bench_mode on, never persisted, cleared when bench_mode turns off." },
+        "bench_cap_rpm": { "type": "number", "minimum": 0, "maximum": 4000, "description": "Bench only (R3.8): a lower wheel cap for the deliberate OVERSPEED test, from omega_bias_rpm up to the 4000 rpm cap; it can only lower the cap. 0 clears it. Accepted only in SAFE with bench_mode on, never persisted, cleared when bench_mode turns off." }
       }
     },
 

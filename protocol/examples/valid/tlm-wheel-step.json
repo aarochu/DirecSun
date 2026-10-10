@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "type": "tlm",
+  "seq": 4410,
+  "t_ms": 88200,
+  "mode": "READY",
+  "manual_input": null,
+  "psi_deg": -12.5,
+  "psi_ref_deg": null,
+  "rate_dps": 0.4,
+  "mag_deg": null,
+  "sun_deg": null,
+  "sun_valid": false,
+  "wheel_rpm": 2688,
+  "wheel_ref_rpm": 2700,
+  "throttle": 1131,
+  "tau_cmd_mNm": 0.0,
+  "vbat": 10.2,
+  "loop_us": 744,
+  "flags": [
+    "MOMENTUM_OK",
+    "WHEEL_STEP"
+  ],
+  "t_c": null,
+  "p_pa": null,
+  "tlm_dropped": 0,
+  "dropped_events": 0
+}

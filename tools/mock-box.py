@@ -136,7 +136,9 @@ class Box:
         self.manual_last = -1.0
         self.last_throttle = 0
         self.params = {"bench_mode": False, "hall_installed": True,
-                       "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX}
+                       "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX,
+                       "bench_underspeed_rpm": 0, "bench_cap_rpm": 0}
+        self.wheel_hold = False           # bench wheel_step hold (R3.8)
         self.talkers = set()              # clients that have sent anything get events (R3.5)
         self.outbox = []                  # (connection or None for broadcast, message)
 
@@ -167,6 +169,7 @@ class Box:
             return
         self.mode = mode
         self.mode_since = time.monotonic()
+        self.wheel_hold = False
         if mode != "MANUAL":
             self.manual_input = None
             self.manual_value = None
@@ -270,7 +273,16 @@ class Box:
                 return self._ack(conn, seq, False, "bench_mode required: hall_installed")
             if update.get("bench_mode") is False and not update.get("hall_installed", self.params["hall_installed"]):
                 return self._ack(conn, seq, False, "bench_mode required: hall_installed")
+            bench_after = update.get("bench_mode", self.params["bench_mode"])
+            for key in ("bench_underspeed_rpm", "bench_cap_rpm"):
+                if update.get(key, 0) != 0 and not bench_after:
+                    return self._ack(conn, seq, False, f"bench_mode required: {key}")
             was_bypassed = not self.params["hall_installed"]
+            if self.params["bench_mode"] and not bench_after:
+                # Turning bench mode off clears the overrides it does not name (R3.8).
+                for key in ("bench_underspeed_rpm", "bench_cap_rpm"):
+                    if key not in update:
+                        self.params[key] = 0
             self.params.update(update)
             self._ack(conn, seq, True, applied=update)
             if was_bypassed != (not self.params["hall_installed"]):
@@ -278,11 +290,15 @@ class Box:
                                   "event": "notice", "name": "HALL_BYPASS",
                                   "detail": "off" if self.params["hall_installed"] else "on"})
         elif cmd == "wheel_step":
-            if self.mode != "READY":
-                return self._ack(conn, seq, False, f"not allowed in {self.mode}")
+            # Same refusal order as the firmware supervisor (R3.8).
             if not self.params.get("bench_mode"):
-                return self._ack(conn, seq, False, "bench_mode is off")
-            self.wheel_ref = min(OMEGA_CAP, max(OMEGA_LOW, self.wheel_ref + message["delta_rpm"]))
+                return self._ack(conn, seq, False, "bench_mode required")
+            if self.mode != "READY":
+                return self._ack(conn, seq, False, "not in READY")
+            if not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")
+            self.wheel_hold = True
+            self.wheel_ref = min(self._cap(), max(OMEGA_LOW, self.wheel_ref + message["delta_rpm"]))
             self._ack(conn, seq, True)
 
     def _mode_command(self, conn, seq, message):
@@ -292,6 +308,7 @@ class Box:
                 self._ack(conn, seq, True)
                 self._set_mode("READY", "mode")
             elif self.mode == "READY":
+                self.wheel_hold = False   # `mode READY` in READY ends a wheel-step hold
                 self._ack(conn, seq, True)
             else:
                 self._ack(conn, seq, False, f"not allowed in {self.mode}")
@@ -320,6 +337,25 @@ class Box:
         elif target == "SLEW":
             self.psi_ref = wrap_deg(self.psi)
             self.slew = (self.psi, message["psi_ref_deg"], time.monotonic())
+
+    def _wheel_loop_available(self):
+        # The firmware's wheel_loop_available(): Hall fitted and the T-5 table set.
+        return bool(self.params["hall_installed"]) and isinstance(self.params.get("ff_table"), list)
+
+    def _cap(self):
+        cap = self.params.get("bench_cap_rpm") or 0
+        return cap if 0 < cap < OMEGA_CAP else OMEGA_CAP
+
+    def _ff(self, rpm):
+        # Linear interpolation on the table, held at the ends (ff_throttle() in the firmware).
+        table = self.params["ff_table"]
+        if rpm <= table[0]["rpm"]:
+            return table[0]["throttle"]
+        for lo, hi in zip(table, table[1:]):
+            if rpm <= hi["rpm"]:
+                f = (rpm - lo["rpm"]) / (hi["rpm"] - lo["rpm"])
+                return lo["throttle"] + f * (hi["throttle"] - lo["throttle"])
+        return table[-1]["throttle"]
 
     def _throttle_band(self):
         # Same rule as manual_throttle_band() in the firmware core.
@@ -418,6 +454,8 @@ class Box:
             flags.append("MANUAL_STALE")
         if not self.params["hall_installed"]:
             flags.append("HALL_BYPASS")
+        if self.wheel_hold:
+            flags.append("WHEEL_STEP")
         flags.extend(self.latched)
 
         # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
@@ -425,6 +463,8 @@ class Box:
         throttle = 0
         if self.mode == "SPINUP":
             throttle = int(min(SPINUP_THROTTLE, (now - self.mode_since) * SPINUP_RAMP_PER_S))
+        elif self.mode == "READY" and self._wheel_loop_available():
+            throttle = int(round(self._ff(self.wheel_ref)))   # closed wheel loop at steady state (R3.8)
         elif self.mode != "SAFE":
             throttle = SPINUP_THROTTLE
         elif self.ramp:
@@ -445,11 +485,17 @@ class Box:
             "rate_dps": round(self.rate, 2),
             "mag_deg": round(wrap_deg(psi_wire + random.uniform(-0.4, 0.4)), 2),
             "sun_deg": None, "sun_valid": False,
-            "wheel_rpm": round(max(0.0, self.wheel), 1), "wheel_ref_rpm": round(max(0.0, self.wheel_ref), 1),
+            "wheel_rpm": round(max(0.0, self.wheel), 1),
+            # As the firmware: the wheel reference is reported only while the closed
+            # wheel loop runs (SPINUP and READY with the T-5 table), else 0 (R3.8).
+            "wheel_ref_rpm": round(max(0.0, self.wheel_ref), 1)
+            if self.mode in ("SPINUP", "READY") and self._wheel_loop_available() else 0,
             "throttle": throttle, "throttle_band": [band_lo, band_hi], "tau_cmd_mNm": round(-reaction * 2.0, 2),
             "vbat": round(10.1 + random.uniform(-0.03, 0.03), 2),
             "loop_us": random.randint(690, 790), "flags": flags,
             "t_c": 23.5, "p_pa": 101300.0, "tlm_dropped": 0, "dropped_events": 0,
+            **({"gyro_raw": [0, 0, int(max(-32768, min(32767, -self.rate * 16.4)))], "mag_raw": [812, -1234, 300],
+                "sun_a_mv": 0, "sun_b_mv": 0} if self.params["bench_mode"] else {}),
         })
 
 
@@ -597,6 +643,24 @@ def selftest():
     send(a, {"v": 1, "type": "cmd", "seq": 11, "cmd": "set_params", "params": {"bench_mode": True}})
     send(a, {"v": 1, "type": "cmd", "seq": 12, "cmd": "set_params", "params": {"hall_installed": False}})
     box.tick()                                                                        # HALL_BYPASS flag
+    # R3.8: bench overrides and the wheel step, with the firmware's refusal reasons.
+    send(a, {"v": 1, "type": "cmd", "seq": 13, "cmd": "set_params", "params": {"hall_installed": True}})
+    send(a, {"v": 1, "type": "cmd", "seq": 14, "cmd": "set_params", "params": {"bench_mode": False}})
+    send(a, {"v": 1, "type": "cmd", "seq": 15, "cmd": "set_params", "params": {"bench_cap_rpm": 2500}})  # refused
+    send(a, {"v": 1, "type": "cmd", "seq": 16, "cmd": "wheel_step", "delta_rpm": 300})          # refused: bench
+    send(a, {"v": 1, "type": "cmd", "seq": 17, "cmd": "set_params", "params": {
+        "bench_mode": True, "bench_cap_rpm": 2500, "bench_underspeed_rpm": 300,
+        "ff_table": [{"rpm": 500 * (i + 1), "throttle": 48 + 100 * (i + 1)} for i in range(8)]}})
+    box.last_heartbeat = time.monotonic()
+    send(a, {"v": 1, "type": "cmd", "seq": 18, "cmd": "wheel_step", "delta_rpm": 300})          # refused: SAFE
+    send(a, {"v": 1, "type": "cmd", "seq": 19, "cmd": "arm"})
+    box.mode_since -= SPINUP_S
+    box.tick()                                                                        # READY
+    send(a, {"v": 1, "type": "cmd", "seq": 20, "cmd": "wheel_step", "delta_rpm": 300})          # ok
+    box.tick()                                                                        # WHEEL_STEP flag
+    stepped_ref = box.wheel_ref
+    send(a, {"v": 1, "type": "cmd", "seq": 21, "cmd": "mode", "mode": "READY"})                 # ends the hold
+    box.tick()
     kinds = {}
     for _target, message in box.outbox:
         key = message["type"] + (":" + message["event"] if message["type"] == "event" else "") \
@@ -621,6 +685,18 @@ def selftest():
         problems.append("HALL_BYPASS never set")
     if not any(m.get("name") == "HALL_BYPASS" for _t, m in box.outbox if m["type"] == "event"):
         problems.append("no HALL_BYPASS notice")
+    reasons = {m["seq"]: m.get("reason") for _t, m in box.outbox if m["type"] == "ack" and m.get("ok") is False}
+    expected = {15: "bench_mode required: bench_cap_rpm", 16: "bench_mode required", 18: "not in READY"}
+    for seq, reason in expected.items():
+        if reasons.get(seq) != reason:
+            problems.append(f"seq {seq} refused with {reasons.get(seq)!r}, expected {reason!r}")
+    tlm_flags = [m["flags"] for _t, m in box.outbox if m["type"] == "tlm"]
+    if not any("WHEEL_STEP" in f for f in tlm_flags):
+        problems.append("WHEEL_STEP never set")
+    if "WHEEL_STEP" in tlm_flags[-1]:
+        problems.append("WHEEL_STEP still set after mode READY")
+    if stepped_ref > 2500:
+        problems.append(f"wheel step not clamped to the bench cap (ref {stepped_ref})")
     problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:
         print(f"mock-box selftest: FAILED, {problem}", file=sys.stderr)

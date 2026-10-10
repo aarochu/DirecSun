@@ -72,6 +72,7 @@ else
         "no_still_gate|HT-3 positive control: a spinning box in SAFE leaves the bias unchanged"
         "no_wire_sign|sign conversion: internal CCW encodes as wire CW and decodes back"
         "no_spinup_ramp|rung 1: SPINUP ramps at 200 DShot units per second through the supervisor"
+        "no_wheel_antiwindup|R3.8 positive control: a saturating step overshoots under 10 % with anti-windup"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

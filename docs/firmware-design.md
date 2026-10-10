@@ -855,7 +855,7 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 | `respin` | `wheel_rpm` (optional, default bias) | READY | → SPINUP to the new start speed (§13.4) |
 | `zero_heading` | none | SAFE, READY | Heading offset (§11.3) |
 | `set_params` | `params` object | SAFE only | Validate every key and range; store in NVS; reply with the applied set [D] |
-| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set | Ω_ref step with the attitude and rate loops suspended until `mode READY` is sent again; for §12.5, T-5 and T-18 [D]; refused unless `bench_mode` is true. Interlocks stay active |
+| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set, wheel loop available | Ω_ref step, clamped to [Ω_low, cap in force], with the attitude and rate loops suspended until `mode READY` is sent again (tlm flag `WHEEL_STEP` meanwhile); for §12.5 and the wheel-loop step response [D]. Refused, in this order, with `bench_mode required`, `not in READY`, or `wheel loop not available` (no Hall, or no `ff_table` yet). Interlocks stay active |
 
 #### `ack`: box → sender
 
@@ -942,6 +942,8 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 | `spinup_throttle` | 300 until T-5 [D] | 48..2047 | `set_params` in SAFE; the open-loop throttle `SPINUP` ramps to (§13.1, R3.7) |
 | `hall_expect_throttle` | 200 until T-5 [D] | 48..2047 | `set_params` in SAFE; set to FF(Ω_low) after T-5; arms `HALL_SILENT` (§14.1) |
 | `hall_installed` | true at every boot | bool; false only with `bench_mode` already true | `set_params` in SAFE; never persisted; the Hall bench bypass (§13.1) |
+| `bench_underspeed_rpm` | 0 (off) at every boot | 0, or 100..Ω_low | `set_params` in SAFE with `bench_mode` on; never persisted; cleared when `bench_mode` turns off. Replaces Ω_low as the `UNDERSPEED` threshold for T-18 only (§19.2) [D] |
+| `bench_cap_rpm` | 0 (off) at every boot | 0, or `omega_bias_rpm`..`omega_cap_rpm` | `set_params` in SAFE with `bench_mode` on; never persisted; cleared when `bench_mode` turns off. Lowers the cap in force (Ω_ref clamp and `OVERSPEED` at cap + 100) for the deliberate overspeed check; it can never raise the cap [D] |
 | Wi-Fi SSID, password, static address, SoftAP flag | n/a | n/a | menuconfig, from `firmware/sdkconfig.defaults.local` (gitignored); never over the wire |
 
 `set_params` is all-or-nothing: the merged set is validated as a whole, and one bad key rejects the update and names the key. `mag_axis_map`, `mag_cal`, `sun_cal`, and `light_threshold` are refused with `not implemented: <key>` until repository Set 5 adds them with a `param_version` bump [D]. Parameters are persisted outside the control task, because a flash write stalls both cores' caches: the supervisor reports `params_changed`, and a lower-priority task writes NVS [D].
@@ -1052,7 +1054,7 @@ These map firmware features onto TD §9:
 | T-12 ESC signal loss | Bench command to stop sending frames is **not** provided; unplug the wire as TD describes [D] |
 | T-13 interlocks | Every interlock trips with an `event` naming it |
 | T-15–T-17 | Modes and controllers |
-| T-18 low-speed limit | `wheel_step` downward in bench mode with UNDERSPEED threshold temporarily lowered via `set_params` (bench mode only) |
+| T-18 low-speed limit | MANUAL throttle stepped downward in bench mode, with the UNDERSPEED threshold lowered by `bench_underspeed_rpm` (bench mode only, R3.8); the T-5 map itself comes from the bench console's MANUAL throttle sweep |
 
 ### 19.3 Build checks (first day, before any feature work)
 
@@ -1191,6 +1193,9 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-40 | §15.3: `mag_deg` null only if the magnetometer is missing | No calibrated magnetometer heading exists until Set 5 | A raw atan2 of uncalibrated counts would be a misleading heading | `mag_deg` is null until Set 5 builds the calibrated heading (R3.5) | Low (this doc) |
 | V-41 | §15.3: refusals carry "a reason" without the strings | Implementation of the parser (R3.5) and supervisor (R3.6) | The UI and the tests need exact strings | Fixed list in §15.3; `seq` 0 for an unreadable frame | Low (this doc) |
 | V-42 | §15.3: `cause` limited to interlocks, commands, and `slew_complete`; no notice catalogue | R1.6 schema and R3.6 supervisor | The schema already had `boot`, `spinup_complete`, `SLEW_TIMEOUT`, `sun_invalid`, and `notice` | Event catalogue in §15.3, with `HALL_BYPASS` added as an additive v1 change (CONTEXT.md, 2026-10-10) | Low (this doc) |
+| V-43 | §12.1 step 4 and §16: the wheel PI runs whenever the box is armed, with gains "from T-5" | R3.8 | Before T-5 there is no feed-forward table and the gains are 0, so a closed loop would command nothing sensible | The closed wheel loop runs only when the Hall is fitted and `ff_table` is set (`wheel_loop_available`); until then the box runs rung 1, the open-loop throttle controller (R3.7). `wheel_step` is refused with `wheel loop not available` [D] | Medium (this doc) |
+| V-44 | §19.2: T-18 lowers the UNDERSPEED threshold "via `set_params`"; the overspeed check had no way to lower the cap | R3.8 | No parameter existed for either, and `omega_cap_rpm` is not settable at all (V-35) | Two volatile bench-only keys, `bench_underspeed_rpm` and `bench_cap_rpm` (§16), each able only to make its own test more conservative, both cleared with bench mode and at every boot [D] | Low (this doc) |
+| V-45 | §13.3: spin-up "begins with throttle feed-forward only and closes the wheel PI once the Hall speed exceeds Ω_low" | R3.8 | Ω_ref's [Ω_low, Ω_cap] clamp would jump the reference to Ω_low at once | In SPINUP Ω_ref ramps at 400 rpm/s from the measured speed with only the cap clamping it; the PI is off below Ω_low (feed-forward only) and the integrator is cleared there. READY clamps Ω_ref to [Ω_low, cap in force] [D] | Low (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 
 ### 23.2 Statements re-derived and confirmed
