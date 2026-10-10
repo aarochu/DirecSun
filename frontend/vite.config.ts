@@ -1,35 +1,13 @@
-import { copyFileSync, mkdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import react from '@vitejs/plugin-react';
-import type { Plugin } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 
-function routeEntryPages(routes: string[]): Plugin {
-  let outDir = 'dist';
-  return {
-    name: 'direcsun-route-entry-pages',
-    apply: 'build',
-    configResolved(config) {
-      outDir = resolve(config.root, config.build.outDir);
-    },
-    writeBundle() {
-      for (const route of routes) {
-        mkdirSync(join(outDir, route), { recursive: true });
-        copyFileSync(join(outDir, 'index.html'), join(outDir, route, 'index.html'));
-      }
-    },
-  };
-}
-
+// The landing page. public/ (the CAD GLB and part renders) is shared with the
+// previous app in draft/, which Vercel builds into dist/draft (see vercel.json).
 export default defineConfig({
-  plugins: [react(), routeEntryPages(['ground-station'])],
+  server: { port: 5173, strictPort: true },
+  preview: { port: 4173, strictPort: true },
   build: {
-    chunkSizeWarningLimit: 650,
-  },
-  test: {
-    environment: 'jsdom',
-    include: ['src/tests/**/*.test.{ts,tsx}'],
-    setupFiles: ['src/tests/setup.ts'],
-    restoreMocks: true,
+    outDir: 'dist',
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 700,
   },
 });

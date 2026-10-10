@@ -5,7 +5,8 @@ import { hardwareStack, imageAssets } from '../data/assets';
 import { hardwareParts } from '../data/hardware';
 import { hardwareViews } from '../data/hardwareModels';
 
-const publicFile = (src: string) => join(process.cwd(), 'public', src);
+// public/ stays in frontend/ and is shared with the landing page.
+const publicFile = (src: string) => join(process.cwd(), '..', 'public', src);
 
 function glbNodeNames(): Set<string> {
   const bytes = readFileSync(publicFile(hardwareStack.src));
