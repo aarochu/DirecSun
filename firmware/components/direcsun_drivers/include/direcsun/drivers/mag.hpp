@@ -23,8 +23,8 @@ struct MagConfig {
 struct MagSample {
     int16_t raw[3];     // x, y, z as the chip reports them (kMagLsbPerGauss per gauss)
     bool overflow;      // OVFL: an axis exceeded +-30000 LSB
-    int64_t t_us;       // esp_timer time at the start of the poll
-    uint32_t xfer_us;   // status plus data read time
+    int64_t t_us;       // esp_timer time at the start of the status read
+    uint32_t xfer_us;   // data read time (mag_read_data), or status plus data (mag_poll)
 };
 
 struct MagStats {
@@ -49,6 +49,16 @@ uint8_t mag_chip_id();
 // (FD section 10.2: poll every 2nd tick, so each 200 Hz sample is read once).
 // Returns true when `out` holds a new valid sample. Call from a single task.
 bool mag_poll(MagSample &out);
+
+// The same poll split into two bus transactions that can run on different
+// control ticks, so no tick carries both (R3.4 tick budget [D]):
+//   mag_poll_status() reads the status register and returns true when DRDY is
+//   set (a sample is waiting);
+//   mag_read_data() then reads the six data bytes into `out` and returns true
+//   when the sample is valid. Call it only after mag_poll_status() returned
+//   true, and before the next mag_poll_status(). Call from a single task.
+bool mag_poll_status();
+bool mag_read_data(MagSample &out);
 
 const MagStats &mag_stats();
 

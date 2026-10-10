@@ -1,0 +1,9 @@
+# Run the core's code from IRAM, not through the flash cache. The control tick
+# calls the estimator, supervisor, and controllers every 2 ms; on the XIAO,
+# cache misses made those stages vary by tens of microseconds per tick (R3.4
+# bench, Oct 10). Only the firmware build reads this file; the host test build
+# compiles the same sources without it.
+[mapping:direcsun_core]
+archive: libdirecsun_core.a
+entries:
+    * (noflash_text)

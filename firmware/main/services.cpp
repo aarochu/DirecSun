@@ -1,6 +1,7 @@
 #include "services.hpp"
 
 #include <cinttypes>
+#include <cstdio>
 
 #include "direcsun/core/commands.hpp"
 #include "direcsun/core/params.hpp"
@@ -8,6 +9,7 @@
 #include "direcsun/drivers/baro.hpp"
 #include "esp_log.h"
 #include "nvs_store.hpp"
+#include "control_task.hpp"
 #include "shared.hpp"
 
 namespace drv = direcsun::drivers;
@@ -84,6 +86,20 @@ void status_task(void *)
                      static_cast<double>(snap.wheel_rpm), static_cast<unsigned>(snap.latched), snap.flags,
                      snap.baro_valid ? "ok" : "--");
         }
+#if CONFIG_DIRECSUN_BENCH_STAGE_TIMING
+        StageTiming timing;
+        if (stage_timing().read(timing)) {
+            char line[256];
+            int len = snprintf(line, sizeof line, "s %" PRIu32 " max/mean us", timing.second);
+            for (int i = 0; i < static_cast<int>(TickStage::Count) && len > 0 && len < static_cast<int>(sizeof line);
+                 ++i) {
+                const uint32_t mean = timing.calls[i] == 0 ? 0 : timing.sum_us[i] / timing.calls[i];
+                len += snprintf(line + len, sizeof line - static_cast<size_t>(len), " %s %" PRIu32 "/%" PRIu32,
+                                tick_stage_name(static_cast<TickStage>(i)), timing.max_us[i], mean);
+            }
+            ESP_LOGI("stages", "%s", line);
+        }
+#endif
     }
 }
 
