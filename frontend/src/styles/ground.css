@@ -186,6 +186,78 @@
   color: var(--text-secondary);
 }
 
+.button--estop {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #000000;
+}
+
+.button--estop:hover:not(:disabled) {
+  background: #e07c79;
+  border-color: #e07c79;
+}
+
+.controls__confirm {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgb(231 168 102 / 0.5);
+  border-radius: var(--radius-sm);
+}
+
+.controls__confirm[hidden] {
+  display: none;
+}
+
+.controls__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.controls__check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.controls__confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.controls__confirm-actions .button {
+  min-height: 44px;
+}
+
+.controls__result {
+  min-height: 1.4em;
+  margin-top: 6px;
+  color: var(--success);
+}
+
+.controls__result--error {
+  color: var(--danger);
+}
+
+.controls--device .controls__secondary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 419px) {
+  .controls--device .controls__secondary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .viewport {
   position: relative;
   height: clamp(320px, 80vw, 480px);

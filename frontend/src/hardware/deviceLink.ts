@@ -37,12 +37,43 @@ export function flagSeverity(flag: string): FlagSeverity {
   return FAULT_FLAGS.has(flag) ? 'fault' : 'warning';
 }
 
+export interface DeviceEvent {
+  readonly event: 'mode' | 'notice';
+  readonly mode: string | null;
+  readonly cause: string | null;
+  readonly name: string | null;
+  readonly detail: string | null;
+}
+
+export interface DeviceAck {
+  readonly seq: number;
+  readonly ok: boolean;
+  readonly reason: string | null;
+}
+
+export type CommandErrorCode = 'REFUSED' | 'TIMEOUT' | 'CLOSED';
+
+export class DeviceCommandError extends Error {
+  constructor(
+    message: string,
+    readonly code: CommandErrorCode,
+    readonly command: string,
+    readonly reason: string | null = null,
+  ) {
+    super(message);
+    this.name = 'DeviceCommandError';
+  }
+}
+
 export interface LinkState {
   readonly status: LinkStatus;
   readonly url: string | null;
   readonly message: string | null;
   readonly packets: number;
   readonly ignored: number;
+  readonly talking: boolean;
+  readonly rttMs: number | null;
+  readonly lastEvent: DeviceEvent | null;
 }
 
 const finite = (value: unknown): number | null =>
@@ -106,16 +137,55 @@ export function validateLinkUrl(text: string): string | null {
   return null;
 }
 
+function parseObject(raw: unknown): Record<string, unknown> | null {
+  if (typeof raw !== 'string') return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+const text = (value: unknown): string | null => (typeof value === 'string' && value.length > 0 ? value : null);
+
 const HISTORY_WINDOW_S = 15;
 const TELEMETRY_INTERVAL_MS = 50;
 const SOCKET_CONNECTING = 0;
 const SOCKET_OPEN = 1;
+export const ACK_TIMEOUT_MS = 1000;
+export const PING_INTERVAL_MS = 200;
+const PROTOCOL_VERSION = 1;
+const MAX_SEQ = 4294967296;
 
 type SocketFactory = (url: string) => WebSocket;
 
+interface PendingCommand {
+  readonly command: string;
+  readonly resolve: (ack: DeviceAck) => void;
+  readonly reject: (error: DeviceCommandError) => void;
+  readonly timer: ReturnType<typeof setTimeout>;
+}
+
+const IDLE_STATE: LinkState = {
+  status: 'idle',
+  url: null,
+  message: null,
+  packets: 0,
+  ignored: 0,
+  talking: false,
+  rttMs: null,
+  lastEvent: null,
+};
+
 export class DeviceLink implements DisplaySource {
   private socket: WebSocket | null = null;
-  private state: LinkState = { status: 'idle', url: null, message: null, packets: 0, ignored: 0 };
+  private state: LinkState = IDLE_STATE;
+  private seq = 0;
+  private readonly pending = new Map<number, PendingCommand>();
+  private readonly pings = new Map<number, number>();
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly eventListeners = new Set<(event: DeviceEvent) => void>();
   private latest: DeviceTelemetry | null = null;
   private frame: DisplayFrame = { headingDeg: 0, targetDeg: 0, originDeg: null };
   private telemetry: DisplayTelemetry;
@@ -146,6 +216,28 @@ export class DeviceLink implements DisplaySource {
     return this.state.status === 'open' && this.latest !== null;
   }
 
+  get latestReading(): DeviceTelemetry | null {
+    return this.latest;
+  }
+
+  get isOpen(): boolean {
+    return this.socket !== null && this.socket.readyState === SOCKET_OPEN && this.state.status === 'open';
+  }
+
+  subscribeEvents = (listener: (event: DeviceEvent) => void) => {
+    this.eventListeners.add(listener);
+    return () => this.eventListeners.delete(listener);
+  };
+
+  command(name: 'arm' | 'disarm' | 'mode' | 'respin' | 'zero_heading', fields: Record<string, unknown> = {}): Promise<DeviceAck> {
+    return this.sendCommand(name, fields);
+  }
+
+  estop(): Promise<DeviceAck> {
+    if (!this.isOpen) throw new DeviceCommandError('E-stop not sent: the link is not open', 'CLOSED', 'estop');
+    return this.sendCommand('estop', {});
+  }
+
   connect(url: string): void {
     this.disconnect();
     this.resetData();
@@ -157,7 +249,7 @@ export class DeviceLink implements DisplaySource {
       return;
     }
     this.socket = socket;
-    this.setState({ status: 'connecting', url, message: null, packets: 0, ignored: 0 });
+    this.setState({ ...IDLE_STATE, status: 'connecting', url });
 
     socket.onopen = () => {
       if (this.socket === socket) this.setState({ status: 'open', message: 'Waiting for telemetry…' });
@@ -171,6 +263,7 @@ export class DeviceLink implements DisplaySource {
     socket.onclose = (event: CloseEvent) => {
       if (this.socket !== socket) return;
       this.socket = null;
+      this.stopTalking('The link closed before the box answered');
       const wasError = this.state.status === 'error' || this.state.status === 'connecting';
       this.setState({
         status: wasError ? 'error' : 'closed',
@@ -184,6 +277,7 @@ export class DeviceLink implements DisplaySource {
     const socket = this.socket;
     this.socket = null;
     if (socket) {
+      this.stopTalking('The link was disconnected before the box answered');
       socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
       if (socket.readyState === SOCKET_CONNECTING || socket.readyState === SOCKET_OPEN) socket.close(1000);
       this.setState({ status: 'idle', message: null });
@@ -208,7 +302,7 @@ export class DeviceLink implements DisplaySource {
   private receive(data: unknown) {
     const reading = parseTelemetry(data);
     if (!reading) {
-      this.setState({ ignored: this.state.ignored + 1 });
+      if (!this.receiveControl(parseObject(data))) this.setState({ ignored: this.state.ignored + 1 });
       return;
     }
 
@@ -232,6 +326,112 @@ export class DeviceLink implements DisplaySource {
     const wasWaiting = this.state.packets === 0;
     this.setState({ packets: this.state.packets + 1, message: null });
     this.publishTelemetry(wasWaiting);
+  }
+
+  private receiveControl(message: Record<string, unknown> | null): boolean {
+    if (!message || message.v !== PROTOCOL_VERSION) return false;
+    switch (message.type) {
+      case 'ack':
+        this.settle(message);
+        return true;
+      case 'pong':
+        this.recordPong(message);
+        return true;
+      case 'event': {
+        const kind = message.event;
+        if (kind !== 'mode' && kind !== 'notice') return false;
+        const event: DeviceEvent = {
+          event: kind,
+          mode: text(message.mode),
+          cause: text(message.cause),
+          name: text(message.name),
+          detail: text(message.detail),
+        };
+        this.setState({ lastEvent: event });
+        for (const listener of this.eventListeners) listener(event);
+        return true;
+      }
+      default:
+        return false;
+    }
+  }
+
+  private nextSeq(): number {
+    this.seq = (this.seq + 1) % MAX_SEQ;
+    return this.seq;
+  }
+
+  private send(message: Record<string, unknown>) {
+    this.socket!.send(JSON.stringify(message));
+  }
+
+  private sendCommand(name: string, fields: Record<string, unknown>): Promise<DeviceAck> {
+    if (!this.isOpen) {
+      return Promise.reject(new DeviceCommandError(`${name} not sent: the link is not open`, 'CLOSED', name));
+    }
+    this.startTalking();
+    const seq = this.nextSeq();
+    const promise = new Promise<DeviceAck>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        if (!this.pending.delete(seq)) return;
+        reject(new DeviceCommandError(`${name}: no answer from the box within ${ACK_TIMEOUT_MS} ms`, 'TIMEOUT', name));
+      }, ACK_TIMEOUT_MS);
+      this.pending.set(seq, { command: name, resolve, reject, timer });
+    });
+    this.send({ v: PROTOCOL_VERSION, type: 'cmd', seq, cmd: name, ...fields });
+    return promise;
+  }
+
+  private settle(message: Record<string, unknown>) {
+    const seq = finite(message.seq);
+    const pending = seq === null ? undefined : this.pending.get(seq);
+    if (seq === null || !pending) return;
+    this.pending.delete(seq);
+    clearTimeout(pending.timer);
+    const reason = text(message.reason);
+    if (message.ok === true) {
+      pending.resolve({ seq, ok: true, reason });
+    } else {
+      pending.reject(
+        new DeviceCommandError(`${pending.command} refused: ${reason ?? 'no reason given'}`, 'REFUSED', pending.command, reason),
+      );
+    }
+  }
+
+  private startTalking() {
+    if (this.pingTimer !== null) return;
+    this.setState({ talking: true });
+    this.ping();
+    this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL_MS);
+  }
+
+  private ping() {
+    if (!this.isOpen) return;
+    const seq = this.nextSeq();
+    const sentMs = this.now();
+    this.pings.set(seq, sentMs);
+    if (this.pings.size > 50) this.pings.delete(this.pings.keys().next().value!);
+    this.send({ v: PROTOCOL_VERSION, type: 'ping', seq, t_client_ms: Math.max(0, Math.round(sentMs * 1000) / 1000) });
+  }
+
+  private recordPong(message: Record<string, unknown>) {
+    const pingSeq = finite(message.ping_seq);
+    const sentMs = pingSeq === null ? undefined : this.pings.get(pingSeq);
+    if (pingSeq === null || sentMs === undefined) return;
+    this.pings.delete(pingSeq);
+    this.setState({ rttMs: Math.max(0, this.now() - sentMs) });
+  }
+
+  private stopTalking(reason: string) {
+    if (this.pingTimer !== null) clearInterval(this.pingTimer);
+    this.pingTimer = null;
+    this.pings.clear();
+    for (const [, pending] of this.pending) {
+      clearTimeout(pending.timer);
+      pending.reject(new DeviceCommandError(`${pending.command}: ${reason}`, 'CLOSED', pending.command));
+    }
+    this.pending.clear();
+    if (this.state.talking || this.state.rttMs !== null) this.setState({ talking: false, rttMs: null });
   }
 
   private unwrappedTarget(reading: DeviceTelemetry): number {

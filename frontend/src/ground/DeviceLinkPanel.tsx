@@ -28,7 +28,9 @@ function statusText(state: LinkState): string {
     case 'open':
       return state.packets === 0
         ? 'SOCKET OPEN — WAITING FOR TELEMETRY'
-        : `RECEIVING TELEMETRY · ${state.packets} PACKETS${state.ignored ? ` · ${state.ignored} IGNORED` : ''}`;
+        : `RECEIVING TELEMETRY · ${state.packets} PACKETS${state.ignored ? ` · ${state.ignored} IGNORED` : ''}${
+            state.talking ? ` · RTT ${state.rttMs === null ? '—' : `${Math.round(state.rttMs)} MS`}` : ''
+          }`;
     case 'closed':
       return 'DISCONNECTED — SHOWING SIMULATION';
     case 'error':
@@ -90,8 +92,8 @@ export function DeviceLinkPanel({ link }: { link: DeviceLink }) {
         {!error && state.message && state.status !== 'open' && <span> · {state.message}</span>}
       </p>
       <p className="link__note">
-        Read-only: displays v1 telemetry (<code>{'{"type":"tlm",…}'}</code>) from your backend. Nothing is
-        sent to the device, and it does not reconnect automatically.
+        Displays v1 telemetry (<code>{'{"type":"tlm",…}'}</code>) from your backend. Watching sends nothing;
+        commands go out only when you arm or e-stop from the controls. It never reconnects automatically.
       </p>
     </section>
   );

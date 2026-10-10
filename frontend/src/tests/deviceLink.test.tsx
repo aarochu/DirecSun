@@ -3,41 +3,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { DeviceLink, flagSeverity, parseTelemetry, validateLinkUrl } from '../hardware/deviceLink';
+import { FakeSocket, tlm } from './fakeSocket';
 
-class FakeSocket {
-  static instances: FakeSocket[] = [];
-  readyState = 0;
-  sent: unknown[] = [];
-  closedWith: number | null = null;
-  onopen: ((event: Event) => void) | null = null;
-  onmessage: ((event: MessageEvent) => void) | null = null;
-  onerror: ((event: Event) => void) | null = null;
-  onclose: ((event: CloseEvent) => void) | null = null;
-
-  constructor(public url: string) {
-    FakeSocket.instances.push(this);
-  }
-  send(data: unknown) {
-    this.sent.push(data);
-  }
-  close(code?: number) {
-    this.closedWith = code ?? 1000;
-    this.readyState = 3;
-  }
-  open() {
-    this.readyState = 1;
-    this.onopen?.(new Event('open'));
-  }
-  message(data: unknown) {
-    this.onmessage?.({ data } as MessageEvent);
-  }
-  drop(code = 1006) {
-    this.readyState = 3;
-    this.onclose?.({ code } as CloseEvent);
-  }
-}
-
-const tlm = (fields: Record<string, unknown>) => JSON.stringify({ v: 1, type: 'tlm', ...fields });
 
 afterEach(() => {
   FakeSocket.instances = [];
@@ -188,7 +155,7 @@ describe('DeviceLink', () => {
 });
 
 describe('ground station with a device link', () => {
-  it('switches every view to device telemetry and locks the simulation controls', () => {
+  it('switches every view to device telemetry and swaps in the box controls, still sending nothing', () => {
     vi.stubGlobal('WebSocket', FakeSocket);
     render(
       <MemoryRouter initialEntries={['/ground-station']}>
@@ -209,7 +176,9 @@ describe('ground station with a device link', () => {
     expect(screen.getByText('+47.2°')).toBeTruthy();
     expect(screen.getByText(/10\.10 V/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Rotate right ninety/ }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('button', { name: /Reset the simulation/ }).hasAttribute('disabled')).toBe(true);
+    expect(screen.queryByRole('button', { name: /Reset the simulation/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Emergency stop the box' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByText('ANOTHER CLIENT IS CONTROLLING THE BOX. E-STOP STILL WORKS FROM HERE')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(screen.getByText('SIMULATED — NO DEVICE CONNECTION')).toBeTruthy();
