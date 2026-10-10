@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "event",
+  "seq": 318,
+  "t_ms": 97240,
+  "event": "mode",
+  "mode": "READY",
+  "cause": "slew_timeout"
+}

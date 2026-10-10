@@ -2,6 +2,7 @@
 """Protocol stub of the DirecSun box, for the bench console and the demo UI.
 
     tools/mock-box.py [--host 127.0.0.1] [--port 8081] [--inputs throttle,wheel,rate]
+                      [--uncharacterised] [--stuck]
     tools/mock-box.py --selftest
 
 Speaks wire schema v1 (protocol/schema-v1.json) the way the firmware does:
@@ -13,6 +14,17 @@ section 13.1 (SAFE, arm to SPINUP, READY 2 s later, mode commands, MANUAL with
 its 250 ms staleness rule), the controlling-client rule and the 1 s heartbeat of
 section 14.4, and the e-stop. It is not a plant model: headings and speeds are
 plausible shapes, not physics, and it is no evidence about the hardware.
+
+HOLD and SLEW follow the firmware's rules (R4.3, FD sections 12.4 and 13.1):
+entered from READY only, and only once the wheel loop is available (the
+T-5 feed-forward table is set; the mock starts with one unless
+--uncharacterised). SLEW moves psi_ref along the firmware's trapezoid, 60 deg/s
+and 120 deg/s^2 on the shortest wrapped path, and ends with slew_complete once
+the box has sat within 3 deg and 5 deg/s of the target for 0.5 s after the
+profile, or with SLEW_TIMEOUT after 6 s. The heading closes on psi_ref through
+the firmware's attitude law (K_psi 3.1 1/s, 90 deg/s limit, 1 deg hold
+deadband) and a 0.1 s lag standing in for the rate loop. --stuck makes a box
+that cannot turn, so every SLEW times out.
 
 Every outbound message is validated against the schema; a violation stops the
 mock, because it would mean the mock teaches the UI the wrong protocol. Inbound
@@ -70,7 +82,6 @@ WS_PATH = "/ws"          # the firmware's and the main UI's endpoint path
 TICK_S = 0.02            # 50 Hz telemetry
 HEARTBEAT_S = 1.0        # FD section 14.4
 SPINUP_S = 2.0           # mock shortcut: SPINUP becomes READY after this
-SLEW_S = 2.0             # mock shortcut: a slew completes after this
 RAMP_S = 5.0             # e-stop and heartbeat ramp-down (FD section 14.3)
 MANUAL_STALE_S = 0.25    # FD section 13.5
 MANUAL_MIN_SPACING_S = 0.05
@@ -83,6 +94,16 @@ BYPASS_THROTTLE_MAX = 400                 # kBypassThrottleMax in the firmware
 SPINUP_THROTTLE = 300                     # spinup_throttle default; rung 1 holds it in READY
 SPINUP_RAMP_PER_S = 200                   # open-loop ramp, DShot units per second (R3.7)
 ACTIVE_MODES = {"DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"}
+# HOLD and SLEW as the firmware (R4.3): controllers.hpp and FD section 12.
+SLEW_RATE_DPS, SLEW_ACCEL_DPS2 = 60.0, 120.0
+SLEW_SETTLE_DEG, SLEW_SETTLE_RATE_DPS, SLEW_SETTLE_S = 3.0, 5.0, 0.5
+SLEW_TIMEOUT_S = 6.0
+K_PSI, ATTITUDE_RATE_LIMIT_DPS, HOLD_DEADBAND_DEG = 3.1, 90.0, 1.0
+RATE_LAG_S = 0.1                          # the rate loop, as a shape
+BOX_INERTIA = 1.095e-3                    # I_b + I_w, kg m^2 (TD section 3.2)
+WHEEL_RPM_PER_BOX_DPS = 1.03e-3 / 6.5e-5 / 6.0   # momentum exchange, I_b / I_w in rpm per deg/s
+# A plausible T-5 table, on the mock's own throttle shape (48 + 0.17 rpm).
+DEFAULT_FF_TABLE = [{"rpm": 500 * (i + 1), "throttle": round(48 + 0.17 * 500 * (i + 1))} for i in range(8)]
 SETPOINT_KEY = {"throttle": "throttle", "wheel": "wheel_rpm", "rate": "rate_dps"}
 
 
@@ -93,6 +114,34 @@ def log(text):
 def wrap_deg(angle):
     wrapped = math.remainder(angle, 360.0)
     return 180.0 if wrapped <= -180.0 else wrapped
+
+
+def wire_angle(angle):
+    """An angle as the firmware puts it on the wire: two decimals, inside (-180, 180]."""
+    return wrap_deg(round(wrap_deg(angle), 2))
+
+
+def trapezoid(distance, t):
+    """Degrees covered t seconds into a move of `distance` (>= 0) at the slew
+    limits, and whether the move has ended: SlewProfile in the firmware core."""
+    a = SLEW_ACCEL_DPS2
+    t_a = SLEW_RATE_DPS / a
+    if distance >= a * t_a * t_a:
+        peak, t_c = SLEW_RATE_DPS, (distance - a * t_a * t_a) / SLEW_RATE_DPS
+    else:
+        t_a = math.sqrt(distance / a)
+        peak, t_c = a * t_a, 0.0
+    total = 2 * t_a + t_c
+    if t >= total:
+        return distance, True
+    if t <= 0:
+        return 0.0, False
+    if t < t_a:
+        return 0.5 * a * t * t, False
+    if t < t_a + t_c:
+        return 0.5 * a * t_a * t_a + peak * (t - t_a), False
+    left = total - t
+    return distance - 0.5 * a * left * left, False
 
 
 class Schema:
@@ -112,10 +161,12 @@ class Schema:
 class Box:
     """Mode machine and telemetry of the stub. Connection objects are opaque keys."""
 
-    def __init__(self, schema, inputs):
+    def __init__(self, schema, inputs, characterised=True, stuck=False, clock=time.monotonic):
         self.schema = schema
         self.inputs = inputs
-        self.t0 = time.monotonic()
+        self.stuck = stuck                # a box that cannot turn: every SLEW times out
+        self.clock = clock
+        self.t0 = self.clock()
         self.seq = 0
         self.mode = "SAFE"
         self.mode_since = self.t0
@@ -126,8 +177,9 @@ class Box:
         self.psi_offset = 0.0
         self.psi = 0.0
         self.rate = 0.0
-        self.psi_ref = None
-        self.slew = None                  # (start psi, target psi, start time)
+        self.psi_ref = None               # continuous, the mock's own frame; wire = wrap(psi_ref + offset)
+        self.slew = None                  # (start psi, signed move, start time)
+        self.slew_settled_since = None
         self.wheel = 0.0
         self.wheel_ref = 0.0
         self.spinup_target = OMEGA_BIAS
@@ -138,6 +190,8 @@ class Box:
         self.params = {"bench_mode": False, "hall_installed": True,
                        "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX,
                        "bench_underspeed_rpm": 0, "bench_cap_rpm": 0}
+        if characterised:
+            self.params["ff_table"] = DEFAULT_FF_TABLE
         self.wheel_hold = False           # bench wheel_step hold (R3.8)
         self.talkers = set()              # clients that have sent anything get events (R3.5)
         self.outbox = []                  # (connection or None for broadcast, message)
@@ -162,13 +216,13 @@ class Box:
         self._emit(conn, message)
 
     def _t_ms(self):
-        return int((time.monotonic() - self.t0) * 1000)
+        return int((self.clock() - self.t0) * 1000)
 
     def _set_mode(self, mode, cause):
         if mode == self.mode:
             return
         self.mode = mode
-        self.mode_since = time.monotonic()
+        self.mode_since = self.clock()
         self.wheel_hold = False
         if mode != "MANUAL":
             self.manual_input = None
@@ -176,6 +230,7 @@ class Box:
         if mode not in ("HOLD", "SLEW", "SUN_POINT"):
             self.psi_ref = None
             self.slew = None
+            self.slew_settled_since = None
         log(f"mode {mode} (cause {cause})")
         self._emit(None, {"v": 1, "type": "event", "seq": self._next_seq(), "t_ms": self._t_ms(),
                           "event": "mode", "mode": mode, "cause": cause})
@@ -184,7 +239,7 @@ class Box:
         if latch and latch not in self.latched:
             self.latched.append(latch)
         if self.mode != "SAFE":
-            self.ramp = (time.monotonic(), self.wheel)
+            self.ramp = (self.clock(), self.wheel)
         self.wheel_ref = 0.0
         self._set_mode("SAFE", cause)
 
@@ -208,7 +263,7 @@ class Box:
             return
         if message["type"] == "ping":
             if conn is self.controller:
-                self.last_heartbeat = time.monotonic()
+                self.last_heartbeat = self.clock()
             self._emit(conn, {"v": 1, "type": "pong", "seq": self._next_seq(), "ping_seq": message["seq"],
                               "t_client_ms": message["t_client_ms"], "t_ms": self._t_ms()})
             return
@@ -229,13 +284,13 @@ class Box:
             self._ack(conn, seq, False, "not controlling client")
             return
         if conn is self.controller:
-            self.last_heartbeat = time.monotonic()
+            self.last_heartbeat = self.clock()
 
         if cmd == "arm":
             if self.mode != "SAFE":
                 return self._ack(conn, seq, False, f"not allowed in {self.mode}")
             self.controller = conn
-            self.last_heartbeat = time.monotonic()
+            self.last_heartbeat = self.clock()
             self.latched.clear()
             self.ramp = None
             self.spinup_target = OMEGA_BIAS
@@ -315,6 +370,24 @@ class Box:
             else:
                 self._ack(conn, seq, False, f"not allowed in {self.mode}")
             return
+        if target in ("HOLD", "SLEW"):
+            # As the firmware supervisor (R4.3): from READY only, and only with the
+            # closed wheel loop, with the same refusal reasons.
+            if self.mode != "READY":
+                return self._ack(conn, seq, False, "not in READY")
+            if not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")
+            self._ack(conn, seq, True)
+            self._set_mode(target, "mode")
+            self.psi_ref = self.psi
+            if target == "SLEW":
+                # The target is relative to the last zero_heading. Shortest wrapped
+                # path; a half-turn goes counter-clockwise, as the firmware's does,
+                # which is negative on the wire.
+                goal = message["psi_ref_deg"] - self.psi_offset
+                self.slew = (self.psi, -wrap_deg(self.psi - goal), self.clock())
+                self.slew_settled_since = None
+            return
         if self.mode != "READY":
             return self._ack(conn, seq, False, f"not allowed in {self.mode}")
         if target == "SUN_POINT":
@@ -330,15 +403,10 @@ class Box:
                 # Start from the throttle being sent now, so entry is not a step (FD 13.5).
                 lo, hi = self._throttle_band()
                 self.manual_value = float(min(hi, max(lo, self.last_throttle)))
-            self.manual_last = time.monotonic()
+            self.manual_last = self.clock()
             return
         self._ack(conn, seq, True)
         self._set_mode(target, "mode")
-        if target == "HOLD":
-            self.psi_ref = wrap_deg(self.psi)
-        elif target == "SLEW":
-            self.psi_ref = wrap_deg(self.psi)
-            self.slew = (self.psi, message["psi_ref_deg"], time.monotonic())
 
     def _wheel_loop_available(self):
         # The firmware's wheel_loop_available(): Hall fitted and the T-5 table set.
@@ -373,7 +441,7 @@ class Box:
         key = SETPOINT_KEY[self.manual_input]
         if key not in message:
             return self._ack(conn, seq, False, "input mismatch")
-        now = time.monotonic()
+        now = self.clock()
         if now - self.manual_last < MANUAL_MIN_SPACING_S and self.manual_value is not None:
             return self._ack(conn, seq, False, "too fast")
         value = float(message[key])
@@ -396,14 +464,30 @@ class Box:
     # ---- time ----
 
     def tick(self):
-        now = time.monotonic()
+        now = self.clock()
         dt = TICK_S
         if self.mode != "SAFE" and now - self.last_heartbeat > HEARTBEAT_S:
             self._to_safe("HEARTBEAT_LOST", latch="HEARTBEAT_LOST")
         if self.mode == "SPINUP" and now - self.mode_since >= SPINUP_S:
             self._set_mode("READY", "spinup_complete")
-        if self.mode == "SLEW" and self.slew and now - self.slew[2] >= SLEW_S:
-            self._set_mode("READY", "slew_complete")
+        slew_ended = False
+        if self.mode == "SLEW" and self.slew:
+            # The firmware's rules (FD section 12.4): complete once the profile has
+            # ended and the box has sat within 3 deg and 5 deg/s for 0.5 s; time
+            # out after 6 s.
+            start, move, t_start = self.slew
+            covered, slew_ended = trapezoid(abs(move), now - t_start)
+            self.psi_ref = start + math.copysign(covered, move)
+            settled = slew_ended and abs(start + move - self.psi) < SLEW_SETTLE_DEG \
+                and abs(self.rate) < SLEW_SETTLE_RATE_DPS
+            if not settled:
+                self.slew_settled_since = None
+            elif self.slew_settled_since is None:
+                self.slew_settled_since = now
+            if settled and now - self.slew_settled_since >= SLEW_SETTLE_S - 1e-9:
+                self._set_mode("READY", "slew_complete")
+            elif now - t_start >= SLEW_TIMEOUT_S - 1e-9:
+                self._set_mode("READY", "SLEW_TIMEOUT")
 
         stale = self.mode == "MANUAL" and now - self.manual_last > MANUAL_STALE_S
         # Wheel reference.
@@ -431,21 +515,34 @@ class Box:
         # Box heading: a slow sine, the commanded rate in MANUAL rate, the slew profile,
         # plus the reaction to any wheel speed change. Shapes, not physics.
         reaction = -(self.wheel - previous_wheel) / dt * 0.357 / 1000.0 * 0.2
+        previous_rate = self.rate
+        attitude = self.mode in ("HOLD", "SLEW") and self.psi_ref is not None
         if self.mode == "MANUAL" and self.manual_input == "rate":
             target = 0.0 if stale or self.manual_value is None else self.manual_value
             self.rate += (target - self.rate) * min(1.0, dt / 0.3)
-        elif self.mode == "SLEW" and self.slew:
-            start, goal, t_start = self.slew
-            delta = wrap_deg(goal - start)
-            fraction = min(1.0, (now - t_start) / SLEW_S)
-            target_psi = start + delta * (0.5 - 0.5 * math.cos(math.pi * fraction))
-            self.rate = (target_psi - self.psi) / dt
-            self.psi_ref = wrap_deg(target_psi)
-        elif self.mode == "HOLD":
-            self.rate = (self.psi_ref - self.psi) * 0.5
+        elif attitude:
+            # The firmware's attitude law on the wrapped error, with the hold
+            # deadband once the reference stands still (HOLD, or a SLEW whose
+            # profile has ended); the rate loop as a lag.
+            error = wrap_deg(self.psi_ref - self.psi)
+            still = self.mode == "HOLD" or slew_ended
+            command = 0.0 if still and abs(error) < HOLD_DEADBAND_DEG \
+                else max(-ATTITUDE_RATE_LIMIT_DPS, min(ATTITUDE_RATE_LIMIT_DPS, K_PSI * error))
+            self.rate += ((0.0 if self.stuck else command) - self.rate) * min(1.0, dt / RATE_LAG_S)
+        elif self.mode == "READY" and self._wheel_loop_available():
+            self.rate += (0.0 - self.rate) * min(1.0, dt / RATE_LAG_S)   # the rate loop holds 0 (R3.9)
         else:
             self.rate = 4.0 * math.cos(2 * math.pi * (now - self.t0) / 30.0) + reaction
+        if self.stuck and self.mode != "SAFE":
+            self.rate = 0.0
         self.psi += self.rate * dt
+        tau_mnm = -reaction * 2.0
+        if attitude:
+            # The wheel takes up the box's change of momentum, and the torque is
+            # what that change needed. Signs are wire-frame shapes.
+            tau_mnm = BOX_INERTIA * math.radians(self.rate - previous_rate) / dt * 1000.0
+            self.wheel_ref = min(self._cap(), max(OMEGA_LOW, self.wheel_ref
+                                                  - WHEEL_RPM_PER_BOX_DPS * (self.rate - previous_rate)))
 
         flags = []
         if self.mode == "SAFE" or OMEGA_LOW + 300 < self.wheel < OMEGA_CAP - 300:
@@ -466,7 +563,7 @@ class Box:
         throttle = 0
         if self.mode == "SPINUP":
             throttle = int(min(SPINUP_THROTTLE, (now - self.mode_since) * SPINUP_RAMP_PER_S))
-        elif self.mode == "READY" and self._wheel_loop_available():
+        elif self.mode in ("READY", "HOLD", "SLEW") and self._wheel_loop_available():
             throttle = int(round(self._ff(self.wheel_ref)))   # closed wheel loop at steady state (R3.8)
         elif self.mode != "SAFE":
             throttle = SPINUP_THROTTLE
@@ -478,22 +575,21 @@ class Box:
             throttle = int(self.manual_value)
         self.last_throttle = throttle
         band_lo, band_hi = self._throttle_band()
-        psi_wire = wrap_deg(self.psi + self.psi_offset)
         self._emit(None, {
             "v": 1, "type": "tlm", "seq": self._next_seq(), "t_ms": self._t_ms(), "mode": self.mode,
             "manual_input": self.manual_input if self.mode == "MANUAL" else None,
-            "psi_deg": round(psi_wire, 2),
+            "psi_deg": wire_angle(self.psi + self.psi_offset),
             "psi_ref_deg": None if self.psi_ref is None or self.mode in ("SAFE", "SPINUP", "READY", "DETUMBLE")
-            else round(wrap_deg(self.psi_ref + self.psi_offset), 2),
+            else wire_angle(self.psi_ref + self.psi_offset),
             "rate_dps": round(self.rate, 2),
             "mag_deg": None,   # as the firmware: no magnetometer heading until Set 5
             "sun_deg": None, "sun_valid": False,
             "wheel_rpm": round(max(0.0, self.wheel), 1),
             # As the firmware: the wheel reference is reported only while the closed
-            # wheel loop runs (SPINUP and READY with the T-5 table), else 0 (R3.8).
+            # wheel loop runs (SPINUP, READY, HOLD, and SLEW with the T-5 table), else 0.
             "wheel_ref_rpm": round(max(0.0, self.wheel_ref), 1)
-            if self.mode in ("SPINUP", "READY") and self._wheel_loop_available() else 0,
-            "throttle": throttle, "throttle_band": [band_lo, band_hi], "tau_cmd_mNm": round(-reaction * 2.0, 2),
+            if self.mode in ("SPINUP", "READY", "HOLD", "SLEW") and self._wheel_loop_available() else 0,
+            "throttle": throttle, "throttle_band": [band_lo, band_hi], "tau_cmd_mNm": round(tau_mnm, 2),
             "vbat": round(10.1 + random.uniform(-0.03, 0.03), 2),
             "loop_us": random.randint(690, 790), "flags": flags,
             "t_c": 23.5, "p_pa": 101300.0, "tlm_dropped": 0, "dropped_events": 0,
@@ -511,9 +607,9 @@ def only_ws_path(connection, request):
     return None
 
 
-async def start_box(host, port, inputs):
+async def start_box(host, port, inputs, characterised=True, stuck=False):
     """Start the mock box. Returns (server, ticker task); the server's port is in server.sockets."""
-    box = Box(Schema(), set(inputs.split(",")))
+    box = Box(Schema(), set(inputs.split(",")), characterised=characterised, stuck=stuck)
     clients = set()
 
     def flush():
@@ -554,12 +650,13 @@ async def start_box(host, port, inputs):
 
     server = await serve(handler, host, port, max_size=4096, process_request=only_ws_path)
     bound = server.sockets[0].getsockname()[1]
-    log(f"listening on ws://{host}:{bound}{WS_PATH} (inputs: {inputs})")
+    log(f"listening on ws://{host}:{bound}{WS_PATH} (inputs: {inputs}; "
+        f"{'characterised' if characterised else 'uncharacterised: no ff_table'}{'; stuck' if stuck else ''})")
     return server, asyncio.ensure_future(ticker())
 
 
 async def run(args):
-    server, ticker = await start_box(args.host, args.port, args.inputs)
+    server, ticker = await start_box(args.host, args.port, args.inputs, not args.uncharacterised, args.stuck)
     async with server:
         await ticker
 
@@ -607,6 +704,119 @@ async def selftest_endpoint():
     if not problems:
         print(f"mock-box selftest: endpoint ok, tlm on {WS_PATH}, HTTP 404 on / and /ws/extra; "
               "a read-only client gets only tlm, a client that spoke gets events")
+    return problems
+
+
+def selftest_attitude(schema):
+    """HOLD and SLEW on a simulated clock, against the firmware's numbers (R4.3)."""
+
+    class Clock:
+        def __init__(self):
+            self.t = 1000.0
+
+        def __call__(self):
+            return self.t
+
+    class Conn:
+        pass
+
+    problems = []
+
+    def send(box, conn, seq, **cmd):
+        box.receive(conn, json.dumps({"v": 1, "type": "cmd", "seq": seq, **cmd}))
+        return next(m for _t, m in reversed(box.outbox) if m["type"] == "ack" and m["seq"] == seq)
+
+    def run(box, clock, seconds):
+        """Ticks with the operator's heartbeat; returns the tlm frames and mode events."""
+        start = len(box.outbox)
+        for _ in range(int(round(seconds / TICK_S))):
+            clock.t += TICK_S
+            box.last_heartbeat = clock.t
+            box.tick()
+        new = [m for _t, m in box.outbox[start:]]
+        return [m for m in new if m["type"] == "tlm"], [m for m in new if m["type"] == "event"]
+
+    def armed(**kwargs):
+        clock = Clock()
+        box = Box(schema, {"throttle"}, clock=clock, **kwargs)
+        conn = Conn()
+        send(box, conn, 1, cmd="arm")
+        run(box, clock, SPINUP_S + 2 * TICK_S)
+        if box.mode != "READY":
+            problems.append(f"the attitude selftest box is in {box.mode}, not READY, after arming")
+        return box, conn, clock
+
+    # Refusals with the firmware's reasons.
+    box, conn, clock = armed(characterised=False)
+    for seq, cmd in ((2, {"mode": "HOLD"}), (3, {"mode": "SLEW", "psi_ref_deg": 90})):
+        reason = send(box, conn, seq, cmd="mode", **cmd).get("reason")
+        if reason != "wheel loop not available":
+            problems.append(f"uncharacterised {cmd['mode']} refused with {reason!r}")
+    box, conn, clock = armed()
+    send(box, conn, 2, cmd="mode", mode="MANUAL", input="throttle")
+    reason = send(box, conn, 3, cmd="mode", mode="HOLD").get("reason")
+    if reason != "not in READY":
+        problems.append(f"HOLD from MANUAL refused with {reason!r}, expected 'not in READY'")
+
+    # The judge's turn: zero, SLEW to 90 (clockwise on the wire), then back to 0.
+    box, conn, clock = armed()
+    box.psi = 40.0
+    send(box, conn, 2, cmd="zero_heading")
+    t_start = clock.t
+    send(box, conn, 3, cmd="mode", mode="SLEW", psi_ref_deg=90)
+    tlm, events = run(box, clock, 4.0)
+    refs = [(m["t_ms"], m["psi_ref_deg"]) for m in tlm if m["mode"] == "SLEW"]
+    peak = max(abs(b[1] - a[1]) / ((b[0] - a[0]) / 1000.0) for a, b in zip(refs, refs[1:]) if b[0] > a[0])
+    at_target = next((t for t, ref in refs if ref >= 90.0), None)
+    done = [e for e in events if e["event"] == "mode"]
+    done_s = (done[0]["t_ms"] - int((t_start - box.t0) * 1000)) / 1000.0 if done else None
+    end_psi = tlm[-1]["psi_deg"]
+    print(f"mock-box selftest: SLEW 90: psi_ref peak {peak:.1f} deg/s, at 90 after "
+          f"{(at_target - int((t_start - box.t0) * 1000)) / 1000.0 if at_target else None} s, "
+          f"{done[0]['cause'] if done else 'no event'} at {done_s} s, psi {end_psi}")
+    if peak > SLEW_RATE_DPS + 0.5:
+        problems.append(f"SLEW psi_ref moved at {peak:.1f} deg/s, over the 60 deg/s limit")
+    if at_target is None or abs((at_target - int((t_start - box.t0) * 1000)) / 1000.0 - 2.0) > TICK_S + 1e-6:
+        problems.append("SLEW 90 psi_ref did not reach 90 at 2.0 s")
+    if not done or done[0]["cause"] != "slew_complete" or not 2.5 <= done_s <= 3.5:
+        problems.append(f"SLEW 90 did not end with slew_complete between 2.5 and 3.5 s ({done})")
+    if abs(end_psi - 90.0) > SLEW_SETTLE_DEG or tlm[-1]["psi_ref_deg"] is not None:
+        problems.append(f"after SLEW 90: psi {end_psi}, psi_ref {tlm[-1]['psi_ref_deg']}")
+    send(box, conn, 4, cmd="mode", mode="SLEW", psi_ref_deg=0)
+    tlm, events = run(box, clock, 4.0)
+    if not any(e.get("cause") == "slew_complete" for e in events) or abs(tlm[-1]["psi_deg"]) > SLEW_SETTLE_DEG:
+        problems.append(f"the return SLEW to 0 ended at psi {tlm[-1]['psi_deg']} with {events}")
+
+    # A half-turn always goes the same way: counter-clockwise, negative on the wire.
+    box.psi = -box.psi_offset   # exactly 0 on the wire, so 180 is exactly a half-turn
+    send(box, conn, 5, cmd="mode", mode="SLEW", psi_ref_deg=180)
+    tlm, _events = run(box, clock, 0.5)
+    if not tlm[-1]["psi_ref_deg"] < -1.0:
+        problems.append(f"a half-turn SLEW moved psi_ref to {tlm[-1]['psi_ref_deg']}, not counter-clockwise")
+    send(box, conn, 6, cmd="mode", mode="READY")
+
+    # HOLD: poked 10 deg off, back within 2 deg in under 2 s; the reference stays.
+    run(box, clock, 1.0)
+    send(box, conn, 7, cmd="mode", mode="HOLD")
+    tlm, _events = run(box, clock, 0.1)
+    held = tlm[-1]["psi_ref_deg"]
+    box.psi += 10.0
+    tlm, _events = run(box, clock, 2.0)
+    if abs(wrap_deg(tlm[-1]["psi_deg"] - held)) > 2.0 or tlm[-1]["psi_ref_deg"] != held or tlm[-1]["mode"] != "HOLD":
+        problems.append(f"HOLD at {held} poked 10 deg: psi {tlm[-1]['psi_deg']} after 2 s, mode {tlm[-1]['mode']}")
+
+    # A box that cannot turn: SLEW_TIMEOUT at 6.0 s, then READY.
+    box, conn, clock = armed(stuck=True)
+    t_start = clock.t
+    send(box, conn, 2, cmd="mode", mode="SLEW", psi_ref_deg=-90)
+    tlm, events = run(box, clock, 6.5)
+    ends = [e for e in events if e["event"] == "mode"]
+    end_s = (ends[0]["t_ms"] - int((t_start - box.t0) * 1000)) / 1000.0 if ends else None
+    print(f"mock-box selftest: stuck SLEW: {ends[0]['cause'] if ends else 'no event'} at {end_s} s, "
+          f"then {tlm[-1]['mode']}")
+    if not ends or ends[0]["cause"] != "SLEW_TIMEOUT" or abs(end_s - SLEW_TIMEOUT_S) > TICK_S + 1e-6 \
+            or tlm[-1]["mode"] != "READY":
+        problems.append(f"stuck SLEW did not time out at 6.0 s into READY ({ends})")
     return problems
 
 
@@ -713,6 +923,7 @@ def selftest():
         problems.append("HEADING_GYRO missing from a tlm frame")
     if abs(zeroed_psi) > 1.0:
         problems.append(f"zero_heading in READY left psi_deg at {zeroed_psi}")
+    problems.extend(selftest_attitude(schema))
     problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:
         print(f"mock-box selftest: FAILED, {problem}", file=sys.stderr)
@@ -725,6 +936,11 @@ def main():
     parser.add_argument("--port", type=int, default=8081)
     parser.add_argument("--inputs", default="throttle,wheel,rate",
                         help="MANUAL inputs the stub accepts, comma-separated (others get 'input not available')")
+    parser.add_argument("--uncharacterised", action="store_true",
+                        help="start without the T-5 ff_table, as a fresh box: HOLD, SLEW, and wheel_step are "
+                             "refused with 'wheel loop not available' until set_params sends one")
+    parser.add_argument("--stuck", action="store_true",
+                        help="a box that cannot turn, so every SLEW ends in SLEW_TIMEOUT")
     parser.add_argument("--selftest", action="store_true", help="validate one of each outbound kind and exit")
     args = parser.parse_args()
     if args.selftest:

@@ -314,6 +314,22 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     saturated.flags = kFlagMomentumNearLimit | kFlagMomentumSaturated;
     emit(encode_tlm(saturated, 5, 0, buf, sizeof buf));
 
+    // tlm: SLEW and HOLD with their heading reference (R4.3).
+    TelemetrySnapshot slewing = ready_snapshot();
+    slewing.mode = Mode::Slew;
+    slewing.psi_ref_valid = true;
+    slewing.psi_ref_deg = -63.5f;
+    slewing.psi_deg = -48.25f;
+    slewing.rate_dps = -55.0f;
+    slewing.flags = kFlagMomentumOk | kFlagHeadingGyro;
+    emit(encode_tlm(slewing, 6, 0, buf, sizeof buf));
+    TelemetrySnapshot holding = slewing;
+    holding.mode = Mode::Hold;
+    holding.psi_ref_deg = 180.0f;
+    holding.psi_deg = 179.5f;
+    holding.rate_dps = 0.2f;
+    emit(encode_tlm(holding, 7, 0, buf, sizeof buf));
+
     // ack: ok, refused, and set_params with the applied set.
     Ack ack;
     ack.seq = 77;
@@ -341,6 +357,10 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     ev.mode = Mode::Ready;
     ev.cause = "spinup_complete";
     emit(encode_event(ev, 12, 85600, buf, sizeof buf));
+    ev.cause = "slew_complete";  // R4.3
+    emit(encode_event(ev, 12, 88600, buf, sizeof buf));
+    ev.cause = "SLEW_TIMEOUT";
+    emit(encode_event(ev, 12, 91600, buf, sizeof buf));
 
     // event: notices, PARAMS_RESET and the Hall bypass switching on and off.
     Event notice;
@@ -357,7 +377,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     // pong
     emit(encode_pong(16, 79, 512330.25, 83120, buf, sizeof buf));
 
-    CHECK(written == 15);
+    CHECK(written == 19);
 
     // Positive control for the schema check: the MANUAL tlm with psi_deg turned
     // into a string must be rejected by tools/check-protocol.sh.
@@ -401,4 +421,28 @@ TEST_CASE("R3.9 tlm carries the rate loop torque clockwise positive and MOMENTUM
     parse(R"({"v":1,"type":"cmd","seq":9,"cmd":"set_params","params":{"rate_gain_scale":0.2}})");
     REQUIRE(scratch().kind == InboundKind::Command);
     CHECK(scratch().params.count == 1);
+}
+
+TEST_CASE("R4.3 tlm carries psi_ref clockwise positive in HOLD and SLEW, null otherwise")
+{
+    TelemetrySnapshot s = ready_snapshot();
+    s.psi_ref_valid = false;
+    s.psi_ref_deg = 12.0f;  // never sent while not valid
+    char buf[kMaxTlmBytes];
+    REQUIRE(encode_tlm(s, 1, 0, buf, sizeof buf) > 0);
+    CHECK(std::strstr(buf, "\"psi_ref_deg\":null") != nullptr);
+
+    s.mode = Mode::Slew;
+    s.psi_ref_valid = true;
+    s.psi_ref_deg = 30.0f;  // internal frame: counter-clockwise
+    REQUIRE(encode_tlm(s, 2, 0, buf, sizeof buf) > 0);
+    {
+        Json doc(buf);
+        CHECK(doc.number("psi_ref_deg") == doctest::Approx(-30.0));
+    }
+    s.mode = Mode::Hold;
+    s.psi_ref_deg = -180.0f;  // a half-turn: on the wire it is +180, never -180
+    REQUIRE(encode_tlm(s, 3, 0, buf, sizeof buf) > 0);
+    Json doc(buf);
+    CHECK(doc.number("psi_ref_deg") == doctest::Approx(180.0));
 }
