@@ -34,3 +34,4 @@ None.
 
 ## Log
 - 2026-10-10: Outline created during Set 3 planning (as "Detumble"), then replanned the same day around the main UI's judge sequence.
+- 2026-10-10: R4.2 and R4.3 specs approved, including the guard amendment (HOLD and SLEW on gyro heading for relative use). They are built ahead, stacked on R3.9.
