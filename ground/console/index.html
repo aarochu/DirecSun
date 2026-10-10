@@ -93,7 +93,7 @@ input:focus{border-color:#709bb7}
 <div class="shell">
 <header class="topbar">
   <div class="brand"><div class="mark">D/</div><div>DIRECSUN<small>BENCH CONSOLE</small></div></div>
-  <div class="topmeta">SCHEMA V1 &nbsp;/&nbsp; WEBSOCKET &nbsp;/&nbsp; PORT 81</div>
+  <div class="topmeta">SCHEMA V1 &nbsp;/&nbsp; WEBSOCKET &nbsp;/&nbsp; PORT 80 /WS</div>
 </header>
 <main>
   <section class="pagehead">
@@ -261,7 +261,12 @@ function plot(key, value, id) {
   $(id).setAttribute("points", pts);
 }
 
-const fmt = (n, digits = 1) => (n === null || n === undefined ? "-" : Number(n).toFixed(digits));
+// Rounds first, so a small negative value prints "0.0" rather than "-0.0".
+const fmt = (n, digits = 1) => {
+  if (n === null || n === undefined) return "-";
+  const text = Number(n).toFixed(digits);
+  return Number(text) === 0 ? (0).toFixed(digits) : text;
+};
 
 function showMode(mode) {
   $("badge-mode").textContent = mode;
