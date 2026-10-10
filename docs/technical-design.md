@@ -27,9 +27,30 @@ This document specifies DirecSun, a single-axis reaction wheel attitude trainer 
 
 DirecSun is an 0.84 kg box that turns about one vertical axis on two 608 bearings, pointed by a reaction wheel inside it. A brushless motor spins a steel washer flywheel; changing the wheel's speed turns the box the opposite way, as a satellite's reaction wheel does. An ESP32-S3 on the box closes the loop from a gyro, a magnetometer, and a two-element sun sensor. A browser ground station on a private Wi-Fi network commands it and plots telemetry.
 
-&#91;embedded content: system architecture · power, sensing, control, and the radio link\]
+```mermaid
+flowchart TB
+    subgraph BOX["DirecSun box, turning on two 608 bearings"]
+        PACK["8 x AA NiMH pack<br/>8.8 to 11.2 V"] --> FUSE["10 A fuse"]
+        FUSE --> ESC["BLHeli_S ESC"]
+        ESC -- "3 phases" --> MOTOR["2212 motor<br/>+ flywheel"]
+        FUSE --> BUCK["5 V buck"]
+        FUSE --> DIV["100k / 22k divider"]
+        BUCK --> XIAO["XIAO ESP32-S3<br/>estimation, control, modes"]
+        BUCK --> HALL["A1104 Hall switch"]
+        XIAO -- "3V3 + I2C 400 kHz" --> IMU["MPU-6050<br/>gyro + accel"]
+        IMU -- "STEMMA QT" --> MAG["QMC5883P<br/>magnetometer"]
+        MAG -- "STEMMA QT" --> BMP["BMP280"]
+        SUN["OP550 x 2<br/>sun sensor"] -- "ADC1 D0, D1" --> XIAO
+        DIV -- "ADC1 D9" --> XIAO
+        HALL -- "D10 falling edge" --> XIAO
+        XIAO -- "DShot on D8, RMT" --> ESC
+        MOTOR -. "magnets pass the sensor" .-> HALL
+    end
+    XIAO <-- "Wi-Fi, WebSocket JSON v1" --> AP["2.4 GHz access point"]
+    AP <--> LAPTOP["Laptop browser<br/>ground station"]
+```
 
-Power flows left to right along the top row; sensing flows up into the XIAO; the Wi-Fi link to the bench is the only connection that leaves the box, so nothing tethers it.
+Power flows from the pack through the fuse to the ESC and the 5 V buck; sensing flows into the XIAO over I2C, the ADC, and the Hall input; the Wi-Fi link to the bench is the only connection that leaves the box, so nothing tethers it.
 
 **Demonstration modes.** Each mode exercises a different part of the loop.
 
@@ -188,9 +209,9 @@ I\_b depends on the 0.55 fill factor and on hardware masses that were not weighe
 
 The box is a stack of six printed decks clamped by four #8-32 threaded rods and nylon-insert lock nuts through 8.5 mm corner columns, matching the CubeSat 2U envelope of 100 × 100 × 227 mm. It turns on two 608 bearings riding on a fixed M8 bolt held by a printed base hub. Thirteen printed parts and two test prints exist as parametric CadQuery scripts; all are watertight \[V: skill runner, `--strict`\], and review of each six-view preview found none that needs supports. The assembly check finds no overlaps among 47 solids, including the lock pin inserted, the three Adafruit boards with a screw through every hole, and the battery holder with all eight cells and every contact screw, and the six deliberate collisions built into the script as positive controls are all detected \[V: `cad/assembly.py`\].
 
-&#91;image: DirecSun stack rendered from the CAD with the Adafruit boards, the printed battery holder, and stand-in hardware\]
+The rendered stack is the viewing model `cad/out/assembly_view.stl`; GitHub and most CAD viewers display it directly. The earlier embedded image did not survive the import into the repository.
 
-Render of `cad/assembly_view.stl`: printed parts, the inserted lock pin, the three Adafruit boards on their standoffs, and the printed battery holder with its cells and contact hardware, and stand-ins for the motor, 63.5 mm washer wheel, bearings, bolt, ESC, and perfboards. The 258 mm bounding box runs from the base hub's underside to the top deck; the QMC5883P and BMP280 hang inside the 227 mm box. The "not watertight" note applies only to this multi-body viewing model, not to the printable parts.
+The viewing model contains printed parts, the inserted lock pin, the three Adafruit boards on their standoffs, and the printed battery holder with its cells and contact hardware, and stand-ins for the motor, 63.5 mm washer wheel, bearings, bolt, ESC, and perfboards. The 258 mm bounding box runs from the base hub's underside to the top deck; the QMC5883P and BMP280 hang inside the 227 mm box. The "not watertight" note applies only to this multi-body viewing model, not to the printable parts.
 
 ### 4.1 Stack layout
 
@@ -449,7 +470,30 @@ Mode setpoints: Detumble sets ω\_cmd = 0 and bypasses step 1. Hold captures ψ\
 
 ### 6.6 Modes and transitions
 
-&#91;embedded content: mode state machine · 8 states, one fault path\]
+```mermaid
+stateDiagram-v2
+    [*] --> BOOT
+    BOOT --> SAFE: IMU found and 1 s of DShot 0
+    SAFE --> ARMED: arm, box still, battery above 9.6 V, no latched fault
+    ARMED --> SAFE: estop, disarm, heartbeat lost, or any interlock
+    state ARMED {
+        [*] --> SPINUP
+        SPINUP --> READY: wheel within 5 percent of bias for 0.5 s
+        READY --> SPINUP: respin with the box pinned and still
+        READY --> DETUMBLE: mode DETUMBLE
+        READY --> HOLD: mode HOLD, magnetometer present
+        READY --> SLEW: mode SLEW, magnetometer present
+        READY --> SUN_POINT: mode SUN_POINT, valid sun angle
+        READY --> MANUAL: mode MANUAL with an input whose loop is built
+        DETUMBLE --> READY: mode READY
+        HOLD --> READY: mode READY
+        SLEW --> READY: slew complete or mode READY
+        SUN_POINT --> READY: mode READY or sun invalid for 0.5 s
+        MANUAL --> READY: mode READY
+    }
+```
+
+Nine states and one fault path: every state inside ARMED drops to Safe the same way. E-stop, `disarm`, and heartbeat loss go through the 5 s ramp-down; every other interlock cuts the throttle at once (Section 6.7).
 
 The box only reaches the five demonstration modes through Ready, after the wheel is at bias speed; any interlock or e-stop, from any state, drops it to Safe.
 
@@ -723,7 +767,20 @@ The critical path is print → assemble → characterise → close the loop, so 
 
 In the repository, firmware and tooling work is planned as spec-driven sets in `changes/`: Set 1 foundation, Set 2 mechanical, Set 3 teleop (manual mode), Set 4 detumble, Set 5 pointing. Each set ends in something that can be demonstrated, building up the fallback order of Section 11.4 from the bottom. The work items and gates below remain the plan for the hardware.
 
-&#91;embedded content: build roadmap · 5 phases, 4 gates\]
+```mermaid
+flowchart LR
+    P1["1. Build<br/>W-1 buy, W-2 print,<br/>W-3 solder, W-4 assemble"] --> G1{"G1 Hardware ready<br/>T-5, T-7"}
+    SW["In parallel: software<br/>W-5 firmware drivers<br/>W-6 ground station"] --> G1
+    G1 --> P2["2. Characterise<br/>W-7: T-3 to T-10, T-18"]
+    P2 --> G2{"G2 Plant known<br/>T-3, T-4, T-18,<br/>sizing re-run"}
+    G2 --> P3["3. Close the loop<br/>W-8 wheel and rate loops,<br/>detumble"]
+    P3 --> G3{"G3 Loop closed<br/>T-15"}
+    G3 --> P4["4. Modes and safety<br/>W-8 hold, slew, sun point<br/>W-9 T-11 to T-14"]
+    P4 --> G4{"G4 Demo ready<br/>T-11 to T-17"}
+    G4 --> P5["5. Demo<br/>W-10 script and rehearsal"]
+    classDef critical fill:#fde68a,stroke:#b45309,stroke-width:2px,color:#1f2937
+    class G2 critical
+```
 
 Phases are ordered, not timed. G2 is marked because tuning gains against the calculated plant instead of the measured one is the most likely way to lose an afternoon.
 
