@@ -59,6 +59,8 @@ test.describe('ground station judge flow', () => {
   test('MOCK_ONLY: clicking every control makes no network request', async ({ page }) => {
     await page.goto('/ground-station');
     await page.waitForLoadState('networkidle');
+    await page.evaluate(() => Promise.all([...document.fonts].map((face) => face.load())));
+    await page.waitForLoadState('networkidle');
     const requests: string[] = [];
     page.on('request', (request) => requests.push(request.url()));
     page.on('websocket', (socket) => requests.push(socket.url()));
@@ -72,6 +74,25 @@ test.describe('ground station judge flow', () => {
     await page.getByRole('button', { name: 'Reset the simulation' }).click();
 
     expect(requests).toEqual([]);
+  });
+
+  test('OFFLINE: both pages load only same-origin resources, fonts included', async ({ page, baseURL }) => {
+    const origin = new URL(baseURL!).origin;
+    const external: string[] = [];
+    page.on('request', (request) => {
+      if (new URL(request.url()).origin !== origin) external.push(request.url());
+    });
+    for (const path of ['/', '/ground-station']) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+      await page.evaluate(() => Promise.all([...document.fonts].map((face) => face.load())));
+      const families = await page.evaluate(() =>
+        [...document.fonts].filter((face) => face.status === 'loaded').map((face) => face.family.replace(/"/g, '')),
+      );
+      expect(families).toContain('Inter Variable');
+      expect(families).toContain('IBM Plex Mono');
+    }
+    expect(external).toEqual([]);
   });
 });
 
