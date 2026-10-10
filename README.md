@@ -1,5 +1,7 @@
 # DirecSun
 
+[![ci](https://github.com/aarochu/DirecSun/actions/workflows/ci.yml/badge.svg)](https://github.com/aarochu/DirecSun/actions/workflows/ci.yml)
+
 DirecSun (formerly PocketADCS) is a single-axis reaction-wheel attitude trainer in a 3D-printed 2U CubeSat frame. The box turns on two 608 bearings around a fixed bolt. Inside it, a 2212 brushless motor spins a flywheel; speeding the wheel up or slowing it down turns the box the other way, the way a satellite's reaction wheel does. A Seeed XIAO ESP32-S3 closes the loop from a gyro, a magnetometer, and a two-element sun sensor, and a browser ground station on Wi-Fi commands it and plots telemetry.
 
 The demonstration modes are detumble (stop a hand spin), hold (keep a heading against pokes), slew (turn to a commanded heading), sun point (track a lamp), and manual teleoperation. The full system design is in [docs/technical-design.md](docs/technical-design.md) and the firmware design in [docs/firmware-design.md](docs/firmware-design.md).
@@ -8,10 +10,11 @@ The demonstration modes are detumble (stop a hand spin), hold (keep a heading ag
 
 | Path | What |
 | --- | --- |
+| `frontend/` | The main UI: landing page and ground station (React, Vite, TypeScript) |
 | `firmware/` | ESP-IDF v6.0 project for the XIAO ESP32-S3, in C++17 |
 | `protocol/` | Wire schema v1: the contract between the box and any ground station |
 | `ground/link/` | Engineering bench client: dependency-free JavaScript module for the protocol |
-| `ground/console/` | Engineering bench console for firmware bring-up (the main UI is `frontend/`) |
+| `ground/console/` | Engineering bench console for firmware bring-up and characterisation, never shown to judges |
 | `cad/` | Parametric CadQuery sources; printable STLs and previews in `cad/out/` |
 | `docs/` | Technical design, firmware design, sizing calculations |
 | `tools/` | Bootstrap, build, and check scripts |
@@ -27,6 +30,14 @@ git clone --recurse-submodules git@github.com:aarochu/DirecSun.git
 
 Each area adds its commands here as it lands.
 
+### Frontend (main UI)
+
+The landing page and ground station live in `frontend/`. The backend matches what this UI expects. Setup and commands are in [frontend/README.md](frontend/README.md); in short:
+
+```bash
+cd frontend && npm ci && npm run dev     # http://localhost:5173
+```
+
 ### CAD
 
 Printable STLs and six-view previews are committed in `cad/out/`, so printing needs no setup. To change a part, edit its script in `cad/` (shared dimensions live in `cad/stack.py`) and rebuild:
@@ -38,18 +49,6 @@ tools/check-cad-stale.py       # fails if any script changed since cad/out was b
 ```
 
 See [cad/README.md](cad/README.md) for the print list, hardware, and assembly order.
-
-### Firmware
-
-Needs ESP-IDF v6.0 installed with EIM (`eim install -i v6.0`). `tools/idf.sh` loads that environment and runs `idf.py` in `firmware/`, from any directory:
-
-```bash
-tools/idf.sh set-target esp32s3                  # once per clone (creates firmware/sdkconfig)
-tools/idf.sh build
-tools/idf.sh -p /dev/ttyACM0 flash monitor       # XIAO ESP32-S3 over USB-C; Ctrl+] exits
-```
-
-Build defaults live in `firmware/sdkconfig.defaults`. Wi-Fi credentials go in `firmware/sdkconfig.defaults.local` (copy the `.example`; it is gitignored). After editing either file, delete `firmware/sdkconfig` and rebuild.
 
 ### Ground link and console
 
@@ -64,6 +63,29 @@ tools/check-link.sh                # link module tests, with every sent message 
 ```
 
 The main UI's Device link panel connects to the same stub at `ws://127.0.0.1:8081/ws`. On the wire, every quantity about the spin axis is clockwise positive, as the UI expects (`protocol/README.md`).
+
+### Firmware
+
+Needs ESP-IDF v6.0 installed with EIM (`eim install -i v6.0`). `tools/idf.sh` loads that environment and runs `idf.py` in `firmware/`, from any directory:
+
+```bash
+tools/idf.sh set-target esp32s3                  # once per clone (creates firmware/sdkconfig)
+tools/idf.sh build
+tools/idf.sh -p /dev/ttyACM0 flash monitor       # XIAO ESP32-S3 over USB-C; Ctrl+] exits
+```
+
+Build defaults live in `firmware/sdkconfig.defaults`. Wi-Fi credentials go in `firmware/sdkconfig.defaults.local` (copy the `.example`; it is gitignored). After editing either file, delete `firmware/sdkconfig` and rebuild.
+
+## Checks
+
+`tools/check-all.sh` runs every repository check in a fixed order, the same way locally and in CI (`.github/workflows/ci.yml`). Each check that has a `--selftest` mode runs it too, proving the check can fail.
+
+```bash
+tools/check-all.sh              # purity, host tests, schema, link, mock box, CAD staleness
+tools/check-all.sh --firmware   # also builds the firmware (needs ESP-IDF v6.0)
+```
+
+Logs land in `build/check-all/`. CI also builds the firmware in the `espressif/idf:v6.0` container and uploads `direcsun.bin`.
 
 ## Working in this repo
 
