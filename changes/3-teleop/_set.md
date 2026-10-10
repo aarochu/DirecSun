@@ -29,21 +29,22 @@ Then R3.4 wires everything into the control task, and R3.5 adds comms. The rungs
 
 ## Status
 <!-- markers: [ ] not started · [~] in progress · [t] tests passing, awaiting merge · [x] merged -->
-- [ ] R3.1 dshot-output: DShot frame encoder (HT-1) and RMT driver, with an on-chip loopback self-test
-- [ ] R3.2 sensor-bus: MPU-6050, QMC5883P, and BMP280 on one i2cdev-owned bus at 400 kHz
-- [ ] R3.3 hall-and-adc: Hall edge capture and wheel-speed estimates (HT-2), battery and sun ADC
+- [~] R3.1 dshot-output: DShot frame encoder (HT-1) and RMT driver, with an on-chip loopback self-test
+- [~] R3.2 sensor-bus: MPU-6050, QMC5883P, and BMP280 on one i2cdev-owned bus at 400 kHz
+- [~] R3.3 hall-and-adc: Hall edge capture and wheel-speed estimates (HT-2), battery and sun ADC
 - [ ] R3.4 control-task: 500 Hz control task, boot sequence, estimator subset, control-stall watchdog
 - [ ] R3.5 comms: Wi-Fi and mDNS, WebSocket server, schema v1 protocol, controlling client
-- [ ] R3.6 modes-and-interlocks: SAFE/SPINUP/READY/MANUAL machine, interlock table, ramp-down, parameters, Hall bench bypass
+- [~] R3.6 modes-and-interlocks: SAFE/SPINUP/READY/MANUAL machine, interlock table, ramp-down, parameters, Hall bench bypass
 - [ ] R3.7 manual-throttle: rung 1, open-loop spin-up and MANUAL throttle, console teleop panel
 - [ ] R3.8 manual-wheel: rung 2, wheel-speed PI with feed-forward, bench characterisation (T-5, T-18)
 - [ ] R3.9 manual-rate: rung 3, rate loop, closed-loop host simulation (HT-5, HT-6), sign check
 
 ## Open questions / decisions before implementing
-1. **Bypass throttle cap (R3.6):** with the Hall sensor absent, the only overspeed protection is a compile-time throttle ceiling. Proposed `kBypassThrottleMax = 400` of 2047. Assuming duty is roughly linear in DShot throttle, that is about 17.5% duty, or about 1600 rpm no-load at 10 V (920 KV); it is labelled [A]. R3.7 measures the real speed with the oscilloscope on a motor phase before anything relies on it. Recommendation: accept 400.
+None. `kBypassThrottleMax = 400` was accepted on 2026-10-10 (R3.6). R3.7 measures it before anything relies on it.
 
 ## DB changes in this set
 None.
 
 ## Log
 - 2026-10-10: Set scaffolded. Decisions from Julian: stack on Set 1; Hall bench bypass with a hard cap; bench supply power; oscilloscope available; turntable for rotation; keyboard and slider teleop; DShot150 with stock ESC settings.
+- 2026-10-10: Specs approved by Julian, and the bypass cap of 400 accepted. The R1.4 and R1.5 commits were merged into this branch (e0ac956) ahead of their Set 1 merge, which is blocked only on R1.4's hardware boot test. Prep commit: `direcsun_drivers` uses `SRC_DIRS` with the full REQUIRES union, and `firmware/test_apps/README.md` fixes the bring-up project pattern. Wave 1 (R3.1, R3.2, R3.3, R3.6) started in parallel.
