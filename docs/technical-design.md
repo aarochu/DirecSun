@@ -525,19 +525,19 @@ Setpoints are accepted only from the controlling client, only for the active inp
 
 ### 6.7 Interlocks
 
-Ground e-stop, `disarm`, and heartbeat loss ramp the wheel throttle to zero over 5 s, open loop, then send DShot 0. The ramp limits how fast the box speeds up (about 5 rad/s² from the cap), not how fast it ends up turning: momentum conservation fixes that at about 4.0 rev/s from the cap (V-20). Every other interlock sends DShot 0 within one control tick. Event names on the wire are listed in firmware design §14.1.
+Ground e-stop, `disarm`, and heartbeat loss ramp the wheel throttle to zero over 5 s, open loop, then send DShot 0. The ramp limits how fast the box speeds up (about 5 rad/s² from the cap), not how fast it ends up turning: momentum conservation fixes that at about 4.0 rev/s from the cap (V-20). Every other interlock sends DShot 0 within one control tick. The name in parentheses is the one sent on the wire in `event` messages (firmware design §14.1).
 
 | Interlock | Threshold | Label |
 | --- | --- | --- |
-| Ground heartbeat lost | No ping or command from the controlling client for 1 s, in any mode except Safe. The controlling client is the one whose `arm` was last accepted; traffic from other clients does not count, so a read-only viewer cannot keep an armed box alive, and no reconnection resumes motion without a fresh `arm` (V-15) | FR-5 |
-| Wheel overspeed | Ω above cap + 100 rpm (4100 rpm, 5.99 J) | Keeps PR-4 |
-| Wheel underspeed in any mode except Spin-up | Ω below the low limit for 200 ms | \[M\] T-18 sets the limit |
-| Battery low | Below 8.8 V (1.1 V per NiMH cell) for 1 s | \[A\] |
-| IMU silent | No valid read for 50 ms | Design choice |
-| Hall silent | Throttle above the low-limit feed-forward value for 500 ms with no Hall edge. Without it, a disconnected Hall sensor during Spin-up, where the underspeed check is exempt, would let the wheel pass the cap with no overspeed detection (V-11) | Design choice |
-| Tilt | Accelerometer shows more than 30 deg from vertical | Box lifted or falling |
-| Control task stalled | 100 ms watchdog | Resets the MCU; boot path sends DShot 0 |
-| Momentum near limits | Ω within 300 rpm of cap or low limit | Warning only; ground shows it |
+| Ground heartbeat lost (`HEARTBEAT_LOST`) | No ping or command from the controlling client for 1 s, in any mode except Safe. The controlling client is the one whose `arm` was last accepted; traffic from other clients does not count, so a read-only viewer cannot keep an armed box alive, and no reconnection resumes motion without a fresh `arm` (V-15) | FR-5 |
+| Wheel overspeed (`OVERSPEED`) | Ω above cap + 100 rpm (4100 rpm, 5.99 J) | Keeps PR-4 |
+| Wheel underspeed in any mode except Spin-up (`UNDERSPEED`) | Ω below the low limit for 200 ms | \[M\] T-18 sets the limit |
+| Battery low (`BATTERY_LOW`) | Below 8.8 V (1.1 V per NiMH cell) for 1 s | \[A\] |
+| IMU silent (`IMU_SILENT`) | No valid read for 50 ms | Design choice |
+| Hall silent (`HALL_SILENT`) | Throttle above the low-limit feed-forward value for 500 ms with no Hall edge. Without it, a disconnected Hall sensor during Spin-up, where the underspeed check is exempt, would let the wheel pass the cap with no overspeed detection (V-11) | Design choice |
+| Tilt (`TILT`) | Accelerometer shows more than 30 deg from vertical | Box lifted or falling |
+| Control task stalled (`CONTROL_STALL`) | 100 ms watchdog | Resets the MCU; boot path sends DShot 0 |
+| Momentum near limits (`MOMENTUM_NEAR_LIMIT`) | Ω within 300 rpm of cap or low limit | Warning only; ground shows it |
 
 ## 7. Ground station and networking
 
@@ -1010,7 +1010,7 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-5 | Demo UI owned by Aaron outside the repository, using `ground/link/`; sign conversion done in the UI | Owner decisions 2026-10-10 | 7.4 |
 | I-6 | Simulator section rewritten: dropped, replaced by `tools/mock-box.py` and the host plant simulation; W-6 now targets the mock box | Section 11.5 had already dropped the simulator, but Section 7.5 still described it | 7.5, 11.2 |
 | I-7 | CAD layout, commands, invariants, and agent rules rewritten for `cad/out/`, `tools/build-cad.sh`, `tools/check-cad-stale.py`, the cad-skill submodule, and the repository git flow; "rebuild all eleven" replaced, since sixteen part scripts exist | Repository layout | 8 |
-| I-8 | Approved firmware-design additions written into the body: `disarm`, 0.5 s Ready dwell, magnetometer and sun guards, `respin` replacing the automatic momentum dump (V-2), Hall-silent interlock (V-11), controlling-client heartbeat (V-15) | Owner approval 2026-10-10 | 6.6, 6.7, 7.3, 10.1, 10.2 |
+| I-8 | Approved firmware-design additions written into the body: `disarm`, 0.5 s Ready dwell, magnetometer and sun guards, `respin` replacing the automatic momentum dump (V-2), Hall-silent interlock (V-11), controlling-client heartbeat (V-15); wire names added to the interlock table | Owner approval 2026-10-10 | 6.6, 6.7, 7.3, 10.1, 10.2 |
 | I-9 | Approved corrections written into the body: K\_ω and the T-3 pass band (V-1), magnetometer axis map (V-4), aliasing at the electrical frequency (V-5), fast and median wheel-speed estimates (V-7), gyro at ±2000 deg/s (V-9), ack echoes the command `seq` (V-14), ramp limits acceleration rather than final rate (V-20), DShot150 default (V-21) | Owner approval 2026-10-10; findings in firmware design §23 | 4.8, 5.2, 6.4, 6.5, 6.7, 7.3, 9.1, 12.1 |
 | I-10 | Manual mode added, with its wire messages and staleness rule | Owner decision 2026-10-10 | 2, 6.5, 6.6, 7.3, 7.4, 11.4 |
 | I-11 | The three diagrams lost to `[embedded content]` placeholders rebuilt in Mermaid; the lost stack render replaced by a pointer to the viewing STL | The Claude Doc export did not carry them | 2, 4, 6.6, 11 |
