@@ -142,9 +142,10 @@ void control_task(void *)
     static Supervisor supervisor(ctx.params, ctx.params_reset, ctx.params_reset_detail);
     static Estimator estimator;
     static WheelSpeed wheel;
-    // Rung 1 (R3.7): open-loop spin-up, READY hold, and MANUAL throttle. The
-    // supervisor clamps and the interlocks override whatever it proposes.
-    static OpenLoopThrottleController controller;
+    // Rung 1 (R3.7) until the Hall and the T-5 feed-forward table exist, then
+    // the closed wheel loop (R3.8). The supervisor clamps and the interlocks
+    // override whatever it proposes.
+    static CascadeController controller;
     static TickOutputs out;
     static Command commands[kCommandQueueDepth];
     static TelemetrySnapshot snap;
@@ -324,7 +325,7 @@ void control_task(void *)
             snap.tilt_deg = estimator.tilt_deg();
             snap.wheel_rpm = wheel_safe;
             snap.wheel_rpm_fast = wheel_fast;
-            snap.wheel_ref_rpm = 0.0f;
+            snap.wheel_ref_rpm = controller.wheel_ref_rpm();
             snap.throttle = out.throttle;
             const ThrottleBand band = manual_throttle_band(supervisor.params());
             snap.throttle_band_lo = band.lo;

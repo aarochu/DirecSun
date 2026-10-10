@@ -25,11 +25,13 @@ InterlockSet InterlockMonitor::evaluate(const FaultInputs &in, const Params &par
 
     // Wheel-speed interlocks need the Hall sensor. With the bench bypass they
     // are suspended, and kBypassThrottleMax is the only overspeed protection.
-    if (in.hall_installed && in.wheel_rpm_safe > params.omega_cap_rpm + kOverspeedMarginRpm) {
+    // The cap and the underspeed threshold in force include the bench-only
+    // overrides (R3.8), which can only make each test more conservative.
+    if (in.hall_installed && in.wheel_rpm_safe > effective_cap_rpm(params) + kOverspeedMarginRpm) {
         faults |= interlock_bit(Interlock::Overspeed);
     }
 
-    if (in.hall_installed && in.underspeed_applies && in.wheel_rpm_safe < params.omega_low_rpm) {
+    if (in.hall_installed && in.underspeed_applies && in.wheel_rpm_safe < effective_underspeed_rpm(params)) {
         ++underspeed_ticks_;
     } else {
         underspeed_ticks_ = 0;

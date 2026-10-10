@@ -160,7 +160,8 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
             CHECK(rig.last_reason() == "not implemented");
             CHECK(rig.out.mode == Mode::Ready);
         }
-        for (CommandKind k : {CommandKind::Respin, CommandKind::ZeroHeading, CommandKind::WheelStep}) {
+        // wheel_step is implemented from R3.8 (bench only); test_controllers.cpp pins it.
+        for (CommandKind k : {CommandKind::Respin, CommandKind::ZeroHeading}) {
             rig.tick({cmd(k)});
             CHECK(rig.last_reason() == "not implemented");
         }

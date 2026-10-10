@@ -37,6 +37,8 @@ enum Flag : uint32_t {
     kFlagMomentumNearLimit = 1u << 1,
     kFlagManualStale = 1u << 2,
     kFlagHallBypass = 1u << 3,
+    kFlagWheelStep = 1u << 4,        // bench wheel_step hold: rate and attitude loops suspended (R3.8)
+    kFlagMomentumSaturated = 1u << 5,  // omega_ref on a limit in the direction the loop needs (R3.9)
 };
 
 // Wire name of a single flag bit, or nullptr.
@@ -81,6 +83,12 @@ struct ControlDemand {
     float manual_rate_dps = 0.0f;    // 0 once stale
     bool manual_stale = false;
     int previous_throttle = 0;       // the throttle sent last tick
+    // Bench wheel step (R3.8, FD section 15.3): `wheel_step_rpm` is added to
+    // omega_ref once, on the tick the command was accepted; `wheel_hold` stays
+    // true until `mode READY` is sent again or the mode changes, and suspends
+    // the rate and attitude loops so the step is the only input.
+    float wheel_step_rpm = 0.0f;
+    bool wheel_hold = false;
 };
 
 class ThrottleController {
@@ -153,6 +161,9 @@ private:
     uint32_t manual_last_setpoint_tick_ = 0;
     uint32_t manual_fresh_tick_ = 0;  // last setpoint, or MANUAL entry
     bool manual_stale_ = false;
+
+    bool wheel_hold_ = false;
+    float pending_wheel_step_rpm_ = 0.0f;
 
     bool pending_reset_notice_ = false;
     const char *reset_detail_ = "";

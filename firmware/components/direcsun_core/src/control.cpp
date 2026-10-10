@@ -1,5 +1,7 @@
 #include "direcsun/core/control.hpp"
 
+#include <cmath>
+
 #include "direcsun/core/timebase.hpp"
 
 // Mutation-test switch (host selftest builds only): SPINUP steps straight to
@@ -33,6 +35,73 @@ int OpenLoopThrottleController::throttle(const ControlDemand &demand, const Tick
         return demand.manual_input == ManualInput::Throttle ? demand.manual_throttle : demand.previous_throttle;
     default: return 0;
     }
+}
+
+namespace {
+
+float clampf(float v, float lo, float hi)
+{
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+int to_throttle(float request)
+{
+    return static_cast<int>(std::lround(clampf(request, 0.0f, kWheelThrottleMax)));
+}
+
+}  // namespace
+
+void CascadeController::reset()
+{
+    closed_loop_ = false;
+    last_mode_ = Mode::Safe;
+    omega_ref_rpm_ = 0.0f;
+    wheel_pi_.reset();
+}
+
+int CascadeController::throttle(const ControlDemand &demand, const TickInputs &in, const Params &params)
+{
+    const Mode previous_mode = last_mode_;
+    last_mode_ = demand.mode;
+
+    // Rung 1 whenever the closed loop cannot run: no Hall (or the bench
+    // bypass), or no T-5 feed-forward table yet; and MANUAL throttle always.
+    const bool manual_throttle = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Throttle;
+    if (!wheel_loop_available(params) || demand.spinup_open_loop || manual_throttle ||
+        (demand.mode != Mode::Spinup && demand.mode != Mode::Ready)) {
+        closed_loop_ = false;
+        wheel_pi_.reset();
+        return open_loop_.throttle(demand, in, params);
+    }
+
+    constexpr float dt = 1.0f / static_cast<float>(kTickHz);
+    const float cap = effective_cap_rpm(params);
+
+    if (demand.mode == Mode::Spinup) {
+        if (!closed_loop_ || previous_mode != Mode::Spinup) {
+            omega_ref_rpm_ = in.wheel_rpm_safe > 0.0f ? in.wheel_rpm_safe : 0.0f;
+            wheel_pi_.reset();
+        }
+        const float target = demand.omega_target_rpm < cap ? demand.omega_target_rpm : cap;
+        if (omega_ref_rpm_ < target) {
+            omega_ref_rpm_ += kWheelRefRampRpmPerS * dt;
+            if (omega_ref_rpm_ > target) omega_ref_rpm_ = target;
+        } else {
+            omega_ref_rpm_ = target;
+        }
+    } else {  // READY
+        if (!closed_loop_) {
+            // Bumpless start from open-loop throttle: reference at the measured
+            // speed, integrator at the last throttle minus the feed-forward.
+            omega_ref_rpm_ = clampf(in.wheel_rpm_safe, params.omega_low_rpm, cap);
+            wheel_pi_.reset(static_cast<float>(demand.previous_throttle) - ff_throttle(params, omega_ref_rpm_));
+        }
+        omega_ref_rpm_ += demand.wheel_step_rpm;
+        omega_ref_rpm_ = clampf(omega_ref_rpm_, params.omega_low_rpm, cap);
+    }
+
+    closed_loop_ = true;
+    return to_throttle(wheel_pi_.step(omega_ref_rpm_, in.wheel_rpm_fast, dt, params));
 }
 
 }  // namespace direcsun

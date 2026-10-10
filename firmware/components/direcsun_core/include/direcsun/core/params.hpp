@@ -66,7 +66,26 @@ struct Params {
     // Volatile: never persisted, reset at every boot.
     bool bench_mode = false;
     bool hall_installed = true;
+
+    // Bench-only overrides (R3.8, FD section 19.2). Volatile like bench_mode,
+    // accepted only while bench_mode is on, and cleared when it turns off. Each
+    // is 0 when unused.
+    //   bench_underspeed_rpm  UNDERSPEED threshold for T-18, below omega_low
+    //                         (100..omega_low), so the wheel can be walked
+    //                         down to find the sensorless limit [D]
+    //   bench_cap_rpm         a lower wheel cap for the deliberate OVERSPEED
+    //                         test (omega_bias..omega_cap); it can only lower
+    //                         the cap, never raise it [D]
+    float bench_underspeed_rpm = 0.0f;
+    float bench_cap_rpm = 0.0f;
 };
+
+// The wheel cap in force: omega_cap_rpm, lowered by bench_cap_rpm when set.
+float effective_cap_rpm(const Params &params);
+
+// The UNDERSPEED threshold in force: omega_low_rpm, or bench_underspeed_rpm
+// when set (T-18 only).
+float effective_underspeed_rpm(const Params &params);
 
 // Outcome of one validation or update. `key` names the offending key; reason
 // is the full text sent in the ack.

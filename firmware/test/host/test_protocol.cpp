@@ -298,6 +298,13 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     manual.baro_p_pa = 101325.4f;
     manual.psi_deg = -179.999f;
     emit(encode_tlm(manual, 3, 0, buf, sizeof buf));
+
+    // tlm: READY during a bench wheel step (R3.8): wheel reference and WHEEL_STEP.
+    TelemetrySnapshot stepped = ready_snapshot();
+    stepped.wheel_ref_rpm = 2700.0f;
+    stepped.flags = kFlagMomentumOk | kFlagWheelStep;
+    stepped.bench_mode = true;
+    emit(encode_tlm(stepped, 4, 0, buf, sizeof buf));
     const std::string manual_tlm = buf;
 
     // ack: ok, refused, and set_params with the applied set.
@@ -343,7 +350,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     // pong
     emit(encode_pong(16, 79, 512330.25, 83120, buf, sizeof buf));
 
-    CHECK(written == 13);
+    CHECK(written == 14);
 
     // Positive control for the schema check: the MANUAL tlm with psi_deg turned
     // into a string must be rejected by tools/check-protocol.sh.
@@ -354,4 +361,21 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     const std::size_t comma = bad.find(',', value);
     bad = bad.substr(0, value) + "\"" + bad.substr(value, comma - value) + "\"" + bad.substr(comma);
     malformed << bad << '\n';
+}
+
+TEST_CASE("R3.8 tlm carries the wheel reference and the WHEEL_STEP flag")
+{
+    TelemetrySnapshot s = ready_snapshot();
+    s.wheel_ref_rpm = 2700.0f;
+    s.flags = kFlagMomentumOk | kFlagWheelStep;
+    char buf[kMaxTlmBytes];
+    REQUIRE(encode_tlm(s, 1, 0, buf, sizeof buf) > 0);
+    Json doc(buf);
+    CHECK(doc.number("wheel_ref_rpm") == doctest::Approx(2700.0));
+    CHECK(std::strstr(buf, "\"WHEEL_STEP\"") != nullptr);
+    CHECK(std::strstr(buf, "\"MOMENTUM_OK\"") != nullptr);
+
+    parse(R"({"v":1,"type":"cmd","seq":9,"cmd":"set_params","params":{"bench_underspeed_rpm":300,"bench_cap_rpm":2500}})");
+    REQUIRE(scratch().kind == InboundKind::Command);
+    CHECK(scratch().params.count == 2);
 }

@@ -285,6 +285,10 @@ bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
     if (std::strcmp(key, "ff_table") == 0) return valid_ff_table(item, value);
     if (std::strcmp(key, "omega_low_rpm") == 0) return number(500.0, 1500.0);
     if (std::strcmp(key, "omega_bias_rpm") == 0) return number(0.0, kInf);
+    // Bench-only overrides (R3.8); 0 clears them. The box checks the ranges that
+    // depend on other parameters (below omega_low; between bias and cap).
+    if (std::strcmp(key, "bench_underspeed_rpm") == 0) return number(0.0, 1500.0);
+    if (std::strcmp(key, "bench_cap_rpm") == 0) return number(0.0, 4000.0);
     if (std::strcmp(key, "s_w") == 0 || std::strcmp(key, "s_gyro") == 0) return one_of({-1.0, 1.0});
     if (std::strcmp(key, "dshot_rate") == 0) return one_of({150.0, 300.0});
     if (std::strcmp(key, "bench_mode") == 0 || std::strcmp(key, "hall_installed") == 0) {
