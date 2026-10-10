@@ -2,7 +2,7 @@
 
 **Status:** Design for implementation. No firmware has been written, built, flashed, or run. No hardware has been measured. Imported into the repository on 2026-10-10, when the toolchain changed to ESP-IDF v6.0 with C++17; §23.1 rows V-22 onward record every edit made then.
 **Parent document:** *DirecSun Technical Design*, `docs/technical-design.md` (referred to below as **TD**). Section numbers such as "TD §6.5" point into that document.
-**Related code:** the wire schema in `protocol/schema-v1.json`, the client side of the protocol in `ground/link/`, and the bench console in `ground/console/`. The demo UI is Aaron's and lives outside this repository (§17).
+**Related code:** the wire schema in `protocol/schema-v1.json`, the client side of the protocol in `ground/link/`, and the bench console in `ground/console/`. The main UI is `frontend/` (Aaron's), and the backend matches it (§17).
 **Audience:** firmware and software engineers, software architects, agentic architects, and AI agents that will write, review, or change the firmware.
 
 ---
@@ -32,7 +32,7 @@ It also gives an ordered implementation plan, a test strategy, and the gates tha
 
 ### 1.2 Scope
 
-In scope: everything that runs on the XIAO ESP32-S3; the wire protocol it speaks; build and test tooling for that code; the integration contract with the existing browser frontend.
+In scope: everything that runs on the XIAO ESP32-S3; the wire protocol it speaks; build and test tooling for that code; the integration contract with the main UI in `frontend/`.
 
 ### 1.3 Non-goals
 
@@ -86,7 +86,9 @@ Taken from TD §4.1 and TD §6.5. They are restated because a sign error makes t
 | Ω | Wheel speed in its **forward** direction. Always positive, between the low limit and the cap. Every limit and interlock applies to Ω |
 | s_w | ±1, the sign of the wheel's spin about +z when running forward. Fixed by motor wiring; found in T-5 |
 
-> **Integration rule (decided 2026-10-10):** the wire carries the convention above, counter-clockwise positive. The earlier `direcsun/` frontend treated positive heading as clockwise ("rotate right"; §17, finding V-17). Any UI that displays clockwise-positive values converts for display. `ground/link/` passes wire values through unchanged.
+The table above is the firmware's internal frame. The control law, the estimator, and the sign check of §12.5 are written in it.
+
+> **Wire frame (decided 2026-10-10, finding U-1) [D]:** on the wire, every quantity about the spin axis is **clockwise positive seen from above**, matching the main UI in `frontend/`. There, "rotate right" is +90°, and the dial and 3D model turn clockwise for positive values (§17). The quantities are `psi_deg`, `psi_ref_deg`, `mag_deg`, `sun_deg`, `rate_dps`, `tau_cmd_mNm`, the SLEW `psi_ref_deg`, and the MANUAL `rate_dps`. The firmware converts only in its protocol encode and decode: a value x in the internal frame is -x on the wire, in both directions. Nothing else in the firmware knows the wire frame exists. Raw bench sensor counts (`gyro_raw`, `mag_raw`) are not converted. No client converts.
 
 ### 2.4 Naming
 
@@ -102,7 +104,9 @@ Taken from TD §4.1 and TD §6.5. They are restated because a sign error makes t
 1. Measurements recorded in TD §12.2 (none exist yet).
 2. TD, including `cad/stack.py` and `docs/sizing.py`, which TD says win over TD's prose.
 3. This document.
-4. Ground code: `ground/link/`, `ground/console/`, and Aaron's UI. They must follow 1 to 3 for anything about the device, and `protocol/schema-v1.json` must agree with §15.
+4. Ground code: the main UI in `frontend/`, and the bench tools `ground/link/` and `ground/console/`. They must follow 1 to 3 for anything about the device, and `protocol/schema-v1.json` must agree with §15.
+
+For the wire interface (message fields, units, sign, endpoint), the main UI leads: the schema encodes what `frontend/` expects, and §15 and the firmware follow (owner decision 2026-10-10, finding U-3).
 
 ---
 
@@ -143,7 +147,7 @@ flowchart LR
 | ADC1 ch7 (GPIO8) | Battery divider | read | TD §5.4 [V] |
 | GPIO9 interrupt | A1104 | input | TD §5.4 [V] |
 | GPIO7 RMT TX | ESC DShot input | output | TD §5.4 [V] |
-| Wi-Fi STA, WebSocket server | Ground station(s) | bidirectional | TD §7 [V]; §15 |
+| Wi-Fi STA, WebSocket server on port 80 at `/ws` | Main UI (`frontend/`), bench console | bidirectional | TD §7 [V]; §15 |
 | USB-C serial | Developer | log output, flashing | TD §5.5 |
 | NVS | Flash | parameter storage | TD §6.1 [D in TD] |
 
@@ -764,13 +768,13 @@ The ESP-IDF task watchdog is configured for 100 ms on the control task [V] TD §
 | Static address (option) | 10.TE.AM.120 on the OM5P-AC, gateway 10.TE.AM.1, /24 | [V] TD §7.1 |
 | Power save | Disabled with `esp_wifi_set_ps(WIFI_PS_NONE)` to keep latency low, as in the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3 |
 | Fallback | SoftAP selected in menuconfig at build time (default address 192.168.4.1 [A]); never an automatic switch during a session | [D] TD §7.1 names the fallback; automatic switching is rejected because it would change the box address mid-demo |
-| Endpoint | `ws://direcsun.local:81/`, or `ws://<printed address>:81/` | [D] TD §7.2 |
+| Endpoint | Port 80, path `/ws`, the main UI's default: `ws://direcsun.local/ws`, or `ws://<printed address>/ws`; `ws://192.168.4.1/ws` in SoftAP mode | [D] 2026-10-10 (finding U-2); TD §7.2 |
 
 ### 15.2 WebSocket server
 
 | Item | Choice | Label |
 | --- | --- | --- |
-| Library | ESP-IDF `esp_http_server` with `CONFIG_HTTPD_WS_SUPPORT=y`, URI `/` registered as a WebSocket handler on port 81. Outbound frames go through `httpd_queue_work` and `httpd_ws_send_frame_async`, the pattern of the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3; build check BC-4 on the S3 |
+| Library | ESP-IDF `esp_http_server` with `CONFIG_HTTPD_WS_SUPPORT=y`, URI `/ws` registered as a WebSocket handler on port 80, the main UI's endpoint (finding U-2). Other paths are not served. Outbound frames go through `httpd_queue_work` and `httpd_ws_send_frame_async`, the pattern of the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3; build check BC-4 on the S3 |
 | Max clients | 3 | [D] |
 | Outbound policy | Telemetry is broadcast to all clients. If a client's send would block (buffer full), that frame is skipped for that client and `tlm_dropped` increments. Acks and events are never skipped | [D] |
 | Inbound size limit | 512 bytes per message; larger messages are dropped with `ack ok:false reason:"too large"` | [D] |
@@ -779,7 +783,7 @@ The ESP-IDF task watchdog is configured for 100 ms on the control task [V] TD §
 
 ### 15.3 Message schema, version 1
 
-All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is the sender's own counter. Times are box milliseconds since boot. Units are those in §2.2.
+All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is the sender's own counter. Times are box milliseconds since boot. Units are those in §2.2. Every quantity about the spin axis is clockwise positive on the wire, the frame the main UI uses; the firmware converts from its internal frame only in its protocol layer (§2.3, finding U-1).
 
 #### `tlm`: box → all clients, 50 Hz
 
@@ -791,16 +795,16 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `t_ms` | int | Box time since boot | TD |
 | `mode` | string | Wire mode name (§2.4) | TD |
 | `manual_input` | string or null | `throttle`, `wheel`, or `rate` in `MANUAL`; null otherwise | [D] |
-| `psi_deg` | number | Wrapped heading (−180, 180], CCW positive | TD; wrap [D] |
-| `psi_ref_deg` | number or null | Current reference (null in SAFE, SPINUP, READY, DETUMBLE) | TD; null rule [D] |
-| `rate_dps` | number | ω̂ | TD |
-| `mag_deg` | number or null | ψ_mag (null if magnetometer missing) | TD |
-| `sun_deg` | number or null | Calibrated sun angle | TD |
+| `psi_deg` | number | Wrapped heading (−180, 180], clockwise positive (wire frame, §2.3) | TD; wrap [D]; sign [D] U-1 |
+| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE) | TD; null rule [D] |
+| `rate_dps` | number | ω̂, clockwise positive (the internal ω̂ negated) | TD |
+| `mag_deg` | number or null | ψ_mag, clockwise positive (null if magnetometer missing) | TD |
+| `sun_deg` | number or null | Calibrated sun angle, clockwise positive | TD |
 | `sun_valid` | bool | n/a | TD |
 | `wheel_rpm` | number | `speed_safe` | TD |
 | `wheel_ref_rpm` | number | Ω_ref | TD |
 | `throttle` | int | DShot value sent (0..2047) | TD |
-| `tau_cmd_mNm` | number | τ_cmd | TD |
+| `tau_cmd_mNm` | number | τ_cmd, clockwise positive (the internal τ_cmd negated) | TD |
 | `vbat` | number | 1 s average battery voltage | TD |
 | `loop_us` | int | Longest tick in the last 20 ms | TD; "longest" [D] |
 | `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `MAG_MISSING`, `MANUAL_STALE`, latched fault names | TD; list [D] |
@@ -826,8 +830,8 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 | `arm` | none | SAFE | → SPINUP if guards pass; sender becomes the controlling client |
 | `disarm` | none | SPINUP, READY, active modes | Ramp-down → SAFE (same as e-stop, without the ESTOP latch) [D] |
 | `estop` | none | Any state, any client | Ramp-down → SAFE, ESTOP latch |
-| `mode` | `mode`; `psi_ref_deg` for SLEW; `input` for MANUAL | READY (and active modes for `READY`) | Transition per §13.1 |
-| `manual` | exactly one of `throttle` (int), `wheel_rpm`, `rate_dps`, matching the active input | MANUAL, controlling client only | New setpoint, clamped and rate-limited per §13.5; counts as heartbeat |
+| `mode` | `mode`; `psi_ref_deg` (clockwise positive) for SLEW; `input` for MANUAL | READY (and active modes for `READY`) | Transition per §13.1 |
+| `manual` | exactly one of `throttle` (int), `wheel_rpm`, `rate_dps` (clockwise positive), matching the active input | MANUAL, controlling client only | New setpoint, clamped and rate-limited per §13.5; counts as heartbeat |
 | `respin` | `wheel_rpm` (optional, default bias) | READY | → SPINUP to the new start speed (§13.4) |
 | `zero_heading` | none | SAFE, READY | Heading offset (§11.3) |
 | `set_params` | `params` object | SAFE only | Validate every key and range; store in NVS; reply with the applied set [D] |
@@ -908,20 +912,25 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 
 ---
 
-## 17. Integration with the ground station
+## 17. Integration with the main UI
 
-The demo UI is Aaron's and lives outside this repository. It talks to the box only through `ground/link/`, a dependency-free ES module that implements the client side of §15: it pings at 5 Hz, matches each `ack` to its command by `seq`, sends `estop` immediately and never queues it, and never reconnects on its own. Importing it makes the UI the controlling client after an accepted `arm` (§14.4). `ground/console/` is a bench console built on the same module, for firmware bring-up.
+The main UI is `frontend/`, Aaron's landing page and ground station, built with React, Vite, and TypeScript. It became the main UI on 2026-10-10 when PR #1 merged, and the owner decided that the backend matches it (finding U-3). For the wire interface (message fields, units, sign, endpoint) the UI leads. `protocol/schema-v1.json` encodes what the UI expects, and §15 and the firmware follow.
 
-The table below records facts read from the earlier `direcsun/` frontend source on 2026-10-09 [V at that date]. It is kept as the integration checklist for Aaron's UI.
+`ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up and characterisation, and are not shown to judges. When the UI starts sending commands, its own TypeScript client must keep the safety rules `ground/link/` proves: a 5 Hz ping heartbeat, acks matched to commands by `seq`, an `estop` that is sent at once and never queued, and no automatic reconnect (§14.4, §21).
 
-| Frontend fact (2026-10-09) | Consequence |
+The table records facts read from the `frontend/` source at PR #1 head 622150a (`src/hardware/deviceLink.ts`, `src/ground/*`, `src/simulation/*`, `src/data/assets.ts`) [V at that commit].
+
+| Main UI fact | Firmware consequence |
 | --- | --- |
-| The device link was read-only: it opened a WebSocket, parsed `type:"tlm"` messages with `v` 1 or absent, required a numeric `psi_deg`, and never sent | Through `ground/link/` the UI sends `ping` and `cmd` and can be the controlling client. A read-only viewer remains harmless (§14.4) |
-| It read `psi_deg`, `psi_ref_deg`, `rate_dps`, `wheel_rpm`, `vbat`, `mode`, `t_ms`, `seq` | All present in §15.3. `psi_ref_deg` may be `null`; the UI then treats the target as equal to the heading |
-| It did not reconnect automatically | Matches §14.4 and `ground/link/` |
-| Its placeholder URL was `ws://192.168.4.1/ws` | The endpoint is `ws://direcsun.local:81/` in station mode or `ws://192.168.4.1:81/` in SoftAP mode (finding V-16) |
-| **It treated positive heading as clockwise** ("rotate right" = +90°), and its 3D view turned the body clockwise for positive values | The wire stays counter-clockwise positive (§2.3, decided 2026-10-10). The UI negates `psi_deg`, `psi_ref_deg`, and `rate_dps` for display (finding V-17) |
-| Its simulated judge sequence (turn 90°, hold 1 s, return) | On hardware this is a ground-orchestrated pair of `SLEW` commands with acks, not a firmware command (TD frontend spec §7.1) |
+| The device link (`DeviceLink`, Device link panel) is read-only. It opens a WebSocket and never sends | The UI cannot arm or e-stop the box yet. A read-only viewer is harmless, because it can never keep an armed box alive (§14.4). The operator commands it will send are implemented when the UI defines them (repository Set 4, R4.1) |
+| `parseTelemetry` accepts `type:"tlm"` with `v` 1 or absent and requires a finite numeric `psi_deg`; anything else is counted as "ignored" | The firmware's `tlm` always carries numeric `psi_deg` (§15.3). Every non-`tlm` frame the box broadcasts (`event`, and `ack` or `pong` if the UI ever sends) is counted as ignored and shown in the panel's status line |
+| It reads `seq`, `t_ms`, `mode`, `psi_deg`, `psi_ref_deg`, `rate_dps`, `wheel_rpm`, `vbat`. It unwraps successive `psi_deg` values into a continuous heading, takes `psi_ref_deg` relative to the heading (null means "target = heading"), uses `t_ms` as its time base, and shows `mode` verbatim | All present in §15.3. `t_ms` must be monotonic, which it is (time since boot). The battery row appears only when `vbat` is numeric |
+| It does not reconnect automatically | Matches §14.4 |
+| Its endpoint placeholder is `ws://192.168.4.1/ws`, and it saves whatever URL the user enters | The firmware serves port 80 at `/ws` (§15.1, §15.2): SoftAP mode is exactly that default, and station mode is `ws://direcsun.local/ws` (finding U-2) |
+| **Positive heading is clockwise seen from above.** "Rotate right" commands +90°, the dial's needle is drawn at (sin ψ, -cos ψ) in screen coordinates, and the 3D model turns by `rotation.y = -ψ` | The wire is clockwise positive and the firmware converts in its protocol layer (§2.3, finding U-1). A box turning clockwise by hand must turn the UI's dial clockwise |
+| Its judge sequence turns 90° left or right, holds 1.0 s, and returns to the start heading, at 60 deg/s and 120 deg/s² (`src/simulation/constants.ts`), with Stop and Reset | The same trapezoid limits as §12.4. On hardware it needs HOLD and SLEW. Whether the UI sends a pair of `SLEW` commands or one sequence command is decided by what the finished UI sends (repository Set 4) |
+| It loads `/assets/direcsun.glb` when present, and otherwise draws a schematic box ("SCHEMATIC MODEL, CAD NOT LOADED") | The CAD pipeline exports that model (repository Set 2, R2.5) |
+| While device telemetry is live, the simulation controls are locked and the header reads "DEVICE CONNECTED, RECEIVING TELEMETRY" | No firmware consequence |
 
 ---
 
@@ -1013,7 +1022,7 @@ These map firmware features onto TD §9:
 | BC-1 | ESP-IDF v6.0 builds the skeleton (every driver library linked) for esp32s3, and it boots on the XIAO | Everything |
 | BC-2 | RMT bytes encoder produces the four §10.6 frames; verify on a logic analyser or oscilloscope at both DShot rates | DShot |
 | BC-3 | `gptimer` alarm notifies a task at 500 Hz; log jitter for 10 s | Control timing |
-| BC-4 | `esp_http_server` WebSocket on port 81 accepts the console and a test client; 50 Hz broadcast for 10 min | Comms |
+| BC-4 | `esp_http_server` WebSocket on port 80 at `/ws` accepts the main UI, the console, and a test client; 50 Hz broadcast for 10 min | Comms |
 | BC-5 | Task watchdog at 100 ms resets the board when the control task is deliberately blocked | Safety |
 | BC-6 | I2C at 400 kHz reads all three Adafruit boards on one i2cdev-owned bus, with the QMC5883P on the shared handle; scope the edges (TD §5.3) | Sensors |
 
@@ -1067,7 +1076,7 @@ In `changes/`, F-1 is Set 1 (R1.4, R1.5) and the start of Set 3; F-2 to F-6 are 
 4. Every new interlock gets a host test that shows it trips, and a test that shows it does not trip 1 % inside the threshold.
 5. A passing test suite counts only if HT-6 (the deliberate sign error) still fails as expected. Do not delete or weaken positive controls.
 6. Keep claim labels honest. When a number changes, update §23 with the old value, the new value, and why.
-7. Do not change the wire schema without bumping `v` and updating §15, §17, and the frontend parser.
+7. Change the wire schema only under the versioning rule in `protocol/README.md`: additive, backward-compatible changes stay `v: 1`, and breaking changes bump `v`. The schema, §15, §17, `ground/link/`, `tools/mock-box.py`, and the firmware encoder change together. For the wire interface the main UI in `frontend/` leads, and the backend matches it.
 8. Do not add automatic reconnection, automatic re-arming, or any path that resumes wheel motion without a fresh `arm` from an operator.
 9. Follow the git flow in `changes/CONTEXT.md` (TD §8.5).
 
@@ -1093,6 +1102,8 @@ In `changes/`, F-1 is Set 1 (R1.4, R1.5) and the start of Set 3; F-2 to F-6 are 
 Each statement below was challenged by recomputing it from TD's inputs, by checking it against another TD section, or by asking what a broken instrument would show. Findings marked **TD** are disagreements with the parent document; findings marked **This doc** are corrections made while drafting this document.
 
 ### 23.1 Findings
+
+Rows U-1 onward record the main UI contract (2026-10-10). They are numbered separately, because the V-numbers after V-29 are taken by work on the Set 3 branch.
 
 | # | Statement challenged | Check | Finding | Resolution here | Severity |
 | --- | --- | --- | --- | --- | --- |
@@ -1125,6 +1136,10 @@ Each statement below was challenged by recomputing it from TD's inputs, by check
 | V-27 | §24 Q6 additions and the V-1, V-4, V-5, V-7, V-9, V-14 corrections awaited owner approval | Owner review 2026-10-10 | Approved | Written into TD §4.8, §5.2, §6.4 to §6.7, §7.3, §9.1, §10; §13.1 and §13.4 text updated | n/a |
 | V-28 | Em dashes in headings and empty table cells | Owner style | n/a | Replaced with colons, "none", or "n/a" | Low |
 | V-29 | §10 had no driver notes | Driver source read 2026-10-10 | The esp-idf-lib drivers default to 1 MHz SCL, the QMC5883P driver hard-codes 100 kHz, and the drivers were validated only one at a time | Driver notes in §10.1 to §10.3; 400 kHz override [D]; TD A-23 | Medium (this doc) |
+| U-1 | §2.3, §15.3, §17: the wire is counter-clockwise positive and the UI negates for display (V-17, V-24) | Main UI source at PR #1 622150a; owner decision 2026-10-10 | `frontend/` became the main UI, and the backend matches it. The UI draws positive heading clockwise ("rotate right" = +90°, dial at (sin ψ, -cos ψ), model `rotation.y = -ψ`) | The wire is clockwise positive for every quantity about the spin axis, including `tau_cmd_mNm`, which the spec list did not name but which is a torque about the same axis. The firmware converts only in its protocol encode and decode; the internal frame of §2.3 is unchanged. A v1 correction, not a v2 break: no backend had emitted v1, and the only consumer already assumed clockwise. Supersedes V-17 and the sign half of V-24 | High (wire contract) |
+| U-2 | §15.1, §15.2, §17, §19.3: WebSocket on port 81 at `/` (V-16 asked the UI to change its placeholder) | Main UI placeholder `ws://192.168.4.1/ws`; owner decision 2026-10-10 | The backend matches the UI | Port 80 at `/ws`: `ws://direcsun.local/ws` in station mode, `ws://192.168.4.1/ws` in SoftAP mode. `ground/link/` default, console hints, and `tools/mock-box.py` (serves only `/ws`, 404 elsewhere) follow. Supersedes V-16 | Medium (wire contract) |
+| U-3 | Header, §3, §17, §24 Q4: the demo UI is Aaron's, lives outside the repository, and talks through `ground/link/` | PR #1 merged 2026-10-10 (7136f6a) | `frontend/` is in the repository and is the main UI; it owns its operator client | §17 rewritten as the integration contract with `frontend/`, from its source. `ground/link/` and `ground/console/` are bench tools. §3 says the UI leads the wire interface | Medium |
+| U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 
 ### 23.2 Statements re-derived and confirmed
 
@@ -1159,8 +1174,8 @@ All [C], recomputed from TD §3.2 inputs while writing this document. On 2026-10
 1. ~~Toolchain~~: closed 2026-10-10, ESP-IDF v6.0 with C++17 (§18.2).
 2. Team number for the 10.TE.AM addressing: needed only if the OM5P-AC static-address option is used (§15.1).
 3. ESC MCU type (H or L) → DShot rate. (TD §5.2)
-4. ~~Controlling ground station~~: closed 2026-10-10. Aaron's UI becomes the controlling client through `ground/link/` (§17).
-5. ~~Sign convention~~: closed 2026-10-10. The wire stays CCW-positive; the UI converts for display (§2.3).
+4. ~~Controlling ground station~~: closed 2026-10-10. The main UI in `frontend/` owns its operator client and becomes the controlling client once it sends commands; `ground/link/` is the bench client (§17, finding U-3).
+5. ~~Sign convention~~: closed 2026-10-10, revised the same day (finding U-1). The wire follows the main UI and is clockwise positive; the firmware converts in its protocol layer (§2.3).
 6. ~~Owner approval of the additions~~: closed 2026-10-10. `disarm`, the READY dwell, the magnetometer and sun guards, `respin`, `HALL_SILENT`, and the controlling-client heartbeat are approved and written into TD §6.6 and §6.7.
 
 ---
