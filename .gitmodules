@@ -1,0 +1,9 @@
+[submodule ".agents/skills/spec-driven-dev"]
+	path = .agents/skills/spec-driven-dev
+	url = https://github.com/ja-zoe/agent-skill-spec-driven-dev.git
+[submodule ".agents/skills/cad-skill"]
+	path = .agents/skills/cad-skill
+	url = https://github.com/flowful-ai/cad-skill.git
+[submodule ".agents/vendor/awesome-esp-ai"]
+	path = .agents/vendor/awesome-esp-ai
+	url = https://github.com/pedrominatel/awesome-esp-ai.git
