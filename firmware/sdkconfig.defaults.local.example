@@ -1,0 +1,23 @@
+# Copy to sdkconfig.defaults.local (gitignored) and fill in. firmware/CMakeLists.txt
+# layers that file over sdkconfig.defaults. After creating or editing it, delete
+# firmware/sdkconfig and rebuild so the values are picked up.
+#
+# The DIRECSUN_* Kconfig menu that reads these keys arrives with the comms work
+# in Set 3. Until then this file only documents the intended keys; a key whose
+# symbol does not exist yet is ignored by the build.
+
+# Wi-Fi station (STA with DHCP is the default network mode).
+CONFIG_DIRECSUN_WIFI_SSID="your-network"
+CONFIG_DIRECSUN_WIFI_PASSWORD="your-password"
+
+# mDNS hostname: the box answers at ws://<hostname>.local:81/
+CONFIG_DIRECSUN_HOSTNAME="direcsun"
+
+# Optional static address instead of DHCP (for example on the OM5P-AC radio).
+# CONFIG_DIRECSUN_WIFI_STATIC_IP=y
+# CONFIG_DIRECSUN_WIFI_IP="10.0.0.120"
+# CONFIG_DIRECSUN_WIFI_GATEWAY="10.0.0.1"
+# CONFIG_DIRECSUN_WIFI_NETMASK="255.255.255.0"
+
+# Fallback: the box runs its own access point instead of joining a network.
+# CONFIG_DIRECSUN_WIFI_SOFTAP=y

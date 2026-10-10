@@ -27,6 +27,18 @@ git clone --recurse-submodules git@github.com:aarochu/DirecSun.git
 
 Each area adds its commands here as it lands.
 
+### Firmware
+
+Needs ESP-IDF v6.0 installed with EIM (`eim install -i v6.0`). `tools/idf.sh` loads that environment and runs `idf.py` in `firmware/`, from any directory:
+
+```bash
+tools/idf.sh set-target esp32s3                  # once per clone (creates firmware/sdkconfig)
+tools/idf.sh build
+tools/idf.sh -p /dev/ttyACM0 flash monitor       # XIAO ESP32-S3 over USB-C; Ctrl+] exits
+```
+
+Build defaults live in `firmware/sdkconfig.defaults`. Wi-Fi credentials go in `firmware/sdkconfig.defaults.local` (copy the `.example`; it is gitignored). After editing either file, delete `firmware/sdkconfig` and rebuild.
+
 ## Working in this repo
 
 Read [AGENTS.md](AGENTS.md) and [changes/CONTEXT.md](changes/CONTEXT.md) before changing anything. Work is planned and tracked in `changes/` with the spec-driven-dev workflow: every feature has a spec, and its test scheme is the gate for merging.
