@@ -16,7 +16,7 @@ Branch: `feat/set1-foundation`. Order: R1.1 first, because every other feature n
 - [~] R1.4 firmware-skeleton: ESP-IDF v6.0 C++17 project that builds and boots on the XIAO ESP32-S3
 - [t] R1.5 host-test-harness: doctest host build with a positive control, core purity check
 - [x] R1.6 protocol-link-console: schema v1, link module, bench console, mock box
-- [ ] R1.7 ci: GitHub Actions running every check in this set
+- [t] R1.7 ci: GitHub Actions running every check in this set
 
 ## Open questions / decisions before implementing
 None. Both questions were answered 2026-10-10: the mock box is in (R1.6), and the MANUAL staleness rule is accepted as recommended (R1.2).
