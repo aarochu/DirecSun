@@ -77,3 +77,45 @@ jobs:
           path: |
             firmware/build/direcsun.bin
             firmware/build/size.txt
+
+  frontend:
+    name: frontend (typecheck, unit, e2e in Chrome)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # The Playwright config uses the installed Google Chrome (channel: chrome).
+      # Fail loudly if the runner image ever stops shipping it, rather than
+      # letting the e2e step error out on a missing browser.
+      - name: Google Chrome present
+        run: google-chrome --version
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Playwright results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-results
+          path: frontend/test-results/
