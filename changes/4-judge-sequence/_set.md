@@ -21,7 +21,9 @@ A judge spinning the box by hand in READY sees it come to rest (DETUMBLE behavio
 - [ ] R4.5 characterisation-and-acceptance: T-2 to T-4, T-7, T-8 on the assembled box, `sizing.py` re-run (G2); T-15 and T-16 trials driven from the UI
 
 ## Open questions / decisions before implementing
-1. Who sequences rotate, hold, and return: the UI, sending SLEW commands (FD §17's ground-orchestrated pair), or the firmware (a single "judge" command)? Decided by whatever the finished UI sends, per the backend-matches-UI rule.
+1. ~~Who sequences rotate, hold, and return?~~ **Answered by the UI (Aaron's PR #10, 2026-10-10).** The UI sequences it with two `mode SLEW` commands, each carrying an absolute `psi_ref_deg` in the wire frame (start ± 90, then back to the start). It treats a slew as done when `mode` returns to READY or a `slew_complete` event arrives. It aborts on `SLEW_TIMEOUT`, a refusal, or SAFE. `mode READY` stops a slew and `disarm` cancels.
+
+   No new command is needed. R4.1's scope becomes: confirm the firmware's events and timings match this flow, and run the UI against the real box with Aaron (integration). R4.3 and the mock box are being aligned with it.
 
 2. Known requirements on the UI's client once it starts commanding, from R1.8's look at `frontend/`:
    - It must send `ping` at 5 Hz while it controls an armed box. Today it sends nothing, so the box would treat it as a passive viewer, and the heartbeat ramp-down would stop any motion it started.
