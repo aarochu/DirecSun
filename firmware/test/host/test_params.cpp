@@ -201,3 +201,27 @@ TEST_CASE("params: PARAMS_RESET is posted once, on the first tick")
     sup.step(in, ctl, out);
     CHECK(out.events.count == 0);
 }
+
+TEST_CASE("params: rate_gain_scale defaults to 0.2, stays in 0..1, and persists")
+{
+    CHECK(Params{}.rate_gain_scale == doctest::Approx(0.2f));
+
+    Rig rig;
+    ParamUpdate bad;
+    add_number(bad, "rate_gain_scale", 1.5);
+    rig.tick({set_params_cmd(&bad)});
+    CHECK(rig.last_reason() == "invalid param: rate_gain_scale");
+    CHECK(rig.sup.params().rate_gain_scale == doctest::Approx(0.2f));
+
+    ParamUpdate good;
+    add_number(good, "rate_gain_scale", 1.0);
+    rig.tick({set_params_cmd(&good)});
+    CHECK(rig.last_ok());
+    CHECK(rig.out.params_changed);
+
+    MemoryStore store;
+    REQUIRE(save_params(store, rig.sup.params()));
+    Params loaded;
+    CHECK_FALSE(load_params(store, loaded).reset);
+    CHECK(loaded.rate_gain_scale == doctest::Approx(1.0f));
+}

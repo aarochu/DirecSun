@@ -280,6 +280,7 @@ bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
     if (std::strcmp(key, "k_psi") == 0) return number(0.0, 10.0);
     if (std::strcmp(key, "k_omega") == 0) return number(0.0, 0.05);
     if (std::strcmp(key, "k_i") == 0) return number(0.0, 0.1);
+    if (std::strcmp(key, "rate_gain_scale") == 0) return number(0.0, 1.0);
     if (std::strcmp(key, "wheel_kp") == 0) return number(0.0, kInf);
     if (std::strcmp(key, "wheel_ki") == 0) return number(0.0, kInf);
     if (std::strcmp(key, "ff_table") == 0) return valid_ff_table(item, value);

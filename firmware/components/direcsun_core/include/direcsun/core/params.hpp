@@ -20,7 +20,7 @@ constexpr float kOmegaCapMaxRpm = 4000.0f;
 // Version of the persisted layout. Bump it whenever a persisted field is added,
 // removed, or reinterpreted; a stored blob with another version is discarded
 // and the defaults load (event PARAMS_RESET).
-constexpr uint32_t kParamVersion = 1;
+constexpr uint32_t kParamVersion = 2;  // 2: rate_gain_scale (R3.9)
 
 constexpr std::size_t kFfPoints = 8;
 
@@ -29,6 +29,9 @@ struct Params {
     float k_psi = 3.1f;
     float k_omega = 0.0129f;
     float k_i = 0.0163f;
+    // Multiplies k_omega and k_i (R3.9). 0.2 for the first unpinned runs and the
+    // sign check (FD section 12.5); 1 is the design gains of FD section 12.2.
+    float rate_gain_scale = 0.2f;
 
     // Wheel loop. Zero until T-5 measures the plant [D]; R3.8 sets them.
     float wheel_kp = 0.0f;

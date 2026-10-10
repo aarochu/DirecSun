@@ -45,6 +45,47 @@ struct WheelPiGains {
 };
 WheelPiGains wheel_pi_gains(float slope_rpm_per_unit, float tau_s, float bandwidth_hz);
 
+// Rate loop constants (FD sections 12.1, 12.2, 12.3).
+constexpr float kTauCmdLimitNm = 0.031f;        // 3 A x 10.38 mN m/A
+constexpr float kRateIntegralLimitNm = 0.003f;  // K_i int(e) bound: the planned friction range, 1 to 3 mN m
+// Plant inertias in the torque-to-wheel step (TD section 3.2). I_b is the
+// calculated box [C on A] until T-3 measures it; I_w is the baseline washer
+// wheel [A] until Set 2's printed wheel is weighed (R2.3).
+constexpr float kBoxInertiaKgM2 = 1.03e-3f;
+constexpr float kWheelInertiaKgM2 = 6.50e-5f;
+// Stick-slip bleed [D, R3.9]: with a zero rate command and the box still,
+// the integral decays with this time constant. Without it, an integral torque
+// left below the bearing's breakaway keeps ramping omega_ref while the box
+// sits still (about 570 rpm over the 15 s after a 1 rev/s detumble at 1 mN m
+// in the host simulation, test_closed_loop.cpp).
+constexpr float kRateStillDps = 1.0f;
+constexpr float kRateBleedTauS = 0.5f;
+
+struct RateLoopStep {
+    float omega_ref_rpm = 0.0f;       // the new wheel reference, inside [omega_low, cap]
+    float tau_cmd_nm = 0.0f;          // torque wanted on the box, internal frame
+    bool torque_saturated = false;    // tau_cmd at its limit
+    bool momentum_saturated = false;  // omega_ref on a limit in the direction the loop needs
+};
+
+// The rate loop (FD section 12.1 steps 2 and 3). omega_cmd_dps is its only
+// command input: 0 in READY and DETUMBLE, the attitude loop's output in HOLD
+// and SLEW (Set 4). Gains are params.k_omega and params.k_i, both scaled by
+// params.rate_gain_scale. The integral runs conditionally: it stops while
+// tau_cmd is saturated, or omega_ref is clamped, in the direction of the error
+// (FD section 12.3), its torque is bounded by kRateIntegralLimitNm (FD section
+// 12.2), and it bleeds away while the box is still with a zero command [D].
+class RateLoop {
+public:
+    RateLoopStep step(float omega_cmd_dps, float omega_hat_dps, float omega_ref_rpm, float dt_s,
+                      const Params &params, float cap_rpm);
+    void reset() { integral_ = 0.0f; }
+    float integral() const { return integral_; }
+
+private:
+    float integral_ = 0.0f;  // rad: the integral of the rate error
+};
+
 // The wheel-speed PI with feed-forward (FD section 12.1 step 4, 12.3).
 //
 // Below omega_low the PI is off: the throttle is the feed-forward alone and the
