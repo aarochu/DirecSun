@@ -127,7 +127,7 @@ input:focus{border-color:#709bb7}
 .note.bad{color:var(--red)}.note.ok{color:var(--green)}
 @media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lower,.teleop,.bench{grid-template-columns:1fr}}
 @media(max-width:900px){.shell{padding:0 20px 28px}}
-@media(max-width:600px){.shell{padding:0 16px 24px}.topmeta{display:none}.connection{grid-template-columns:1fr;gap:5px}.state{padding:3px 2px}.pagehead{flex-direction:column;align-items:flex-start;gap:12px}.pagehead h1{font-size:22px}.urlrow{flex-wrap:wrap}.urlrow input{flex:1 1 100%}.urlrow .btn{flex:1}.event{grid-template-columns:56px 40px 1fr;gap:7px;font-size:10px}.metric{padding:13px;min-height:118px}.metricfoot{white-space:normal}.hint{margin-top:2px}.confirm span{flex:1 1 100%}.confirm .btn{flex:1}.value{font-size:24px}.cmdrow .btn{flex:1 1 40%}.readouts{grid-template-columns:1fr 1fr 1fr}.readout b{font-size:13px}.benchrow{grid-template-columns:1fr 1fr}.benchrow label{grid-column:1 / -1}.gains{grid-template-columns:1fr 1fr}.bandscale{padding:0 62px}.sliderrow{gap:6px}.sliderrow .btn{min-width:52px}}
+@media(max-width:600px){.shell{padding:0 16px 24px}.topmeta{display:none}.connection{grid-template-columns:1fr;gap:5px}.state{padding:3px 2px}.pagehead{flex-direction:column;align-items:flex-start;gap:12px}.pagehead h1{font-size:22px}.urlrow{flex-wrap:wrap}.urlrow input{flex:1 1 100%}.urlrow .btn{flex:1}.event{grid-template-columns:56px 40px 1fr;gap:7px;font-size:10px}.metric{padding:13px;min-height:118px}.metricfoot{white-space:normal}.hint{margin-top:2px}.confirm span{flex:1 1 100%}.confirm .btn{flex:1}.value{font-size:24px}.cmdrow .btn{flex:1 1 40%}.readouts{grid-template-columns:1fr 1fr 1fr}.readout b{font-size:13px}.benchrow{grid-template-columns:1fr 1fr}.benchrow label{grid-column:1 / -1}.gains{grid-template-columns:1fr 1fr}.gains label:nth-child(3){grid-column:1 / -1}.bandscale{padding:0 62px}.sliderrow{gap:6px}.sliderrow .btn{min-width:52px}}
 </style>
 </head>
 <body>
@@ -245,7 +245,7 @@ input:focus{border-color:#709bb7}
       </div>
     </article>
     <article class="panel">
-      <div class="panelhead"><span class="paneltitle">Bench · wheel loop</span><span class="panelmeta" id="bw-meta">WHEEL LOOP</span></div>
+      <div class="panelhead"><span class="paneltitle">Bench · wheel and rate loops</span><span class="panelmeta" id="bw-meta">WHEEL LOOP</span></div>
       <div class="teleopbody">
         <p>Steps the wheel reference in READY. Needs bench mode, the Hall, and an ff_table; the rate and attitude loops stay suspended until the step is ended.</p>
         <div class="readouts">
@@ -269,6 +269,20 @@ input:focus{border-color:#709bb7}
         </div>
         <div class="note" id="bw-gains-note">kp - · ki -</div>
         <div class="cmdrow"><button class="btn secondary" id="bw-sendgains" disabled>Send gains</button></div>
+        <div class="subhead">Rate loop · sign check</div>
+        <p>READY holds rate. Make the first unpinned push at gain scale 0.2 (FD section 12.5): it must decay. If it grows, e-stop, set s_w -1 from SAFE, and repeat. Gain scale 1 is the design gains.</p>
+        <div class="readouts">
+          <div class="readout"><span>Rate, CW+</span><b id="br-rate">-</b></div>
+          <div class="readout"><span>Torque cmd</span><b id="br-tau">-</b></div>
+          <div class="readout"><span>Momentum</span><b id="br-mom">-</b></div>
+        </div>
+        <div class="cmdrow">
+          <button class="btn secondary" data-param="rate_gain_scale" data-value="0.2" disabled>Gain scale 0.2</button>
+          <button class="btn secondary" data-param="rate_gain_scale" data-value="1" disabled>Gain scale 1</button>
+          <button class="btn secondary" data-param="s_w" data-value="1" disabled>s_w +1</button>
+          <button class="btn secondary" data-param="s_w" data-value="-1" disabled>s_w -1</button>
+        </div>
+        <div class="note" id="br-note">Gain scale and s_w: none acked from this console yet.</div>
       </div>
     </article>
   </section>
@@ -643,6 +657,12 @@ function updateBench(t) {
   for (const b of document.querySelectorAll("[data-step]")) b.disabled = !(open && t.mode === "READY" && benchOn);
   $("bw-end").disabled = !(open && hold);
   $("bw-sendgains").disabled = !(open && safe && computeGains() !== null);
+  $("br-rate").textContent = `${fmt(t.rate_dps, 1)} deg/s`;
+  $("br-tau").textContent = `${fmt(t.tau_cmd_mNm, 2)} mN m`;
+  $("br-mom").textContent = t.flags.includes("MOMENTUM_SATURATED") ? "saturated"
+    : t.flags.includes("MOMENTUM_NEAR_LIMIT") ? "near limit"
+    : t.flags.includes("MOMENTUM_OK") ? "ok" : "-";
+  for (const b of document.querySelectorAll("[data-param]")) b.disabled = !(open && safe);
   if (sweep) sweepTick(t);
 }
 
@@ -738,6 +758,18 @@ function setBenchParam(key, value) {
   send("set_params", { params: { [key]: value } });
 }
 
+// Rate loop settings (R3.9). The box does not report its parameters, so the
+// note shows what it last acked from this console.
+const rateAcked = {};
+async function setRateParam(key, value) {
+  const ack = await send("set_params", { params: { [key]: value } });
+  if (!ack) return;
+  rateAcked[key] = value;
+  const parts = Object.entries(rateAcked).map(([k, v]) => (k === "s_w" ? `s_w ${v > 0 ? "+" : ""}${v}` : `gain scale ${v}`));
+  $("br-note").textContent = `Acked by the box: ${parts.join(" · ")}`;
+  $("br-note").className = "note ok";
+}
+
 function updateRtt() {
   const r = link.rtt;
   $("m-rtt").textContent = fmt(r.last, 1);
@@ -750,8 +782,10 @@ async function send(name, fields = {}) {
   try {
     const ack = await link.command(name, fields);
     setResult(`${name}: ack ok (seq ${ack.seq})`, true);
+    return ack;
   } catch (error) {
     setResult(`${name}: ${error.code === "REFUSED" ? "refused, " + (error.ack?.reason ?? "") : error.message}`, false);
+    return null;
   }
 }
 
@@ -861,6 +895,7 @@ $("bn-sweep-stop").onclick = () => stopSweep("stopped by the operator");
 $("bn-sendff").onclick = () => { if (ffResult) send("set_params", { params: { ff_table: ffResult } }); };
 for (const b of document.querySelectorAll("[data-step]")) b.onclick = () => send("wheel_step", { delta_rpm: Number(b.dataset.step) });
 $("bw-end").onclick = () => send("mode", { mode: "READY" });
+for (const b of document.querySelectorAll("[data-param]")) b.onclick = () => setRateParam(b.dataset.param, Number(b.dataset.value));
 for (const id of ["bw-slope", "bw-tau", "bw-bw"]) $(id).addEventListener("input", renderGains);
 $("bw-sendgains").onclick = () => {
   const g = computeGains();
