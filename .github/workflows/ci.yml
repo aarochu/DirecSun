@@ -79,7 +79,7 @@ jobs:
             firmware/build/size.txt
 
   frontend:
-    name: frontend (typecheck, unit, e2e in Chrome)
+    name: frontend (typecheck, build)
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -94,6 +94,30 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      # build runs the typecheck first.
+      - name: Build
+        run: npm run build
+
+  frontend-draft:
+    name: frontend/draft (typecheck, unit, e2e in Chrome)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend/draft
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/draft/package-lock.json
 
       # The Playwright config uses the installed Google Chrome (channel: chrome).
       # Fail loudly if the runner image ever stops shipping it, rather than
@@ -117,5 +141,5 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: frontend-test-results
-          path: frontend/test-results/
+          name: frontend-draft-test-results
+          path: frontend/draft/test-results/

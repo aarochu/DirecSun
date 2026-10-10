@@ -25,68 +25,83 @@ export const cubesatModel: ModelAsset = {
   yawOffsetDeg: 0,
 };
 
-const pending = (
-  kind: AssetKind,
-  src: string,
-  partName: string,
-  alt: string,
-): ImageAsset => ({ kind, src, partName, alt, available: false, provenance: null });
+const CAD_SOURCE = 'cad/assembly.py (named solids of the assembly model)';
+
+const cadView = (kind: AssetKind, src: string, partName: string, alt: string): ImageAsset => ({
+  kind,
+  src,
+  partName,
+  alt,
+  available: true,
+  provenance: CAD_SOURCE,
+});
+
+export const hardwareStack = {
+  src: '/assets/hardware-stack.glb',
+  available: true,
+  sourceFile: CAD_SOURCE,
+} as const;
 
 export const imageAssets = {
-  assemblyRender: pending(
+  assemblyRender: cadView(
     'cad-assembly',
-    '/assets/direcsun-assembly.webp',
+    '/assets/hardware/frame.webp',
     'DirecSun 2U frame assembly',
-    'CAD assembly preview of the DirecSun 2U frame',
+    'CAD view of the full DirecSun stack with the printed 2U frame highlighted',
   ),
-  xiaoEsp32s3: pending(
-    'component-photo',
-    '/assets/xiao-esp32s3.webp',
-    'Seeed Studio XIAO ESP32-S3',
-    'Seeed Studio XIAO ESP32-S3 board',
-  ),
-  mpu6050: pending(
-    'component-photo',
-    '/assets/mpu6050.webp',
-    'Adafruit MPU-6050 #3886',
-    'Adafruit MPU-6050 breakout board, product 3886',
-  ),
-  qmc5883p: pending(
-    'component-photo',
-    '/assets/qmc5883p.webp',
-    'Adafruit QMC5883P #6388',
-    'Adafruit QMC5883P magnetometer breakout, product 6388',
-  ),
-  op550: pending(
-    'component-photo',
-    '/assets/op550.webp',
-    'OP550 phototransistor',
-    'OP550 phototransistor',
-  ),
-  a1104: pending(
-    'component-photo',
-    '/assets/a1104.webp',
-    'A1104 Hall-effect switch',
-    'A1104 Hall-effect switch',
-  ),
-  motor2212: pending(
-    'component-photo',
-    '/assets/motor-2212.webp',
-    '2212 920 KV brushless motor',
-    '2212 brushless outrunner motor',
-  ),
-  esc: pending('component-photo', '/assets/blheli-esc.webp', 'BLHeli_S ESC', 'BLHeli_S electronic speed controller'),
-  powerDeck: pending(
+  xiaoEsp32s3: cadView(
     'cad-component',
-    '/assets/power-deck.webp',
-    'DirecSun power deck',
-    'CAD view of the DirecSun battery deck and holder',
+    '/assets/hardware/esp32s3.webp',
+    'Seeed Studio XIAO ESP32-S3',
+    'CAD view of the XIAO ESP32-S3 carrier board on the avionics deck',
   ),
-  bmp280: pending(
-    'component-photo',
-    '/assets/bmp280.webp',
+  mpu6050: cadView(
+    'cad-component',
+    '/assets/hardware/mpu6050.webp',
+    'Adafruit MPU-6050 #3886',
+    'CAD view of the MPU-6050 board on its standoffs on the avionics deck',
+  ),
+  qmc5883p: cadView(
+    'cad-component',
+    '/assets/hardware/qmc5883p.webp',
+    'Adafruit QMC5883P #6388',
+    'CAD view of the QMC5883P board hanging below the top deck',
+  ),
+  op550: cadView(
+    'cad-component',
+    '/assets/hardware/op550.webp',
+    'OP550 phototransistor',
+    'CAD view of the avionics deck and its sun-sensor block',
+  ),
+  a1104: cadView(
+    'cad-component',
+    '/assets/hardware/a1104.webp',
+    'A1104 Hall-effect switch',
+    'CAD view of the Hall bracket on the motor deck',
+  ),
+  motor2212: cadView(
+    'cad-component',
+    '/assets/hardware/reaction-wheel.webp',
+    '2212 920 KV brushless motor',
+    'CAD view of the 2212 motor and flywheel stand-in on the motor deck',
+  ),
+  esc: cadView(
+    'cad-component',
+    '/assets/hardware/esc.webp',
+    'BLHeli_S ESC',
+    'CAD view of the ESC stand-in on the power deck',
+  ),
+  powerDeck: cadView(
+    'cad-component',
+    '/assets/hardware/power.webp',
+    'DirecSun power deck',
+    'CAD view of the AA battery holder and power-deck perfboard',
+  ),
+  bmp280: cadView(
+    'cad-component',
+    '/assets/hardware/bmp280.webp',
     'Adafruit BMP280 #2651',
-    'Adafruit BMP280 breakout board, product 2651',
+    'CAD view of the BMP280 board hanging below the top deck',
   ),
 } as const satisfies Record<string, ImageAsset>;
 

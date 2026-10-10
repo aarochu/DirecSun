@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci && npm ci --prefix draft",
+  "buildCommand": "npm run build && npm run build:deploy --prefix draft",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/draft/:path*",
+      "destination": "/draft/index.html"
+    }
+  ]
+}

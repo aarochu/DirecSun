@@ -3,8 +3,10 @@
 #
 #   tools/check-all.sh             all checks except the firmware build
 #   tools/check-all.sh --firmware  also build the firmware (needs ESP-IDF v6.0)
-#   tools/check-all.sh --frontend  also check the main UI: npm ci, typecheck, unit
-#                                  and e2e tests (needs Node 22+ and Google Chrome)
+#   tools/check-all.sh --frontend  also check the main UI: npm ci and build for
+#                                  frontend/, then npm ci, typecheck, unit and e2e
+#                                  tests for frontend/draft (needs Node 22+ and
+#                                  Google Chrome)
 #
 # Each check with a --selftest mode runs it too: the selftest plants a fault and
 # passes only if the check catches it, so a check that silently passes
@@ -70,10 +72,13 @@ fi
 
 if [[ "$frontend" -eq 1 ]]; then
     npm_in_frontend() { (cd "$repo_root/frontend" && npm "$@"); }
-    step frontend-install   npm_in_frontend ci
-    step frontend-typecheck npm_in_frontend run typecheck
-    step frontend-unit      npm_in_frontend test
-    step frontend-e2e       npm_in_frontend run test:e2e
+    npm_in_draft() { (cd "$repo_root/frontend/draft" && npm "$@"); }
+    step frontend-install         npm_in_frontend ci
+    step frontend-build           npm_in_frontend run build
+    step frontend-draft-install   npm_in_draft ci
+    step frontend-draft-typecheck npm_in_draft run typecheck
+    step frontend-draft-unit      npm_in_draft test
+    step frontend-draft-e2e       npm_in_draft run test:e2e
 fi
 
 echo
