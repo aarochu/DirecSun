@@ -67,8 +67,10 @@
             "LOOP_OVERRUN",
             "MAG_MISSING",
             "IMU_MISSING",
-            "MANUAL_STALE"
-          ]
+            "MANUAL_STALE",
+            "HALL_BYPASS"
+          ],
+          "description": "HALL_BYPASS: the Hall bench bypass is on (bench only, FD section 14.1): the Hall interlocks are suspended and the throttle is capped at a compile-time ceiling."
         },
         { "$ref": "#/$defs/interlock", "description": "A latched fault." }
       ]
@@ -114,6 +116,13 @@
         "wheel_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed (interlock estimate speed_safe), rpm, forward direction." },
         "wheel_ref_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed reference, rpm." },
         "throttle": { "$ref": "#/$defs/throttle", "description": "DShot value sent this tick." },
+        "throttle_band": {
+          "description": "Optional (added in R3.7, additive v1). The band the box clamps MANUAL throttle setpoints into: [manual_throttle_min, manual_throttle_max], with the top capped at kBypassThrottleMax (400) while the Hall is bypassed. null until the box has loaded its parameters. The bench console draws its slider from it.",
+          "oneOf": [
+            { "type": "null" },
+            { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": 48, "maximum": 2047 } }
+          ]
+        },
         "tau_cmd_mNm": { "type": "number", "description": "Commanded torque on the box, mN m, clockwise positive." },
         "vbat": { "type": "number", "minimum": 0, "description": "1 s average battery voltage, V." },
         "loop_us": { "type": "integer", "minimum": 0, "description": "Longest control tick in the last 20 ms, us." },
@@ -345,13 +354,16 @@
         "dshot_rate": { "enum": [150, 300] },
         "bench_mode": { "type": "boolean" },
         "manual_throttle_min": { "type": "integer", "minimum": 48, "maximum": 2047 },
-        "manual_throttle_max": { "type": "integer", "minimum": 48, "maximum": 2047 }
+        "manual_throttle_max": { "type": "integer", "minimum": 48, "maximum": 2047 },
+        "spinup_throttle": { "type": "integer", "minimum": 48, "maximum": 2047, "description": "Open-loop throttle that SPINUP ramps to (FD section 16)." },
+        "hall_expect_throttle": { "type": "integer", "minimum": 48, "maximum": 2047, "description": "Throttle above which the wheel must be turning: HALL_SILENT arms above it (FD section 14.1)." },
+        "hall_installed": { "type": "boolean", "description": "false turns on the Hall bench bypass; accepted only in SAFE with bench_mode already true; never persisted, true again at every boot (FD section 16)." }
       }
     },
 
     "ack": {
       "type": "object",
-      "description": "Box to the sender of a cmd. seq echoes the command's seq. ok:false carries the reason, for example \"busy\", \"too large\", \"too fast\", \"not controlling client\", \"input not available\", or a failed guard.",
+      "description": "Box to the sender of a cmd (and to a client whose frame could not be read). seq echoes the command's seq, or is 0 when the refused frame had no readable seq (too large, malformed JSON). ok:false carries the reason: a parse refusal (\"too large\", \"malformed JSON\", \"unsupported v\", \"unknown type\", \"unknown cmd\", \"missing field: <f>\", \"unexpected field: <f>\", \"invalid field: <f>\", \"two setpoints\", \"missing setpoint\", \"unknown param: <k>\", \"invalid param: <k>\"), \"busy\" (command queue full), or a guard from FD section 13.1 (for example \"not in SAFE\", \"not controlling client\", \"box not still\", \"battery low\", \"latched fault: <NAME>\", \"input not available\", \"too fast\", \"not implemented\").",
       "additionalProperties": false,
       "required": ["v", "type", "seq", "ok"],
       "properties": {
@@ -395,7 +407,7 @@
     },
 
     "event": {
-      "description": "Box to all clients, on every mode change (including every interlock trip, which changes the mode to SAFE) and on notices.",
+      "description": "Box to every client that has sent at least one message, on every mode change (including every interlock trip, which changes the mode to SAFE) and on notices. A read-only viewer that never sends receives only tlm, which carries the mode in every frame (the main UI counts every non-tlm frame as ignored).",
       "type": "object",
       "required": ["v", "type", "seq", "t_ms", "event"],
       "properties": { "type": { "const": "event" } },
@@ -432,8 +444,8 @@
         "seq": { "$ref": "#/$defs/seq" },
         "t_ms": { "$ref": "#/$defs/t_ms" },
         "event": { "const": "notice" },
-        "name": { "enum": ["PARAMS_RESET"], "description": "PARAMS_RESET: NVS parameters had a stale version and the defaults were loaded (FD section 16)." },
-        "detail": { "type": "string", "maxLength": 200 }
+        "name": { "enum": ["PARAMS_RESET", "HALL_BYPASS"], "description": "PARAMS_RESET: the stored parameters were missing, of another version, or invalid, and the defaults were loaded (FD section 16). HALL_BYPASS: the Hall bench bypass was switched on or off (FD section 14.1)." },
+        "detail": { "type": "string", "maxLength": 200, "description": "PARAMS_RESET: why (\"missing\", \"version\", \"invalid\"). HALL_BYPASS: \"on\" or \"off\"." }
       }
     }
   }

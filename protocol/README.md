@@ -18,7 +18,7 @@ The main UI is `frontend/` (Aaron's), and the backend matches it (`changes/CONTE
 | `cmd` | client to box | `arm`, `disarm`, `estop`, `mode`, `manual`, `respin`, `zero_heading`, `set_params`, `wheel_step` |
 | `ack` | box to the sender | one per `cmd`, `seq` echoes the command |
 | `ping` / `pong` | client to box, box to client | 5 Hz heartbeat and round-trip time |
-| `event` | box to all clients | every mode change (`event: "mode"`, with the `cause`), and notices such as `PARAMS_RESET` |
+| `event` | box to every client that has sent at least one message | every mode change (`event: "mode"`, with the `cause`), and the notices `PARAMS_RESET` and `HALL_BYPASS`. A read-only viewer receives only `tlm`, which carries the mode in every frame |
 
 Rules the schema enforces, so drift fails loudly:
 
@@ -54,3 +54,8 @@ Either way, the schema, FD section 15, `ground/link/`, `tools/mock-box.py`, and 
 | Date | Change | Kind |
 | --- | --- | --- |
 | 2026-10-10 | The sign of every quantity about the spin axis flips to clockwise positive, and the endpoint moves from port 81 at `/` to port 80 at `/ws` (R1.8). The UI already expected both. | v1 correction. Not a `v: 2` break, because no backend had emitted v1 yet, and the only consumer (the main UI) already assumed clockwise positive and `/ws` |
+| 2026-10-10 | `tlm.flags` may contain `HALL_BYPASS`, and `event` `notice` may be named `HALL_BYPASS` with `detail` `on` or `off`: the Hall bench bypass (bench only, FD section 14.1) | Additive, stays v1 |
+| 2026-10-10 | `set_params` accepts `spinup_throttle` and `hall_expect_throttle` (integers 48..2047) and `hall_installed` (boolean; `false` only in SAFE with `bench_mode` already on, never persisted) | Additive, stays v1 |
+| 2026-10-10 | Events go only to clients that have sent at least one message (R3.5). A read-only viewer, like the main UI's device link today, receives only `tlm`, so its ignored-frame count stays 0 | Delivery rule, no schema change |
+| 2026-10-10 | Refusal reasons are fixed strings (FD section 15.3), and an `ack` for a frame with no readable `seq` (too large, malformed JSON) carries `seq` 0. `mag_deg` is null until magnetometer heading exists (Set 5) | Clarification, stays v1 |
+| 2026-10-10 | `tlm` may carry `throttle_band`: `[lo, hi]`, the band the box clamps MANUAL throttle setpoints into (`manual_throttle_min`, `manual_throttle_max`, with the top capped at 400 while the Hall is bypassed), or `null` until known (R3.7). The bench console draws its slider from it; the main UI may ignore it | Additive, stays v1 |

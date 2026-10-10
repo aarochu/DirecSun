@@ -158,13 +158,23 @@ bool Supervisor::input_available(ManualInput input, ManualInputSet built) const
     return params_.hall_installed || input == ManualInput::Throttle;
 }
 
+ThrottleBand manual_throttle_band(const Params &params)
+{
+    ThrottleBand band;
+    band.hi = params.manual_throttle_max;
+    if (!params.hall_installed && band.hi > kBypassThrottleMax) band.hi = kBypassThrottleMax;
+    // A minimum above the bypass ceiling collapses the band onto the ceiling.
+    band.lo = params.manual_throttle_min < band.hi ? params.manual_throttle_min : band.hi;
+    return band;
+}
+
 int Supervisor::clamp_manual_throttle(float requested) const
 {
+    const ThrottleBand band = manual_throttle_band(params_);
     // Clamp before rounding so huge or negative requests cannot overflow lround.
     long v = std::lround(clampf(requested, 0.0f, static_cast<float>(kDshotMaxThrottle)));
-    if (v < params_.manual_throttle_min) v = params_.manual_throttle_min;
-    if (v > params_.manual_throttle_max) v = params_.manual_throttle_max;
-    if (!params_.hall_installed && v > kBypassThrottleMax) v = kBypassThrottleMax;
+    if (v < band.lo) v = band.lo;
+    if (v > band.hi) v = band.hi;
     return static_cast<int>(v);
 }
 

@@ -6,13 +6,15 @@
 
 static const char *TAG = "QMC5883P";
 
-// Sensitivity LSB/Gauss based on range
-static const float SENSITIVITY_30G = 1000.0f; // Approx
+// Sensitivity in LSB/Gauss per field range, from the QST QMC5883P datasheet
+// Rev A (doc 13-52-19), Table 2 "Specifications", Sensitivity row (page 5/18).
+// DirecSun local patch: upstream 0.1.0 used 12000 for both 8 G and 2 G.
+static const float SENSITIVITY_30G = 1000.0f;
 static const float SENSITIVITY_12G = 2500.0f;
-static const float SENSITIVITY_8G  = 12000.0f; // Docs say 3000 for 8G in some places, others 4096.
-static const float SENSITIVITY_2G  = 12000.0f;
+static const float SENSITIVITY_8G  = 3750.0f;
+static const float SENSITIVITY_2G  = 15000.0f;
 
-esp_err_t qmc5883p_init(qmc5883p_dev_t *dev, i2c_master_bus_handle_t bus_handle, uint8_t i2c_addr) {
+esp_err_t qmc5883p_init(qmc5883p_dev_t *dev, i2c_master_bus_handle_t bus_handle, uint8_t i2c_addr, uint32_t scl_speed_hz) {
     if (!dev || !bus_handle) return ESP_ERR_INVALID_ARG;
 
     dev->bus_handle = bus_handle;
@@ -25,7 +27,7 @@ esp_err_t qmc5883p_init(qmc5883p_dev_t *dev, i2c_master_bus_handle_t bus_handle,
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = i2c_addr,
-        .scl_speed_hz = 100000, // Standard 100kHz
+        .scl_speed_hz = scl_speed_hz ? scl_speed_hz : QMC5883P_SCL_SPEED_DEFAULT_HZ,
         .scl_wait_us = 0,
         .flags.disable_ack_check = false
     };

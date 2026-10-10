@@ -91,16 +91,6 @@ dependencies:
     - esp32s2
     - esp32s3
     version: 2.1.9
-  espressif/cjson:
-    component_hash: 002c6d1872ee4c97d333938ebe107a29841cc847f9de89e676714bd2844057ea
-    dependencies:
-    - name: idf
-      require: private
-      version: '>=5.0'
-    source:
-      registry_url: https://components.espressif.com/
-      type: service
-    version: 1.7.19~1
   espressif/mdns:
     component_hash: b5b30022c46302eab89c1d2e3b6fb5918a627563a7462f0ee284b22b9a934967
     dependencies:
@@ -119,9 +109,8 @@ direct_dependencies:
 - esp-idf-lib/bmp280
 - esp-idf-lib/i2cdev
 - esp-idf-lib/mpu6050
-- espressif/cjson
 - espressif/mdns
 - idf
-manifest_hash: bb0c8a0393e3c809f0755a9c532b35e8c64949a9aec39cb0043951779f005d94
+manifest_hash: d1bb223fc29b3501e34d8eafc61131b5a7334954642e07f94269b4a88aa2caec
 target: esp32s3
 version: 3.0.0
