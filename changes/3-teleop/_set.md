@@ -36,7 +36,7 @@ Then R3.4 wires everything into the control task, and R3.5 adds comms. R3.7, R3.
 - [~] R3.4 control-task: 500 Hz control task, boot sequence, estimator subset, control-stall watchdog
 - [~] R3.5 comms: Wi-Fi and mDNS, WebSocket server, schema v1 protocol, controlling client
 - [x] R3.6 modes-and-interlocks: SAFE/SPINUP/READY/MANUAL machine, interlock table, ramp-down, parameters, Hall bench bypass
-- [ ] R3.7 manual-throttle: rung 1, open-loop spin-up and MANUAL throttle, console teleop panel
+- [~] R3.7 manual-throttle: rung 1, open-loop spin-up and MANUAL throttle, console teleop panel
 - [ ] R3.8 wheel-loop: wheel-speed PI with feed-forward, bench characterisation (T-5, T-18)
 - [ ] R3.9 rate-loop: rate loop, closed-loop host simulation (HT-5, HT-6), sign check; READY holds rate
 
