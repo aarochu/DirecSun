@@ -159,6 +159,22 @@ TEST_CASE("HT-3 s_gyro flips the box rate and the heading integrates it")
     CHECK(est.heading_deg() == 0.0f);
 }
 
+TEST_CASE("R4.2 a bias-corrected 30 deg/s trace integrates to 90 deg and keeps continuous turns")
+{
+    Estimator est;
+    est.seed_bias(0.5f);
+    EstimatorInputs in = still_sample(30.5f);
+    in.safe_mode = false;
+    run(est, in, 3 * kTicksPerS);
+    CHECK(est.heading_unwrapped_deg() == doctest::Approx(90.0).epsilon(0.001));
+    CHECK(est.heading_deg() == doctest::Approx(90.0f).epsilon(0.001));
+    run(est, in, 4 * kTicksPerS);
+    CHECK(est.heading_unwrapped_deg() == doctest::Approx(210.0).epsilon(0.001));
+    CHECK(est.heading_deg() == doctest::Approx(-150.0f).epsilon(0.001));
+    est.zero_heading();
+    CHECK(est.heading_deg() == 0.0f);
+}
+
 TEST_CASE("boot bias seed: a still window seeds, a moving or tilted one does not")
 {
     const float level[3] = {0.0f, 0.0f, 1.0f};

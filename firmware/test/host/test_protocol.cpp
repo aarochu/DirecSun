@@ -275,6 +275,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     TelemetrySnapshot safe;
     safe.t_us = 1000;
     safe.imu_present = true;
+    safe.flags = kFlagHeadingGyro;
     emit(encode_tlm(safe, 1, 0, buf, sizeof buf));
 
     // tlm: READY with momentum flags, the Hall bypass flag, and a latched fault.

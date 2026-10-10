@@ -479,6 +479,8 @@ See §10.4. `Ω̂ = speed_fast` for control, `speed_safe` for interlocks and tel
 
 ### 11.3 Heading
 
+Until T-9 establishes a usable magnetic calibration, Set 4 integrates the bias-corrected gyro rate only. This relative heading is kept as an unwrapped `double`; `zero_heading` in SAFE or READY resets its RAM offset, and telemetry carries `HEADING_GYRO`. HOLD and SLEW may use this relative heading after zeroing. Absolute HOLD waits for the Set 5 magnetometer fusion [D, R4.2].
+
 Complementary filter (TD §6.4):
 
 ```
@@ -589,8 +591,8 @@ stateDiagram-v2
     SPINUP --> READY: wheel within 5 percent of bias for 0.5 s
     SPINUP --> SAFE: cmd disarm or estop, or interlock
     READY --> DETUMBLE: cmd mode DETUMBLE
-    READY --> HOLD: cmd mode HOLD, magnetometer OK
-    READY --> SLEW: cmd mode SLEW, magnetometer OK
+    READY --> HOLD: cmd mode HOLD, gyro heading available
+    READY --> SLEW: cmd mode SLEW, gyro heading available
     READY --> SUN_POINT: cmd mode SUN_POINT, sun_valid
     READY --> SPINUP: cmd respin (box held), new wheel start speed
     READY --> MANUAL: cmd mode MANUAL with input, input loop built
@@ -607,7 +609,7 @@ stateDiagram-v2
     SUN_POINT --> SAFE: estop, disarm, or interlock
 ```
 
-These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the magnetometer and sun guards, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
+These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the sun guard, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4). R4.2 later amends the HOLD and SLEW guard to allow relative gyro heading; absolute pointing still waits for magnetic calibration.
 
 **Hall bench bypass** (approved by the owner on 2026-10-10 [D], finding V-30). Until the Hall magnets can be mounted (repository Set 2), rung 1 of `MANUAL` is tested with the parameter `hall_installed` set false. It can be set false only by `set_params` in `SAFE` while `bench_mode` is already true, so it takes two separate commands, and every boot sets it true again; it is never persisted. While it is false:
 
@@ -816,7 +818,7 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `mode` | string | Wire mode name (§2.4) | TD |
 | `manual_input` | string or null | `throttle`, `wheel`, or `rate` in `MANUAL`; null otherwise | [D] |
 | `psi_deg` | number | Wrapped heading (−180, 180], clockwise positive (wire frame, §2.3) | TD; wrap [D]; sign [D] U-1 |
-| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE, and MANUAL; until HOLD and SLEW exist in Set 4 it is always null) | TD; null rule [D] |
+| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE, and MANUAL) | TD; null rule [D] |
 | `rate_dps` | number | ω̂, clockwise positive (the internal ω̂ negated) | TD |
 | `mag_deg` | number or null | ψ_mag, clockwise positive (null if the magnetometer is missing, and null until magnetometer heading exists in Set 5) | TD; [D] V-40 |
 | `sun_deg` | number or null | Calibrated sun angle, clockwise positive | TD |
@@ -1200,6 +1202,7 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-45 | §13.3: spin-up "begins with throttle feed-forward only and closes the wheel PI once the Hall speed exceeds Ω_low" | R3.8 | Ω_ref's [Ω_low, Ω_cap] clamp would jump the reference to Ω_low at once | In SPINUP Ω_ref ramps at 400 rpm/s from the measured speed with only the cap clamping it; the PI is off below Ω_low (feed-forward only) and the integrator is cleared there. READY clamps Ω_ref to [Ω_low, cap in force] [D] | Low (this doc) |
 | V-46 | §12.3: the rate integral only stops while saturated | R3.9 host simulation | Coulomb friction holds a stopped box still while an integral below breakaway remains, and that integral keeps ramping Ω_ref with nothing moving: about 570 rpm in the 15 s after a 1 rev/s detumble at 1 mN·m, until Ω_ref reaches a limit | Stick-slip bleed: with ω_cmd = 0 and ω̂ within ±1 deg/s the integral decays with τ = 0.5 s. A mutant build without it fails its host test. To be re-checked by the R3.9 hold test on the turntable [D] | Low (this doc) |
 | V-47 | §12.5: the sign check runs "at reduced K_ω (×0.2)" | R3.9 | Scaling K_ω alone would leave K_i at full value and move the PI corner up five times | `rate_gain_scale` scales K_ω and K_i together, default 0.2. In the host simulation scale 0.2 damps a push and never amplifies it, but does not meet PR-1; PR-1 is verified at scale 1 (HT-5) [D] | Low (this doc) |
+| V-48 | §13.1 blocks HOLD and SLEW without a magnetometer | R4.2 judge sequence needs only a short relative turn | A calibrated absolute heading is unnecessary for a zeroed, gyro-integrated 90° sequence, provided drift is measured | Permit relative HOLD and SLEW after `zero_heading`; mark telemetry `HEADING_GYRO`. Absolute heading hold and T-9 remain Set 5 [D] | Medium (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 
 ### 23.2 Statements re-derived and confirmed

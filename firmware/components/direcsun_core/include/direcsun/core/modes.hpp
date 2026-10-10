@@ -39,6 +39,7 @@ enum Flag : uint32_t {
     kFlagHallBypass = 1u << 3,
     kFlagWheelStep = 1u << 4,        // bench wheel_step hold: rate and attitude loops suspended (R3.8)
     kFlagMomentumSaturated = 1u << 5,  // omega_ref on a limit in the direction the loop needs (R3.9)
+    kFlagHeadingGyro = 1u << 6,  // relative heading: gyro integration, not compass calibrated
 };
 
 // Wire name of a single flag bit, or nullptr.
@@ -58,6 +59,7 @@ ThrottleBand manual_throttle_band(const Params &params);
 struct TickInputs {
     uint32_t tick = 0;                          // monotonic 2 ms tick counter
     float rate_dps = 0.0f;                      // box rate estimate
+    float heading_deg = 0.0f;                   // wrapped internal-frame heading
     float wheel_rpm_safe = 0.0f;                // median wheel speed (interlocks, spin-up)
     float wheel_rpm_fast = 0.0f;                // latest-period wheel speed (controllers)
     uint32_t hall_edge_age_ms = UINT32_MAX;     // since the last valid Hall edge
@@ -118,6 +120,7 @@ struct TickOutputs {
     InterlockSet latched = 0;         // latched faults (also reported as tlm flags)
     uint32_t controlling_client = 0;  // 0 when no client has armed the box
     bool params_changed = false;      // persist outside the control loop
+    bool zero_heading_requested = false;  // apply to estimator after command checks
     Outbox<Ack, 16> acks;
     Outbox<Event, 8> events;
 };

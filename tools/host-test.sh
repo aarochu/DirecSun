@@ -28,7 +28,7 @@ mkdir -p "$build"
 cmake -S "$repo_root/firmware/test/host" -B "$build" \
     -DCMAKE_BUILD_TYPE=Debug -DDIRECSUN_HT_SELFTEST="$selftest" >"$build/configure.txt" 2>&1 ||
     { cat "$build/configure.txt" >&2; echo "host-test: configure failed" >&2; exit 1; }
-cmake --build "$build" -j >"$build/build.txt" 2>&1 ||
+cmake --build "$build" -j 2 >"$build/build.txt" 2>&1 ||
     { cat "$build/build.txt" >&2; echo "host-test: build failed" >&2; exit 1; }
 
 set +e
@@ -76,6 +76,7 @@ else
         "rate_sign_flip|HT-5 sim: READY detumbles a 1 rev/s spin within 5 s at the design gains"
         "no_rate_antiwindup|R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up"
         "no_rate_bleed|R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit"
+        "raw_heading|R4.2 a bias-corrected 30 deg/s trace integrates to 90 deg and keeps continuous turns"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

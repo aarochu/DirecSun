@@ -276,6 +276,7 @@ void control_task(void *)
         TickInputs in;
         in.tick = tick;
         in.rate_dps = estimator.rate_dps();
+        in.heading_deg = estimator.heading_deg();
         in.wheel_rpm_safe = wheel_safe;
         in.wheel_rpm_fast = wheel_fast;
         in.hall_edge_age_ms = edge_age_us < 0 ? UINT32_MAX : static_cast<uint32_t>(edge_age_us / 1000);
@@ -288,6 +289,7 @@ void control_task(void *)
         in.commands = commands;
         in.built_inputs = kRungOneBuiltInputs;  // MANUAL throttle; wheel and rate come later
         supervisor.step(in, controller, out);
+        if (out.zero_heading_requested) estimator.zero_heading();
         outbox_dropped_total = saturating_add(outbox_dropped_total, out.acks.dropped + out.events.dropped);
 
         // ---- 4. DShot -------------------------------------------------------

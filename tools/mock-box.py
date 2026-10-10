@@ -445,7 +445,7 @@ class Box:
             self.rate = 4.0 * math.cos(2 * math.pi * (now - self.t0) / 30.0) + reaction
         self.psi += self.rate * dt
 
-        flags = []
+        flags = ["HEADING_GYRO"]
         if self.mode == "SAFE" or OMEGA_LOW + 300 < self.wheel < OMEGA_CAP - 300:
             flags.append("MOMENTUM_OK")
         else:

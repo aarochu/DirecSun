@@ -483,8 +483,8 @@ stateDiagram-v2
         SPINUP --> READY: wheel within 5 percent of bias for 0.5 s
         READY --> SPINUP: respin with the box pinned and still
         READY --> DETUMBLE: mode DETUMBLE
-        READY --> HOLD: mode HOLD, magnetometer present
-        READY --> SLEW: mode SLEW, magnetometer present
+        READY --> HOLD: mode HOLD, relative gyro heading available
+        READY --> SLEW: mode SLEW, relative gyro heading available
         READY --> SUN_POINT: mode SUN_POINT, valid sun angle
         READY --> MANUAL: mode MANUAL with an input whose loop is built
         DETUMBLE --> READY: mode READY
@@ -501,11 +501,11 @@ The box only reaches the five demonstration modes through Ready, after the wheel
 
 | From | To | Guard |
 | --- | --- | --- |
-| Boot | Safe | IMU found (WHO\_AM\_I) and DShot 0 sent for 1 s. A missing magnetometer (QMC5883P chip ID 0x80 not read) is reported and blocks only Hold and Slew |
+| Boot | Safe | IMU found (WHO\_AM\_I) and DShot 0 sent for 1 s. A missing magnetometer (QMC5883P chip ID 0x80 not read) is reported; relative gyro HOLD and SLEW remain available after `zero_heading`, while absolute heading hold waits for calibration |
 | Safe | Spin-up | Ground `arm` command, box still (rate under 5 deg/s) and held by the lock pin or the operator, battery above 9.6 V, no latched fault. The sender becomes the controlling client (Section 6.7) |
 | Spin-up | Ready | Ω within 5 % of the bias speed for 0.5 s; Ready holds box rate at zero |
 | Ready | Detumble | Ground command |
-| Ready | Hold, Slew | Ground command; magnetometer present |
+| Ready | Hold, Slew | Ground command; relative gyro heading available after `zero_heading`. Absolute heading hold requires magnetometer calibration (Set 5) |
 | Ready | Sun point | Ground command; valid sun angle |
 | Ready | Manual | Ground command with an `input` of `throttle`, `wheel`, or `rate`; refused with a reason while the firmware lacks that input's loop |
 | Ready | Spin-up | Ground `respin` with the box pinned and still (rate under 5 deg/s). The new wheel start speed must lie between the low limit + 200 rpm and the cap − 200 rpm |
@@ -1037,6 +1037,7 @@ Aaron's `frontend/` (PR #1) became the main UI, and the owner decided that the b
 | U-1 | The wire's sign convention becomes clockwise positive for every quantity about the spin axis (heading, heading reference, magnetometer heading, sun angle, box rate, torque on the box). The firmware keeps the counter-clockwise frame of Section 6.5 internally and converts only when it encodes or decodes a message | The main UI draws positive heading clockwise ("rotate right" is +90°). This replaces the earlier rule that the UI converts for display | 7.3, 7.4 |
 | U-2 | The WebSocket moves from port 81, path `/`, to port 80, path `/ws`: `ws://direcsun.local/ws`, or `ws://192.168.4.1/ws` in SoftAP mode | The main UI's endpoint placeholder is `ws://192.168.4.1/ws` | 6.1, 7.2 |
 | U-3 | The demo UI is `frontend/` in this repository and owns its operator client. `ground/link/` and `ground/console/` become bench tools | PR #1 merged; owner decision | 7.4 |
+| U-4 | Relative HOLD and SLEW may use a zeroed, gyro-integrated heading before T-9. Absolute heading hold still requires magnetometer calibration | Approved R4.2 guard amendment for the judge sequence | 6.4, 6.6 |
 
 **Confirmed by the independent re-derivation:** K\_t, washer and box inertias, rate per rpm, absorbable spin, slew time and its formula, stored energy, imbalance forces, gravity torque, coin-test factor, structural stresses, all CAD clearances, the battery divider, the A1104 pull-up arrangement, the DLPF table, sensor addresses and registers, ESP32-S3 RMT and ADC facts, BLHeli\_S and DShot facts, radio addressing, and the slew profile settling within PR-2.
 

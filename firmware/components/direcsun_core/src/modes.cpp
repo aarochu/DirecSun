@@ -48,6 +48,7 @@ const char *flag_wire_name(uint32_t flag_bit)
     case kFlagHallBypass: return "HALL_BYPASS";
     case kFlagWheelStep: return "WHEEL_STEP";
     case kFlagMomentumSaturated: return "MOMENTUM_SATURATED";
+    case kFlagHeadingGyro: return "HEADING_GYRO";
     default: return nullptr;
     }
 }
@@ -337,8 +338,11 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
         pending_wheel_step_rpm_ += cmd.delta_rpm;
         return ack_ok(out, cmd);
 
-    case CommandKind::Respin:
     case CommandKind::ZeroHeading:
+        if (mode_ != Mode::Safe && mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+        out.zero_heading_requested = true;
+        return ack_ok(out, cmd);
+    case CommandKind::Respin:
         return ack(out, cmd, kNotImplemented);
     case CommandKind::Estop:
     case CommandKind::Ping:
@@ -351,6 +355,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     out.acks.clear();
     out.events.clear();
     out.params_changed = false;
+    out.zero_heading_requested = false;
     const uint32_t t = in.tick;
 
     if (pending_reset_notice_) {
@@ -478,7 +483,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     prev_throttle_ = throttle;
 
     // 6. Flags and outputs.
-    uint32_t flags = 0;
+    uint32_t flags = kFlagHeadingGyro;
     if (!params_.hall_installed) flags |= kFlagHallBypass;
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;

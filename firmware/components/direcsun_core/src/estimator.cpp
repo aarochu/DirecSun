@@ -4,7 +4,7 @@
 
 #include "direcsun/core/angles.hpp"
 
-#if defined(ESP_PLATFORM) && defined(DIRECSUN_MUTANT_NO_STILL_GATE)
+#if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_STILL_GATE) || defined(DIRECSUN_MUTANT_RAW_HEADING))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -75,7 +75,11 @@ void Estimator::update(const EstimatorInputs &in)
 
     const float sign = in.s_gyro < 0 ? -1.0f : 1.0f;
     rate_dps_ = sign * (in.gyro_z_dps - bias_dps_);
+#ifdef DIRECSUN_MUTANT_RAW_HEADING
+    heading_deg_ += static_cast<double>(sign * in.gyro_z_dps) * config_.dt_s;
+#else
     heading_deg_ += static_cast<double>(rate_dps_) * config_.dt_s;
+#endif
 }
 
 float Estimator::heading_deg() const

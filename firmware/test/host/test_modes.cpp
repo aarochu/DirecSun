@@ -18,6 +18,30 @@ TEST_CASE("HT-7 SAFE to SPINUP on arm when every guard passes")
     CHECK(rig.has_event_cause("arm"));
 }
 
+TEST_CASE("R4.2 zero_heading is accepted in SAFE and READY only")
+{
+    Rig rig;
+    rig.tick({cmd(CommandKind::ZeroHeading)});
+    CHECK(rig.last_ok());
+    CHECK(rig.out.zero_heading_requested);
+    rig.tick();
+    CHECK_FALSE(rig.out.zero_heading_requested);
+
+    rig.tick({cmd(CommandKind::Arm)});
+    rig.tick({cmd(CommandKind::ZeroHeading)});
+    CHECK_FALSE(rig.out.zero_heading_requested);
+    CHECK_FALSE(rig.out.acks.items[0].ok);
+
+    const float bias = rig.sup.params().omega_bias_rpm;
+    rig.in.wheel_rpm_safe = bias;
+    rig.run(ticks_from_ms(kSpinupDwellMs));
+    REQUIRE(rig.out.mode == Mode::Ready);
+    rig.tick({cmd(CommandKind::ZeroHeading)});
+    CHECK(rig.last_ok());
+    CHECK(rig.out.zero_heading_requested);
+    CHECK((rig.out.flags & kFlagHeadingGyro) != 0);
+}
+
 TEST_CASE("HT-7 SPINUP to READY after 0.5 s within 5 % of the bias, not one tick sooner")
 {
     Rig rig;
@@ -161,7 +185,7 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
             CHECK(rig.out.mode == Mode::Ready);
         }
         // wheel_step is implemented from R3.8 (bench only); test_controllers.cpp pins it.
-        for (CommandKind k : {CommandKind::Respin, CommandKind::ZeroHeading}) {
+        for (CommandKind k : {CommandKind::Respin}) {
             rig.tick({cmd(k)});
             CHECK(rig.last_reason() == "not implemented");
         }

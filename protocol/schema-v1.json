@@ -69,7 +69,8 @@
             "IMU_MISSING",
             "MANUAL_STALE",
             "HALL_BYPASS",
-            "WHEEL_STEP"
+            "WHEEL_STEP",
+            "HEADING_GYRO"
           ],
           "description": "HALL_BYPASS: the Hall bench bypass is on (bench only, FD section 14.1): the Hall interlocks are suspended and the throttle is capped at a compile-time ceiling. WHEEL_STEP: a bench wheel_step hold is active (R3.8): omega_ref was stepped and the rate and attitude loops are suspended until `mode READY`."
         },

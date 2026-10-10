@@ -22,6 +22,7 @@ add_library(direcsun_cjson STATIC "${CJSON_DIR}/cJSON.c")
 target_compile_definitions(direcsun_cjson PUBLIC CJSON_NESTING_LIMIT=8)
 target_compile_options(direcsun_cjson PRIVATE
     -Wall -Wextra -Werror
+    -Wno-error=deprecated-declarations
     -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
 
 # Protocol tests read the schema fixtures and write the messages they encode for
@@ -51,7 +52,7 @@ if(DIRECSUN_HT_SELFTEST)
     # tools/host-test.sh --selftest runs each one and requires the test that
     # guards that mechanism to fail, proving the test can see the defect.
     foreach(mutant NO_LATCH NO_BYPASS_CLAMP NO_STILL_GATE NO_WIRE_SIGN NO_SPINUP_RAMP NO_WHEEL_ANTIWINDUP
-            RATE_SIGN_FLIP NO_RATE_ANTIWINDUP NO_RATE_BLEED)
+            RATE_SIGN_FLIP NO_RATE_ANTIWINDUP NO_RATE_BLEED RAW_HEADING)
         string(TOLOWER "${mutant}" mutant_lower)
         direcsun_host_test_target(host_tests_mutant_${mutant_lower})
         target_compile_definitions(host_tests_mutant_${mutant_lower} PRIVATE DIRECSUN_MUTANT_${mutant})
