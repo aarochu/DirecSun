@@ -298,6 +298,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     manual.baro_p_pa = 101325.4f;
     manual.psi_deg = -179.999f;
     emit(encode_tlm(manual, 3, 0, buf, sizeof buf));
+    const std::string manual_tlm = buf;
 
     // tlm: READY during a bench wheel step (R3.8): wheel reference and WHEEL_STEP.
     TelemetrySnapshot stepped = ready_snapshot();
@@ -305,7 +306,13 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     stepped.flags = kFlagMomentumOk | kFlagWheelStep;
     stepped.bench_mode = true;
     emit(encode_tlm(stepped, 4, 0, buf, sizeof buf));
-    const std::string manual_tlm = buf;
+
+    // tlm: READY with the rate loop holding the wheel on a limit (R3.9).
+    TelemetrySnapshot saturated = ready_snapshot();
+    saturated.wheel_ref_rpm = 800.0f;
+    saturated.tau_cmd_mNm = -31.0f;
+    saturated.flags = kFlagMomentumNearLimit | kFlagMomentumSaturated;
+    emit(encode_tlm(saturated, 5, 0, buf, sizeof buf));
 
     // ack: ok, refused, and set_params with the applied set.
     Ack ack;
@@ -350,7 +357,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     // pong
     emit(encode_pong(16, 79, 512330.25, 83120, buf, sizeof buf));
 
-    CHECK(written == 14);
+    CHECK(written == 15);
 
     // Positive control for the schema check: the MANUAL tlm with psi_deg turned
     // into a string must be rejected by tools/check-protocol.sh.
@@ -378,4 +385,20 @@ TEST_CASE("R3.8 tlm carries the wheel reference and the WHEEL_STEP flag")
     parse(R"({"v":1,"type":"cmd","seq":9,"cmd":"set_params","params":{"bench_underspeed_rpm":300,"bench_cap_rpm":2500}})");
     REQUIRE(scratch().kind == InboundKind::Command);
     CHECK(scratch().params.count == 2);
+}
+
+TEST_CASE("R3.9 tlm carries the rate loop torque clockwise positive and MOMENTUM_SATURATED")
+{
+    TelemetrySnapshot s = ready_snapshot();
+    s.tau_cmd_mNm = 12.5f;  // internal frame: counter-clockwise on the box
+    s.flags = kFlagMomentumNearLimit | kFlagMomentumSaturated;
+    char buf[kMaxTlmBytes];
+    REQUIRE(encode_tlm(s, 1, 0, buf, sizeof buf) > 0);
+    Json doc(buf);
+    CHECK(doc.number("tau_cmd_mNm") == doctest::Approx(-12.5));
+    CHECK(std::strstr(buf, "\"MOMENTUM_SATURATED\"") != nullptr);
+
+    parse(R"({"v":1,"type":"cmd","seq":9,"cmd":"set_params","params":{"rate_gain_scale":0.2}})");
+    REQUIRE(scratch().kind == InboundKind::Command);
+    CHECK(scratch().params.count == 1);
 }

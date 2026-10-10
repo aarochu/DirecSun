@@ -294,6 +294,7 @@
         "k_psi": { "type": "number", "minimum": 0, "maximum": 10 },
         "k_omega": { "type": "number", "minimum": 0, "maximum": 0.05 },
         "k_i": { "type": "number", "minimum": 0, "maximum": 0.1 },
+        "rate_gain_scale": { "type": "number", "minimum": 0, "maximum": 1, "description": "Multiplies k_omega and k_i (R3.9). 0.2 for the first unpinned runs and the sign check (FD section 12.5), 1 for the design gains." },
         "wheel_kp": { "type": "number", "minimum": 0 },
         "wheel_ki": { "type": "number", "minimum": 0 },
         "ff_table": {
