@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { ACK_TIMEOUT_MS, DeviceCommandError, DeviceLink, PING_INTERVAL_MS } from '../hardware/deviceLink';
-import { DeviceOperator, HOLD_MS, SLEW_WAIT_MS } from '../hardware/deviceOperator';
+import { DeviceOperator, HOLD_MS, SLEW_EVENT_WAIT_MS, SLEW_WAIT_MS } from '../hardware/deviceOperator';
 import { ack, FakeSocket, modeEvent, tlm } from './fakeSocket';
 
 const flush = () => vi.advanceTimersByTimeAsync(0);
@@ -121,6 +121,7 @@ describe('DeviceOperator', () => {
     await flush();
     socket.message(tlm({ psi_deg: headingDeg, mode: 'SLEW' }));
     socket.message(tlm({ psi_deg: headingDeg, mode: 'READY' }));
+    socket.message(modeEvent('READY', 'slew_complete'));
     await flush();
   }
 
@@ -147,6 +148,9 @@ describe('DeviceOperator', () => {
     expect(operator.getState().phase).toBe('rotating');
     socket.message(tlm({ psi_deg: 60, mode: 'SLEW' }));
     socket.message(tlm({ psi_deg: 100, mode: 'READY' }));
+    await flush();
+    expect(operator.getState().phase).toBe('rotating');
+    socket.message(modeEvent('READY', 'slew_complete'));
     await flush();
     expect(operator.getState().phase).toBe('holding');
     const commandsDuringHold = socket.commands().length;
@@ -228,11 +232,15 @@ describe('DeviceOperator', () => {
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
+    socket.message(tlm({ psi_deg: 30, mode: 'READY' }));
+    await flush();
+    expect(operator.getState().phase).toBe('rotating');
     socket.message(modeEvent('READY', 'SLEW_TIMEOUT'));
     await turn;
     expect(operator.getState().result!.text).toContain('TIMED OUT');
     expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(2);
 
+    socket.message(tlm({ psi_deg: 30, mode: 'READY' }));
     turn = operator.rotate(-1);
     socket.message(ack(socket.lastCommand().seq));
     await flush();
@@ -241,6 +249,22 @@ describe('DeviceOperator', () => {
     socket.message(tlm({ psi_deg: 30, mode: 'SAFE' }));
     await turn;
     expect(operator.getState()).toMatchObject({ controlling: false, phase: 'idle' });
+  });
+
+  it('fails if READY telemetry arrives after SLEW but no completion event follows', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const turn = operator.rotate(1);
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
+    socket.message(tlm({ psi_deg: 30, mode: 'READY' }));
+    await flush();
+    expect(operator.getState().phase).toBe('rotating');
+    await vi.advanceTimersByTimeAsync(SLEW_EVENT_WAIT_MS);
+    await turn;
+    expect(operator.getState().result).toMatchObject({ tone: 'error', text: expect.stringContaining('WITHOUT A SLEW COMPLETION EVENT') });
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(1);
   });
 
   it('gives up when the slew never finishes', async () => {

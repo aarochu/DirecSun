@@ -22,6 +22,9 @@ export interface OperatorState {
 export const TURN_STEP_DEG = 90;
 export const HOLD_MS = 1000;
 export const SLEW_WAIT_MS = 10000;
+export const SLEW_EVENT_WAIT_MS = 1000;
+
+type WatchVerdict = 'continue' | 'done' | string | { waitMs: number; timeoutMessage: string };
 
 const IDLE: OperatorState = {
   controlling: false,
@@ -170,11 +173,14 @@ export class DeviceOperator {
     await this.watch(token, SLEW_WAIT_MS, (mode, event) => {
       if (event?.event === 'mode' && event.cause === 'SLEW_TIMEOUT') return 'THE BOX TIMED OUT THE SLEW';
       if (event?.event === 'mode' && event.mode === 'READY' && event.cause === 'slew_complete') return 'done';
+      if (event?.event === 'mode' && event.mode === 'READY') return `THE BOX ENDED THE SLEW (${event.cause ?? 'NO CAUSE'})`;
       if (mode === 'SLEW') {
         seenSlew = true;
         return 'continue';
       }
-      if (mode === 'READY') return seenSlew ? 'done' : 'continue';
+      if (mode === 'READY') return seenSlew
+        ? { waitMs: SLEW_EVENT_WAIT_MS, timeoutMessage: 'THE BOX RETURNED READY WITHOUT A SLEW COMPLETION EVENT' }
+        : 'continue';
       return `THE BOX LEFT THE SLEW (${mode ?? 'NO MODE'})`;
     }, 'THE SLEW DID NOT FINISH IN TIME');
   }
@@ -182,15 +188,17 @@ export class DeviceOperator {
   private watch(
     token: number,
     timeoutMs: number,
-    check: (mode: string | null, event: DeviceEvent | null) => 'continue' | 'done' | string,
+    check: (mode: string | null, event: DeviceEvent | null) => WatchVerdict,
     timeoutMessage: string | null = null,
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       let settled = false;
+      let eventTimer: ReturnType<typeof setTimeout> | null = null;
       const finish = (error: Error | null) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        if (eventTimer !== null) clearTimeout(eventTimer);
         stopFrames();
         stopEvents();
         if (this.cancelWait === cancel) this.cancelWait = null;
@@ -201,7 +209,9 @@ export class DeviceOperator {
         if (token !== this.turnToken) return finish(new TurnAborted('Superseded'));
         const verdict = check(this.boxMode, event);
         if (verdict === 'done') finish(null);
-        else if (verdict !== 'continue') finish(new Error(verdict));
+        else if (typeof verdict === 'object') {
+          if (eventTimer === null) eventTimer = setTimeout(() => finish(new Error(verdict.timeoutMessage)), verdict.waitMs);
+        } else if (verdict !== 'continue') finish(new Error(verdict));
       };
       const cancel = (reason: string) => finish(new TurnAborted(reason));
       const timer = setTimeout(() => finish(timeoutMessage ? new Error(timeoutMessage) : null), timeoutMs);
