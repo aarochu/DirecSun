@@ -14,7 +14,7 @@ Branch: `feat/set1-foundation`. Order: R1.1 first, because every other feature n
 - [x] R1.2 docs-import: TD and FD into docs/, renamed, diagrams rebuilt, approved amendments and the MANUAL mode applied
 - [x] R1.3 cad-import: CadQuery sources, cad/out pipeline, venv bootstrap, staleness check
 - [x] R1.4 firmware-skeleton: ESP-IDF v6.0 C++17 project that builds and boots on the XIAO ESP32-S3
-- [t] R1.5 host-test-harness: doctest host build with a positive control, core purity check
+- [x] R1.5 host-test-harness: doctest host build with a positive control, core purity check
 - [x] R1.6 protocol-link-console: schema v1, link module, bench console, mock box
 - [t] R1.7 ci: GitHub Actions running every check in this set
 - [x] R1.8 match-ui-wire-contract: wire sign clockwise-positive and endpoint port 80 /ws, matching the main UI (frontend/, PR #1)
