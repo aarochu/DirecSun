@@ -27,6 +27,20 @@ git clone --recurse-submodules git@github.com:aarochu/DirecSun.git
 
 Each area adds its commands here as it lands.
 
+### Ground link and console
+
+The bench console and the link module talk to the box, or to the protocol stub `tools/mock-box.py` before the firmware speaks schema v1. ES modules do not load over `file://`, so serve the repo over HTTP:
+
+```bash
+tools/mock-box.py                  # stub box on ws://127.0.0.1:8081/ (needs tools/bootstrap-venv.sh)
+python3 -m http.server 8000        # from the repo root
+# open http://127.0.0.1:8000/ground/console/ and connect to ws://127.0.0.1:8081/
+tools/check-schema.py              # protocol fixtures against protocol/schema-v1.json
+tools/check-link.sh                # link module tests, with every sent message schema-checked
+```
+
+The demo UI lives outside this repo and imports `ground/link/direcsun-link.js`.
+
 ## Working in this repo
 
 Read [AGENTS.md](AGENTS.md) and [changes/CONTEXT.md](changes/CONTEXT.md) before changing anything. Work is planned and tracked in `changes/` with the spec-driven-dev workflow: every feature has a spec, and its test scheme is the gate for merging.
