@@ -198,6 +198,7 @@ void control_task(void *)
     drv::BatteryAverage battery = ctx.battery;
     if (ctx.gyro_bias_seeded) {
         estimator.seed_bias(ctx.gyro_bias_dps);
+        estimator.set_accel_reference(ctx.accel_reference_g);
     }
 
     // Logged before the tick timer starts: a log line inside a tick blocks on

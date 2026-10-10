@@ -4,7 +4,7 @@
 
 #include "direcsun/core/angles.hpp"
 
-#if defined(ESP_PLATFORM) && defined(DIRECSUN_MUTANT_NO_STILL_GATE)
+#if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_STILL_GATE) || defined(DIRECSUN_MUTANT_ABSOLUTE_STILLNESS))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -58,7 +58,14 @@ void Estimator::update(const EstimatorInputs &in)
     // finding V-10). The gate uses the deviation from the current bias, so a
     // spinning box (as after an e-stop) never pulls the bias toward its rate.
     const bool rate_still = std::fabs(in.gyro_z_dps - bias_dps_) < config_.still_rate_dps;
-    const bool accel_still = std::fabs(accel_norm_g_ - 1.0f) < config_.still_accel_tol_g;
+    // Relative to the boot seed's reference norm, not to 1 g (FD 11.1 as
+    // amended): an uncalibrated accelerometer reads off 1 g at rest.
+#ifdef DIRECSUN_MUTANT_ABSOLUTE_STILLNESS
+    const float accel_ref = 1.0f;
+#else
+    const float accel_ref = accel_ref_g_;
+#endif
+    const bool accel_still = std::fabs(accel_norm_g_ - accel_ref) < config_.still_accel_tol_g;
     const bool wheel_still = !in.wheel_known || in.wheel_rpm < config_.still_wheel_rpm;
 #ifdef DIRECSUN_MUTANT_NO_STILL_GATE
     bias_updating_ = in.safe_mode;
@@ -88,31 +95,58 @@ float Estimator::heading_deg() const
 
 void GyroBiasSeed::add(float gyro_z_dps, const float accel_g[3])
 {
+    const float norm = std::sqrt(accel_g[0] * accel_g[0] + accel_g[1] * accel_g[1] + accel_g[2] * accel_g[2]);
     if (count_ == 0) {
         min_ = gyro_z_dps;
         max_ = gyro_z_dps;
+        norm_min_ = norm;
+        norm_max_ = norm;
     } else {
         min_ = gyro_z_dps < min_ ? gyro_z_dps : min_;
         max_ = gyro_z_dps > max_ ? gyro_z_dps : max_;
+        norm_min_ = norm < norm_min_ ? norm : norm_min_;
+        norm_max_ = norm > norm_max_ ? norm : norm_max_;
     }
     sum_ += gyro_z_dps;
+    norm_sum_ += norm;
     ++count_;
-    const float norm = std::sqrt(accel_g[0] * accel_g[0] + accel_g[1] * accel_g[1] + accel_g[2] * accel_g[2]);
-    if (std::fabs(norm - 1.0f) >= config_.accel_tol_g) {
-        accel_ok_ = false;
+}
+
+const char *GyroBiasSeed::failure() const
+{
+    if (count_ < config_.min_samples) {
+        return "too few samples";
     }
+    if ((max_ - min_) > config_.max_range_dps) {
+        return "gyro range too wide (the box turned)";
+    }
+    const float mean = static_cast<float>(sum_ / static_cast<double>(count_));
+    if (std::fabs(mean) > config_.max_abs_mean_dps) {
+        return "gyro mean beyond the sensor's offset tolerance (the box was spinning)";
+    }
+#ifdef DIRECSUN_MUTANT_ABSOLUTE_STILLNESS
+    // The pre-amendment rule: every norm within the tolerance of exactly 1 g.
+    if (norm_max_ - 1.0f >= config_.accel_tol_g || 1.0f - norm_min_ >= config_.accel_tol_g) {
+        return "accelerometer norm off 1 g";
+    }
+#else
+    const float ref = reference_norm_g();
+    if (ref < config_.min_ref_norm_g || ref > config_.max_ref_norm_g) {
+        return "accelerometer norm implausible for gravity";
+    }
+    if (norm_max_ - ref >= config_.accel_tol_g || ref - norm_min_ >= config_.accel_tol_g) {
+        return "accelerometer norm varied (the box moved)";
+    }
+#endif
+    return nullptr;
 }
 
 bool GyroBiasSeed::result(float &bias_dps) const
 {
-    if (count_ < config_.min_samples || !accel_ok_ || (max_ - min_) > config_.max_range_dps) {
+    if (failure() != nullptr) {
         return false;
     }
-    const float mean = static_cast<float>(sum_ / static_cast<double>(count_));
-    if (std::fabs(mean) > config_.max_abs_mean_dps) {
-        return false;
-    }
-    bias_dps = mean;
+    bias_dps = static_cast<float>(sum_ / static_cast<double>(count_));
     return true;
 }
 

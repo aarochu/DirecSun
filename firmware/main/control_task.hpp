@@ -23,6 +23,7 @@ struct ControlContext {
     drivers::BatteryAverage battery;     // primed during the boot window, so BATTERY_LOW starts from real readings
     bool gyro_bias_seeded = false;
     float gyro_bias_dps = 0.0f;
+    float accel_reference_g = 1.0f;      // the seed window's mean accel norm; 1 g when not seeded
     bool imu_present = false;
     bool mag_present = false;
     bool baro_present = false;

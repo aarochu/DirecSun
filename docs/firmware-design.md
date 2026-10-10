@@ -294,7 +294,7 @@ flowchart TD
 - **DShot 0 starts first.** The ESC arms only after seeing zero throttle [V] TD §5.2, and TD §6.3 asks for about 1 s of zeros [A] A-22. Sending zeros from the first milliseconds also means that a reset caused by the watchdog stops drive quickly. The ESC itself switches drive off about 0.3 s after pulses stop [V] TD §5.2, so the reset gap is bounded either way.
 - **Boot does not wait for Wi-Fi.** The box is safe in `SAFE` without a ground connection; heartbeat rules only apply in active modes (§14.1).
 - **Missing magnetometer** is not fatal: `DETUMBLE` needs only the gyro. Modes that need heading (`HOLD`, `SLEW`, `SUN_POINT`) are refused with a reason [D].
-- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). It is not taken once at boot, because the box may be moving after a watchdog reset [D, finding V-10].
+- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). The boot window seeds it only when the window itself proves the box was still, because the box may be moving after a watchdog reset [D, findings V-10 and V-61].
 
 ---
 
@@ -476,7 +476,9 @@ Rules [D]:
 ```
 
 - `s_gyro` = +1 by default, confirmed in T-8 [M].
-- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of 1 g, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of the reference `a_ref`, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Stillness is relative, not 1 g** [D, V-61]. An uncalibrated MPU-6050 reads well off 1 g at rest: the bench unit reads 0.871 g, so a test against 1 g never passes and the bias never learns. `a_ref` is the boot window's own mean accel magnitude, and 1 g until a boot window qualifies.
+- **Boot seed** [D, V-61]. The MPU-6050 offset can exceed the 2 deg/s gate (the register map allows ±20 deg/s; the bench unit reads about −2.1 deg/s), so from b_z = 0 the gate might never open. The 1 s boot window (§8.1) therefore averages g_z and seeds b_z, and sets `a_ref`, only when the window proves the box was still: at least 250 samples, g_z range under 0.5 deg/s, |mean g_z| under 25 deg/s, a mean accel magnitude between 0.7 and 1.3 g (a dead accelerometer reading near 0 g is not still), and every sample's magnitude within 0.05 g of that mean. Otherwise b_z starts at 0, and the boot log names the first criterion that failed.
 - **Vibration:** the 20 Hz DLPF passes 25 to 45 % of the 40 Hz bias-speed vibration [V] TD §6.4. A software notch filter is implemented but off by default. When enabled, its centre follows `speed_safe / 60` Hz and it is switched on only if T-7/T-8 show residual vibration in ω̂ [D].
 
 ### 11.2 Wheel speed
@@ -1167,6 +1169,7 @@ Each statement below was challenged by recomputing it from TD's inputs, by check
 | V-36 | §14.3: e-stop always ramps from throttle_0 | Implementation | A ramp from zero throttle only blocks the next `arm` for 5 s | No ramp when the last throttle was below 48 [D] | Low (this doc) |
 | V-37 | §10.3: the BMP280 "is read at 1 Hz on a spare tick" | R3.2 read the esp-idf-lib i2cdev source | A bus error makes `bmp280_read_float` retry three times with 40 to 160 ms backoff, about 0.3 s, which would stall the 2 ms control loop | Read by a low-priority core-0 task and published through a seqlock; the control task never calls it (R3.4) | Medium (this doc) |
 | V-60 | §9.2: worst tick "about 0.75 ms of 2 ms" | R3.4 bench, per-stage timing on the XIAO | The worst tick was 1.4 to 1.9 ms: the 16 KB instruction cache thrashed every tick, the magnetometer status and data reads and an ADC read shared ticks, and the first tick logged | 32 KB instruction cache and IRAM placement by linker fragments; magnetometer data on the tick after the status read; ADC on ticks 0, 2, 4; no log inside a tick. Measured 770 to 780 µs, no missed ticks (§9.2) | High (this doc) |
+| V-61 | §11.1: the bias gate needs the accel magnitude "within 0.05 g of 1 g"; §8.2: the bias "is not taken once at boot" | R3.4 bench: the MPU-6050 read 0.871 g at rest, and the boot seed refused a window with a 0.12 deg/s gyro range | The absolute test rejects an uncalibrated accelerometer at rest, so neither the boot seed nor the gate ever ran, and heading drifted with the 2.1 deg/s offset | Stillness relative to the boot window's own mean magnitude, with a 0.7 to 1.3 g plausibility band; the boot seed and its criteria written into §11.1; the boot log names the failed criterion | High (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
