@@ -21,15 +21,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       # No job needs the agent-skill submodules.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -46,7 +46,7 @@ jobs:
 
       - name: Logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: check-all-logs
           path: build/check-all/
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-24.04
     container: espressif/idf:v6.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: false
 
@@ -71,7 +71,7 @@ jobs:
           idf.py size | tee build/size.txt
 
       - name: Firmware image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: direcsun-firmware
           path: |
