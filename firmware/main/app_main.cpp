@@ -202,12 +202,21 @@ extern "C" void app_main(void)
     }
     ctx.gyro_bias_seeded = seed.result(ctx.gyro_bias_dps);
     if (ctx.gyro_bias_seeded) {
-        ESP_LOGI(TAG, "gyro z bias seeded at %.3f deg/s from %u still samples (range %.3f)",
+        // The window's mean norm is what "still" means for this accelerometer
+        // from now on (FD 11.1 as amended).
+        ctx.accel_reference_g = seed.reference_norm_g();
+        ESP_LOGI(TAG,
+                 "gyro z bias seeded at %.3f deg/s from %u still samples (range %.3f); "
+                 "accel reference %.3f g (norm %.3f to %.3f)",
                  static_cast<double>(ctx.gyro_bias_dps), static_cast<unsigned>(seed.samples()),
-                 static_cast<double>(seed.range_dps()));
+                 static_cast<double>(seed.range_dps()), static_cast<double>(ctx.accel_reference_g),
+                 static_cast<double>(seed.norm_min_g()), static_cast<double>(seed.norm_max_g()));
     } else {
-        ESP_LOGW(TAG, "gyro z bias not seeded (%u samples, range %.3f deg/s): the box moved, or the IMU is missing",
-                 static_cast<unsigned>(seed.samples()), static_cast<double>(seed.range_dps()));
+        ESP_LOGW(TAG,
+                 "gyro z bias not seeded: %s (%u samples, gyro range %.3f deg/s, accel norm %.3f g, %.3f to %.3f)",
+                 seed.failure(), static_cast<unsigned>(seed.samples()), static_cast<double>(seed.range_dps()),
+                 static_cast<double>(seed.reference_norm_g()), static_cast<double>(seed.norm_min_g()),
+                 static_cast<double>(seed.norm_max_g()));
     }
     ESP_LOGI(TAG, "boot window done: %" PRIu32 " DShot frames sent, battery %.2f V over %u readings", dshot.sent(),
              static_cast<double>(ctx.battery.average()), static_cast<unsigned>(ctx.battery.count()));
