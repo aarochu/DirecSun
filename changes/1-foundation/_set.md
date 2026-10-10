@@ -34,3 +34,4 @@ None.
   - 13/14 PASS: purity, host tests (7 cases), schema, link (13 tests, 97 messages), mock box, CAD staleness, firmware build, frontend install, typecheck, unit (56).
   - `frontend-e2e` failed on its `MOCK_ONLY` test, because Google Fonts files loaded after `networkidle` on a freshly rebooted machine at load average 14 to 30. Reruns: one failed the same way, one passed 15/15.
   - The flake and the runtime-font dependency (no fonts on a demo network without internet) are filed for Aaron as aarochu/DirecSun#2; `frontend/` is not edited from backend work.
+- 2026-10-10: Set 1 complete. Merged `feat/set1-foundation` to `main` through PR #3 (cb6d389) on Julian's go, after CI passed on c612a53 (checks, firmware, frontend; push and PR runs).
