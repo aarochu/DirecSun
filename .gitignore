@@ -1,0 +1,15 @@
+# Claude Code per-user settings (.claude is a symlink to .agents)
+.agents/settings.local.json
+.claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# OS and editors
+.DS_Store
+*~
+*.swp
+.vscode/*
+!.vscode/extensions.json
