@@ -9,11 +9,13 @@
 //   RATE_SIGN_FLIP       the torque-to-wheel step uses -s_w (TD R-1)
 //   NO_RATE_ANTIWINDUP   the rate integral runs while saturated
 //   NO_RATE_BLEED        no stick-slip bleed
+//   FLOOR_AT_LOW         omega_ref's floor back on omega_low, the UNDERSPEED threshold
 //   FLIP_KPSI            the attitude loop's gain has the wrong sign (R4.3)
 //   NO_HOLD_DEADBAND     the attitude loop pushes inside the hold deadband (R4.3)
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_WHEEL_ANTIWINDUP) || defined(DIRECSUN_MUTANT_RATE_SIGN_FLIP) || \
-                              defined(DIRECSUN_MUTANT_NO_RATE_ANTIWINDUP) || defined(DIRECSUN_MUTANT_NO_RATE_BLEED) || \
-                              defined(DIRECSUN_MUTANT_FLIP_KPSI) || defined(DIRECSUN_MUTANT_NO_HOLD_DEADBAND))
+                              defined(DIRECSUN_MUTANT_NO_RATE_ANTIWINDUP) || defined(DIRECSUN_MUTANT_NO_RATE_BLEED) ||   \
+                              defined(DIRECSUN_MUTANT_FLOOR_AT_LOW) || defined(DIRECSUN_MUTANT_FLIP_KPSI) ||             \
+                              defined(DIRECSUN_MUTANT_NO_HOLD_DEADBAND))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -35,6 +37,15 @@ float clampf(float v, float lo, float hi)
 bool wheel_loop_available(const Params &params)
 {
     return params.hall_installed && params.ff_count == kFfPoints;
+}
+
+float omega_ref_floor_rpm(const Params &params)
+{
+#ifdef DIRECSUN_MUTANT_FLOOR_AT_LOW
+    return params.omega_low_rpm;
+#else
+    return params.omega_low_rpm + kOmegaRefFloorMarginRpm;
+#endif
 }
 
 float ff_throttle(const Params &params, float rpm)
@@ -91,8 +102,9 @@ RateLoopStep RateLoop::step(float omega_cmd_dps, float omega_hat_dps, float omeg
         ref = cap_rpm;
         out.momentum_saturated = delta_rpm > 0.0f;
     }
-    if (ref < params.omega_low_rpm) {
-        ref = params.omega_low_rpm;
+    const float floor_rpm = omega_ref_floor_rpm(params);
+    if (ref < floor_rpm) {
+        ref = floor_rpm;
         out.momentum_saturated = delta_rpm < 0.0f;
     }
     out.omega_ref_rpm = ref;

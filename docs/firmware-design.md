@@ -298,7 +298,7 @@ flowchart TD
 - **DShot 0 starts first.** The ESC arms only after seeing zero throttle [V] TD §5.2, and TD §6.3 asks for about 1 s of zeros [A] A-22. Sending zeros from the first milliseconds also means that a reset caused by the watchdog stops drive quickly. The ESC itself switches drive off about 0.3 s after pulses stop [V] TD §5.2, so the reset gap is bounded either way.
 - **Boot does not wait for Wi-Fi.** The box is safe in `SAFE` without a ground connection; heartbeat rules only apply in active modes (§14.1).
 - **Missing magnetometer** is not fatal: `DETUMBLE` needs only the gyro, and until Set 5 `HOLD` and `SLEW` run on the gyro-only heading for relative use (§13.1, V-48). `SUN_POINT` needs the sun sensors, not the magnetometer [D].
-- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). It is not taken once at boot, because the box may be moving after a watchdog reset [D, finding V-10].
+- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). The boot window seeds it only when the window itself proves the box was still, because the box may be moving after a watchdog reset [D, findings V-10 and V-61].
 
 ---
 
@@ -311,10 +311,13 @@ flowchart TD
     T0["Task notified by timer"] --> T1["t = esp_timer_get_time()<br/>record loop start"]
     T1 --> T2["Read MPU-6050 14 bytes from 0x3B<br/>(accel, temp, gyro)"]
     T2 --> T3{"Even tick?"}
-    T3 -- yes --> T4["Read QMC5883P status; if DRDY,<br/>read 6 data bytes, add to 20 ms average"]
-    T3 -- no --> T5
-    T4 --> T5{"Every 10th tick?"}
-    T5 -- yes --> T6["Read sun A, sun B, battery ADC<br/>(spread over ticks 0, 3, 6 of each 10)"]
+    T3 -- yes --> T4["Read QMC5883P status;<br/>remember DRDY"]
+    T3 -- no --> T3b{"DRDY on the<br/>previous tick?"}
+    T3b -- yes --> T4b["Read 6 data bytes,<br/>add to 20 ms average"]
+    T3b -- no --> T5
+    T4 --> T5{"Tick 0, 2, or 4<br/>of each 10?"}
+    T4b --> T5
+    T5 -- yes --> T6["Read one ADC input:<br/>battery, sun A, sun B in turn"]
     T5 -- no --> T7
     T6 --> T7["Drain Hall ring buffer;<br/>update wheel speed estimate"]
     T7 --> T8["Estimator update:<br/>rate, heading (mag fused at 50 Hz), sun angle"]
@@ -334,12 +337,21 @@ flowchart TD
 | Step | Estimate | Label |
 | --- | --- | --- |
 | IMU burst read, 14 bytes at 400 kHz | 0.39 ms (155 bit times) | [C] |
-| Magnetometer status + 6 bytes (every 2nd tick) | about 0.25 ms | [C] |
+| Magnetometer status (even ticks) or 6 data bytes (the odd tick after DRDY), never both on one tick | about 0.25 ms | [C] |
 | One ADC read with calibration (at most one per tick) | tens of µs | [A] |
 | Estimator + controllers + interlocks (float) | < 50 µs | [A] |
 | DShot encode + RMT start | < 20 µs; the 53 µs DShot300 frame is sent by hardware | [A]; frame [V] |
 | JSON is **not** on this core | 0 | [D] |
 | **Worst tick** | **about 0.75 ms of 2 ms** | [C on A] |
+
+**Measured on the XIAO (R3.4 bench, 2026-10-10) [V].** The first build ran its worst tick at 1.4 to 1.9 ms, and its first tick at 6.9 ms with 2 missed ticks. Per-stage timing (the bench Kconfig `DIRECSUN_BENCH_STAGE_TIMING`) found three causes:
+- The ESP32-S3's default 16 KB instruction cache could not hold the tick's code (core, drivers, the I2C and RMT drivers, libc math), so it refilled from flash every tick: the estimator took 43 µs and the telemetry snapshot 99 µs. The firmware uses the 32 KB instruction cache (`CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB`) and places `direcsun_core`, `direcsun_drivers`, and the control task in IRAM through linker fragments (`linker.lf`), so the core's sources stay free of ESP-IDF attributes (§18).
+- The magnetometer status and data reads shared a tick with each other and with an ADC read. They are now on separate ticks, with the ADC reads next to the short status read (§9.1).
+- The first tick logged a line on the console, which blocks for milliseconds. The line is logged before the tick timer starts.
+
+After the fixes, per stage, mean (max) in µs: IMU 456, magnetometer 207 (282), ADC 48, estimator 6 (11), supervisor 4 (9), DShot 15, snapshot 7. Over 11.6 min the flight build's worst tick was 911 to 926 µs each second and 976 µs in the first, with no missed ticks [D, V-60].
+
+The IMU read's maximum is not stable from build to build: 463 to 473 µs in one, 655 to 694 µs in another, once in every second. The extra 200 µs is about one BMP280 read, and the core-0 barometer task (§10.3) reads once a second at a fixed phase to the 2 ms tick, so its transaction can hold the shared bus when the IMU read starts. This has not yet been confirmed by a run with the barometer task off [A]. If it is confirmed, the worst tick can reach about 1010 µs, and the barometer read has to be placed in the idle part of the tick.
 
 At 100 kHz I2C the IMU read alone is 1.55 ms [C], and an IMU + magnetometer tick would exceed 2 ms, which is why TD §5.3 runs the bus at 400 kHz. Every tick reads the IMU, so there is no tick free for the magnetometer at 100 kHz. If the oscilloscope check in TD §5.3 forces 100 kHz, the control rate falls to 250 Hz (4 ms ticks: IMU 1.55 ms, plus magnetometer status and data on alternate ticks, about 0.8 ms), and the gains in §12.2 are rechecked for the longer step [D, finding V-6].
 
@@ -378,7 +390,7 @@ Axis mapping: the board sits face up, centred on the spin axis (TD §4.8), so se
 
 Driver: the vendored `duruofu/qmc5883p` 0.1.0 in `firmware/components/qmc5883p`, given the i2cdev bus through `i2cdev_get_shared_handle(I2C_NUM_0, ...)` after the first i2cdev transaction has created it [D]. The driver hard-codes a 100 kHz device clock, and its own comments flag its 8 G sensitivity value as uncertain; both are corrected by documented local patches after checking the QST datasheet [A].
 
-Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). It reads data only when data-ready is set, which yields every new 200 Hz sample once, and averages all new samples in each 20 ms window into one 50 Hz heading measurement [D].
+Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). When data-ready is set it reads the data on the next tick, so the two transactions never share a tick (§9.2, V-60); this yields every new 200 Hz sample once, and all new samples in each 20 ms window are averaged into one 50 Hz heading measurement [D].
 
 Mounting: the board hangs upside down under the flipped top deck (TD §4.8). Turning a board over is a 180° rotation about a horizontal axis, which flips **Z and one horizontal axis**, not Z alone (finding V-4). Heading uses only the horizontal components, so the horizontal flip matters and the Z flip does not. The driver applies a configurable axis map `mag_axis_map` (default: negate Y and Z, keep X), and T-9 confirms it: rotating the box counter-clockwise must make magnetic heading increase in the same direction as the integrated gyro [M].
 
@@ -470,7 +482,9 @@ Rules [D]:
 ```
 
 - `s_gyro` = +1 by default, confirmed in T-8 [M].
-- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of 1 g, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of the reference `a_ref`, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Stillness is relative, not 1 g** [D, V-61]. An uncalibrated MPU-6050 reads well off 1 g at rest: the bench unit reads 0.871 g, so a test against 1 g never passes and the bias never learns. `a_ref` is the boot window's own mean accel magnitude, and 1 g until a boot window qualifies.
+- **Boot seed** [D, V-61]. The MPU-6050 offset can exceed the 2 deg/s gate (the register map allows ±20 deg/s; the bench unit reads about −2.1 deg/s), so from b_z = 0 the gate might never open. The 1 s boot window (§8.1) therefore averages g_z and seeds b_z, and sets `a_ref`, only when the window proves the box was still: at least 250 samples, g_z range under 0.5 deg/s, |mean g_z| under 25 deg/s, a mean accel magnitude between 0.7 and 1.3 g (a dead accelerometer reading near 0 g is not still), and every sample's magnitude within 0.05 g of that mean. Otherwise b_z starts at 0, and the boot log names the first criterion that failed.
 - **Vibration:** the 20 Hz DLPF passes 25 to 45 % of the 40 Hz bias-speed vibration [V] TD §6.4. A software notch filter is implemented but off by default. When enabled, its centre follows `speed_safe / 60` Hz and it is switched on only if T-7/T-8 show residual vibration in ω̂ [D].
 
 ### 11.2 Wheel speed
@@ -524,7 +538,7 @@ Tilt angle = `acos(a_z / |a|)` from the averaged accelerometer (20 ms window). I
 flowchart LR
     REF["ψ_ref<br/>(Hold capture,<br/>Slew trapezoid)"] --> A["Attitude P<br/>ω_cmd = K_ψ · wrap(ψ_ref − ψ̂)<br/>limit ±90 deg/s"]
     A --> R["Rate PI<br/>τ_cmd = K_ω e + K_i ∫e<br/>limit ±31 mN·m"]
-    R --> W["Torque → wheel reference<br/>Ω_ref += −s_w τ_cmd (1/I_w + 1/I_b) Δt<br/>clamp [Ω_low, Ω_cap]"]
+    R --> W["Torque → wheel reference<br/>Ω_ref += −s_w τ_cmd (1/I_w + 1/I_b) Δt<br/>clamp [Ω_low + 100, Ω_cap]"]
     W --> S["Wheel speed PI + feed-forward<br/>throttle = FF(Ω_ref) + PI(Ω_ref − Ω̂)"]
     S --> D["DShot throttle"]
     D --> P(("Plant"))
@@ -552,6 +566,7 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 | τ_cmd limit | ±31 mN·m (3 A × 10.38 mN·m/A) | TD §6.5 | [C] |
 | Wheel ref slope at the τ limit | 4842 rpm/s, 9.7 rpm per tick | 0.031 × (1/I_w + 1/I_b) × 60/2π | [C] |
 | Ω_low | 800 rpm | until T-18 | [A] A-8 |
+| Ω_ref floor | Ω_low + 100 rpm (900 rpm) | Margin between the floor of the Ω_ref clamp and the `UNDERSPEED` threshold (Ω_low), as Ω_cap has 100 rpm to `OVERSPEED` (V-52) | [D] |
 | Ω_bias | 2400 rpm | midpoint of low limit and cap | [V] TD §3.4 |
 | Ω_cap | 4000 rpm | PR-4 | [V] TD |
 | Wheel PI bandwidth | start at **2 Hz**, raise toward 5 Hz only after measuring delay | Hall update 80/s at bias; see V-7 | [D] |
@@ -563,7 +578,7 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 
 - **Rate integral:** conditional integration. Stop integrating when τ_cmd is saturated or Ω_ref is clamped at a limit in the direction that would need more [D]. The integral's torque K_i ∫e is then bounded to ±3 mN·m (§12.2), so its bound in rad is 3 mN·m / K_i and widens as `rate_gain_scale` lowers K_i; with K_i = 0 the integral is held at 0 [D].
 - **Stick-slip bleed (finding V-46):** while ω_cmd = 0 and |ω̂| < 1 deg/s, the rate integral decays with a 0.5 s time constant [D].
-- **Ω_ref clamp:** when Ω_ref hits Ω_cap or Ω_low, set the flag `MOMENTUM_SATURATED`, freeze the rate integral, and report through telemetry. The box then cannot be driven further in that direction until desaturation (§13.4).
+- **Ω_ref clamp:** Ω_ref stays within [Ω_low + 100, Ω_cap]; the floor is 100 rpm above the `UNDERSPEED` threshold so that a wheel held on it does not trip (V-52). When Ω_ref hits Ω_cap or the floor, set the flag `MOMENTUM_SATURATED`, freeze the rate integral, and report through telemetry. The box then cannot be driven further in that direction until desaturation (§13.4).
 - **Throttle clamp:** 48..2047 while running; 0 only from the safety layer.
 
 ### 12.4 Slew profile
@@ -863,7 +878,7 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 | `respin` | `wheel_rpm` (optional, default bias) | READY | → SPINUP to the new start speed (§13.4) |
 | `zero_heading` | none | SAFE, READY | Heading offset (§11.3) |
 | `set_params` | `params` object | SAFE only | Validate every key and range; store in NVS; reply with the applied set [D] |
-| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set, wheel loop available | Ω_ref step, clamped to [Ω_low, cap in force], with the attitude and rate loops suspended until `mode READY` is sent again (tlm flag `WHEEL_STEP` meanwhile); for §12.5 and the wheel-loop step response [D]. Refused, in this order, with `bench_mode required`, `not in READY`, or `wheel loop not available` (no Hall, or no `ff_table` yet). Interlocks stay active |
+| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set, wheel loop available | Ω_ref step, clamped to [Ω_low + 100, cap in force] (V-52), with the attitude and rate loops suspended until `mode READY` is sent again (tlm flag `WHEEL_STEP` meanwhile); for §12.5 and the wheel-loop step response [D]. Refused, in this order, with `bench_mode required`, `not in READY`, or `wheel loop not available` (no Hall, or no `ff_table` yet). Interlocks stay active |
 
 #### `ack`: box → sender
 
@@ -1211,8 +1226,10 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-49 | §11.3: `zero_heading` "adds an offset so ψ̂ reads 0"; where the offset lives was unstated, and the command was accepted in any state | R4.2 | An offset kept in the estimator would let a zero and a `HOLD` or `SLEW` in the same control tick use different references, and a zero during `SLEW` would move the target under the box | The supervisor keeps the offset and reports the heading relative to it; the estimator integrates and is never reset. `zero_heading` is accepted in `SAFE` and `READY` only, refused elsewhere with `not in SAFE or READY` [D] | Low (this doc) |
 | V-50 | §12.4: `SLEW` ends when \|ψ_ref − ψ̂\| < 3° and \|ω̂\| < 5 deg/s for 0.5 s; the target's direction for a half-turn was left to the ground station | R4.3 | Read literally, the test holds while ψ_ref is still moving, so a short slew could report `slew_complete` before ψ_ref reached the target; a 180° target had two shortest paths | The test starts only once the profile has ended, so it compares ψ̂ with the target itself; a half-turn always goes counter-clockwise. The 6 s timeout counts from entry, which is tick 0 [D] | Low (this doc) |
 | V-51 | §12.1 and §12.3: ω_cmd = K_ψ · wrap(ψ_ref − ψ̂) everywhere in `HOLD`; the stick-slip bleed runs only while ω_cmd = 0 | R4.3 host simulation | At 3 mN·m, after a 10 mN·m, 100 ms poke, the box returned within 2° in 0.3 s and then crept the last 1.6° at under 1 deg/s with the rate loop holding about 2.8 mN·m against friction. The wheel absorbed that friction impulse, about 440 rpm per second, and reached Ω_low and `UNDERSPEED` 3.9 s after the poke | A 1° hold deadband on a still reference: inside it ω_cmd = 0, the bleed clears the integral, and friction holds the box. The same poke then costs about 800 rpm once and the wheel stays put (7 rpm in the next second). The positive control `DIRECSUN_MUTANT_NO_HOLD_DEADBAND` fails the HOLD simulation test [D] | Medium (this doc) |
-| V-52 | §12.2: Ω_ref is clamped to [Ω_low, Ω_cap], and `UNDERSPEED` trips when the wheel is below Ω_low for 200 ms (§14.1) | R4.3 host simulation | The clamp's floor is the trip threshold itself, so a rate loop that holds Ω_ref on Ω_low (`MOMENTUM_SATURATED`) turns into `UNDERSPEED` and `SAFE` as soon as the wheel dips a hair under it for 200 ms; the cap has margin to `OVERSPEED`, the floor has none | Open: raise the floor of the clamp above Ω_low (for example Ω_low + 100 rpm), or accept `SAFE` as the end of a saturated low wheel. Not changed by R4.3 | Medium (this doc), open |
+| V-52 | §12.2: Ω_ref is clamped to [Ω_low, Ω_cap], and `UNDERSPEED` trips when the wheel is below Ω_low for 200 ms (§14.1) | R4.3 host simulation; owner decision 2026-10-10 | The clamp's floor is the trip threshold itself, so a rate loop that holds Ω_ref on Ω_low (`MOMENTUM_SATURATED`) turns into `UNDERSPEED` and `SAFE` as soon as the wheel dips a hair under it for 200 ms; the cap has margin to `OVERSPEED`, the floor has none | The floor of the clamp is Ω_low + 100 rpm, for the rate loop, the bumpless start into `READY`, and `wheel_step`; `UNDERSPEED` stays at Ω_low, and `MOMENTUM_SATURATED` is set while the rate loop holds Ω_ref on the floor. `SPINUP`'s ramp is still clamped only by the cap (V-45). In the host simulation a clockwise 3 rev/s spin pins Ω_ref on the floor: the wheel undershoots to 891 rpm and the box stays in `READY`; the positive control `DIRECSUN_MUTANT_FLOOR_AT_LOW` (floor on Ω_low) undershoots to 798 rpm and trips `UNDERSPEED` within 0.9 s. The MANUAL `wheel` input (§13, not built yet) still clamps to [Ω_low, Ω_cap] and should take the same floor when it is built [D] | Medium (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
+| V-60 | §9.2: worst tick "about 0.75 ms of 2 ms" | R3.4 bench, per-stage timing on the XIAO | The worst tick was 1.4 to 1.9 ms: the 16 KB instruction cache thrashed every tick, the magnetometer status and data reads and an ADC read shared ticks, and the first tick logged | 32 KB instruction cache and IRAM placement by linker fragments; magnetometer data on the tick after the status read; ADC on ticks 0, 2, 4; no log inside a tick. Measured 911 to 976 µs, no missed ticks; a once-a-second IMU read delay, probably the barometer read, is open (§9.2) | High (this doc) |
+| V-61 | §11.1: the bias gate needs the accel magnitude "within 0.05 g of 1 g"; §8.2: the bias "is not taken once at boot" | R3.4 bench: the MPU-6050 read 0.871 g at rest, and the boot seed refused a window with a 0.12 deg/s gyro range | The absolute test rejects an uncalibrated accelerometer at rest, so neither the boot seed nor the gate ever ran, and heading drifted with the 2.1 deg/s offset | Stillness relative to the boot window's own mean magnitude, with a 0.7 to 1.3 g plausibility band; the boot seed and its criteria written into §11.1; the boot log names the failed criterion | High (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 

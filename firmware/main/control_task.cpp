@@ -1,7 +1,9 @@
 // The control task (FD sections 7.2, 9, 14.5). One tick every 2 ms:
 //
-//   1. IMU burst every tick, magnetometer poll on even ticks, ADC reads spread
-//      over ticks 0, 3, and 6 of every 10, Hall ring drained.
+//   1. IMU burst every tick. The magnetometer status is read on even ticks and,
+//      when it reports DRDY, the data on the next (odd) tick, so no tick carries
+//      both transactions. ADC reads on even ticks 0, 2, and 4 of every 10, next
+//      to the short status read rather than the data read. Hall ring drained.
 //   2. Estimator update.
 //   3. Supervisor step: commands, mode machine, controller, interlocks.
 //   4. One DShot frame.
@@ -120,6 +122,44 @@ __attribute__((noinline)) void bench_stall_test_block()
 }
 #endif
 
+#if CONFIG_DIRECSUN_BENCH_STAGE_TIMING
+SeqlockBuffer<StageTiming> s_stage_timing;
+
+// Charges the time since `mark` to `stage` and moves the mark to now.
+class StageClock {
+public:
+    void start(int64_t now) { mark_ = now; }
+    void end(TickStage stage)
+    {
+        const int64_t now = esp_timer_get_time();
+        const uint32_t us = static_cast<uint32_t>(now - mark_);
+        const int i = static_cast<int>(stage);
+        current_.max_us[i] = us > current_.max_us[i] ? us : current_.max_us[i];
+        current_.sum_us[i] += us;
+        ++current_.calls[i];
+        mark_ = now;
+    }
+    void skip() { mark_ = esp_timer_get_time(); }
+    void publish(uint32_t second)
+    {
+        current_.second = second;
+        s_stage_timing.write(current_);
+        current_ = StageTiming{};
+    }
+
+private:
+    int64_t mark_ = 0;
+    StageTiming current_;
+};
+#define STAGE_START(clock, now) (clock).start(now)
+#define STAGE_END(clock, stage) (clock).end(stage)
+#define STAGE_SKIP(clock) (clock).skip()
+#else
+#define STAGE_START(clock, now) ((void)0)
+#define STAGE_END(clock, stage) ((void)0)
+#define STAGE_SKIP(clock) ((void)0)
+#endif
+
 uint32_t saturating_add(uint32_t a, uint32_t b)
 {
     const uint32_t sum = a + b;
@@ -155,8 +195,13 @@ void control_task(void *)
     drv::BatteryAverage battery = ctx.battery;
     if (ctx.gyro_bias_seeded) {
         estimator.seed_bias(ctx.gyro_bias_dps);
+        estimator.set_accel_reference(ctx.accel_reference_g);
     }
 
+    // Logged before the tick timer starts: a log line inside a tick blocks on
+    // the console for milliseconds and made the first tick overrun (R3.4 bench).
+    ESP_LOGI(TAG, "control task on core %d; it takes the DShot output over from the zero sender at its first tick",
+             xPortGetCoreID());
     ESP_ERROR_CHECK(start_tick_timer());
 
     uint32_t tick = 0;
@@ -174,11 +219,15 @@ void control_task(void *)
     drv::ImuSample imu = {};
     drv::MagSample mag = {};
     bool mag_fresh = false;
+    bool mag_waiting = false;  // DRDY seen on the last even tick; data read on this odd tick
     int sun_a_mv = 0;
     int sun_b_mv = 0;
     int64_t hall_edges[kHallBatch];
 #if CONFIG_DIRECSUN_BENCH_STALL_TEST
     bool stall_test_done = false;
+#endif
+#if CONFIG_DIRECSUN_BENCH_STAGE_TIMING
+    StageClock stages;
 #endif
 
     for (;;) {
@@ -195,8 +244,6 @@ void control_task(void *)
             drv::dshot_zero_sender_stop();
             dshot.send(0);
             second_start = t0;
-            ESP_LOGI(TAG, "control task running on core %d; DShot output taken over from the zero sender",
-                     xPortGetCoreID());
         }
 
         const uint32_t missed = notifications > 1 ? notifications - 1 : 0;
@@ -214,18 +261,29 @@ void control_task(void *)
         ++stats.ticks;
 
         // ---- 1. Sensors -----------------------------------------------------
+        STAGE_START(stages, esp_timer_get_time());
         bool imu_valid = false;
         if (ctx.imu_present) {
             imu_valid = drv::imu_read(imu);
         }
+        STAGE_END(stages, TickStage::Imu);
         if (imu_valid) {
             imu_invalid_streak = 0;
         } else {
             imu_invalid_streak = saturating_add(imu_invalid_streak, 1);
             ++imu_invalid_second;
         }
-        if (ctx.mag_present && (tick % 2) == 0 && drv::mag_poll(mag)) {
-            mag_fresh = true;
+        if (ctx.mag_present && (tick % 2) == 0) {
+            mag_waiting = drv::mag_poll_status();
+            STAGE_END(stages, TickStage::Mag);
+        } else if (mag_waiting) {
+            mag_waiting = false;
+            if (drv::mag_read_data(mag)) {
+                mag_fresh = true;
+            }
+            STAGE_END(stages, TickStage::Mag);
+        } else {
+            STAGE_SKIP(stages);
         }
         switch (tick % 10) {
         case 0: {
@@ -233,15 +291,19 @@ void control_task(void *)
             if (drv::adc_read_mv(drv::AdcInput::kBattery, &mv) == ESP_OK) {
                 battery.add(drv::battery_volts_from_pin_mv(mv));
             }
+            STAGE_END(stages, TickStage::Adc);
             break;
         }
-        case 3:
+        case 2:
             drv::adc_read_mv(drv::AdcInput::kSunA, &sun_a_mv);
+            STAGE_END(stages, TickStage::Adc);
             break;
-        case 6:
+        case 4:
             drv::adc_read_mv(drv::AdcInput::kSunB, &sun_b_mv);
+            STAGE_END(stages, TickStage::Adc);
             break;
         default:
+            STAGE_SKIP(stages);
             break;
         }
         for (;;) {
@@ -257,6 +319,7 @@ void control_task(void *)
         const float wheel_safe = wheel.speed_safe_rpm(now);
         const float wheel_fast = wheel.speed_fast_rpm(now);
         const int64_t edge_age_us = wheel.last_edge_age_us(now);
+        STAGE_END(stages, TickStage::Hall);
 
         // ---- 2. Estimator ---------------------------------------------------
         const Params &params = supervisor.params();
@@ -272,6 +335,7 @@ void control_task(void *)
             est_in.s_gyro = params.s_gyro;
             estimator.update(est_in);
         }
+        STAGE_END(stages, TickStage::Estimator);
 
         // ---- 3. Supervisor --------------------------------------------------
         TickInputs in;
@@ -291,9 +355,11 @@ void control_task(void *)
         in.built_inputs = kRungOneBuiltInputs;  // MANUAL throttle; wheel and rate come later
         supervisor.step(in, controller, out);
         outbox_dropped_total = saturating_add(outbox_dropped_total, out.acks.dropped + out.events.dropped);
+        STAGE_END(stages, TickStage::Supervisor);
 
         // ---- 4. DShot -------------------------------------------------------
         dshot.send(static_cast<uint16_t>(out.throttle));
+        STAGE_END(stages, TickStage::Dshot);
 
         // ---- 5. Outbound and snapshot --------------------------------------
         for (std::size_t i = 0; i < out.acks.count; ++i) {
@@ -314,6 +380,7 @@ void control_task(void *)
                 xTaskNotifyGive(s_persist_task);
             }
         }
+        STAGE_END(stages, TickStage::Outbound);
 
         if (tick % kTicksPerSnapshot == 0) {
             snap.tick = tick;
@@ -366,6 +433,7 @@ void control_task(void *)
             telemetry().write(snap);
             loop_us_window = 0;
             mag_fresh = false;
+            STAGE_END(stages, TickStage::Snapshot);
         }
 
 #if CONFIG_DIRECSUN_BENCH_STALL_TEST
@@ -389,6 +457,9 @@ void control_task(void *)
             stats.dshot_dropped = dshot.dropped();
             stats.imu_invalid = imu_invalid_second;
             tick_stats().write(stats);
+#if CONFIG_DIRECSUN_BENCH_STAGE_TIMING
+            stages.publish(second);
+#endif
             stats = TickStats{};
             second_start = t0;
             missed_second = 0;
@@ -402,6 +473,29 @@ void control_task(void *)
 }
 
 }  // namespace
+
+#if CONFIG_DIRECSUN_BENCH_STAGE_TIMING
+const char *tick_stage_name(TickStage stage)
+{
+    switch (stage) {
+    case TickStage::Imu: return "imu";
+    case TickStage::Mag: return "mag";
+    case TickStage::Adc: return "adc";
+    case TickStage::Hall: return "hall";
+    case TickStage::Estimator: return "est";
+    case TickStage::Supervisor: return "sup";
+    case TickStage::Dshot: return "dshot";
+    case TickStage::Outbound: return "out";
+    case TickStage::Snapshot: return "snap";
+    default: return "?";
+    }
+}
+
+SeqlockBuffer<StageTiming> &stage_timing()
+{
+    return s_stage_timing;
+}
+#endif
 
 bool control_stall_marker_take()
 {

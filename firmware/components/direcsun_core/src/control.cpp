@@ -110,11 +110,11 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
         if (!closed_loop_) {
             // Bumpless start from open-loop throttle: reference at the measured
             // speed, integrator at the last throttle minus the feed-forward.
-            omega_ref_rpm_ = clampf(in.wheel_rpm_safe, params.omega_low_rpm, cap);
+            omega_ref_rpm_ = clampf(in.wheel_rpm_safe, omega_ref_floor_rpm(params), cap);
             wheel_pi_.reset(static_cast<float>(demand.previous_throttle) - ff_throttle(params, omega_ref_rpm_));
         }
         omega_ref_rpm_ += demand.wheel_step_rpm;
-        omega_ref_rpm_ = clampf(omega_ref_rpm_, params.omega_low_rpm, cap);
+        omega_ref_rpm_ = clampf(omega_ref_rpm_, omega_ref_floor_rpm(params), cap);
         if (demand.wheel_hold) {
             // Bench wheel step: the step is the only input (FD section 15.3).
             stop_rate_loop();

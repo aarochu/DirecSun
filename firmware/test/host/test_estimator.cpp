@@ -2,6 +2,7 @@
 // stillness gate, tilt, the boot bias seed, and the gyro-only heading.
 
 #include <cmath>
+#include <string>
 
 #include "direcsun/core/estimator.hpp"
 #include "doctest.h"
@@ -180,7 +181,7 @@ TEST_CASE("boot bias seed: a still window seeds, a moving or tilted one does not
     }
     CHECK_FALSE(spinning.result(bias));
 
-    GyroBiasSeed bumped;  // one accelerometer sample off 1 g
+    GyroBiasSeed bumped;  // one accelerometer sample 0.2 g off the window's mean norm
     for (int i = 0; i < 500; ++i) {
         const float a[3] = {0.0f, 0.0f, i == 250 ? 1.2f : 1.0f};
         bumped.add(3.4f, a);
@@ -206,4 +207,93 @@ TEST_CASE("HT-3 a large offset seeded at boot is then tracked by the gate")
     seeded.seed_bias(6.0f);
     run(seeded, still_sample(6.5f), static_cast<int>(5 * kTau * kTicksPerS));
     CHECK(seeded.bias_dps() == doctest::Approx(6.5f).epsilon(0.01));
+}
+
+TEST_CASE("boot bias seed: an uncalibrated 0.871 g accelerometer at rest still seeds")
+{
+    // The XIAO bench MPU-6050 (Oct 10): accel (+0.033, -0.025, +0.871) g at rest,
+    // gyro z about -2.1 deg/s with a 0.12 deg/s range over 425 samples. FD 11.1's
+    // absolute test (|a| within 0.05 g of 1 g) refused this window; the relative
+    // test must accept it.
+    GyroBiasSeed seed;
+    for (int i = 0; i < 425; ++i) {
+        const float wobble = (i % 3 == 0) ? 0.003f : ((i % 3 == 1) ? -0.002f : 0.0f);
+        const float a[3] = {0.033f, -0.025f, 0.871f + wobble};
+        seed.add(-2.1f + ((i % 2) ? 0.06f : -0.06f), a);
+    }
+    float bias = 0.0f;
+    REQUIRE(seed.result(bias));
+    CHECK(seed.failure() == nullptr);
+    CHECK(bias == doctest::Approx(-2.1f).epsilon(1e-3));
+    CHECK(seed.reference_norm_g() == doctest::Approx(0.8719f).epsilon(2e-3));
+}
+
+TEST_CASE("boot bias seed: each refusal names its criterion")
+{
+    float bias = 0.0f;
+    const auto contains = [](const char *text, const char *part) {
+        return text != nullptr && std::string(text).find(part) != std::string::npos;
+    };
+
+    GyroBiasSeed turning;
+    for (int i = 0; i < 500; ++i) {
+        const float a[3] = {0.0f, 0.0f, 0.871f};
+        turning.add(3.0f + 0.01f * static_cast<float>(i), a);
+    }
+    CHECK_FALSE(turning.result(bias));
+    CHECK(contains(turning.failure(), "gyro range"));
+
+    GyroBiasSeed spinning;
+    for (int i = 0; i < 500; ++i) {
+        const float a[3] = {0.0f, 0.0f, 0.871f};
+        spinning.add(40.0f, a);
+    }
+    CHECK_FALSE(spinning.result(bias));
+    CHECK(contains(spinning.failure(), "gyro mean"));
+
+    GyroBiasSeed shaken;  // norm swings 0.1 g around its mean: lifted or bumped
+    for (int i = 0; i < 500; ++i) {
+        const float a[3] = {0.0f, 0.0f, 0.871f + ((i % 50 < 25) ? 0.1f : -0.1f)};
+        shaken.add(-2.1f, a);
+    }
+    CHECK_FALSE(shaken.result(bias));
+    CHECK(contains(shaken.failure(), "varied"));
+
+    GyroBiasSeed dead;  // a dead accelerometer reads a steady near-zero vector
+    for (int i = 0; i < 500; ++i) {
+        const float a[3] = {0.0f, 0.0f, 0.02f};
+        dead.add(-2.1f, a);
+    }
+    CHECK_FALSE(dead.result(bias));
+    CHECK(contains(dead.failure(), "implausible"));
+
+    GyroBiasSeed short_window;
+    for (int i = 0; i < 100; ++i) {
+        const float a[3] = {0.0f, 0.0f, 0.871f};
+        short_window.add(-2.1f, a);
+    }
+    CHECK_FALSE(short_window.result(bias));
+    CHECK(contains(short_window.failure(), "too few"));
+}
+
+TEST_CASE("HT-3 the bias gate uses the seed's accel reference, not 1 g")
+{
+    EstimatorInputs at_rest = still_sample(-2.3f);
+    at_rest.accel_g[0] = 0.033f;
+    at_rest.accel_g[1] = -0.025f;
+    at_rest.accel_g[2] = 0.871f;
+
+    // With the reference from the seed, the gate opens and the bias follows a
+    // slow drift of the offset.
+    Estimator referenced;
+    referenced.seed_bias(-2.1f);
+    referenced.set_accel_reference(0.8719f);
+    run(referenced, at_rest, static_cast<int>(5 * kTau * kTicksPerS));
+    CHECK(referenced.bias_dps() == doctest::Approx(-2.3f).epsilon(0.01));
+
+    // Without it (reference 1 g), the same box never opens the gate.
+    Estimator unreferenced;
+    unreferenced.seed_bias(-2.1f);
+    run(unreferenced, at_rest, static_cast<int>(5 * kTau * kTicksPerS));
+    CHECK(unreferenced.bias_dps() == -2.1f);
 }

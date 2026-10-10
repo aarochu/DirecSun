@@ -40,9 +40,9 @@ public:
 //           closes above it (FD section 13.3). Only the cap clamps the ramp.
 //   READY   the rate loop (R3.9) moves omega_ref to hold demand.omega_cmd_dps
 //   HOLD    (0 in READY; the attitude loop's output in HOLD and SLEW, R4.3),
-//   SLEW    clamped to [omega_low, cap in force], and the wheel loop tracks
-//           it. A bench `wheel_step` suspends the rate loop for the hold and
-//           moves omega_ref by the requested amount (FD 15.3).
+//   SLEW    clamped to [omega_low + 100, cap in force] (V-52), and the wheel
+//           loop tracks it. A bench `wheel_step` suspends the rate loop for
+//           the hold and moves omega_ref by the requested amount (FD 15.3).
 //   MANUAL  throttle input: open loop, exactly as rung 1.
 //
 // Entering the closed loop from open-loop throttle (MANUAL back to READY)
