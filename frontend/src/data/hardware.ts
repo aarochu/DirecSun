@@ -93,7 +93,7 @@ export const hardwareParts: readonly HardwarePart[] = [
     index: '06',
     subsystem: 'SPEED FEEDBACK',
     name: 'A1104 Hall switch',
-    func: 'Detects small magnets on the spinning motor bell. Timing the digital transitions estimates reaction-wheel rotational speed.',
+    func: 'Detects the two small magnets sealed into the spinning flywheel. Timing the digital transitions estimates reaction-wheel rotational speed.',
     connection:
       'The Hall switch uses the 5 V rail, with its open-drain output pulled up to 3.3 V and connected to ESP32 D10.',
     controlRole:
@@ -106,14 +106,14 @@ export const hardwareParts: readonly HardwarePart[] = [
     id: 'reaction-wheel',
     index: '07',
     subsystem: 'ACTUATION',
-    name: '2212 brushless motor + steel washer flywheel',
-    func: 'The motor spins a clamped stack of steel fender washers. Increasing or decreasing their angular speed applies an opposing reaction torque to the CubeSat body.',
+    name: '2212 brushless motor + printed flywheel',
+    func: 'The motor spins a 3D-printed PETG flywheel with seven steel washers sealed inside for inertia. Increasing or decreasing its angular speed applies an opposing reaction torque to the CubeSat body.',
     connection:
-      'Three motor phase wires connect to the BLHeli_S ESC; the washers mount mechanically to the motor bell/shaft hardware. Nothing 3D-printed is intended to spin with the wheel.',
+      'Three motor phase wires connect to the BLHeli_S ESC. A printed hub centres the wheel on the motor, and the wheel carries the two Hall magnets used to measure its speed.',
     controlRole:
-      'The wheel is the only actuator in the single-axis controller. The planned operating bias is 2400 RPM and the baseline cap is 4000 RPM, pending hardware characterization.',
+      'The wheel is the only actuator in the single-axis controller. The planned operating bias is 2400 RPM and the baseline cap is 4000 RPM, pending the rotating-part safety analysis and hardware characterization.',
     designNote:
-      'Centring, balance, protective guard clearance, and nut retention are safety-critical; do not describe these speeds as demonstrated achievements.',
+      'A printed part now spins with the wheel, so centring, balance, washer retention, and protective guard clearance are safety-critical; do not describe these speeds as demonstrated achievements.',
     specs: ['2212 / 920 KV', '2400 RPM BIAS — TARGET', '4000 RPM CAP — DESIGN'],
     media: 'motor2212',
   },

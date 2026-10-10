@@ -146,6 +146,16 @@
   min-height: 44px;
 }
 
+@media (max-width: 479px) {
+  .link__form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .link__button {
+    width: 100%;
+  }
+}
+
 .link__status {
   margin-top: 10px;
   color: var(--text-secondary);

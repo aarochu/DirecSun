@@ -52,7 +52,7 @@ export function SystemDiagram() {
     <figure className="sysdiag" aria-labelledby="sysdiag-caption">
       <figcaption id="sysdiag-caption" className="sr-only">
         Functional architecture. Sensor inputs feed the ESP32-S3, which sends DShot commands to the
-        ESC; the ESC drives the 2212 motor and washer flywheel, whose reaction torque yaws the body.
+        ESC; the ESC drives the 2212 motor and printed flywheel, whose reaction torque yaws the body.
         Gyro, compass and Hall feedback return to the sensor inputs. The BMP280 is an optional
         telemetry branch, not a control input. Power runs from the battery through a 10 A fuse to the
         ESC and a 5 V buck converter.
@@ -99,7 +99,7 @@ export function SystemDiagram() {
           <Wire className="sysdiag__w2" label="DSHOT" />
           <Node className="sysdiag__esc" name="ESC" role="BLHELI_S" />
           <Wire className="sysdiag__w3" label="3 PHASES" />
-          <Node className="sysdiag__motor" name="2212 MOTOR + WASHER FLYWHEEL" />
+          <Node className="sysdiag__motor" name="2212 MOTOR + PRINTED FLYWHEEL" />
           <Wire className="sysdiag__w4" />
           <div className="sysdiag__effect">
             <Node variant="effect" name="REACTION TORQUE → BODY YAW" />
