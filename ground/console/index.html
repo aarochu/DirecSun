@@ -134,9 +134,9 @@ input:focus{border-color:#709bb7}
     <article class="panel">
       <div class="panelhead">
         <span class="paneltitle">Frames</span>
-        <label class="panelmeta"><input type="checkbox" id="verbose"> every tlm and ping <span id="framecount">0</span></label>
+        <span class="panelmeta"><span><span id="framecount">0</span> logged</span><span aria-hidden="true">&middot;</span><label class="panelmeta"><input type="checkbox" id="verbose"> show every tlm and ping</label></span>
       </div>
-      <div class="stream" id="stream"><div class="empty">Frames appear here after the WebSocket opens. Telemetry is sampled once a second unless "every tlm and ping" is on.</div></div>
+      <div class="stream" id="stream"><div class="empty">Frames appear here after the WebSocket opens. Telemetry is sampled once a second unless "show every tlm and ping" is on.</div></div>
     </article>
     <article class="panel">
       <div class="panelhead"><span class="paneltitle">Commands</span><span class="panelmeta">ACKED BY SEQ</span></div>
