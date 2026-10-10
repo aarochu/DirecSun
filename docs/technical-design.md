@@ -42,13 +42,14 @@ Power flows left to right along the top row; sensing flows up into the XIAO; the
 | Hold | Heading held against pokes | Disturbance rejection |
 | Slew | Box turns to a commanded heading | Commanded manoeuvre |
 | Sun point | +X face tracks a lamp | Change of attitude reference |
+| Manual | The operator drives the wheel from the ground station: throttle nudges, a wheel-speed target, or a box-rate joystick | Momentum exchange under direct human control; also the fallback demonstration (Section 11.4) |
 
 **Requirements.** Targets are chosen for a tabletop demo. Section 3 shows the hardware can exceed them; none has been measured.
 
 | ID | Requirement | Target | Basis |
 | --- | --- | --- | --- |
 | FR-1 | Control box yaw with a reaction wheel only | No other actuator | Scope |
-| FR-2 | Provide the seven modes above, switchable from the ground station | Mode change applied within 100 ms | Usability |
+| FR-2 | Provide the eight modes above, switchable from the ground station | Mode change applied within 100 ms | Usability |
 | FR-3 | Stream telemetry to a browser | 50 Hz, under 100 ms latency on the private network | Plots stay smooth |
 | FR-4 | Run untethered | Battery on the box, Wi-Fi the only link | A tether adds friction torque |
 | FR-5 | Stop safely | Ground e-stop; Safe mode on 1 s without a ground heartbeat; undervoltage cutoff | Section 10 |
@@ -444,13 +445,13 @@ Sign convention: +z points up; heading ψ, box rate ω, and torque on the box τ
 3. **Torque to wheel reference.** The motor must apply −τ\_cmd to the wheel to put +τ\_cmd on the box. From Section 3.1 the wheel's spin about +z, relative to the box, then changes at −τ\_cmd (1/I\_w + 1/I\_b), so each tick Ω\_ref changes by −s\_w τ\_cmd (1/I\_w + 1/I\_b) Δt, clamped to \[low limit, cap\]. Getting this sign wrong makes the rate loop unstable; T-15 starts with a small gain to catch it.
 4. **Wheel speed.** throttle = FF(Ω\_ref) + PI(Ω\_ref − Ω). FF is the steady-state throttle-versus-speed map measured in T-5 and T-18. Target bandwidth 5 to 10 Hz, limited by the Hall update rate (80 per second at bias) \[C\] and the motor's response \[M\].
 
-Mode setpoints: Detumble sets ω\_cmd = 0 and bypasses step 1. Hold captures ψ\_ref at entry. Slew ramps ψ\_ref along a trapezoid limited to 60 deg/s and 120 deg/s². Sun point replaces the heading error with the sun angle.
+Mode setpoints: Detumble sets ω\_cmd = 0 and bypasses step 1. Hold captures ψ\_ref at entry. Slew ramps ψ\_ref along a trapezoid limited to 60 deg/s and 120 deg/s². Sun point replaces the heading error with the sun angle. Manual feeds the cascade at the level its input names: `throttle` replaces the whole cascade with an open-loop throttle, `wheel` sets Ω\_ref for step 4 directly, and `rate` sets ω\_cmd for step 2 (Section 6.6).
 
 ### 6.6 Modes and transitions
 
 &#91;embedded content: mode state machine · 8 states, one fault path\]
 
-The box only reaches the four demonstration modes through Ready, after the wheel is at bias speed; any interlock or e-stop, from any state, drops it to Safe.
+The box only reaches the five demonstration modes through Ready, after the wheel is at bias speed; any interlock or e-stop, from any state, drops it to Safe.
 
 | From | To | Guard |
 | --- | --- | --- |
@@ -460,10 +461,19 @@ The box only reaches the four demonstration modes through Ready, after the wheel
 | Ready | Detumble | Ground command |
 | Ready | Hold, Slew | Ground command; magnetometer present |
 | Ready | Sun point | Ground command; valid sun angle |
+| Ready | Manual | Ground command with an `input` of `throttle`, `wheel`, or `rate`; refused with a reason while the firmware lacks that input's loop |
 | Ready | Spin-up | Ground `respin` with the box pinned and still (rate under 5 deg/s). The new wheel start speed must lie between the low limit + 200 rpm and the cap − 200 rpm |
 | Any active mode | Ready | Ground command, or slew complete; Sun point also returns after 0.5 s without a valid sun angle |
 | Spin-up, Ready, any active mode | Safe | Ground `disarm`: the same 5 s ramp-down as an e-stop, without the e-stop latch |
 | Any | Safe | Any interlock in 6.7, or ground e-stop |
+
+**Manual mode** (approved Oct 10). Manual is entered from Ready only, with `{"cmd":"mode","mode":"MANUAL","input":"throttle"|"wheel"|"rate"}`. The firmware refuses an input whose loop it has not built yet, with a reason, so the three inputs can arrive one at a time. Setpoints arrive as exactly one of:
+
+- `{"cmd":"manual","throttle":n}`, clamped to the parameters `manual_throttle_min` to `manual_throttle_max`, a band taken from the T-5 throttle-to-speed map that keeps the wheel between the low limit and the cap; the cascade is bypassed and the throttle is sent open loop;
+- `{"cmd":"manual","wheel_rpm":n}`, clamped to the low limit and the cap, which sets Ω\_ref for step 4 of the cascade;
+- `{"cmd":"manual","rate_dps":n}`, clamped to ±90 deg/s, which sets ω\_cmd for step 2.
+
+Setpoints are accepted only from the controlling client, only for the active input, and at up to 20 Hz, and each one counts as a heartbeat. If they stop for 250 ms while pings continue, the `rate` input falls to a zero rate command, so the box stops turning, while `throttle` and `wheel` hold their last value, so the wheel holds its speed and the box does not move. The 1 s heartbeat rule still ramps everything down. Every interlock stays active, and no input can command past the cap or below the low limit. Manual returns to Ready on a ground command, and drops to Safe on `disarm`, e-stop, or any interlock.
 
 **Desaturation.** `respin` is the lock-pin desaturation of Section 3.6, and it replaces the automatic momentum dump once described in Section 10.2 (V-2). When the wheel nears a limit, the ground station prompts the operator to stop and pin the box, then sends `respin`. The firmware returns the wheel to its start speed (the bias by default; 1000 or 3800 rpm for the long one-way spins of Section 3.6) with the reaction going into the bench, and Ready is reached again before the pin comes out.
 
@@ -520,13 +530,15 @@ Every message has `v` (schema version), `type`, and `seq` (sender's counter). Ti
 ```json
 {"v":1,"type":"cmd","seq":77,"cmd":"mode","mode":"SLEW","psi_ref_deg":137.0}
 {"v":1,"type":"cmd","seq":78,"cmd":"estop"}
+{"v":1,"type":"cmd","seq":80,"cmd":"mode","mode":"MANUAL","input":"rate"}
+{"v":1,"type":"cmd","seq":81,"cmd":"manual","rate_dps":-20.0}
 {"v":1,"type":"ping","seq":79,"t_client_ms":512330}
 ```
 
 | Type | Direction | Rate | Purpose |
 | --- | --- | --- | --- |
 | `tlm` | box → ground | 50 Hz | State for plots and the 3D view |
-| `cmd` | ground → box | On user action | `arm`, `disarm`, `estop`, `mode`, `respin`, `set_params`, `zero_heading`, and `wheel_step` (bench mode only) |
+| `cmd` | ground → box | On user action | `arm`, `disarm`, `estop`, `mode`, `manual`, `respin`, `set_params`, `zero_heading`, and `wheel_step` (bench mode only) |
 | `ack` | box → ground | Per command | `{"v":1,"type":"ack","seq":77,"ok":false,"reason":"wheel not at bias"}`; a refused guard says why. Its `seq` echoes the command's `seq`; every other box message carries the box's own counter (V-14) |
 | `ping` / `pong` | both | 5 Hz | Heartbeat for FR-5 (only the controlling client's traffic counts) and round-trip latency for T-11 |
 | `event` | box → ground | On change | Mode changes and interlock trips, with the interlock name |
@@ -540,6 +552,7 @@ The demo UI is owned by Aaron and lives outside this repository. It sends and re
 - 3D view of the box turning with ψ̂; the CubeSat 2U model file already on hand can be reused.
 - Plots: heading with its reference, box rate, wheel speed with the cap and low-limit band shaded, battery voltage.
 - Mode buttons, enabled only when the box reports the mode's guard can pass; a large e-stop button also bound to the space bar.
+- Manual controls: throttle nudges on the arrow keys, a wheel-speed target, and a rate joystick (Section 6.6).
 - Parameters panel for gains and limits, sent with `set_params` and stored by the box in NVS.
 - Balancing tool: accelerometer amplitude at the wheel frequency per washer position (Section 4.6).
 - CSV logging of every `tlm` frame for the tests in Section 9.
@@ -751,7 +764,7 @@ These are fixed in the first hour so four people or agents can work in parallel.
 
 ### 11.4 Fallbacks
 
-If a phase stalls, the demo degrades in this order rather than failing: sun point is dropped first, then slew, then hold. Detumble alone still shows momentum exchange. If closed-loop control cannot be made reliable, the wheel can be stepped open-loop from the ground station with the box free, which still shows the reaction.
+If a phase stalls, the demo degrades in this order rather than failing: sun point is dropped first, then slew, then hold. Detumble alone still shows momentum exchange. If closed-loop control cannot be made reliable, the wheel can be stepped open-loop from the ground station with the box free, which still shows the reaction. That is Manual mode with the `throttle` input (Section 6.6), the first thing repository Set 3 delivers.
 
 ### 11.5 Team and ownership
 

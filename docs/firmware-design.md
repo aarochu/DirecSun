@@ -25,7 +25,7 @@ Specify the firmware for the Seeed XIAO ESP32-S3 on the DirecSun box. It must:
 1. read the inertial, magnetic, optical, wheel-speed, and battery sensors;
 2. estimate box heading and rate;
 3. run the four-loop control cascade and drive the ESC over DShot;
-4. implement the seven operating modes and every safety interlock;
+4. implement the eight operating modes and every safety interlock;
 5. serve telemetry and accept commands over a WebSocket on the private Wi-Fi network.
 
 It also gives an ordered implementation plan, a test strategy, and the gates that must pass before the wheel is spun.
@@ -90,7 +90,8 @@ Taken from TD §4.1 and TD §6.5. They are restated because a sign error makes t
 
 ### 2.4 Naming
 
-- Modes on the wire: `SAFE`, `SPINUP`, `READY`, `DETUMBLE`, `HOLD`, `SLEW`, `SUN_POINT` [D]. TD's schema examples use `"HOLD"` and `"SLEW"`; the other spellings are fixed here.
+- Modes on the wire: `SAFE`, `SPINUP`, `READY`, `DETUMBLE`, `HOLD`, `SLEW`, `SUN_POINT`, `MANUAL` [D]. TD's schema examples use `"HOLD"` and `"SLEW"`; the other spellings are fixed here.
+- Manual inputs on the wire: `throttle`, `wheel`, `rate` [D].
 - Interlock names on the wire: upper snake case, listed in §14.1 [D].
 - C++ namespaces follow the module names in §18.
 
@@ -155,7 +156,7 @@ GPIO numbering follows the XIAO pin table in TD §5.4: D0 = GPIO1, D1 = GPIO2, D
 | ID (TD §2) | Requirement | Firmware mechanism | Verified by |
 | --- | --- | --- | --- |
 | FR-1 | Reaction wheel is the only actuator | Single DShot output; no other actuator code path | Review |
-| FR-2 | Seven modes, mode change within 100 ms | Mode machine (§13) runs every 2 ms tick; command queue drained every tick, so a valid command takes effect within one tick plus network latency | T-13, host test HT-7 |
+| FR-2 | Eight modes, mode change within 100 ms | Mode machine (§13) runs every 2 ms tick; command queue drained every tick, so a valid command takes effect within one tick plus network latency | T-13, host test HT-7 |
 | FR-3 | 50 Hz telemetry, < 100 ms latency | Snapshot every 10th control tick; comms task sends without blocking control (§7.4) | T-11 |
 | FR-4 | Untethered | Battery monitor, Wi-Fi only | Review |
 | FR-5 | Safe stop | E-stop command, 1 s heartbeat timeout, undervoltage, plus the full interlock table (§14) | T-13 |
@@ -587,6 +588,9 @@ stateDiagram-v2
     READY --> SLEW: cmd mode SLEW, magnetometer OK
     READY --> SUN_POINT: cmd mode SUN_POINT, sun_valid
     READY --> SPINUP: cmd respin (box held), new wheel start speed
+    READY --> MANUAL: cmd mode MANUAL with input, input loop built
+    MANUAL --> READY: cmd mode READY
+    MANUAL --> SAFE: estop, disarm, or interlock
     DETUMBLE --> READY: cmd mode READY
     HOLD --> READY: cmd mode READY
     SLEW --> READY: slew complete, timeout, or cmd mode READY
@@ -611,6 +615,7 @@ These additions were approved by the owner on 2026-10-10 and written into TD §6
 | `HOLD` | Wheel loop | Attitude + rate | ψ_ref = ψ̂ at entry | `mode READY` |
 | `SLEW` | Wheel loop | Attitude + rate | Trapezoid to `psi_ref_deg` | complete, timeout, `mode READY` |
 | `SUN_POINT` | Wheel loop | Sun error + rate | sun angle → 0 | `mode READY`, invalid sun |
+| `MANUAL` | Open-loop throttle (`throttle`), or the wheel loop (`wheel`, `rate`) | `throttle`: none; `wheel`: wheel loop; `rate`: rate loop over the wheel loop | From `cmd:"manual"` (§13.5) | `mode READY`, `disarm`, `estop`, interlock |
 
 `READY` and `DETUMBLE` run the same controller [V] TD §6.6 says `READY` holds box rate at zero. `DETUMBLE` exists as a separate mode so the ground station and the demo script can name it and so its telemetry can be logged distinctly against PR-1 [D].
 
@@ -646,7 +651,7 @@ Below about 800 rpm sensorless commutation is assumed unreliable [A] A-8, so spi
 
 ### 13.4 Desaturation and wheel start speed
 
-TD §3.6 (the later of the two decisions) makes the lock pin the desaturation actuator: the operator stops and pins the box, the firmware returns the wheel to its start speed, the pin comes out. TD §10.2 still describes an automatic momentum dump where the controller turns the box at about 30 deg/s while friction removes the excess. These conflict (finding V-2). This document follows the newer §3.6 decision and implements desaturation as a `respin`:
+TD §3.6 (the later of the two decisions) makes the lock pin the desaturation actuator: the operator stops and pins the box, the firmware returns the wheel to its start speed, the pin comes out. TD §10.2 used to describe an automatic momentum dump where the controller turns the box at about 30 deg/s while friction removes the excess. The two conflicted (finding V-2); the owner approved the §3.6 decision on 2026-10-10 and TD §10.2 now follows it. Desaturation is a `respin`:
 
 ```mermaid
 flowchart TD
@@ -661,6 +666,22 @@ flowchart TD
 
 `respin` accepts start speeds within [Ω_low + 200, Ω_cap − 200] rpm [D]. That covers TD's 1000 and 3800 rpm values.
 
+### 13.5 Manual mode
+
+Approved by the owner on 2026-10-10 [D]; TD §6.6 holds the same contract.
+
+| Item | Rule |
+| --- | --- |
+| Entry | From `READY` only, with `{"cmd":"mode","mode":"MANUAL","input":"throttle"}` (or `"wheel"`, `"rate"`) from the controlling client. Refused with `reason:"input not available"` while the firmware lacks that input's loop. The inputs are built in the order `throttle`, `wheel`, `rate` (repository Set 3), each usable on its own |
+| `throttle` input | `{"cmd":"manual","throttle":n}`, n clamped to [`manual_throttle_min`, `manual_throttle_max`] (§16). The cascade is bypassed; the throttle goes to DShot open loop. The band comes from the T-5 throttle-to-speed map so that it keeps the wheel between Ω_low and Ω_cap [M] |
+| `wheel` input | `{"cmd":"manual","wheel_rpm":n}`, n clamped to [Ω_low, Ω_cap]; sets Ω_ref for the wheel PI + FF loop |
+| `rate` input | `{"cmd":"manual","rate_dps":n}`, n clamped to ±90 deg/s; sets ω_cmd for the rate loop, which drives Ω_ref |
+| Who and how often | Controlling client only; the setpoint must match the active input; at most 20 Hz (a setpoint within 50 ms of the previous accepted one is refused with `reason:"too fast"`). Each accepted setpoint counts as a heartbeat (§14.4) |
+| Staleness | If no setpoint is accepted for 250 ms while the heartbeat stays alive, `rate` falls to ω_cmd = 0, so the box stops turning; `throttle` and `wheel` hold their last value, so the wheel holds its speed and the box does not move. The flag `MANUAL_STALE` is set until the next setpoint. The 1 s heartbeat rule (§14.1) still applies |
+| Safety | Every interlock stays active. No input can command past Ω_cap or below Ω_low |
+| Exit | `mode READY` → `READY`; `disarm` or `estop` → ramp-down → `SAFE`; any interlock → `SAFE` |
+| Telemetry | `mode` is `MANUAL` and `manual_input` names the active input (§15.3) |
+
 ---
 
 ## 14. Safety
@@ -672,7 +693,7 @@ Every interlock is evaluated every tick, after the controller, so it can overrid
 | Name (wire) | Condition | Action | Latch | Source |
 | --- | --- | --- | --- | --- |
 | `ESTOP` | `estop` command from any client | Ramp-down → SAFE | Until next `arm` | TD §6.7 |
-| `HEARTBEAT_LOST` | In any mode except SAFE, no `ping` or `cmd` from the **controlling client** for 1 s | Ramp-down → SAFE | Until next `arm` | TD §6.7 |
+| `HEARTBEAT_LOST` | In any mode except SAFE, no `ping` or `cmd` (including a `manual` setpoint) from the **controlling client** for 1 s | Ramp-down → SAFE | Until next `arm` | TD §6.7 |
 | `OVERSPEED` | `speed_safe` > Ω_cap + 100 rpm (4100) | DShot 0 at once → SAFE | Until reset by `arm` after Ω < bias | TD §6.7 |
 | `UNDERSPEED` | `speed_safe` < Ω_low for 200 ms, in any mode except SPINUP and SAFE | DShot 0 at once → SAFE | Until next `arm` | TD §6.7 |
 | `BATTERY_LOW` | 1 s average below 8.8 V | DShot 0 at once → SAFE | Until arm guard passes | TD §6.7 |
@@ -769,6 +790,7 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `seq` | int | Box telemetry counter | TD |
 | `t_ms` | int | Box time since boot | TD |
 | `mode` | string | Wire mode name (§2.4) | TD |
+| `manual_input` | string or null | `throttle`, `wheel`, or `rate` in `MANUAL`; null otherwise | [D] |
 | `psi_deg` | number | Wrapped heading (−180, 180], CCW positive | TD; wrap [D] |
 | `psi_ref_deg` | number or null | Current reference (null in SAFE, SPINUP, READY, DETUMBLE) | TD; null rule [D] |
 | `rate_dps` | number | ω̂ | TD |
@@ -781,7 +803,7 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `tau_cmd_mNm` | number | τ_cmd | TD |
 | `vbat` | number | 1 s average battery voltage | TD |
 | `loop_us` | int | Longest tick in the last 20 ms | TD; "longest" [D] |
-| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `MAG_MISSING`, latched fault names | TD; list [D] |
+| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `MAG_MISSING`, `MANUAL_STALE`, latched fault names | TD; list [D] |
 | `t_c`, `p_pa` | number or null | BMP280, optional | [D] |
 | `tlm_dropped`, `dropped_events` | int | Counters | [D] |
 
@@ -804,7 +826,8 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 | `arm` | none | SAFE | → SPINUP if guards pass; sender becomes the controlling client |
 | `disarm` | none | SPINUP, READY, active modes | Ramp-down → SAFE (same as e-stop, without the ESTOP latch) [D] |
 | `estop` | none | Any state, any client | Ramp-down → SAFE, ESTOP latch |
-| `mode` | `mode`; `psi_ref_deg` for SLEW | READY (and active modes for `READY`) | Transition per §13.1 |
+| `mode` | `mode`; `psi_ref_deg` for SLEW; `input` for MANUAL | READY (and active modes for `READY`) | Transition per §13.1 |
+| `manual` | exactly one of `throttle` (int), `wheel_rpm`, `rate_dps`, matching the active input | MANUAL, controlling client only | New setpoint, clamped and rate-limited per §13.5; counts as heartbeat |
 | `respin` | `wheel_rpm` (optional, default bias) | READY | → SPINUP to the new start speed (§13.4) |
 | `zero_heading` | none | SAFE, READY | Heading offset (§11.3) |
 | `set_params` | `params` object | SAFE only | Validate every key and range; store in NVS; reply with the applied set [D] |
@@ -878,6 +901,7 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 | `sun_cal`, `light_threshold` | identity, 0 | n/a | after T-10 |
 | `dshot_rate` | 150 | 150 or 300 | after reading the ESC MCU (TD §5.2) |
 | `bench_mode` | false | bool | `set_params` in SAFE |
+| `manual_throttle_min`, `manual_throttle_max` | from T-5 [M] | 48..2047, min < max; the band must keep the wheel between Ω_low and Ω_cap | `set_params` in SAFE |
 | Wi-Fi SSID, password, static address, SoftAP flag | n/a | n/a | menuconfig, from `firmware/sdkconfig.defaults.local` (gitignored); never over the wire |
 
 `dshot_rate` defaults to the slower, always-supported DShot150 until the ESC's MCU is read [D]. TD says DShot150 works on 24 MHz MCUs and DShot300 needs 48 MHz [V].
@@ -960,6 +984,7 @@ firmware/                     ESP-IDF v6.0 project; run idf.py from here (or too
 | HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s |
 | HT-9 | `protocol` | Parse every `cmd`; reject oversize, wrong `v`, unknown `type`; `ack` echoes `seq`; `tlm` round-trips through a JSON parser |
 | HT-10 | `interlocks` | `HALL_SILENT` trips during SPINUP with throttle high and no edges |
+| HT-11 | `modes` + `protocol` | `MANUAL`: entry refused from any mode but READY and for an unbuilt input; each setpoint form clamps to its limits; a setpoint for the wrong input, from a non-controlling client, or under 50 ms after the last is refused; after 250 ms without setpoints `rate` falls to 0 and `MANUAL_STALE` is set while `throttle` and `wheel` hold; an accepted setpoint resets the heartbeat |
 
 HT-6 follows TD §8.5's rule that an empty result counts only if a known positive is detected by the same instrument.
 
@@ -1140,6 +1165,7 @@ All [C], recomputed from TD §3.2 inputs while writing this document:
 | Controlling client | The WebSocket client whose `arm` was last accepted (§14.4) |
 | DShot | Digital ESC protocol: 16-bit frames of throttle, telemetry bit, and CRC |
 | Hard fault | An interlock that zeroes throttle in the same tick (§14.1) |
+| Manual mode | Operator control of the wheel from the ground station through one input: throttle, wheel speed, or box rate (§13.5) |
 | Ramp-down | 5 s open-loop throttle ramp to zero after e-stop or heartbeat loss (§14.3) |
 | Respin | Changing the wheel's start speed with the box pinned; used for desaturation (§13.4) |
 | Seqlock | Double-buffered snapshot with a sequence counter; the reader retries if the writer changed it mid-copy |
