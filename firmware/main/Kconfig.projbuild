@@ -1,0 +1,25 @@
+menu "DirecSun bench options"
+
+    config DIRECSUN_BENCH_STALL_TEST
+        bool "Control-stall watchdog test hook (bench builds only)"
+        default n
+        help
+            Bench check BC-5 (changes/3-teleop/R3.4-control-task.md): blocks the
+            control task once, DIRECSUN_BENCH_STALL_AFTER_S seconds after it
+            starts, for DIRECSUN_BENCH_STALL_MS milliseconds. The stall watchdog
+            must reset the board within 100 ms. Never enable this in a flight
+            build; firmware/sdkconfig.bench turns it on for the bench build only.
+
+    config DIRECSUN_BENCH_STALL_AFTER_S
+        int "Seconds after the control task starts"
+        depends on DIRECSUN_BENCH_STALL_TEST
+        default 10
+        range 2 600
+
+    config DIRECSUN_BENCH_STALL_MS
+        int "Block duration in milliseconds"
+        depends on DIRECSUN_BENCH_STALL_TEST
+        default 200
+        range 120 2000
+
+endmenu

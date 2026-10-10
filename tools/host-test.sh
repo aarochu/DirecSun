@@ -69,6 +69,7 @@ else
     mutants=(
         "no_latch|HT-8 latch: no path leaves SAFE after a fault without a new arm"
         "no_bypass_clamp|bypass property: throttle never exceeds kBypassThrottleMax while bypassed"
+        "no_still_gate|HT-3 positive control: a spinning box in SAFE leaves the bias unchanged"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

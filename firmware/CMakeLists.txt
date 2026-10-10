@@ -8,6 +8,17 @@ set(SDKCONFIG_DEFAULTS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults")
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults.local")
     list(APPEND SDKCONFIG_DEFAULTS "${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults.local")
 endif()
+# Extra layers, for example the bench build: -D DIRECSUN_EXTRA_DEFAULTS=sdkconfig.bench
+# (paths relative to this directory). Use a separate build directory and
+# SDKCONFIG for it, so the flight sdkconfig is never touched.
+if(DEFINED DIRECSUN_EXTRA_DEFAULTS)
+    foreach(layer ${DIRECSUN_EXTRA_DEFAULTS})
+        if(NOT IS_ABSOLUTE "${layer}")
+            set(layer "${CMAKE_CURRENT_LIST_DIR}/${layer}")
+        endif()
+        list(APPEND SDKCONFIG_DEFAULTS "${layer}")
+    endforeach()
+endif()
 
 # Firmware version as reported in the boot banner and the app descriptor.
 execute_process(
