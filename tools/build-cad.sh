@@ -163,7 +163,7 @@ if [ "$run_assembly" -eq 1 ]; then
   ui_log="$CAD/.ui_model.log"
   "$PY" "$CAD/export_ui_model.py" "$ROOT/$UI_MODEL" > "$ui_log" 2>&1 || { cat "$ui_log"; die "UI model export failed"; }
   cat "$ui_log"
-  ui_bytes="$(stat -c %s "$ROOT/$UI_MODEL")"
+  ui_bytes="$(wc -c < "$ROOT/$UI_MODEL")"
   [ "$ui_bytes" -lt 5000000 ] || die "$UI_MODEL is $ui_bytes bytes; the UI budget is under 5 MB"
   "$PY" "$STALE" --write export_ui_model.py "$UI_MODEL"
 fi
