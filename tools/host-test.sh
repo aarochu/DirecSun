@@ -62,4 +62,31 @@ else
         echo "host-test selftest: FAILED, a deliberately failing test did not fail the run" >&2
         exit 1
     fi
+
+    # Mutants (firmware/test/host/CMakeLists.txt): each has one safety mechanism
+    # compiled out. The named test must run (exactly one case) and fail; a
+    # mutant whose test still passes means that test cannot see the defect.
+    mutants=(
+        "no_latch|HT-8 latch: no path leaves SAFE after a fault without a new arm"
+        "no_bypass_clamp|bypass property: throttle never exceeds kBypassThrottleMax while bypassed"
+    )
+    for entry in "${mutants[@]}"; do
+        name="${entry%%|*}"
+        test_case="${entry#*|}"
+        mutant_out="$build/mutant-$name.txt"
+        set +e
+        "$build/host_tests_mutant_$name" --test-case="$test_case" >"$mutant_out" 2>&1
+        mutant_status=$?
+        set -e
+        mutant_summary="$(grep -E '^\[doctest\] test cases:' "$mutant_out" || true)"
+        mutant_cases="$(sed -E 's/^\[doctest\] test cases: *([0-9]+).*/\1/' <<<"$mutant_summary")"
+        mutant_failed="$(sed -E 's/.*\| *([0-9]+) failed.*/\1/' <<<"$mutant_summary")"
+        if [[ -n "$mutant_summary" && "$mutant_cases" -eq 1 && "$mutant_failed" -eq 1 && "$mutant_status" -ne 0 ]]; then
+            echo "host-test selftest: PASSED, mutant $name was caught by \"$test_case\""
+        else
+            cat "$mutant_out" >&2
+            echo "host-test selftest: FAILED, mutant $name survived (cases ${mutant_cases:-?}, failed ${mutant_failed:-?}, exit $mutant_status)" >&2
+            exit 1
+        fi
+    done
 fi

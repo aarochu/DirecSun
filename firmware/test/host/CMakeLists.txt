@@ -15,15 +15,28 @@ set(CORE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../components/direcsun_core")
 file(GLOB CORE_SOURCES CONFIGURE_DEPENDS "${CORE_DIR}/src/*.cpp")
 file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
 
-add_executable(host_tests ${CORE_SOURCES} ${TEST_SOURCES})
-target_include_directories(host_tests PRIVATE "${CORE_DIR}/include")
-target_include_directories(host_tests SYSTEM PRIVATE "${CMAKE_CURRENT_LIST_DIR}/third_party/doctest")
-target_compile_options(host_tests PRIVATE
-    -Wall -Wextra -Werror
-    -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
-target_link_options(host_tests PRIVATE -fsanitize=address,undefined)
+function(direcsun_host_test_target name)
+    add_executable(${name} ${CORE_SOURCES} ${TEST_SOURCES})
+    target_include_directories(${name} PRIVATE "${CORE_DIR}/include")
+    target_include_directories(${name} SYSTEM PRIVATE "${CMAKE_CURRENT_LIST_DIR}/third_party/doctest")
+    target_compile_options(${name} PRIVATE
+        -Wall -Wextra -Werror
+        -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
+    target_link_options(${name} PRIVATE -fsanitize=address,undefined)
+endfunction()
+
+direcsun_host_test_target(host_tests)
 if(DIRECSUN_HT_SELFTEST)
     target_compile_definitions(host_tests PRIVATE DIRECSUN_HT_SELFTEST)
+    # Mutants: the same core and tests with one safety mechanism compiled out
+    # (DIRECSUN_MUTANT_* in the core, which refuses to build for the firmware).
+    # tools/host-test.sh --selftest runs each one and requires the test that
+    # guards that mechanism to fail, proving the test can see the defect.
+    foreach(mutant NO_LATCH NO_BYPASS_CLAMP)
+        string(TOLOWER "${mutant}" mutant_lower)
+        direcsun_host_test_target(host_tests_mutant_${mutant_lower})
+        target_compile_definitions(host_tests_mutant_${mutant_lower} PRIVATE DIRECSUN_MUTANT_${mutant})
+    endforeach()
 endif()
 
 enable_testing()

@@ -253,7 +253,7 @@ flowchart TB
 | --- | --- | --- | --- |
 | Commands | comms → control | FreeRTOS queue, depth 16, items are a fixed-size `Command` struct; `xQueueSend` with timeout 0 from comms, `xQueueReceive` with timeout 0 in control | Full queue: comms answers `ack ok:false reason:"busy"`. `estop` bypasses the queue through an atomic flag (below) |
 | E-stop | comms → control | `std::atomic<bool> estop_requested` | Set by comms on any `estop`; read and cleared by control on the next tick |
-| Heartbeat | comms → control | `std::atomic<int64_t> last_heartbeat_us` | Written on every accepted `ping` or `cmd` from the controlling client |
+| Heartbeat | comms → control | Every `ping` is forwarded through the command queue as a `Ping` item (never acked); the supervisor, which alone knows the controlling client, times the heartbeat from any `ping` or `cmd` that client sends | Replaces an atomic `last_heartbeat_us` written by comms, which would need comms to track the controlling client across cores [D, V-32] |
 | Telemetry snapshot | control → comms | Double buffer + sequence counter (seqlock) | Control writes the inactive buffer, then flips an atomic index. Comms copies the active buffer and retries if the counter changed during the copy. Control never waits |
 | Events and acks | control → comms | FreeRTOS queue, depth 16 | Control posts with timeout 0; if full, the event is dropped and a `dropped_events` counter in telemetry increments |
 | Hall edges | ISR → control | Ring buffer of 8 `int64_t` timestamps + atomic write index | ISR writes only; control reads only |
@@ -604,6 +604,17 @@ stateDiagram-v2
 
 These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the magnetometer and sun guards, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
 
+**Hall bench bypass** (approved by the owner on 2026-10-10 [D], finding V-30). Until the Hall magnets can be mounted (repository Set 2), rung 1 of `MANUAL` is tested with the parameter `hall_installed` set false. It can be set false only by `set_params` in `SAFE` while `bench_mode` is already true, so it takes two separate commands, and every boot sets it true again; it is never persisted. While it is false:
+
+- `arm` is refused unless `bench_mode` is true;
+- only the `throttle` `MANUAL` input is available;
+- `SPINUP` ramps the throttle open loop to `spinup_throttle` at 200 DShot units per second and reaches `READY` after the ramp plus 0.5 s, with no speed check;
+- every throttle the controller emits is clamped to `min(manual_throttle_max, kBypassThrottleMax)`, where `kBypassThrottleMax` = 400 is a compile-time constant, not a parameter, so no command can raise it [D]; its speed, about 1600 rpm no-load at 10 V, is [A] until R3.7 measures it;
+- the `tlm` flag `HALL_BYPASS` is set on every frame, and a `notice` event `HALL_BYPASS` (`detail` `on` or `off`) is posted when it changes;
+- `OVERSPEED`, `UNDERSPEED`, and `HALL_SILENT` are suspended (§14.1); every other interlock stays active.
+
+**Refusal reasons** [D, V-34]. A refused command's `ack` carries one of these exact strings: `not in SAFE` (`arm` while armed, `set_params` outside `SAFE`), `not armed` (`disarm`, or `mode READY`, in `SAFE`), `ramp-down in progress` (`arm` during a ramp-down), `box not still`, `battery low`, `latched fault: <INTERLOCK>` (a latch whose release condition does not hold, §14.1), `bench_mode required` (`arm` with the Hall bypassed and bench mode off), `not controlling client`, `not in READY` (`mode MANUAL` from any other mode), `input not available`, `wheel not at bias` (`mode READY` during `SPINUP`), `not in MANUAL`, `input mismatch`, `too fast`, `invalid setpoint`, `not implemented` (modes and commands of later repository sets), and for `set_params`: `invalid param: <key>`, `unknown param: <key>`, `not settable: <key>`, `not implemented: <key>`, `bench_mode required: hall_installed`, `no params`. The guards of `arm` are checked in the order `SAFE`, ramp, bench mode, still, battery, latches, and the first that fails names the reason.
+
 ### 13.2 Per-mode behaviour
 
 | Mode | Wheel | Controller active | Setpoint | Exits |
@@ -700,8 +711,14 @@ Every interlock is evaluated every tick, after the controller, so it can overrid
 | `IMU_SILENT` | 25 consecutive invalid IMU reads (50 ms) | DShot 0 at once → SAFE | Until a valid read and `arm` | TD §6.7 |
 | `TILT` | Averaged accel more than 30° from vertical | DShot 0 at once → SAFE | Until upright and `arm` | TD §6.7 |
 | `CONTROL_STALL` | 25 consecutive missed ticks | DShot 0 → SAFE; if the task is fully stuck, the 100 ms watchdog resets the MCU | Reboot | TD §6.7; [D] for the soft stage |
-| `HALL_SILENT` | Throttle above the low-limit FF value for 500 ms with no Hall edge | DShot 0 at once → SAFE | Until next `arm` | [D] new, finding V-11 |
+| `HALL_SILENT` | Throttle above `hall_expect_throttle` (§16; set to the low-limit FF value once T-5 measures it) for 500 ms with no Hall edge | DShot 0 at once → SAFE | Until next `arm` | [D] new, finding V-11 |
 | `MOMENTUM_NEAR_LIMIT` | Ω within 300 rpm of a limit | Warning flag only | n/a | TD §6.7 |
+
+**Latch release** [D, V-33]. `arm` clears every latch at once, but only if each latched interlock's release condition holds now: `OVERSPEED` needs `speed_safe` below the bias, `BATTERY_LOW` needs the arm battery guard, `IMU_SILENT` a valid read (no invalid reads in the current streak), `TILT` 30 deg or less, and `CONTROL_STALL` never releases (reboot). Otherwise `arm` is refused with `latched fault: <INTERLOCK>`. Hard faults are evaluated in every mode, including `SAFE`, and post one `mode` event when they first latch.
+
+**Hall bench bypass** (§13.1, V-30). While `hall_installed` is false, `OVERSPEED`, `UNDERSPEED`, and `HALL_SILENT` are suspended, because they need wheel speed, and the compile-time throttle ceiling `kBypassThrottleMax` is the only overspeed protection. Every other interlock, the e-stop, and the heartbeat stay active.
+
+**Zero throttle needs no ramp** [D, V-36]. E-stop, `disarm`, and heartbeat loss start the ramp-down only when the throttle last sent was a running value (48 or more); otherwise the box drops to `SAFE` with DShot 0 at once, so a needless 5 s ramp does not block the next `arm`.
 
 **Why `HALL_SILENT` is added.** Without it, a disconnected Hall sensor makes `speed_safe` go stale. The staleness bound in §10.4 then drives the speed estimate toward zero, so `UNDERSPEED` would trip after 200 ms, which is safe. But during `SPINUP`, where `UNDERSPEED` is exempt, the wheel PI would push throttle up without bound while the real wheel accelerates past the cap with no overspeed detection. `HALL_SILENT` closes that gap (finding V-11).
 
@@ -891,18 +908,23 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 | `k_psi` | 3.1 | 0..10 | `set_params` |
 | `k_omega` | 0.0129 | 0..0.05 | `set_params` |
 | `k_i` | 0.0163 | 0..0.1 | `set_params` |
-| `wheel_kp`, `wheel_ki` | from T-5 | ≥ 0 | `set_params` |
+| `wheel_kp`, `wheel_ki` | 0 until T-5 [D] | 0..10 | `set_params` |
 | `ff_table` | 8 points | monotonic | `set_params` |
 | `omega_low_rpm` | 800 | 500..1500 | after T-18 |
 | `omega_bias_rpm` | 2400 | low+400 .. cap−400 | after T-18 |
-| `omega_cap_rpm` | 4000 | **≤ 4000, cannot be raised over the wire** | firmware rebuild only (TD §10.3: changing the cap requires re-running Section 3) |
+| `omega_cap_rpm` | 4000 | **≤ 4000 (`kOmegaCapMaxRpm`)** | firmware rebuild only (TD §10.3: changing the cap requires re-running Section 3). Not settable over the wire at all (`not settable`), and not persisted [D] |
 | `s_w`, `s_gyro` | +1 | ±1 | after T-5, T-8 |
 | `mag_axis_map`, `mag_cal` | see §10.2 | n/a | after T-9 |
 | `sun_cal`, `light_threshold` | identity, 0 | n/a | after T-10 |
 | `dshot_rate` | 150 | 150 or 300 | after reading the ESC MCU (TD §5.2) |
-| `bench_mode` | false | bool | `set_params` in SAFE |
-| `manual_throttle_min`, `manual_throttle_max` | from T-5 [M] | 48..2047, min < max; the band must keep the wheel between Ω_low and Ω_cap | `set_params` in SAFE |
+| `bench_mode` | false at every boot | bool; cannot turn off while `hall_installed` is false | `set_params` in SAFE; never persisted [D] |
+| `manual_throttle_min`, `manual_throttle_max` | 150 and 400 until T-5 [D]; then from T-5 [M] | 48..2047, min < max; the band must keep the wheel between Ω_low and Ω_cap | `set_params` in SAFE |
+| `spinup_throttle` | 300 until T-5 [D] | 48..2047 | `set_params` in SAFE; the open-loop throttle `SPINUP` ramps to (§13.1, R3.7) |
+| `hall_expect_throttle` | 200 until T-5 [D] | 48..2047 | `set_params` in SAFE; set to FF(Ω_low) after T-5; arms `HALL_SILENT` (§14.1) |
+| `hall_installed` | true at every boot | bool; false only with `bench_mode` already true | `set_params` in SAFE; never persisted; the Hall bench bypass (§13.1) |
 | Wi-Fi SSID, password, static address, SoftAP flag | n/a | n/a | menuconfig, from `firmware/sdkconfig.defaults.local` (gitignored); never over the wire |
+
+`set_params` is all-or-nothing: the merged set is validated as a whole, and one bad key rejects the update and names the key. `mag_axis_map`, `mag_cal`, `sun_cal`, and `light_threshold` are refused with `not implemented: <key>` until repository Set 5 adds them with a `param_version` bump [D]. Parameters are persisted outside the control task, because a flash write stalls both cores' caches: the supervisor reports `params_changed`, and a lower-priority task writes NVS [D].
 
 `dshot_rate` defaults to the slower, always-supported DShot150 until the ESC's MCU is read [D]. TD says DShot150 works on 24 MHz MCUs and DShot300 needs 48 MHz [V].
 
@@ -981,10 +1003,11 @@ firmware/                     ESP-IDF v6.0 project; run idf.py from here (or too
 | HT-5 | `controllers` + `plant_sim` | Closed loop on the TD §3.1 plant: detumble 1 rev/s within 5 s; 90° slew within 3 s settling to ±3°; Ω_ref never exceeds 4000 rpm |
 | HT-6 | `controllers` sign | With s_w = −1 instead of +1, HT-5's detumble diverges, so the test can see a sign error (positive control) |
 | HT-7 | `modes` | Every row of §13.1, every refused transition with its reason, FR-2 timing in ticks |
-| HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s |
+| HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s; no path leaves `SAFE` after a fault without `arm`, with a mutant build that compiles out latching as its positive control |
 | HT-9 | `protocol` | Parse every `cmd`; reject oversize, wrong `v`, unknown `type`; `ack` echoes `seq`; `tlm` round-trips through a JSON parser |
 | HT-10 | `interlocks` | `HALL_SILENT` trips during SPINUP with throttle high and no edges |
 | HT-11 | `modes` + `protocol` | `MANUAL`: entry refused from any mode but READY and for an unbuilt input; each setpoint form clamps to its limits; a setpoint for the wrong input, from a non-controlling client, or under 50 ms after the last is refused; after 250 ms without setpoints `rate` falls to 0 and `MANUAL_STALE` is set while `throttle` and `wheel` hold; an accepted setpoint resets the heartbeat |
+| HT-12 | `modes` | Hall bench bypass: property tests over 10,000 random parameter sets and command sequences show the throttle never exceeds `kBypassThrottleMax` while bypassed (a mutant build without the clamp must fail it), the bypass is refused outside `SAFE` and without `bench_mode`, and every boot starts with `hall_installed` true |
 
 HT-6 follows TD §8.5's rule that an empty result counts only if a known positive is detected by the same instrument.
 
@@ -1125,6 +1148,13 @@ Each statement below was challenged by recomputing it from TD's inputs, by check
 | V-27 | §24 Q6 additions and the V-1, V-4, V-5, V-7, V-9, V-14 corrections awaited owner approval | Owner review 2026-10-10 | Approved | Written into TD §4.8, §5.2, §6.4 to §6.7, §7.3, §9.1, §10; §13.1 and §13.4 text updated | n/a |
 | V-28 | Em dashes in headings and empty table cells | Owner style | n/a | Replaced with colons, "none", or "n/a" | Low |
 | V-29 | §10 had no driver notes | Driver source read 2026-10-10 | The esp-idf-lib drivers default to 1 MHz SCL, the QMC5883P driver hard-codes 100 kHz, and the drivers were validated only one at a time | Driver notes in §10.1 to §10.3; 400 kHz override [D]; TD A-23 | Medium (this doc) |
+| V-30 | §13 and §14 assumed the Hall sensor is always fitted | Owner decision 2026-10-10 | The Hall magnets cannot be mounted until repository Set 2, so rung 1 of `MANUAL` could not be tested at all | Hall bench bypass (§13.1, §14.1, §16): `hall_installed` false only from bench mode, never persisted; open-loop `SPINUP`; Hall interlocks suspended; compile-time ceiling `kBypassThrottleMax` = 400; HT-12 | Medium (this doc and TD) |
+| V-31 | §14.1: `HALL_SILENT` arms on "throttle above the low-limit FF value" | The FF table does not exist until T-5 | The threshold was undefined before characterisation | New parameter `hall_expect_throttle`, default 200, set to FF(Ω_low) after T-5 [D] | Medium (this doc) |
+| V-32 | §7.4: comms writes `last_heartbeat_us` for the controlling client | Only the control task knows which client armed the box | Comms would need a second copy of that fact across cores | Pings go through the command queue; the supervisor times the heartbeat [D] | Low (this doc) |
+| V-33 | §14.1 latch column ("until next `arm`", "until a valid read and `arm`") did not say what `arm` does with several latches | Implementation of the supervisor | Ambiguous | `arm` clears all latches only if every latched interlock's release condition holds; else `latched fault: <NAME>` [D] | Low (this doc) |
+| V-34 | §15.3: "a failed guard → ok:false with a reason" without the reason strings | Implementation | The UI and tests need exact strings | Fixed list in §13.1 [D] | Low (this doc) |
+| V-35 | §16: `omega_cap_rpm` "cannot be raised over the wire"; persistence of `bench_mode` unstated | Implementation | Lowering it over the wire was also unclear | The cap is not settable over the wire at all and not persisted; `bench_mode` and `hall_installed` are volatile [D] | Low (this doc) |
+| V-36 | §14.3: e-stop always ramps from throttle_0 | Implementation | A ramp from zero throttle only blocks the next `arm` for 5 s | No ramp when the last throttle was below 48 [D] | Low (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
