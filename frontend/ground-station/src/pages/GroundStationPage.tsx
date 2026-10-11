@@ -1,3 +1,4 @@
+import { TelemetryPlotsPanel } from '../ground/TelemetryPlots';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { DeviceControls } from '../ground/DeviceControls';
 import { DeviceLinkPanel } from '../ground/DeviceLinkPanel';
@@ -54,6 +55,7 @@ export default function GroundStationPage() {
           <SensorPanel source={source} />
         </div>
       </main>
+      <TelemetryPlotsPanel source={source} />
     </div>
   );
 }

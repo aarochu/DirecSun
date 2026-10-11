@@ -28,6 +28,10 @@ export interface HistorySample {
   readonly t: number;
   readonly heading: number;
   readonly target: number;
+  readonly rate?: number | null;
+  readonly wheel?: number | null;
+  readonly wheelRef?: number | null;
+  readonly vbat?: number | null;
 }
 
 export interface PlantSnapshot {
