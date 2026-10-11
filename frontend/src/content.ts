@@ -7,7 +7,7 @@ export { cubesatModel, hardwareStack, imageAssets } from '@shared/data/assets';
 
 export const hero = {
   title: 'Control the attitude.',
-  lead: 'A small CubeSat for your desk. It’s built to track which way it’s facing and turn itself with a wheel spinning inside.',
+  lead: 'A desk-sized CubeSat that turns on command, holds its heading, and returns to where it started using an internal reaction wheel.',
   primary: 'Open Ground Station',
   secondary: 'See how it works',
   scroll: 'SCROLL',
