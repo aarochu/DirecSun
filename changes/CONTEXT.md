@@ -14,7 +14,7 @@ DirecSun (formerly PocketADCS) is a single-axis reaction-wheel attitude trainer 
 | Path | What | Owner |
 | --- | --- | --- |
 | `firmware/` | ESP-IDF v6.0 project (run `idf.py` from here) | Julian |
-| `protocol/` | Wire schema v1, the firmware/ground contract | Julian (Aaron requests changes as `Contract:` issues) |
+| `protocol/` | Wire schema v1, the firmware/ground contract | Julian (Aaron requests changes as `Contract:` issues; since 2026-10-11 Aaron's work may also edit it, see `WORKSTREAMS.md`) |
 | `frontend/` | The main UI. `frontend/` is the landing page (Vite, TypeScript, three.js); `frontend/ground-station/` is the ground station and the operator client (React); `frontend/shared/` holds the hardware data and styles both use | Aaron |
 | `ground/link/` | Engineering bench client: dependency-free ES module for schema v1 | Julian |
 | `ground/console/` | Engineering bench console built on the link module, for bring-up and characterisation; never shown to judges | Julian |
