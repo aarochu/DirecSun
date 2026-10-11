@@ -970,6 +970,8 @@ The main UI is `frontend/`, Aaron's landing page and ground station, built with 
 
 `ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up and characterisation, and are not shown to judges. When the UI starts sending commands, its own TypeScript client must keep the safety rules `ground/link/` proves: a 5 Hz ping heartbeat, acks matched to commands by `seq`, an `estop` that is sent at once and never queued, and no automatic reconnect (§14.4, §21).
 
+The bench console binds the e-stop to Space wherever focus is, its endpoint text field included, and a focused text field or button cannot take the key instead (finding V-63). A ground station that binds an e-stop key needs the same rule, or the key silently does nothing while a field has focus.
+
 The table records facts read from the `frontend/` source at PR #1 head 622150a (`src/hardware/deviceLink.ts`, `src/ground/*`, `src/simulation/*`, `src/data/assets.ts`) [V at that commit].
 
 | Main UI fact | Firmware consequence |
@@ -1208,6 +1210,7 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
 | V-60 | §9.2: worst tick "about 0.75 ms of 2 ms" | R3.4 bench, per-stage timing on the XIAO | The worst tick was 1.4 to 1.9 ms: the 16 KB instruction cache thrashed every tick, the magnetometer status and data reads and an ADC read shared ticks, and the first tick logged | 32 KB instruction cache and IRAM placement by linker fragments; magnetometer data on the tick after the status read; ADC on ticks 0, 2, 4; no log inside a tick. Measured 911 to 976 µs, no missed ticks; a once-a-second IMU read delay, probably the barometer read, is open (§9.2) | High (this doc) |
 | V-61 | §11.1: the bias gate needs the accel magnitude "within 0.05 g of 1 g"; §8.2: the bias "is not taken once at boot" | R3.4 bench: the MPU-6050 read 0.871 g at rest, and the boot seed refused a window with a 0.12 deg/s gyro range | The absolute test rejects an uncalibrated accelerometer at rest, so neither the boot seed nor the gate ever ran, and heading drifted with the 2.1 deg/s offset | Stillness relative to the boot window's own mean magnitude, with a 0.7 to 1.3 g plausibility band; the boot seed and its criteria written into §11.1; the boot log names the failed criterion | High (this doc) |
+| V-63 | TD §7.4 and R3.7: the bench console's e-stop is "bound to the space bar", "from any state" | Review of R3.7 before the first spin: Playwright against `tools/mock-box.py`, frames read from the browser's own WebSocket record | With focus in the endpoint field, where connecting with Enter left it, Space typed a space into the URL and sent nothing; the box stayed in `MANUAL` | Space sends `estop` wherever focus is; a held key sends one; Space's keyup is cancelled, so it cannot press a focused button; the endpoint field loses focus once the link opens (§17) | High (bench console) |
 
 ### 23.2 Statements re-derived and confirmed
 

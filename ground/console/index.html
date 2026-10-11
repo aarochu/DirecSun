@@ -584,8 +584,12 @@ function connect() {
   $("csv").disabled = true;
   link.on("state", ({ state, reason }) => {
     if (state === "connecting") setLinkState("connecting", "CONNECTING");
-    else if (state === "open") setLinkState("online", "CONNECTED");
-    else if (state === "closed") {
+    else if (state === "open") {
+      setLinkState("online", "CONNECTED");
+      // Connecting with Enter leaves focus in the field; take it out, so the
+      // keys go to the page from the first moment the link is live.
+      $("endpoint").blur();
+    } else if (state === "closed") {
       setLinkState(reason === "closed by client" ? "" : "error", reason === "closed by client" ? "DISCONNECTED" : `CLOSED · ${String(reason).toUpperCase()}`);
       logFrame("LINK", `closed: ${reason}`, "err");
     }
@@ -639,21 +643,29 @@ $("tp-up").onclick = () => nudge(STEP);
 $("tp-down").onclick = () => nudge(-STEP);
 $("tp-slider").addEventListener("input", (e) => sendSetpoint(Number(e.target.value)));
 document.addEventListener("keydown", (e) => {
+  // Space is the e-stop wherever focus is, the endpoint field included: an
+  // endpoint URL never contains a space, so nothing useful is lost there.
+  // preventDefault also stops it typing, scrolling, or toggling a checkbox, and
+  // a held key sends one e-stop, not one per repeat.
+  if (e.code === "Space") {
+    e.preventDefault();
+    if (!e.repeat) estop();
+    return;
+  }
   const el = document.activeElement;
   const typing = el?.tagName === "TEXTAREA" || (el?.tagName === "INPUT" && el.type !== "range" && el.type !== "checkbox");
   if (typing) return;
-  if (e.code === "Space") {
-    if (e.repeat) return;
-    e.preventDefault();
-    estop();
-    return;
-  }
   if ((e.code === "ArrowUp" || e.code === "ArrowDown") && manualActive) {
     // One step per press: holding the key does not keep raising the throttle.
     e.preventDefault();
     if (e.repeat) return;
     nudge(e.code === "ArrowUp" ? STEP : -STEP);
   }
+});
+// A focused button acts on Space's keyup: cancel that too, so Space can never
+// press Confirm arm (or any other button) instead of stopping.
+document.addEventListener("keyup", (e) => {
+  if (e.code === "Space") e.preventDefault();
 });
 </script>
 </body>
