@@ -352,7 +352,15 @@ One 8 × AA NiMH pack (Energizer Recharge cells in the printed holder of Section
 
 The diode follows Seeed's guidance for powering the XIAO through its 5V pin \[V\]; the 1N5817 and the 470 µF 35 V capacitor are in the inventory bins \[V: inventory PDF\]. The divider maps 11.2 V, a pack fresh off the charger, to 2.02 V, inside the 0 to 2.9 V range of the ESP32-S3 ADC at 12 dB attenuation \[C, V\]. Motor current at the torques in Section 3 is 1 to 3 A of phase current; the 10 A fuse is sized for wiring protection, not for the motor's limit \[A\].
 
-**Fuse.** The fuse is a Bussmann AGC-10 from stock: 10 A, fast-acting, glass cartridge, 6.3 × 32 mm (1/4 × 1-1/4 in), 250 V AC \[A: the part is the owner's statement; the ratings are from distributor listings, because Eaton's data sheet could not be retrieved\]. The pack draws 0.40 A on average in the demo and at most 2.35 A, with 3 A of motor current at the cap and a Wi-Fi peak at the 8.8 V cutoff (table below) \[C\], so the fuse never opens in normal running. A short at the pack can draw about 33 A, 11.2 V across the 0.34 Ω pack resistance that `docs/sizing.py` estimates \[C on A\], and the fuse opens on that. The 470 µF capacitor's charging pulse when the pack is connected lasts milliseconds and does not open it \[A\]. It sits in an inline holder in the pack's + lead, at the battery holder, so the lead down to the power deck is protected too. The fallback is a pair of PCB clips for the same size on the power perfboard. A fuse in clips takes about 35 × 8 × 13 mm, and the perfboard's top is 19.4 mm below the battery deck \[C: `cad/stack.py`\]. Do not solder to the fuse's end caps, because the heat can damage the element. Wire after the fuse is 20 AWG or heavier, so the fuse protects the wire as well as the parts \[A\].
+**Fuse.** The fuse is a Bussmann AGC-10 from stock \[A: the owner's statement\]. Eaton's page for the AGC-10-R lists 10 A, a fast-acting glass tube 6.4 × 32 mm (1/4 × 1-1/4 in, 3AG), 250 Vac and 32 Vdc (the DC rating self-certified), an interrupting rating of 200 A at 250 Vac and 10 kA at 125 Vac, and opening within 60 min at 135 % and within 120 s at 200 % \[V: Eaton product page; its heading says "3A, 250 Vac, 125 Vdc", which contradicts its own specification table, and this design takes the table\]. The pack's 11.2 V is inside the 32 Vdc rating. Eaton gives no interrupting rating at DC \[V\].
+
+What the fuse is meant to do, and the checks that are still open (Section 12.3):
+
+- **Normal running.** The pack draws 0.40 A on average in the demo and at most 2.35 A, with 3 A of motor current at the cap and a Wi-Fi peak at the 8.8 V cutoff (table below) \[C\]. That is under a quarter of the rating, so the fuse is not expected to open \[A: Eaton states only the longest opening times above, not a current the fuse is sure to carry\].
+- **A short at the pack.** It is meant to clear a short at the pack, which can draw about 33 A, 11.2 V across the 0.34 Ω pack resistance that `docs/sizing.py` estimates \[C on A\]. That is 3.3 times the rating, past the 200 % at which Eaton promises opening within 120 s. How fast it opens at 33 A comes from Eaton's time-current curve, which has not been read, and whether it breaks 33 A DC cleanly is not rated \[A\].
+- **Connecting the pack.** The 470 µF capacitor charges through the fuse. Limited only by the pack resistance, the pulse peaks near 33 A, decays with a 0.16 ms time constant, and has an I²t of C·V²/(2R) = 0.087 A²s \[C on A\]. Lead and holder resistance only lower all three. Whether that is far enough below the fuse's melting I²t needs the value from Eaton's AGC data sheet, which has not been read \[A\].
+
+It sits in an inline holder in the pack's + lead, at the battery holder, so the lead down to the power deck is on the protected side. The holder must be rated for at least 10 A and 32 V DC \[A\]. The fallback is a pair of PCB clips for the same size on the power perfboard. A fuse in clips takes about 35 × 8 × 13 mm, and the perfboard's top is 19.4 mm below the battery deck \[C: `cad/stack.py`\]. Do not solder to the fuse's end caps, because the heat can damage the element. Wire after the fuse is 20 AWG or heavier. Whether the fuse protects that wire, and not only the parts, depends on the wire's and the holder's current ratings against the fuse's time-current curve, and that check is open \[A\].
 
 Battery current, baseline wheel, from `docs/sizing.py` \[C on A\]:
 
@@ -910,6 +918,7 @@ Twenty-four assumptions carry the design until the tests in Section 9 replace th
 - [x] Battery: eight Energizer Recharge NiMH AA cells are on hand; they sit in a printed holder with screw-kit contacts (Section 4.12).
 - [ ] Whether to flash Bluejay for RPM telemetry, or rely on the Hall sensor alone.
 - [ ] A lamp for sun pointing at the venue.
+- [ ] Fuse checks (Section 5.1), all from Eaton's AGC data sheet and the parts as bought: the AGC-10's opening time at 33 A, its melting I²t against the capacitor's 0.087 A²s, the inline holder's current and voltage rating, and the 20 AWG lead's current rating against the fuse's curve.
 
 ### 12.4 Adversarial validation log
 
@@ -1053,6 +1062,7 @@ Every page below was opened during this work; facts taken only from search snipp
 
 **Electronics**
 
+- [Eaton AGC-10-R product page](https://www.eaton.com/us/en-us/skuPage.AGC-10-R.html), opened on 11 October 2026: 10 A, 6.4 × 32 mm, 250 Vac and 32 Vdc (self-certified), interrupting 200 A at 250 Vac and 10 kA at 125 Vac, opening within 60 min at 135 % and 120 s at 200 %. Eaton's [AGC data sheet](https://www.eaton.com/content/dam/eaton/products/electronic-components/resources/data-sheet/eaton-agc-fast-acting-glass-tube-fuses-data-sheet.pdf) did not render here, so its time-current curve and melting I²t are not used.
 - [Seeed XIAO ESP32S3 wiki](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/): 21 × 17.8 mm, pin map, 5V-pin diode guidance, 700 mA 3V3 output.
 - [Espressif ESP32-S3 data sheet](https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf): four RMT TX channels, ADC2 unavailable with Wi-Fi, strapping pins GPIO0, GPIO3, GPIO45, GPIO46.
 - [InvenSense MPU-6000/6050 register map rev 4.0](https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/RM-MPU-6000A.pdf): DLPF\_CFG table, I2C address 0x68/0x69.
