@@ -61,7 +61,7 @@ struct BoxRig {
         box.wheel_rpm = 0.0;
         in.hall_edge_age_ms = 5;
         in.vbat_avg_v = 10.4f;
-        in.built_inputs = kRungOneBuiltInputs;
+        in.built_inputs = kAllBuiltInputs;
     }
 
     void tick(std::vector<Command> cmds = {})

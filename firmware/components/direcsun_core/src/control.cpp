@@ -82,10 +82,14 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
     // Rung 1 whenever the closed loop cannot run: no Hall (or the bench
     // bypass), or no T-5 feed-forward table yet; and MANUAL throttle always.
     const bool manual_throttle = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Throttle;
+    // MANUAL `rate` (R5.2) is the rate loop with the operator's omega_cmd; MANUAL
+    // `wheel` is the wheel loop alone, with the reference ramped to the setpoint.
+    const bool manual_rate = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Rate;
+    const bool manual_wheel = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Wheel;
     const bool rate_mode = demand.mode == Mode::Ready || demand.mode == Mode::Detumble ||
-                           demand.mode == Mode::Hold || demand.mode == Mode::Slew;
+                           demand.mode == Mode::Hold || demand.mode == Mode::Slew || manual_rate;
     if (!wheel_loop_available(params) || demand.spinup_open_loop || manual_throttle ||
-        (demand.mode != Mode::Spinup && !rate_mode)) {
+        (demand.mode != Mode::Spinup && !rate_mode && !manual_wheel)) {
         closed_loop_ = false;
         wheel_pi_.reset();
         stop_rate_loop();
@@ -102,13 +106,21 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
             wheel_pi_.reset();
         }
         const float target = demand.omega_target_rpm < cap ? demand.omega_target_rpm : cap;
-        if (omega_ref_rpm_ < target) {
-            omega_ref_rpm_ += kWheelRefRampRpmPerS * dt;
-            if (omega_ref_rpm_ > target) omega_ref_rpm_ = target;
-        } else {
-            omega_ref_rpm_ = target;
+        // Both ways at 400 rpm/s (FD section 13.2): a respin to a lower speed (R5.3)
+        // must not step the wheel reference down.
+        const float step = kWheelRefRampRpmPerS * dt;
+        omega_ref_rpm_ += clampf(target - omega_ref_rpm_, -step, step);
+    } else if (manual_wheel) {
+        stop_rate_loop();
+        if (!closed_loop_) {
+            omega_ref_rpm_ = clampf(in.wheel_rpm_safe, omega_ref_floor_rpm(params), cap);
+            wheel_pi_.reset(static_cast<float>(demand.previous_throttle) - ff_throttle(params, omega_ref_rpm_));
         }
-    } else {  // READY, DETUMBLE, HOLD, SLEW: rate loop runs with demand.omega_cmd_dps
+        const float target = clampf(demand.manual_wheel_rpm, omega_ref_floor_rpm(params), cap);
+        const float step = kManualWheelRampRpmPerS * dt;
+        omega_ref_rpm_ += clampf(target - omega_ref_rpm_, -step, step);
+        omega_ref_rpm_ = clampf(omega_ref_rpm_, omega_ref_floor_rpm(params), cap);
+    } else {  // READY, DETUMBLE, HOLD, SLEW, MANUAL rate: rate loop runs with the commanded rate
         if (!closed_loop_) {
             // Bumpless start from open-loop throttle: reference at the measured
             // speed, integrator at the last throttle minus the feed-forward.
@@ -123,12 +135,13 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
         } else {
             // A rate loop that was not running starts with an empty integral.
             if (!rate_active_) rate_.reset();
+            const float omega_cmd = manual_rate ? demand.manual_rate_dps : demand.omega_cmd_dps;
 #ifdef DIRECSUN_MUTANT_DETUMBLE_OWN_GAIN
             Params mutated = params;
             if (demand.mode == Mode::Detumble) mutated.rate_gain_scale *= 0.5f;   // DETUMBLE must not differ from READY
-            const RateLoopStep r = rate_.step(demand.omega_cmd_dps, in.rate_dps, omega_ref_rpm_, dt, mutated, cap);
+            const RateLoopStep r = rate_.step(omega_cmd, in.rate_dps, omega_ref_rpm_, dt, mutated, cap);
 #else
-            const RateLoopStep r = rate_.step(demand.omega_cmd_dps, in.rate_dps, omega_ref_rpm_, dt, params, cap);
+            const RateLoopStep r = rate_.step(omega_cmd, in.rate_dps, omega_ref_rpm_, dt, params, cap);
 #endif
             omega_ref_rpm_ = r.omega_ref_rpm;
             tau_cmd_nm_ = r.tau_cmd_nm;

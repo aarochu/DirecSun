@@ -58,6 +58,10 @@ constexpr float kRateIntegralLimitNm = 0.003f;  // K_i int(e) bound: the planned
 // Plant inertias in the torque-to-wheel step (TD section 3.2). I_b is the
 // calculated box [C on A] until T-3 measures it; I_w is the baseline washer
 // wheel [A] until Set 2's printed wheel is weighed (R2.3).
+// MANUAL `wheel` (R5.2): the wheel reference moves toward the setpoint at this rate, so a
+// 1000 rpm change takes 1 s and the box sees at most about 355 deg/s per second of acceleration.
+constexpr float kManualWheelRampRpmPerS = 1000.0f;
+
 constexpr float kBoxInertiaKgM2 = 1.03e-3f;
 constexpr float kWheelInertiaKgM2 = 6.50e-5f;
 // Stick-slip bleed [D, R3.9]: with a zero rate command and the box still,

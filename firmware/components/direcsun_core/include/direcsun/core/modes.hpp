@@ -40,6 +40,8 @@ enum Flag : uint32_t {
     kFlagHallBypass = 1u << 3,
     kFlagWheelStep = 1u << 4,        // bench wheel_step hold: rate and attitude loops suspended (R3.8)
     kFlagMomentumSaturated = 1u << 5,  // omega_ref on a limit in the direction the loop needs (R3.9)
+    kFlagFfTableMissing = 1u << 7,     // Hall installed but no T-5 feed-forward table: SLEW and the wheel loop are refused (R5.3)
+    kFlagRateGainReduced = 1u << 8,    // rate_gain_scale below 1: turns are slower than the design gains (R5.3)
     kFlagHeadingGyro = 1u << 6,        // the heading is gyro-only and relative to the last zero_heading (R4.2)
 };
 

@@ -52,6 +52,8 @@ const char *flag_wire_name(uint32_t flag_bit)
     case kFlagWheelStep: return "WHEEL_STEP";
     case kFlagMomentumSaturated: return "MOMENTUM_SATURATED";
     case kFlagHeadingGyro: return "HEADING_GYRO";
+    case kFlagFfTableMissing: return "FF_TABLE_MISSING";
+    case kFlagRateGainReduced: return "RATE_GAIN_REDUCED";
     default: return nullptr;
     }
 }
@@ -77,6 +79,7 @@ constexpr const char *kWheelNotAtBias = "wheel not at bias";
 constexpr const char *kInvalidMode = "invalid mode";
 constexpr const char *kInvalidSetpoint = "invalid setpoint";
 constexpr const char *kNoParams = "no params";
+constexpr float kRespinMarginRpm = 200.0f;   // FD section 13.4: [Omega_low + 200, Omega_cap - 200]
 constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
 
 bool is_later_set_mode(Mode m)
@@ -280,11 +283,15 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
         if (target == Mode::Manual) {
             if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
             if (!input_available(cmd.manual_input, in.built_inputs)) return ack(out, cmd, kInputNotAvailable);
+            // `wheel` and `rate` run on the closed wheel loop, which needs the T-5 table (V-43).
+            if (cmd.manual_input != ManualInput::Throttle && !wheel_loop_available(params_)) {
+                return ack(out, cmd, kWheelLoopUnavailable);
+            }
             enter(Mode::Manual, t);
             manual_input_ = cmd.manual_input;
             // Start from what the wheel is doing now, so entry is not a step.
             manual_throttle_ = clamp_manual_throttle(static_cast<float>(prev_throttle_));
-            manual_wheel_rpm_ = clampf(spinup_target_rpm_, params_.omega_low_rpm, params_.omega_cap_rpm);
+            manual_wheel_rpm_ = clampf(in.wheel_rpm_safe, params_.omega_low_rpm, params_.omega_cap_rpm);
             manual_rate_dps_ = 0.0f;
             manual_has_setpoint_ = false;
             manual_fresh_tick_ = t;
@@ -388,8 +395,23 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
         heading_zero_deg_ = in.heading_deg;
         return ack_ok(out, cmd);
 
-    case CommandKind::Respin:
-        return ack(out, cmd, kNotImplemented);
+    case CommandKind::Respin: {
+        // FD section 13.4 (R5.3): READY back to SPINUP with a new start speed, the
+        // desaturation the lock pin allows. The firmware cannot sense the pin, so
+        // it asks only for a still box and the UI asks the operator to confirm it.
+        if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+        if (!(std::fabs(in.rate_dps) < kArmMaxRateDps)) return ack(out, cmd, kBoxNotStill);
+        if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+        const float target = cmd.has_wheel_rpm ? cmd.wheel_rpm : params_.omega_bias_rpm;
+        if (!std::isfinite(target) || target < params_.omega_low_rpm + kRespinMarginRpm ||
+            target > effective_cap_rpm(params_) - kRespinMarginRpm) {
+            return ack(out, cmd, kInvalidSetpoint);
+        }
+        spinup_target_rpm_ = target;
+        enter(Mode::Spinup, t);
+        post_mode_event(out, "respin");
+        return ack_ok(out, cmd);
+    }
     case CommandKind::Estop:
     case CommandKind::Ping:
         break;
@@ -414,7 +436,9 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     last_step_tick_ = t;
     stepped_ = true;
 
-    if (pending_reset_notice_) {
+    // Held until a client has spoken: events reach only clients that have sent a
+    // message, and the boot tick has none, so a notice posted then reached no one (R4.1).
+    if (pending_reset_notice_ && in.command_count > 0) {
         Event e;
         e.kind = Event::Kind::Notice;
         e.notice = "PARAMS_RESET";
@@ -575,6 +599,10 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     // 6. Flags and outputs.
     // The heading is gyro-only until Set 5 adds the magnetometer (R4.2).
     uint32_t flags = kFlagHeadingGyro;
+    // Demo preconditions the UI cannot otherwise see (R4.1 open question 2, R5.3): a box with
+    // the Hall but no T-5 table refuses SLEW, and a reduced rate gain slews slowly.
+    if (params_.hall_installed && params_.ff_count == 0) flags |= kFlagFfTableMissing;
+    if (params_.rate_gain_scale < 1.0f) flags |= kFlagRateGainReduced;
     if (!params_.hall_installed) flags |= kFlagHallBypass;
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;

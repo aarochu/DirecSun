@@ -22,6 +22,11 @@ namespace direcsun {
 // The MANUAL inputs whose loops exist after R3.7: open-loop throttle only.
 constexpr ManualInputSet kRungOneBuiltInputs = manual_input_bit(ManualInput::Throttle);
 
+// Every MANUAL input after R5.2: throttle, wheel and rate. The supervisor still
+// offers only throttle while the Hall is bypassed, and wheel and rate need the wheel loop.
+constexpr ManualInputSet kAllBuiltInputs = kRungOneBuiltInputs | manual_input_bit(ManualInput::Wheel) |
+                                          manual_input_bit(ManualInput::Rate);
+
 // Open-loop spin-up throttle `ticks_in_mode` ticks after entering SPINUP.
 int spinup_ramp_throttle(uint32_t ticks_in_mode, int spinup_throttle);
 

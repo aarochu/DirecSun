@@ -220,7 +220,8 @@ class Box:
         self.params = {"bench_mode": False, "hall_installed": True,
                        "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX,
                        "spinup_throttle": SPINUP_THROTTLE, "hall_expect_throttle": HALL_EXPECT_THROTTLE,
-                       "bench_underspeed_rpm": 0, "bench_cap_rpm": 0}
+                       "bench_underspeed_rpm": 0, "bench_cap_rpm": 0,
+                       "rate_gain_scale": 1.0 if characterised else 0.2}
         if characterised:
             self.params["ff_table"] = DEFAULT_FF_TABLE
         self.wheel_hold = False           # bench wheel_step hold (R3.8)
@@ -347,7 +348,20 @@ class Box:
         elif cmd == "manual":
             self._manual(conn, seq, message)
         elif cmd == "respin":
-            self._ack(conn, seq, False, "not implemented")   # as the firmware at R4.3
+            # R5.3, FD section 13.4: READY to SPINUP at a new start speed, with the firmware's guards in its order.
+            if self.mode != "READY":
+                return self._ack(conn, seq, False, "not in READY")
+            if abs(self.rate) >= 5.0:
+                return self._ack(conn, seq, False, "box not still")
+            if not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")
+            target = float(message.get("wheel_rpm", OMEGA_BIAS))
+            if not (OMEGA_LOW + 200.0 <= target <= self._cap() - 200.0):
+                return self._ack(conn, seq, False, "invalid setpoint")
+            self.spinup_target = target
+            self.spinup_in_band_since = None
+            self._ack(conn, seq, True)
+            self._set_mode("SPINUP", "respin")
         elif cmd == "zero_heading":
             # As the firmware (R4.2): SAFE and READY only, so a zero can never move
             # the reference of a HOLD or SLEW in progress.
@@ -447,6 +461,8 @@ class Box:
                 return self._ack(conn, seq, False, "not in READY")
             if message["input"] not in self.inputs:
                 return self._ack(conn, seq, False, "input not available")
+            if message["input"] != "throttle" and not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")   # R5.2
             self._ack(conn, seq, True)
             self._set_mode("MANUAL", "mode")
             self.manual_input = message["input"]
@@ -570,7 +586,9 @@ class Box:
                 self.wheel_ref = 0.0
         elif self.mode == "SPINUP" and self._wheel_loop_available():
             # FD section 13.3: omega_ref ramps toward the target at 400 rpm/s.
-            self.wheel_ref = min(min(self.spinup_target, self._cap()), self.wheel_ref + SPINUP_REF_RAMP_RPM_S * dt)
+            step = SPINUP_REF_RAMP_RPM_S * dt   # both ways: a respin to a lower speed does not step down
+            goal = min(self.spinup_target, self._cap())
+            self.wheel_ref += max(-step, min(step, goal - self.wheel_ref))
         elif self.mode == "SPINUP":
             # Rung 1 (R3.7): the wheel follows the open-loop throttle ramp.
             self.wheel_ref = max(0.0, (self._spinup_throttle(now) - 48) / 0.17)
@@ -626,6 +644,10 @@ class Box:
         if self.wheel_hold:
             flags.append("WHEEL_STEP")
         flags.append("HEADING_GYRO")   # gyro-only heading, relative to zero_heading, until Set 5 (R4.2)
+        if self.params["hall_installed"] and not isinstance(self.params.get("ff_table"), list):
+            flags.append("FF_TABLE_MISSING")   # R5.3
+        if self.params["rate_gain_scale"] < 1.0:
+            flags.append("RATE_GAIN_REDUCED")
         flags.extend(self.latched)
 
         # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
@@ -941,6 +963,45 @@ def selftest_attitude(schema):
     return problems
 
 
+def respin_problems(schema):
+    """R5.3: a respin to 1000 rpm and back to the bias, both ways ramped at 400 rpm/s, ending in READY."""
+    problems = []
+
+    class Conn:
+        pass
+
+    class Clock:
+        t = 2000.0
+
+        def __call__(self):
+            return self.t
+
+    clock = Clock()
+    box = Box(schema, {"throttle", "wheel", "rate"}, clock=clock)
+    a = Conn()
+    send = lambda msg: box.receive(a, json.dumps({"v": 1, "type": "cmd", **msg}))
+    run = lambda seconds: [setattr(clock, "t", clock.t + TICK_S) or setattr(box, "last_heartbeat", clock.t) or box.tick()
+                           for _ in range(int(seconds / TICK_S))]
+    send({"seq": 1, "cmd": "arm"})
+    run(8.0)
+    if box.mode != "READY":
+        return ["respin check: no READY after arm"]
+    for seq, target in ((2, 1000.0), (3, None)):
+        send({"seq": seq, "cmd": "respin", **({} if target is None else {"wheel_rpm": target})})
+        if box.mode != "SPINUP":
+            problems.append(f"respin to {target} did not enter SPINUP ({box.mode})")
+            break
+        before = box.wheel_ref
+        run(1.0)
+        if abs(abs(box.wheel_ref - before) - SPINUP_REF_RAMP_RPM_S) > 20:
+            problems.append(f"respin reference moved {box.wheel_ref - before:.0f} rpm in 1 s, expected 400")
+        run(8.0)
+        goal = OMEGA_BIAS if target is None else target
+        if box.mode != "READY" or abs(box.wheel - goal) > 0.05 * goal:
+            problems.append(f"respin to {goal:.0f} ended in {box.mode} at {box.wheel:.0f} rpm")
+    return problems
+
+
 def selftest():
     schema = Schema()
     if schema.error({"v": 1, "type": "tlm", "seq": 1}) is None:
@@ -987,7 +1048,7 @@ def selftest():
     cmd(a, 113, "mode", mode="DETUMBLE")                                             # not in READY
     cmd(a, 114, "mode", mode="READY")                                                # leaves DETUMBLE
     cmd(a, 110, "mode", mode="SUN_POINT")                                            # not implemented
-    cmd(a, 111, "respin")                                                            # not implemented
+    cmd(a, 111, "respin", wheel_rpm=900)                                             # invalid setpoint (R5.3)
     send(a, {"v": 1, "type": "cmd", "seq": 4, "cmd": "mode", "mode": "MANUAL", "input": "rate"})
     box.manual_last -= 1.0
     send(a, {"v": 1, "type": "cmd", "seq": 5, "cmd": "manual", "rate_dps": 30})
@@ -1090,7 +1151,7 @@ def selftest():
         problems.append(f"DETUMBLE entry or exit refused: {reasons.get(109)!r} {reasons.get(114)!r}")
     # The firmware's answers on the UI's paths (R4.1, finding U-7), reason for reason.
     gap3 = {104: "ramp-down in progress", 105: "not armed", 106: "not armed", 107: "not in SAFE",
-            108: "wheel not at bias", 113: "not in READY", 110: "not implemented", 111: "not implemented",
+            108: "wheel not at bias", 113: "not in READY", 110: "not implemented", 111: "invalid setpoint",
             112: "box not still"}
     for seq, reason in gap3.items():
         if reasons.get(seq) != reason:
@@ -1113,6 +1174,7 @@ def selftest():
         got = acks.get(seq)
         if got is None or got["ok"] is not ok or got.get("reason") != reason:
             problems.append(f"set_params seq {seq}: expected ok {ok} reason {reason!r}, got {got}")
+    problems.extend(respin_problems(schema))
     problems.extend(selftest_attitude(schema))
     problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:

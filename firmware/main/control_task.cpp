@@ -356,7 +356,7 @@ void control_task(void *)
         in.estop_requested = shared_take_estop();
         in.command_count = shared_drain_commands(commands, kCommandQueueDepth);
         in.commands = commands;
-        in.built_inputs = kRungOneBuiltInputs;  // MANUAL throttle; wheel and rate come later
+        in.built_inputs = kAllBuiltInputs;  // MANUAL throttle, wheel and rate (R5.2)
         supervisor.step(in, controller, out);
         outbox_dropped_total = saturating_add(outbox_dropped_total, out.acks.dropped + out.events.dropped);
         STAGE_END(stages, TickStage::Supervisor);
