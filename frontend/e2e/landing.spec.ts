@@ -86,7 +86,7 @@ test.describe('landing page', () => {
         await expect(page.locator('.flow__list')).toBeVisible();
         await expect(page.locator('.flow__scroll')).toBeHidden();
         const items = page.locator('.flow__item-button');
-        expect(await items.count()).toBe(13);
+        expect(await items.count()).toBe(14);
         await items.last().scrollIntoViewIfNeeded();
         const itemBox = (await items.last().boundingBox())!;
         const panelBox = (await panel.boundingBox())!;
@@ -112,7 +112,7 @@ test.describe('landing page', () => {
     await goTo(page, 'System');
     const opacities = (selector: string) =>
       page.locator(selector).evaluateAll((elements) => elements.map((element) => Number(getComputedStyle(element).opacity)));
-    expect(await page.locator('.flow__line').count()).toBe(16);
+    expect(await page.locator('.flow__line').count()).toBe(18);
     await expect.poll(async () => (await opacities('.flow__line')).every((opacity) => opacity === 1), { timeout: 20_000 }).toBe(true);
     await expect.poll(async () => (await opacities('.flow__node')).every((opacity) => opacity === 1), { timeout: 20_000 }).toBe(true);
   });
