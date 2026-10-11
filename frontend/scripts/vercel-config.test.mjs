@@ -12,6 +12,8 @@ describe('vercel.json', () => {
   it('keeps the repository-root copy and the frontend copy in sync', () => {
     assert.equal(rootConfig.framework, null);
     assert.equal(frontendConfig.framework, null);
+    assert.deepEqual(rootConfig.git, frontendConfig.git);
+    assert.deepEqual(rootConfig.git.deploymentEnabled, { '**': false, main: true });
     assert.deepEqual(rootConfig.redirects, frontendConfig.redirects);
     assert.deepEqual(rootConfig.rewrites, frontendConfig.rewrites);
     assert.equal(rootConfig.outputDirectory, 'frontend/dist');

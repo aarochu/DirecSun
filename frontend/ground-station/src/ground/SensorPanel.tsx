@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { useId, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { SensorReadings } from '../hardware/deviceLink';
 import { formatHeading, formatRate, formatSigned } from '../lib/format';
 import type { DisplaySource } from './displaySource';
@@ -109,6 +109,13 @@ export function SensorPanel({ source }: { source: DisplaySource }) {
   const [open, setOpen] = useState(readOpen);
   const bodyId = useId();
   const sensors = telemetry.sensors;
+  const hadDevice = useRef(sensors !== null);
+
+  useEffect(() => {
+    const hasDevice = sensors !== null;
+    if (hasDevice && !hadDevice.current) setOpen(false);
+    hadDevice.current = hasDevice;
+  }, [sensors]);
 
   const toggle = () => {
     setOpen((value) => {
