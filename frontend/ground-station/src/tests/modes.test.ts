@@ -12,9 +12,9 @@ describe('mode registry against protocol/schema-v1.json', () => {
     for (const [key, spec] of Object.entries(MODES)) expect(spec.wire).toBe(key);
   });
 
-  it('offers every commandable mode except SLEW (the rotate buttons own it) in the menu', () => {
+  it('offers every commandable mode in the menu', () => {
     const menu = new Set(MODE_CHOICES.map((choice) => choice.mode));
-    const commandable = defs.commandable_mode!.enum!.filter((mode) => mode !== 'SLEW');
+    const commandable = defs.commandable_mode!.enum!;
     expect([...menu].sort()).toEqual([...commandable].sort());
     const inputs = MODE_CHOICES.filter((choice) => choice.mode === 'MANUAL').map((choice) => choice.input);
     expect(inputs.sort()).toEqual([...defs.manual_input!.enum!].sort());
@@ -23,10 +23,11 @@ describe('mode registry against protocol/schema-v1.json', () => {
   it('builds mode commands that follow the cmd_mode rules', () => {
     const allowed = new Set(Object.keys(defs.cmd_mode!.properties!));
     for (const choice of MODE_CHOICES) {
-      const frame = { v: 1, type: 'cmd', seq: 1, cmd: 'mode', ...modeCommand(choice) };
+      const frame = { v: 1, type: 'cmd', seq: 1, cmd: 'mode', ...modeCommand({ ...choice, psiRefDeg: choice.needsTarget ? 90 : undefined }) };
       for (const key of Object.keys(frame)) expect(allowed.has(key), `${choice.label}: ${key}`).toBe(true);
       expect('input' in frame, choice.label).toBe(choice.mode === 'MANUAL');
-      expect('psi_ref_deg' in frame, choice.label).toBe(false);
+      expect('psi_ref_deg' in frame, choice.label).toBe(choice.mode === 'SLEW');
+      expect(Boolean(choice.needsTarget), choice.label).toBe(choice.mode === 'SLEW');
     }
   });
 
@@ -37,8 +38,17 @@ describe('mode registry against protocol/schema-v1.json', () => {
   });
 });
 
+describe('the eight modes of the design (FD section 13, FR-2)', () => {
+  it('reaches every mode from the ground station: arm, disarm and e-stop for SAFE and SPINUP, the menu for the rest', () => {
+    const fromMenu = new Set(MODE_CHOICES.map((choice) => choice.mode as string));
+    const byButtons = ['SAFE', 'SPINUP'];
+    for (const mode of Object.keys(MODES)) expect(fromMenu.has(mode) || byButtons.includes(mode), mode).toBe(true);
+    expect(Object.keys(MODES)).toHaveLength(8);
+  });
+});
+
 describe('mode registry against the firmware mode machine (FD section 13.1)', () => {
-  const fromReady: CommandableMode[] = ['DETUMBLE', 'HOLD', 'SUN_POINT', 'MANUAL'];
+  const fromReady: CommandableMode[] = ['DETUMBLE', 'HOLD', 'SLEW', 'SUN_POINT', 'MANUAL'];
 
   it('enters the demonstration modes from READY only', () => {
     for (const mode of fromReady) {

@@ -5,6 +5,7 @@ import { operatorDisplaySource, simulationSource } from '../ground/displaySource
 import { GroundHeader } from '../ground/GroundHeader';
 import { JudgeControls } from '../ground/JudgeControls';
 import { ModelViewport } from '../ground/ModelViewport';
+import { ParametersPanel } from '../ground/ParametersPanel';
 import { SensorPanel } from '../ground/SensorPanel';
 import { TelemetryRail } from '../ground/TelemetryRail';
 import { DeviceLink } from '../hardware/deviceLink';
@@ -53,6 +54,7 @@ export default function GroundStationPage() {
         {showDeviceControls ? <DeviceControls link={link} operator={operator} /> : <JudgeControls plant={plant} />}
         <div className="gs-side">
           <DeviceLinkPanel link={link} />
+          {deviceLive ? <ParametersPanel link={link} /> : null}
           <TelemetryRail source={source} />
           <SensorPanel source={source} />
         </div>

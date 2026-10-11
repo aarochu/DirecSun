@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
+  },
   "installCommand": "npm ci --prefix frontend && npm ci --prefix frontend/ground-station",
   "buildCommand": "npm run build --prefix frontend && npm run build:deploy --prefix frontend/ground-station",
   "outputDirectory": "frontend/dist",
