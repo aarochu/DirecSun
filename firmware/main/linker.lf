@@ -4,3 +4,64 @@
 archive: libmain.a
 entries:
     control_task (noflash_text)
+    # The tick posts acks and events, drains commands, and publishes the
+    # snapshot through these accessors on every tick.
+    shared (noflash_text)
+
+# The IDF and libc code the tick calls on every tick or every few ticks. With
+# Wi-Fi up, the Wi-Fi stack on core 0 shares the 32 KB instruction cache and
+# evicts these paths, which pushed the worst tick from about 0.92 ms to
+# 1.37-1.65 ms (R3.5 bench, SoftAP, Oct 10). Whole objects, text and rodata.
+[mapping:direcsun_tick_i2c]
+archive: libesp_driver_i2c.a
+entries:
+    i2c_master (noflash)
+
+# Every transaction start sets the bus timing and the SCL timeout.
+[mapping:direcsun_tick_i2c_hal]
+archive: libesp_hal_i2c.a
+entries:
+    i2c_hal (noflash)
+
+[mapping:direcsun_tick_rmt]
+archive: libesp_driver_rmt.a
+entries:
+    rmt_tx (noflash)
+    rmt_encoder (noflash)
+    rmt_encoder_bytes (noflash)
+
+[mapping:direcsun_tick_adc]
+archive: libesp_adc.a
+entries:
+    adc_oneshot (noflash)
+    adc_cali (noflash)
+    adc_cali_curve_fitting (noflash)
+
+# adc_oneshot_read takes and releases the shared ADC lock.
+[mapping:direcsun_tick_adc_lock]
+archive: libesp_hw_support.a
+entries:
+    adc_share_hw_ctrl (noflash)
+
+# The estimator's square root, arc cosine, and angle wrapping, the helpers they
+# call, and the rounding the supervisor uses on commands.
+[mapping:direcsun_tick_libm]
+archive: libc.a
+entries:
+    libm_machine_xtensa_sf_sqrt (noflash)
+    libm_math_sf_acos (noflash)
+    libm_math_sf_remainder (noflash)
+    libm_math_s_remainder (noflash)
+    libm_math_sf_fmod (noflash)
+    libm_math_s_fmod (noflash)
+    libm_common_sf_isinf (noflash)
+    libm_common_s_isinf (noflash)
+    libm_common_s_isnan (noflash)
+    libm_common_math_err_invalid (noflash)
+    libm_common_math_errf_invalidf (noflash)
+    libm_common_sf_lround (noflash)
+
+[mapping:direcsun_tick_libgcc]
+archive: libgcc.a
+entries:
+    _sqrtf (noflash)
