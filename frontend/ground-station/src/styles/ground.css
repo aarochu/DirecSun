@@ -731,3 +731,95 @@
     transition: none;
   }
 }
+
+/* Box mode (ground/ModeControls.tsx): every mode, with its entry command. */
+.modes {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.modes__title {
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+}
+
+.modes__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modes__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.modes__row:last-child {
+  border-bottom: 0;
+}
+
+.modes__row.is-current {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.modes__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.modes__name {
+  color: var(--text);
+}
+
+.modes__row.is-current .modes__name {
+  color: var(--accent);
+}
+
+.modes__what {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.modes__with {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.modes__input {
+  width: 72px;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+select.modes__input {
+  width: 92px;
+}
+
+.modes__unit {
+  margin-left: -4px;
+  color: var(--text-muted);
+}
+
+.modes__go {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+}

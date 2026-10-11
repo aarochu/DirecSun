@@ -370,3 +370,45 @@ describe('ground station box controls', () => {
     expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
   });
 });
+
+describe('DeviceOperator manual modes', () => {
+  function operatorOnLink() {
+    const { link, socket } = openLink();
+    const operator = new DeviceOperator(link);
+    operator.attach();
+    return { link, socket, operator };
+  }
+
+  it('sends each commandable mode with exactly the fields the schema allows', async () => {
+    const { socket, operator } = operatorOnLink();
+    socket.message(tlm({ psi_deg: 0, mode: 'READY' }));
+    const cases = [
+      { call: () => operator.setMode('DETUMBLE'), want: { cmd: 'mode', mode: 'DETUMBLE' } },
+      { call: () => operator.setMode('HOLD'), want: { cmd: 'mode', mode: 'HOLD' } },
+      { call: () => operator.setMode('SUN_POINT'), want: { cmd: 'mode', mode: 'SUN_POINT' } },
+      { call: () => operator.setMode('SLEW', { targetDeg: -45 }), want: { cmd: 'mode', mode: 'SLEW', psi_ref_deg: -45 } },
+      { call: () => operator.setMode('MANUAL', { input: 'rate' }), want: { cmd: 'mode', mode: 'MANUAL', input: 'rate' } },
+      { call: () => operator.setMode('READY'), want: { cmd: 'mode', mode: 'READY' } },
+      { call: () => operator.respin(), want: { cmd: 'respin' } },
+      { call: () => operator.respin(2600), want: { cmd: 'respin', wheel_rpm: 2600 } },
+    ];
+    for (const { call, want } of cases) {
+      const done = call();
+      const { v, type, seq, ...rest } = socket.lastCommand();
+      expect({ v, type }).toEqual({ v: 1, type: 'cmd' });
+      expect(rest).toEqual(want);
+      socket.message(ack(seq));
+      await done;
+      expect(operator.getState().result?.tone).toBe('ok');
+    }
+  });
+
+  it('shows the box refusal reason for a mode it will not enter', async () => {
+    const { socket, operator } = operatorOnLink();
+    socket.message(tlm({ psi_deg: 0, mode: 'READY' }));
+    const done = operator.setMode('SLEW', { targetDeg: 90 });
+    socket.message(ack(socket.lastCommand().seq, false, 'wheel loop not available'));
+    await done;
+    expect(operator.getState().result).toEqual({ tone: 'error', text: 'MODE REFUSED: wheel loop not available' });
+  });
+});

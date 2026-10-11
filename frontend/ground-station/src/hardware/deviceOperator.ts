@@ -15,9 +15,14 @@ export interface OperatorState {
   readonly direction: Direction | null;
   readonly originDeg: number | null;
   readonly targetDeg: number | null;
-  readonly busy: 'arm' | 'disarm' | 'estop' | null;
+  readonly busy: 'arm' | 'disarm' | 'estop' | 'mode' | null;
   readonly result: OperatorResult | null;
 }
+
+// Modes a client can command directly (protocol commandable_mode). SAFE comes
+// from disarm or estop, SPINUP from arm or respin.
+export type CommandableMode = 'READY' | 'DETUMBLE' | 'HOLD' | 'SLEW' | 'SUN_POINT' | 'MANUAL';
+export type ManualInput = 'throttle' | 'wheel' | 'rate';
 
 export const TURN_STEP_DEG = 90;
 export const HOLD_MS = 1000;
@@ -100,6 +105,37 @@ export class DeviceOperator {
       await this.link.command('arm');
       this.armedSeen = false;
       this.set({ busy: null, controlling: true, result: { tone: 'ok', text: 'ARM ACCEPTED: SPINNING UP. KEEP THE LOCK PIN IN.' } });
+    } catch (error) {
+      this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+    }
+  }
+
+  // Any commandable mode, by hand. The box checks the transition and its
+  // preconditions; a refusal comes back with its reason.
+  async setMode(mode: CommandableMode, options: { targetDeg?: number; input?: ManualInput } = {}): Promise<void> {
+    if (this.state.busy) return;
+    this.abortTurn('Mode change requested');
+    const fields: Record<string, unknown> = { mode };
+    if (mode === 'SLEW') fields.psi_ref_deg = wireAngle(options.targetDeg ?? 0);
+    if (mode === 'MANUAL') fields.input = options.input ?? 'throttle';
+    this.set({ busy: 'mode', result: null });
+    try {
+      await this.link.command('mode', fields);
+      const detail = mode === 'SLEW' ? ` TO ${fields.psi_ref_deg}°` : mode === 'MANUAL' ? ` (${String(fields.input).toUpperCase()})` : '';
+      this.set({ busy: null, result: { tone: 'ok', text: `${mode.replace('_', ' ')}${detail} ACCEPTED.` } });
+    } catch (error) {
+      this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+    }
+  }
+
+  // READY to SPINUP with a new wheel start speed; no speed means the bias speed.
+  async respin(wheelRpm?: number): Promise<void> {
+    if (this.state.busy) return;
+    this.abortTurn('Respin requested');
+    this.set({ busy: 'mode', result: null });
+    try {
+      await this.link.command('respin', wheelRpm === undefined ? {} : { wheel_rpm: wheelRpm });
+      this.set({ busy: null, result: { tone: 'ok', text: 'RESPIN ACCEPTED: KEEP THE LOCK PIN IN.' } });
     } catch (error) {
       this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
     }

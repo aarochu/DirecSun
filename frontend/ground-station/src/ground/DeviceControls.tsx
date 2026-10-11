@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, OctagonX, Power, PowerOff, Square } from 'lucide
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { DeviceLink } from '../hardware/deviceLink';
 import type { DeviceOperator, TurnPhase } from '../hardware/deviceOperator';
+import { ModeControls } from './ModeControls';
 
 const SEQUENCE_STEPS: readonly { label: string; phases: readonly TurnPhase[] }[] = [
   { label: 'Turn 90°', phases: ['rotating'] },
@@ -187,6 +188,16 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
           </li>
         ))}
       </ol>
+
+      <ModeControls
+        operator={operator}
+        state={state}
+        mode={mode}
+        onArm={() => {
+          setPinIn(false);
+          setConfirming(true);
+        }}
+      />
 
       <p className="controls__note mono-label">{guidance(mode, state.controlling)}</p>
       <p
