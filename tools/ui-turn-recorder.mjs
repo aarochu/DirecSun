@@ -354,7 +354,10 @@ try {
 
 summary.endedAt = new Date().toISOString();
 fs.writeFileSync(path.join(out, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
-framesFile.end();
-timelineFile.end();
+const finish = (stream) => new Promise((resolve, reject) => {
+  stream.once('error', reject);
+  stream.end(resolve);
+});
+await Promise.all([finish(framesFile), finish(timelineFile)]);
 log(summary.ok ? `done, frames in ${path.join(out, 'frames.jsonl')}` : 'stopped early, the capture so far is saved');
-process.exit(summary.ok ? 0 : 1);
+process.exitCode = summary.ok ? 0 : 1;
