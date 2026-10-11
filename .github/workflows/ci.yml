@@ -79,7 +79,7 @@ jobs:
             firmware/build/size.txt
 
   frontend:
-    name: frontend (typecheck, build)
+    name: frontend (typecheck, build, demo bundle)
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -101,6 +101,17 @@ jobs:
       # build runs the typecheck first.
       - name: Build
         run: npm run build
+
+      - name: Demo server tests
+        run: npm test
+
+      - name: npm ci (draft)
+        run: npm ci --prefix draft
+
+      # Builds both apps the way vercel.json does and probes the served result:
+      # the landing page, /draft, the ground station route, the GLB, and 404s.
+      - name: Demo bundle
+        run: npm run demo:check
 
   frontend-draft:
     name: frontend/draft (typecheck, unit, e2e in Chrome)

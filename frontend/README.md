@@ -10,9 +10,25 @@ npm run dev          # http://localhost:5173
 npm run build        # type-check + production build to dist/
 npm run preview      # serve dist/ at http://localhost:4173
 npm run typecheck    # type-check only
+npm test             # the demo server tests
 ```
 
 For the ground station in development, also run `npm run dev` in `draft/` (port 5174); the landing page's ground station links point there.
+
+## Run the demo offline
+
+The venue may have no internet, and the box's own Wi-Fi has none. Build once while online, then serve both apps from the laptop:
+
+```bash
+npm run demo          # installs if needed, builds both apps, serves http://localhost:8080
+npm run demo:serve    # serves the last build without rebuilding (works offline)
+npm run demo:serve -- --host 0.0.0.0 --port 8080   # also reachable from other devices
+npm run demo:check    # builds both and probes the served pages (what CI runs)
+```
+
+The landing page is at `/` and the ground station at `/draft/ground-station`, served the same way `vercel.json` serves them (`/draft/*` routes go to the app; a missing file is a 404, not a page). The site makes no request outside the laptop, so it works with no internet.
+
+Open the ground station over plain `http`, as above, so the browser allows `ws://`. Join the box's Wi-Fi and enter `ws://192.168.4.1/ws` in Device link (or `ws://direcsun.local/ws` on a shared network). The hosted copy on Vercel is `https`, and a browser blocks `ws://` from an `https` page, so use this local copy with the real box.
 
 ## Layout
 
