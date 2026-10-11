@@ -29,7 +29,12 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), routeEntryPages(['overview'])],
   base: mode === 'deploy' ? '/ground-station/' : '/',
   publicDir: mode === 'deploy' ? false : '../public',
-  resolve: { alias: { '@shared': new URL('../shared', import.meta.url).pathname } },
+  // shared/ sits beside this app, so its bare "three" imports cannot find this
+  // app's node_modules without an explicit alias (CI installs each app alone).
+  resolve: { alias: {
+    '@shared': new URL('../shared', import.meta.url).pathname,
+    'three': new URL('./node_modules/three', import.meta.url).pathname,
+  } },
   server: { port: 5174, strictPort: true, fs: { allow: ['..'] } },
   build: {
     chunkSizeWarningLimit: 650,
