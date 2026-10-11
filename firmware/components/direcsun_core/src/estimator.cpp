@@ -5,7 +5,7 @@
 #include "direcsun/core/angles.hpp"
 
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_STILL_GATE) || defined(DIRECSUN_MUTANT_ABSOLUTE_STILLNESS) || \
-                              defined(DIRECSUN_MUTANT_RAW_RATE_HEADING))
+                              defined(DIRECSUN_MUTANT_RAW_RATE_HEADING) || defined(DIRECSUN_MUTANT_RMS_KEEPS_DC))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -150,6 +150,36 @@ bool GyroBiasSeed::result(float &bias_dps) const
     }
     bias_dps = static_cast<float>(sum_ / static_cast<double>(count_));
     return true;
+}
+
+}  // namespace direcsun
+
+namespace direcsun {
+
+void AccelRms::add(const float accel_g[3])
+{
+    for (int axis = 0; axis < 3; ++axis) window_[next_][axis] = accel_g[axis];
+    next_ = (next_ + 1) % kWindow;
+    if (count_ < kWindow) ++count_;
+}
+
+float AccelRms::rms_g() const
+{
+    if (count_ < 2) return 0.0f;
+    float sum_sq = 0.0f;
+    for (int axis = 0; axis < kAxes; ++axis) {
+        float mean = 0.0f;
+        for (std::size_t i = 0; i < count_; ++i) mean += window_[i][axis];
+        mean /= static_cast<float>(count_);
+#ifdef DIRECSUN_MUTANT_RMS_KEEPS_DC
+        mean = 0.0f;
+#endif
+        for (std::size_t i = 0; i < count_; ++i) {
+            const float d = window_[i][axis] - mean;
+            sum_sq += d * d;
+        }
+    }
+    return std::sqrt(sum_sq / static_cast<float>(count_));
 }
 
 }  // namespace direcsun

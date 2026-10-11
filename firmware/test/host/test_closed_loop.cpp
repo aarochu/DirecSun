@@ -287,6 +287,31 @@ TEST_CASE("R3.9 cascade in READY: supervisor, rate loop, and wheel PI detumble a
     CHECK(rig.peak_tau_nm > 0.0);  // the rate loop really ran
 }
 
+TEST_CASE("R4.4 DETUMBLE: the named mode brakes a one rev/s hand spin")
+{
+    Params p = cascade_params();
+    p.rate_gain_scale = 1.0f;
+    BoxRig rig(p);
+    rig.box.friction_nm = 1e-3;
+    rig.arm_to_ready();
+    rig.tick({harness::mode_cmd(Mode::Detumble)});
+    REQUIRE(rig.out.mode == Mode::Detumble);
+    CHECK(rig.ctl.rate_active());
+    rig.release(kOneRevPerSecondDps);
+    double first_below_five_s = 1e9;
+    for (int i = 0; i < static_cast<int>(5.0 / kDt); ++i) {
+        rig.run(1);
+        if (first_below_five_s > 1e8 && std::fabs(rig.box.rate_dps()) < 5.0) {
+            first_below_five_s = (i + 1) * kDt;
+        }
+        REQUIRE(rig.out.mode == Mode::Detumble);
+    }
+    CHECK(first_below_five_s < 5.0);
+    CHECK(std::fabs(rig.box.rate_dps()) < 5.0);
+    rig.tick({harness::mode_cmd(Mode::Ready)});
+    CHECK(rig.out.mode == Mode::Ready);
+}
+
 TEST_CASE("R3.9 cascade: MOMENTUM_SATURATED is reported while the wheel sits on a limit")
 {
     // A 3 rev/s spin is more momentum than the wheel can absorb between bias

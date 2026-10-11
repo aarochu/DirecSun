@@ -63,6 +63,53 @@ TEST_CASE("HT-7 READY to MANUAL and back to READY")
     CHECK(rig.has_event_cause("mode"));
 }
 
+TEST_CASE("R4.4 DETUMBLE uses the READY zero-rate cascade and reports its own mode")
+{
+    Params params;
+    params.ff_count = static_cast<uint8_t>(kFfPoints);
+    for (std::size_t i = 0; i < kFfPoints; ++i) {
+        params.ff_rpm[i] = 500.0f * static_cast<float>(i + 1);
+        params.ff_throttle[i] = 48.0f + params.ff_rpm[i] / 2.5f;
+    }
+    Rig rig(params);
+    rig.tick({mode_cmd(Mode::Detumble)});
+    CHECK(rig.last_reason() == "not in READY");
+    rig.tick({cmd(CommandKind::Arm)});
+    rig.tick({mode_cmd(Mode::Detumble)});
+    CHECK(rig.last_reason() == "not in READY");
+    rig.in.wheel_rpm_safe = rig.sup.params().omega_bias_rpm;
+    rig.run(ticks_from_ms(kSpinupDwellMs));
+    REQUIRE(rig.out.mode == Mode::Ready);
+    rig.in.rate_dps = 4.0f;
+    rig.tick({mode_cmd(Mode::Detumble)});
+    REQUIRE(rig.last_ok());
+    CHECK(rig.out.mode == Mode::Detumble);
+    CHECK(rig.has_event_cause("mode"));
+    CHECK(rig.ctl.last_demand.mode == Mode::Detumble);
+    CHECK(rig.ctl.last_demand.omega_cmd_dps == doctest::Approx(0.0f));
+    CHECK_FALSE(rig.out.psi_ref_valid);
+    CHECK((rig.out.flags & (kFlagMomentumOk | kFlagMomentumNearLimit)) != 0);
+    rig.tick({mode_cmd(Mode::Ready)});
+    CHECK(rig.last_ok());
+    CHECK(rig.out.mode == Mode::Ready);
+    CHECK(rig.has_event_cause("mode"));
+    rig.tick({mode_cmd(Mode::Detumble)});
+    REQUIRE(rig.out.mode == Mode::Detumble);
+    rig.tick({cmd(CommandKind::Disarm)});
+    CHECK(rig.out.mode == Mode::Safe);
+    CHECK(rig.has_event_cause("disarm"));
+
+}
+
+TEST_CASE("R4.4 DETUMBLE requires an installed wheel loop")
+{
+    Rig rig;
+    rig.arm_to_ready();
+    rig.tick({mode_cmd(Mode::Detumble)});
+    CHECK(rig.last_reason() == "wheel loop not available");
+    CHECK(rig.out.mode == Mode::Ready);
+}
+
 TEST_CASE("HT-7 disarm from SPINUP, READY, and MANUAL ramps down to SAFE without a latch")
 {
     for (int start = 0; start < 3; ++start) {
@@ -155,12 +202,8 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
     {
         Rig rig;
         rig.arm_to_ready();
-        // HOLD and SLEW are implemented from R4.3 (test_slew.cpp).
-        for (Mode m : {Mode::Detumble, Mode::SunPoint}) {
-            rig.tick({mode_cmd(m)});
-            CHECK(rig.last_reason() == "not implemented");
-            CHECK(rig.out.mode == Mode::Ready);
-        }
+        // HOLD and SLEW are implemented from R4.3 (test_slew.cpp), DETUMBLE from
+        // R4.4, and SUN_POINT answers with its guards until R5.4 (test_status_flags.cpp).
         // wheel_step is implemented from R3.8 (bench only, test_controllers.cpp)
         // and zero_heading from R4.2 (test_heading.cpp).
         rig.tick({cmd(CommandKind::Respin)});

@@ -281,7 +281,9 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     TelemetrySnapshot ready = ready_snapshot();
     ready.flags = kFlagMomentumNearLimit | kFlagHallBypass | kFlagHeadingGyro;  // HEADING_GYRO: every tlm until Set 5 (R4.2)
     ready.latched = interlock_bit(Interlock::Overspeed) | interlock_bit(Interlock::Estop);
+    ready.accel_rms_g = 0.05f;  // measured, but this is not bench telemetry
     emit(encode_tlm(ready, 2, 3, buf, sizeof buf));
+    CHECK(std::string(buf).find("accel_rms_g") == std::string::npos);  // bench tlm only (T-7)
 
     // tlm: MANUAL throttle in bench mode, barometer present, stale setpoint.
     TelemetrySnapshot manual = ready_snapshot();
@@ -293,12 +295,14 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     manual.gyro_raw[2] = 32767;
     manual.mag_raw[1] = -1234;
     manual.sun_a_mv = 812;
+    manual.accel_rms_g = 0.0312f;
     manual.baro_valid = true;
     manual.baro_t_c = 23.51f;
     manual.baro_p_pa = 101325.4f;
     manual.psi_deg = -179.999f;
     emit(encode_tlm(manual, 3, 0, buf, sizeof buf));
     const std::string manual_tlm = buf;
+    CHECK(manual_tlm.find("\"accel_rms_g\":0.0312") != std::string::npos);  // bench tlm only (T-7)
 
     // tlm: READY during a bench wheel step (R3.8): wheel reference and WHEEL_STEP.
     TelemetrySnapshot stepped = ready_snapshot();
@@ -329,6 +333,13 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     holding.psi_deg = 179.5f;
     holding.rate_dps = 0.2f;
     emit(encode_tlm(holding, 7, 0, buf, sizeof buf));
+
+    // tlm: SAFE with the three status flags of R4.6, in bit order after the older ones.
+    TelemetrySnapshot status = safe;
+    status.flags = kFlagMomentumOk | kFlagHeadingGyro | kFlagFfTableMissing | kFlagRateGainReduced | kFlagParamsReset;
+    emit(encode_tlm(status, 8, 0, buf, sizeof buf));
+    CHECK(std::string(buf).find("\"flags\":[\"MOMENTUM_OK\",\"HEADING_GYRO\",\"FF_TABLE_MISSING\","
+                                "\"RATE_GAIN_REDUCED\",\"PARAMS_RESET\"") != std::string::npos);
 
     // ack: ok, refused, and set_params with the applied set.
     Ack ack;
@@ -377,7 +388,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     // pong
     emit(encode_pong(16, 79, 512330.25, 83120, buf, sizeof buf));
 
-    CHECK(written == 19);
+    CHECK(written == 20);
 
     // Positive control for the schema check: the MANUAL tlm with psi_deg turned
     // into a string must be rejected by tools/check-protocol.sh.

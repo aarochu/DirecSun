@@ -158,6 +158,11 @@ extern "C" void app_main(void)
     if (load.reset) {
         ESP_LOGW(TAG, "parameters reset to defaults (%s)", load.detail);
     }
+    if (load.migrated_from != 0) {
+        // Not written back: the stored set stays readable by older firmware.
+        ESP_LOGW(TAG, "parameters migrated from param_version %" PRIu32 ": stored values kept, dshot_rate 300 (V-68)",
+                 load.migrated_from);
+    }
 
     app::shared_init();
 

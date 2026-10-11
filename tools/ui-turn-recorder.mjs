@@ -4,7 +4,7 @@
 // section 17). Check the result with tools/check-ui-capture.py.
 //
 //   node tools/ui-turn-recorder.mjs --ui URL --box WS_URL --scenario NAME --out DIR
-//        [--turns N] [--playwright PATH] [--headed] [--real-box-go]
+//        [--turns N] [--playwright PATH] [--chrome PATH] [--headed] [--real-box-go]
 //
 // --ui is the built ground station, served (in frontend/ground-station:
 // npm run build, then npx vite preview). --box is the endpoint typed into the
@@ -26,7 +26,7 @@
 //          shows HEARTBEAT_LOST about 1 s after the operator's last ping
 //   hidden arm, then put another tab in front of the ground station for 30 s and
 //          bring it back: the box must still be READY (no HEARTBEAT_LOST). Needs
-//          --headed: headless Chrome never hides a page (a background tab and a
+//          --headed (on Linux without a display, under xvfb-run): headless Chrome never hides a page (a background tab and a
 //          minimized window both stay "visible", with exact timers), so the
 //          scenario fails if the page was not hidden
 //
@@ -66,6 +66,7 @@ function parseArgs(argv) {
     else if (key === "--out") args.out = value();
     else if (key === "--turns") args.turns = Number(value());
     else if (key === "--playwright") args.playwright = value();
+    else if (key === "--chrome") args.chrome = value();
     else if (key === "--headed") args.headed = true;
     else if (key === "--real-box-go") args.realBoxGo = true;
     else throw new Error(`unknown argument ${key}`);
@@ -77,6 +78,27 @@ function parseArgs(argv) {
   return args;
 }
 
+// Google Chrome where it is installed (macOS, Windows, most Linux desktops).
+// Otherwise the Chromium that Playwright ships or $PLAYWRIGHT_BROWSERS_PATH holds.
+// Headed Chrome on a Linux box without a display needs xvfb-run: the hidden
+// scenario cannot run headless, because headless Chrome never hides a page.
+async function launchBrowser(chromium, args) {
+  const options = { headless: !args.headed, args: GPU_ARGS };
+  if (args.chrome) return chromium.launch({ ...options, executablePath: args.chrome });
+  try {
+    return await chromium.launch({ ...options, channel: "chrome" });
+  } catch (error) {
+    if (process.platform !== "linux") throw error;
+    console.log("ui-turn-recorder: Google Chrome not found, using Playwright's Chromium");
+    return chromium.launch(options);
+  }
+}
+
+// A browser that will not close must not keep a failed run alive.
+const closeBrowser = (browser) =>
+  Promise.race([browser.close().catch(() => {}), new Promise((resolve) => setTimeout(resolve, 10000))]);
+
+// Exact hosts only: a name that merely starts with 127. (127.box.example) is not loopback.
 const isLoopback = (url) => ["127.0.0.1", "localhost", "[::1]", "::1"].includes(new URL(url).hostname);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -118,7 +140,7 @@ async function main() {
   const watchTlm = [];
   const latestTlm = {};
 
-  const browser = await chromium.launch({ channel: "chrome", headless: !args.headed, args: GPU_ARGS });
+  const browser = await launchBrowser(chromium, args);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 
   async function openPage(name) {
@@ -313,7 +335,7 @@ async function main() {
       await page.screenshot({ path: path.join(args.out, `end-${i}.png`), fullPage: true }).catch(() => {});
     }
     for (const page of context.pages()) page.stopTimeline?.();
-    await browser.close();
+    await closeBrowser(browser);
     meta.failures = failures;
     fs.writeFileSync(path.join(args.out, "meta.json"), `${JSON.stringify(meta, null, 2)}\n`);
     await new Promise((resolve) => framesOut.end(resolve));

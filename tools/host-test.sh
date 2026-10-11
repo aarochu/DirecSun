@@ -28,7 +28,10 @@ mkdir -p "$build"
 cmake -S "$repo_root/firmware/test/host" -B "$build" \
     -DCMAKE_BUILD_TYPE=Debug -DDIRECSUN_HT_SELFTEST="$selftest" >"$build/configure.txt" 2>&1 ||
     { cat "$build/configure.txt" >&2; echo "host-test: configure failed" >&2; exit 1; }
-cmake --build "$build" -j >"$build/build.txt" 2>&1 ||
+# A bare -j has no job limit with Makefiles. The selftest compiles the suite once
+# per mutant, and hundreds of compilers at once exhaust a CI runner's memory (#57).
+jobs="${CMAKE_BUILD_PARALLEL_LEVEL:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)}"
+cmake --build "$build" -j "$jobs" >"$build/build.txt" 2>&1 ||
     { cat "$build/build.txt" >&2; echo "host-test: build failed" >&2; exit 1; }
 
 set +e
@@ -88,6 +91,8 @@ else
         "slew_settle_per_step|missed ticks: the SLEW settle dwell and timeout run on wall time"
         "snapshot_cadence_only|HT-13 (c): the first tlm after every ack and mode event is at least as new at every comms phase"
         "no_wire_sign|HT-13 (b): the judge sequence as the UI runs it turns the box both ways and back"
+        "params_reset_sticky|R4.6 PARAMS_RESET is a flag until the first accepted set_params"
+        "rms_keeps_dc|T-7 accel RMS: gravity and tilt drop out and a 60 Hz vibration reads A over root two"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

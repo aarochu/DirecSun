@@ -19,9 +19,18 @@ The capture passes only if all of these hold:
   being sent; with "slews_interrupted" it may instead end by the operator's
   own `mode READY` (cause mode) or e-stop (cause ESTOP), never by
   SLEW_TIMEOUT or anything else;
-- pings leave every 200 +- 60 ms, and each gets its pong (pings in a page's
-  last 300 ms may go unanswered);
-- a page that only watches receives nothing but tlm until it sends.
+- pings: every gap under 500 ms, a median gap within 200 +- 20 ms, and each ping
+  gets its pong (pings in a page's last 300 ms may go unanswered). Julian's
+  decision of 2026-10-11 (issue 40): the box's heartbeat is 1 s, so a gap under
+  500 ms is safe, and a hidden tab's Worker timer (about 300 ms between pings)
+  passes while a throttled tab (1 s) does not;
+- no mode event with cause HEARTBEAT_LOST (except in the watch scenario, which
+  closes the operator page to provoke it);
+- a page that only watches receives nothing but tlm until it sends;
+- the recorder reported no failure of its own (meta.json "failures"), and a
+  hidden-scenario run counts only if the page really was hidden for the window
+  (meta.json "hidden"): a page Playwright launches never hides, and its frames
+  would otherwise pass as if the hidden tab had been tested.
 
 It also prints the comms phase, the most common tlm t_ms modulo 20, so a
 hardware run says how exposed the box was to the stale-tlm defect of U-5.
@@ -35,8 +44,9 @@ import sys
 
 ACK_TIMEOUT_MS = 1000.0
 SLEW_LIMIT_MS = 6000.0
-PING_MS, PING_SLACK_MS = 200.0, 60.0
+PING_MS, PING_MEDIAN_SLACK_MS, PING_GAP_MAX_MS = 200.0, 20.0, 500.0
 CLOSE_GRACE_MS = 300.0
+HIDDEN_MIN_S = 29.5  # the recorder hides the page for 30 s
 
 
 def load(capture_dir):
@@ -52,10 +62,24 @@ def check(records, meta, out=print):
     problems = []
     expected_refusals = set(meta.get("expected_refusals", []))
     interrupted = bool(meta.get("slews_interrupted", False))
+    # The watch scenario closes the operator page on purpose and reads the loss
+    # from the watch page; every other scenario must never lose the heartbeat.
+    heartbeat_lost_expected = meta.get("scenario") == "watch"
+    for failure in meta.get("failures", []):
+        problems.append(f"the recorder reported: {failure}")
+    if meta.get("scenario") == "hidden":
+        hidden = meta.get("hidden") or {}
+        hidden_s = (hidden.get("until_ms", 0.0) - hidden.get("from_ms", 0.0)) / 1000.0
+        if hidden.get("visibility") != "hidden":
+            problems.append(f"the page was {hidden.get('visibility', 'not recorded')} during the hidden window, "
+                            "not hidden, so the run tested nothing")
+        elif hidden_s < HIDDEN_MIN_S:
+            problems.append(f"the page was hidden for {hidden_s:.1f} s, under {HIDDEN_MIN_S} s")
     if not records:
         return ["the capture is empty"]
     pages = sorted({r["page"] for r in records})
     ack_latencies = []
+    ping_stats = []
     counts = collections.Counter()
 
     for page in pages:
@@ -129,14 +153,23 @@ def check(records, meta, out=print):
             elif took > SLEW_LIMIT_MS:
                 problems.append(f"{page}: SLEW to {target} took {took:.0f} ms")
 
-        # Pings every 200 +- 60 ms, each with its pong.
+        # Pings: every gap under 500 ms, a median within 200 +- 20 ms, each with its pong.
         pings = [r for r in tx if r["frame"].get("type") == "ping"]
         pongs = {r["frame"].get("ping_seq") for r in rx if r["frame"].get("type") == "pong"}
         counts["pings"] += len(pings)
-        for a, b in zip(pings, pings[1:]):
-            gap = b["t"] - a["t"]
-            if abs(gap - PING_MS) > PING_SLACK_MS:
-                problems.append(f"{page}: ping gap {gap:.0f} ms at {b['t']:.0f} ms")
+        gaps = [b["t"] - a["t"] for a, b in zip(pings, pings[1:])]
+        if gaps:
+            worst = max(gaps)
+            median = statistics.median(gaps)
+            ping_stats.append((page, median, worst))
+            if worst >= PING_GAP_MAX_MS:
+                at = pings[1 + gaps.index(worst)]["t"]
+                problems.append(f"{page}: ping gap {worst:.0f} ms at {at:.0f} ms (limit {PING_GAP_MAX_MS:.0f} ms)")
+            if abs(median - PING_MS) > PING_MEDIAN_SLACK_MS:
+                problems.append(f"{page}: median ping gap {median:.0f} ms, not {PING_MS:.0f} +- {PING_MEDIAN_SLACK_MS:.0f} ms")
+        for r in ([] if heartbeat_lost_expected else rx):
+            if r["frame"].get("type") == "event" and r["frame"].get("cause") == "HEARTBEAT_LOST":
+                problems.append(f"{page}: the box dropped to SAFE with HEARTBEAT_LOST at {r['t']:.0f} ms")
                 break
         for p in pings:
             if p["frame"]["seq"] not in pongs and last_t - p["t"] > CLOSE_GRACE_MS:
@@ -151,6 +184,8 @@ def check(records, meta, out=print):
     if ack_latencies:
         out(f"check-ui-capture: acks p50 {statistics.median(ack_latencies):.1f} ms, "
             f"max {max(ack_latencies):.1f} ms, over {len(ack_latencies)} commands")
+    for page, median, worst in ping_stats:
+        out(f"check-ui-capture: {page} pings median {median:.0f} ms, max gap {worst:.0f} ms")
     out("check-ui-capture: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
     if counts["commands"] == 0:
         problems.append("no command in the capture: the recorder captured nothing useful")
@@ -224,10 +259,54 @@ def selftest():
     k = next(k for k, r in enumerate(missing) if r["frame"].get("type") == "ack")
     del missing[k]
 
+    # Planted defect 3: one 600 ms gap between pings (a throttled tab).
+    gap = json.loads(json.dumps(clean))
+    pings = [r for r in gap if r["frame"].get("type") == "ping"]
+    for r in gap:
+        if r["frame"].get("type") == "ping" and r["t"] >= pings[10]["t"]:
+            r["t"] += 400.0
+    # Planted defect 4: a steady 300 ms cadence (a hidden tab on a page timer).
+    slow = json.loads(json.dumps(clean))
+    n = 0
+    for r in slow:
+        if r["frame"].get("type") == "ping":
+            r["t"] = n * 300.0
+            n += 1
+    # Planted defect 5: the box lost the heartbeat.
+    lost = json.loads(json.dumps(clean))
+    lost.append({"t": lost[-1]["t"], "page": "operator", "dir": "rx",
+                 "frame": {"v": 1, "type": "event", "event": "mode", "mode": "SAFE", "cause": "HEARTBEAT_LOST"}})
+
+    # Boundary controls: the limits must not be tighter than the decision.
+    ok_gap = json.loads(json.dumps(clean))
+    ok_pings = [r for r in ok_gap if r["frame"].get("type") == "ping"]
+    for r in ok_gap:
+        if r["frame"].get("type") == "ping" and r["t"] >= ok_pings[10]["t"]:
+            r["t"] += 250.0  # one 450 ms gap, under the 500 ms limit
+    problems = check(ok_gap, {}, quiet)
+    if problems:
+        print(f"check-ui-capture selftest: FAILED, a single 450 ms ping gap was rejected: {problems}", file=sys.stderr)
+        return 1
+
+    hidden_ok = {"scenario": "hidden", "hidden": {"visibility": "hidden", "from_ms": 0.0, "until_ms": 30000.5}}
+    problems = check(clean, hidden_ok, quiet)
+    if problems:
+        print(f"check-ui-capture selftest: FAILED, a page hidden for 30 s was rejected: {problems}", file=sys.stderr)
+        return 1
+    # Planted defect 6: a hidden run whose page never hid (Playwright's own launcher).
+    never_hidden = {"scenario": "hidden", "hidden": {"visibility": "visible", "from_ms": 0.0, "until_ms": 30000.5}}
+    # Planted defect 7: the recorder failed the run, though the frames look clean.
+    recorder_failed = {"scenario": "turn", "failures": ["turn 2: no TURN COMPLETE"]}
+
     failures = 0
-    for name, capture, needle in (("stale tlm after slew_complete", stale, "followed by a tlm in SLEW"),
-                                  ("missing ack", missing, "acked 0 times")):
-        got = check(capture, {}, quiet)
+    for name, capture, meta, needle in (("stale tlm after slew_complete", stale, {}, "followed by a tlm in SLEW"),
+                                        ("missing ack", missing, {}, "acked 0 times"),
+                                        ("600 ms ping gap", gap, {}, "ping gap"),
+                                        ("300 ms ping cadence", slow, {}, "median ping gap"),
+                                        ("HEARTBEAT_LOST", lost, {}, "HEARTBEAT_LOST"),
+                                        ("hidden run that never hid", clean, never_hidden, "not hidden"),
+                                        ("recorder failure", clean, recorder_failed, "the recorder reported")):
+        got = check(capture, meta, quiet)
         if any(needle in p for p in got):
             print(f"check-ui-capture selftest: PASSED, the planted {name} was detected")
         else:

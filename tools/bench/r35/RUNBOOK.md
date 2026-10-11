@@ -183,4 +183,4 @@ Known differences between the mock and the R3.5 firmware, which change what a mo
 
 - An `estop` in SAFE: the firmware posts `event mode SAFE cause ESTOP` (HT-8); the mock posts nothing. So `t4 --events estop` fails on the stock mock (no events), and the suite proves it with a firmware-like copy instead.
 - Refusal reasons differ: the mock says `already SAFE`, `not allowed in SAFE`, and `invalid: <schema error>`, where the firmware says `not armed`, `not in READY`, `unsupported v`, `unknown type`, and `unknown cmd`. The kit only relies on `not controlling client`, which both share.
-- `arm` on the mock has no guards (battery, stillness, latches, ramp-down); the firmware's does. The mock's SPINUP reaches READY in 2 s with nonzero throttle; the R3.5 build stays in SPINUP at throttle 0.
+- The R4.1 mock answers `arm` with the firmware's guards (battery, stillness, latches, ramp-down) and reaches READY about 6.4 s after `arm`, not 2 s, so the t3 cases give the turn window 14 s and `mock-turn.py` waits 12 s for READY. The R3.5 build stays in SPINUP at throttle 0.

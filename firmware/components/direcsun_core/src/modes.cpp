@@ -10,7 +10,7 @@
 // prove the tests notice. They exist only in host selftest builds.
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_LATCH) || defined(DIRECSUN_MUTANT_NO_BYPASS_CLAMP) || \
                               defined(DIRECSUN_MUTANT_PARAMS_DURING_RAMP) || defined(DIRECSUN_MUTANT_DURATIONS_PER_STEP) || \
-                              defined(DIRECSUN_MUTANT_SLEW_SETTLE_PER_STEP))
+                              defined(DIRECSUN_MUTANT_SLEW_SETTLE_PER_STEP) || defined(DIRECSUN_MUTANT_PARAMS_RESET_STICKY))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -52,6 +52,9 @@ const char *flag_wire_name(uint32_t flag_bit)
     case kFlagWheelStep: return "WHEEL_STEP";
     case kFlagMomentumSaturated: return "MOMENTUM_SATURATED";
     case kFlagHeadingGyro: return "HEADING_GYRO";
+    case kFlagFfTableMissing: return "FF_TABLE_MISSING";
+    case kFlagRateGainReduced: return "RATE_GAIN_REDUCED";
+    case kFlagParamsReset: return "PARAMS_RESET";
     default: return nullptr;
     }
 }
@@ -78,11 +81,7 @@ constexpr const char *kInvalidMode = "invalid mode";
 constexpr const char *kInvalidSetpoint = "invalid setpoint";
 constexpr const char *kNoParams = "no params";
 constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
-
-bool is_later_set_mode(Mode m)
-{
-    return m == Mode::Detumble || m == Mode::SunPoint;
-}
+constexpr const char *kSunNotValid = "sun not valid";
 
 bool has_heading_reference(Mode m)
 {
@@ -106,12 +105,14 @@ Supervisor::Supervisor(const Params &params, bool params_were_reset, const char 
     params_.bench_underspeed_rpm = 0.0f;
     params_.bench_cap_rpm = 0.0f;
     pending_reset_notice_ = params_were_reset;
+    params_reset_active_ = params_were_reset;
     reset_detail_ = reset_detail ? reset_detail : "";
     // A set that fails validation (for example a cap above kOmegaCapMaxRpm)
     // never reaches the control loop: the defaults load instead.
     if (!validate_params(params_).ok) {
         params_ = Params{};
         pending_reset_notice_ = true;
+        params_reset_active_ = true;
         reset_detail_ = "invalid";
     }
 }
@@ -261,7 +262,13 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
 
     case CommandKind::Mode: {
         const Mode target = cmd.target_mode;
-        if (is_later_set_mode(target)) return ack(out, cmd, kNotImplemented);
+        if (target == Mode::SunPoint) {
+            // R4.6: READY, then the wheel loop as for HOLD, SLEW and DETUMBLE, then
+            // the sun. No sun angle exists until R5.4, so that last guard always fails.
+            if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+            return ack(out, cmd, kSunNotValid);
+        }
         if (target == Mode::Ready) {
             if (mode_ == Mode::Ready) {
                 // Also ends a bench wheel-step hold (FD section 15.3).
@@ -269,7 +276,7 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
                 pending_wheel_step_rpm_ = 0.0f;
                 return ack_ok(out, cmd);
             }
-            if (mode_ == Mode::Manual || has_heading_reference(mode_)) {
+            if (mode_ == Mode::Manual || mode_ == Mode::Detumble || has_heading_reference(mode_)) {
                 enter(Mode::Ready, t);
                 post_mode_event(out, "mode");
                 return ack_ok(out, cmd);
@@ -288,6 +295,13 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
             manual_rate_dps_ = 0.0f;
             manual_has_setpoint_ = false;
             manual_fresh_tick_ = t;
+            post_mode_event(out, "mode");
+            return ack_ok(out, cmd);
+        }
+        if (target == Mode::Detumble) {
+            if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+            enter(Mode::Detumble, t);
             post_mode_event(out, "mode");
             return ack_ok(out, cmd);
         }
@@ -351,6 +365,9 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
         const bool bypass_changed = next.hall_installed != params_.hall_installed;
         params_ = next;
         out.params_changed = true;
+#ifndef DIRECSUN_MUTANT_PARAMS_RESET_STICKY
+        params_reset_active_ = false;  // the operator has set parameters on purpose (R4.6)
+#endif
         if (bypass_changed) {
             Event e;
             e.kind = Event::Kind::Notice;
@@ -569,10 +586,15 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     // The heading is gyro-only until Set 5 adds the magnetometer (R4.2).
     uint32_t flags = kFlagHeadingGyro;
     if (!params_.hall_installed) flags |= kFlagHallBypass;
+    // Status the UI cannot see otherwise, in every mode (R4.6).
+    if (params_.hall_installed && !wheel_loop_available(params_)) flags |= kFlagFfTableMissing;
+    if (params_.rate_gain_scale < 1.0f) flags |= kFlagRateGainReduced;
+    if (params_reset_active_) flags |= kFlagParamsReset;
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;
     if (armed()) flags |= controller.flags();
-    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual || has_heading_reference(mode_))) {
+    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Detumble ||
+                                   mode_ == Mode::Manual || has_heading_reference(mode_))) {
         const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;
         flags |= near ? kFlagMomentumNearLimit : kFlagMomentumOk;

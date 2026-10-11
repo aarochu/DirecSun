@@ -504,9 +504,9 @@ The box only reaches the five demonstration modes through Ready, after the wheel
 | Boot | Safe | IMU found (WHO\_AM\_I) and DShot 0 sent for 1 s. A missing magnetometer (QMC5883P chip ID 0x80 not read) is reported; until Set 5 it blocks nothing, because Hold and Slew run on the gyro heading (I-19) |
 | Safe | Spin-up | Ground `arm` command, box still (rate under 5 deg/s) and held by the lock pin or the operator, battery above 9.6 V, no latched fault. The sender becomes the controlling client (Section 6.7) |
 | Spin-up | Ready | Ω within 5 % of the bias speed for 0.5 s; Ready holds box rate at zero |
-| Ready | Detumble | Ground command |
+| Ready | Detumble | Ground command. Refused with `not in READY` from any other mode and `wheel loop not available` without the closed wheel loop (R4.4, R4.6) |
 | Ready | Hold, Slew | Ground command. Until the magnetometer is calibrated (Set 5) the heading is gyro-only: Hold holds the heading captured at entry, and a Slew target is relative to the last `zero_heading` (I-19). `zero_heading` is accepted in Safe and Ready only |
-| Ready | Sun point | Ground command; valid sun angle |
+| Ready | Sun point | Ground command; valid sun angle. Refused with `not in READY` from any other mode, `wheel loop not available` without the closed wheel loop, and `sun not valid` without a valid sun angle, checked in that order (R4.6) |
 | Ready | Manual | Ground command with an `input` of `throttle`, `wheel`, or `rate`; refused with a reason while the firmware lacks that input's loop |
 | Ready | Spin-up | Ground `respin` with the box pinned and still (rate under 5 deg/s). The new wheel start speed must lie between the low limit + 200 rpm and the cap − 200 rpm |
 | Any active mode | Ready | Ground command, or slew complete; Sun point also returns after 0.5 s without a valid sun angle |
@@ -599,7 +599,7 @@ Rules: the box is the authority on mode. The UI shows the mode from `tlm`, never
 
 ### 7.4 User interface
 
-The main UI is `frontend/`, Aaron's landing page and ground station (PR #1, merged 2026-10-10). The backend matches it: for the wire interface the UI leads, and the firmware and `protocol/schema-v1.json` follow (U-3; firmware design §17). Today its device link is read-only. When it starts sending commands, its client must keep the safety rules that `ground/link/` proves: heartbeat, acknowledgement matching, an e-stop that is never queued, and no automatic reconnection. `ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up, not the demo UI. The wire is clockwise positive, the UI's own frame, so no client converts (U-1). The list below is the UI scope this design originally asked for. Which items the main UI provides is Aaron's call.
+The main UI is `frontend/`, Aaron's landing page and ground station (PR #1, merged 2026-10-10). The backend matches it: for the wire interface the UI leads, and the firmware and `protocol/schema-v1.json` follow (U-3; firmware design §17). Its operator client sends `arm` after lock-pin confirmation, `disarm`, immediate `estop` (button or space bar), `zero_heading`, `mode` (including the judge sequence's two absolute `SLEW` targets), `manual`, and `respin`. Its SAFE-only parameters panel sends `set_params`. While controlling, it sends a 5 Hz heartbeat, matches acknowledgements by `seq`, and never reconnects or re-arms automatically. The box remains authoritative on mode and every guard. Bench-only `wheel_step` stays in engineering tools, not the judge UI. `ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up. The wire is clockwise positive, the UI's own frame, so no client converts (U-1). The list below is the UI scope this design originally asked for, not a claim that every item is implemented. Which items the main UI provides is Aaron's call.
 
 - 3D view of the box turning with ψ̂; the CubeSat 2U model file already on hand can be reused.
 - Plots: heading with its reference, box rate, wheel speed with the cap and low-limit band shaded, battery voltage.
@@ -1029,6 +1029,7 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-18 | Hall bench bypass added: `hall_installed` false only from bench mode, never persisted; open-loop Spin-up; wheel-speed interlocks suspended; compile-time throttle ceiling 400. The Hall-silent threshold becomes the parameter `hall_expect_throttle`, and the latch release rules are stated | Owner decision 2026-10-10 (repository Set 3, R3.6); the Hall magnets cannot be mounted until Set 2; the low-limit feed-forward value does not exist before T-5 | 6.6, 6.7 |
 | I-19 | Hold and Slew no longer need the magnetometer: until Set 5 calibrates it, they use the gyro-only heading for relative moves, Slew targets are relative to the last `zero_heading`, `zero_heading` is accepted in Safe and Ready only, and every telemetry frame carries `HEADING_GYRO` | Owner decision 2026-10-10 (repository Set 4, R4.2): the main UI's judge sequence needs Hold and Slew before the magnetometer calibration (T-9) exists, and lasts only 5 to 6 s | 6.4, 6.6 |
 | I-20 | T-16 commands its slew from Ready, not from Hold | The mode machine (Section 6.6) enters Slew from Ready only, and a finished Slew returns to Ready, so "from Hold" could not be run as written (repository Set 4, R4.3) | 9.3 |
+| I-21 | Team ownership moved to `WORKSTREAMS.md`. Julian: printing, measuring, bench electronics, firmware, wire contract. Aaron: `frontend/` (the main UI) and integration testing. The original table is kept as history | Owner decision 2026-10-10, after Aaron's frontend became the main UI (PR #1) | 11.5 |
 
 **Main UI contract, 2026-10-10**
 
