@@ -1,9 +1,9 @@
 // Copy for the landing page, kept short and plain. Part names and media come
 // from ./data. Keep the claims within what docs/ says.
 
-export { hardwareParts } from './data/hardware';
-export { hardwareViews } from './data/hardwareModels';
-export { cubesatModel, hardwareStack, imageAssets } from './data/assets';
+export { hardwareParts } from '@shared/data/hardware';
+export { hardwareViews } from '@shared/data/hardwareModels';
+export { cubesatModel, hardwareStack, imageAssets } from '@shared/data/assets';
 
 export const hero = {
   title: 'Control the attitude.',
@@ -71,6 +71,6 @@ export const sectionLinks = [
   { id: 'control', label: 'Control' },
 ] as const;
 
-// The ground station lives in the previous React app, now frontend/draft. In
-// production it is served under /draft/; in development it runs on port 5174.
-export const GROUND_STATION_URL = import.meta.env.DEV ? 'http://localhost:5174/ground-station' : '/draft/ground-station';
+// The ground station is the React app in frontend/ground-station. In production
+// it is served at /ground-station/; in development it runs on port 5174.
+export const GROUND_STATION_URL = import.meta.env.DEV ? 'http://localhost:5174/' : '/ground-station/';

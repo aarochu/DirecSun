@@ -26,7 +26,13 @@ const statOf = (path) => {
   }
 };
 
-const isApp = (pathname) => pathname === '/draft' || pathname.startsWith('/draft/');
+const APP = 'ground-station';
+const isApp = (pathname) => pathname === `/${APP}` || pathname.startsWith(`/${APP}/`);
+
+export function redirectFor(pathname) {
+  if (pathname !== '/draft' && !pathname.startsWith('/draft/')) return null;
+  return /^\/draft\/ground-station\/?$/.test(pathname) ? `/${APP}/` : `/${APP}/overview`;
+}
 
 export function locate(root, pathname) {
   let decoded;
@@ -47,7 +53,7 @@ export function locate(root, pathname) {
     if (statOf(index)?.isFile()) return { status: 200, file: index };
   }
   if (isApp(decoded) && extname(decoded) === '') {
-    const fallback = join(base, 'draft', 'index.html');
+    const fallback = join(base, APP, 'index.html');
     if (statOf(fallback)?.isFile()) return { status: 200, file: fallback };
   }
   return { status: 404 };
@@ -60,6 +66,11 @@ export function createDemoServer(root) {
       return;
     }
     const { pathname } = new URL(request.url ?? '/', 'http://localhost');
+    const moved = redirectFor(pathname);
+    if (moved) {
+      response.writeHead(302, { Location: moved }).end();
+      return;
+    }
     const found = locate(root, pathname);
     if (found.status !== 200) {
       response.writeHead(found.status, { 'Content-Type': 'text/plain; charset=utf-8' });

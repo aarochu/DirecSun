@@ -1,7 +1,7 @@
 import '@fontsource-variable/inter';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
-import './styles/tokens.css';
+import '@shared/styles/tokens.css';
 import './styles.css';
 import { animate, createTimeline, onScroll, stagger, svg, utils, type Timeline } from 'animejs';
 import logoUrl from './assets/logo.webp';

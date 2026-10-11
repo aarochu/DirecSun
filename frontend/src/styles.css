@@ -1,7 +1,7 @@
-@import './styles/global.css';
+@import '../shared/styles/global.css';
 
 /* Landing page. Tokens, type, buttons and section headings come from
-   styles/tokens.css and styles/global.css; this file adds the scroll-story
+   shared/styles/tokens.css and shared/styles/global.css; this file adds the scroll-story
    layout: a fixed canvas, a fixed copy overlay, and empty chapters for length. */
 
 :root {

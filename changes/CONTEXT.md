@@ -15,7 +15,7 @@ DirecSun (formerly PocketADCS) is a single-axis reaction-wheel attitude trainer 
 | --- | --- | --- |
 | `firmware/` | ESP-IDF v6.0 project (run `idf.py` from here) | Julian |
 | `protocol/` | Wire schema v1, the firmware/ground contract | Julian (Aaron requests changes as `Contract:` issues) |
-| `frontend/` | The main UI: landing page and ground station (React, Vite, TypeScript). It owns the operator client | Aaron |
+| `frontend/` | The main UI. `frontend/` is the landing page (Vite, TypeScript, three.js); `frontend/ground-station/` is the ground station and the operator client (React); `frontend/shared/` holds the hardware data and styles both use | Aaron |
 | `ground/link/` | Engineering bench client: dependency-free ES module for schema v1 | Julian |
 | `ground/console/` | Engineering bench console built on the link module, for bring-up and characterisation; never shown to judges | Julian |
 | `cad/` | CadQuery sources; `cad/out/` holds generated STL and previews | Julian: design (with agents), printing, measuring |
@@ -48,7 +48,7 @@ The repo markdown is authoritative. The original Claude Doc export and `message.
 - ESP-IDF v6.0 does not bundle `json` or `mdns`; both come from the component registry (`espressif/cjson`, `espressif/mdns`).
 - Python 3.12 venv at `.venv` (CadQuery has no 3.13 wheels), created by `tools/bootstrap-venv.sh`.
 - Node 20 or later for `ground/link` tests (`node --test`), with no npm dependencies.
-- `frontend/`: Node 22 or later and npm 10; install with `npm ci` (never `npm install`). Its end-to-end tests run in the installed Google Chrome.
+- `frontend/` and `frontend/ground-station/`: Node 22 or later and npm 10; install each with `npm ci` (never `npm install`). The ground station's end-to-end tests run in the installed Google Chrome.
 
 ## Hardware facts agents get wrong
 

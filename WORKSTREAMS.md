@@ -34,7 +34,7 @@ Two people, each with their own agent sessions, work in this repository. This fi
 
 ## Aaron: frontend and integration
 
-- **Operator client in `frontend/`:**
+- **Operator client in `frontend/ground-station/`:**
   - arm and disarm, with a lock-pin confirmation;
   - e-stop (button and space bar);
   - a 5 Hz `ping` heartbeat while controlling;
@@ -45,7 +45,7 @@ Two people, each with their own agent sessions, work in this repository. This fi
 - **Command design:** decide what the UI sends for the judge sequence (rotate ±90, hold 1 s, return): the UI sequencing SLEW commands itself, or one command to the box. Send that to Julian as a contract request. The backend implements what the UI sends (Set 4, R4.1).
 - **Display:** `flags` (HALL_BYPASS, MOMENTUM_*, latched faults), `wheel_ref_rpm`, `throttle_band`, and events (they arrive only after the UI has sent a message).
 - **Fixes:** #2 (self-host the fonts, which also fixes the flaky `MOCK_ONLY` test), the landing page's flywheel copy, and the URL field at 375 px.
-- **3D model:** set `available: true` in `frontend/src/data/assets.ts` once Set 2 lands the GLB.
+- **3D model:** set `cubesatModel.available` to `true` in `frontend/shared/data/assets.ts` (the ground station reads it) once Set 2 lands the GLB.
 - **Integration testing:**
   - the UI against the mock box now;
   - against the real box once R3.5 runs on hardware, with Julian at the bench: "main UI reads the real box" and T-11 telemetry rate and latency.
