@@ -242,7 +242,7 @@ describe('ground station with a device link', () => {
     const rail = within(screen.getByRole('region', { name: 'TELEMETRY' }));
     expect(rail.getByText('MOTOR COMMAND')).toBeTruthy();
     expect(rail.getByText('412')).toBeTruthy();
-    expect(rail.getByText(/TORQUE 0\.8 MN·M/)).toBeTruthy();
+    expect(rail.getByText(/TORQUE 0\.8 mN·m/)).toBeTruthy();
     expect(screen.getByText(/3 TLM DROPPED BY THE BOX · 1 EVENTS DROPPED BY THE BOX/)).toBeTruthy();
     expect(within(screen.getByRole('list', { name: 'Box notices' })).getByText(/NOTICE HALL BYPASS · ON/)).toBeTruthy();
     expect(screen.getByText(/1 PACKETS(?!.*IGNORED)/)).toBeTruthy();

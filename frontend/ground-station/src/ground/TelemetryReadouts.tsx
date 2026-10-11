@@ -51,7 +51,7 @@ export function TelemetryReadouts({ telemetry }: { telemetry: DisplayTelemetry }
           <dd className="readout__value">
             {Math.round(telemetry.throttle)}
             <span className="readout__note">
-              DSHOT{telemetry.torqueMNm === null ? '' : ` · TORQUE ${telemetry.torqueMNm.toFixed(1)} MN·M`}
+              DSHOT{telemetry.torqueMNm === null ? '' : ` · TORQUE ${telemetry.torqueMNm.toFixed(1)} mN·m`}
             </span>
           </dd>
         </div>
