@@ -71,6 +71,9 @@ input:focus{border-color:#709bb7}
 .commands{padding:15px;display:grid;gap:14px}
 .commands p{margin:0;color:var(--muted);font-size:12px}
 .cmdrow{display:flex;flex-wrap:wrap;gap:8px}
+.benchrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.benchrow input[type="number"]{width:90px;background:#10171e;color:var(--text);border:1px solid #334351;padding:8px}
+.benchrow label{display:flex;align-items:center;gap:6px;color:var(--amber);font-size:12px}
 .confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border:1px solid #584c37;background:#211d16;padding:10px 12px;font-size:12px;color:var(--amber)}
 .confirm[hidden]{display:none}
 .confirm span{flex:1 1 180px}
@@ -334,6 +337,15 @@ input:focus{border-color:#709bb7}
           <button class="btn" id="armyes">Confirm arm</button>
           <button class="btn secondary" id="armno">Cancel</button>
         </div>
+        <div class="benchrow" aria-label="Wheel-step bench controls">
+          <p>Bench only. Enable bench mode while SAFE. A wheel-speed step can turn the motor; explain the step and get Julian's explicit go each time.</p>
+          <button class="btn secondary" id="bench-enable" disabled>Enable bench mode</button>
+          <button class="btn secondary" id="bench-disable" disabled>Disable bench mode</button>
+          <label for="step-delta">Step, rpm</label>
+          <input id="step-delta" type="number" min="-500" max="500" step="1" value="300">
+          <label><input id="step-pinned" type="checkbox"> Lock pin is in; Julian gave go for this step</label>
+          <button class="btn" id="wheel-step" disabled>Step wheel</button>
+        </div>
         <button class="estop" id="estop">E-stop<small>Space bar, from any state</small></button>
         <div class="result" id="result" aria-live="assertive"></div>
       </div>
@@ -357,6 +369,8 @@ let frames = 0;
 let lastTlmLog = 0;
 let lastCause = "-";
 let tlmTimes = [];
+let lastMode = null;
+let benchModeConfirmed = false;
 const series = { psi: [], rate: [], wheel: [], vbat: [] };
 
 // Rolling plots and CSV (R3.7). Time is the box's own t_ms, so plots never
@@ -447,6 +461,16 @@ function setResult(text, ok) {
   el.className = "result " + (ok === true ? "ok" : ok === false ? "bad" : "");
 }
 
+function updateBenchButtons() {
+  const connected = link?.state === "open";
+  const safe = connected && lastMode === "SAFE";
+  const delta = Number($("step-delta").value);
+  const validStep = $("step-delta").value.trim() !== "" && Number.isInteger(delta) && delta !== 0 && Math.abs(delta) <= 500;
+  $("bench-enable").disabled = !safe || benchModeConfirmed;
+  $("bench-disable").disabled = !safe || !benchModeConfirmed;
+  $("wheel-step").disabled = !connected || lastMode !== "READY" || !benchModeConfirmed || !$("step-pinned").checked || !validStep;
+}
+
 function setLinkState(kind, label) {
   $("state").className = "state " + kind;
   $("state").lastElementChild.textContent = label;
@@ -467,11 +491,15 @@ function setLinkState(kind, label) {
     $("tp-live").hidden = true;
     $("tp-idle").hidden = false;
     $("tp-idlemsg").textContent = "No link: connect to the box (or the mock box) first.";
+    lastMode = null;
+    benchModeConfirmed = false;
+    $("step-pinned").checked = false;
     $("armconfirm").hidden = true;
     $("badge-mode").textContent = "NO LINK";
     $("modebadge").className = "modebadge";
   }
   updateBenchSetup();
+  updateBenchButtons();
 }
 
 // Smallest vertical span per signal, in its own unit: noise below this stays flat.
@@ -503,6 +531,8 @@ function showMode(mode) {
 }
 
 function onTlm(t) {
+  lastMode = t.mode;
+  updateBenchButtons();
   const now = performance.now();
   tlmTimes.push(now);
   while (tlmTimes.length && now - tlmTimes[0] > 2000) tlmTimes.shift();
@@ -911,6 +941,29 @@ async function send(name, fields = {}) {
   }
 }
 
+async function setBenchMode(enabled) {
+  if (link?.state !== "open" || lastMode !== "SAFE") return;
+  setResult(`set_params: requesting bench_mode ${enabled}`, null);
+  try {
+    const ack = await link.command("set_params", { params: { bench_mode: enabled } });
+    benchModeConfirmed = ack.applied?.bench_mode === enabled && enabled;
+    setResult(ack.applied?.bench_mode === enabled ? `bench_mode ${enabled}: applied` : "set_params ack lacked the applied bench_mode value", ack.applied?.bench_mode === enabled);
+  } catch (error) {
+    benchModeConfirmed = false;
+    setResult(`set_params: ${error.message}`, false);
+  }
+  updateBenchButtons();
+}
+
+async function stepWheel() {
+  updateBenchButtons();
+  if ($("wheel-step").disabled) return;
+  const delta = Number($("step-delta").value);
+  $("step-pinned").checked = false;
+  updateBenchButtons();
+  await send("wheel_step", { delta_rpm: delta });
+}
+
 function estop() {
   if (!link || link.state !== "open") {
     setResult("E-STOP NOT SENT: the link is not open", false);
@@ -961,6 +1014,8 @@ function connect() {
   });
   link.on("event", (e) => {
     if (e.event === "mode") {
+      lastMode = e.mode;
+      updateBenchButtons();
       lastCause = `${e.mode} BY ${e.cause}`;
       $("m-cause").textContent = `LAST CHANGE ${lastCause}`;
       showMode(e.mode);
@@ -996,6 +1051,11 @@ $("ready").onclick = () => send("mode", { mode: "READY" });
 $("hd-zero").onclick = () => send("zero_heading");
 $("hd-hold").onclick = () => send("mode", { mode: "HOLD" });
 for (const b of document.querySelectorAll("[data-slew]")) b.onclick = () => send("mode", { mode: "SLEW", psi_ref_deg: Number(b.dataset.slew) });
+$("bench-enable").onclick = () => void setBenchMode(true);
+$("bench-disable").onclick = () => void setBenchMode(false);
+$("step-delta").oninput = updateBenchButtons;
+$("step-pinned").onchange = updateBenchButtons;
+$("wheel-step").onclick = () => void stepWheel();
 $("estop").onclick = estop;
 $("csv").onclick = downloadCsv;
 $("tp-enter").onclick = () => send("mode", { mode: "MANUAL", input: "throttle" });

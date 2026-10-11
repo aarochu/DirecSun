@@ -797,9 +797,9 @@ After DShot 0, BLHeli_S stays in its run loop for about 8 s with damped light, w
 - Only the controlling client's `ping` and `cmd` messages reset the heartbeat [D].
 - `estop` is accepted from **every** client, in every state, without arming [V] TD §7.3.
 - Commands other than `estop` and `ping` from a non-controlling client are refused with `reason:"not controlling client"` while the box is armed [D].
-- If the controlling client disconnects, the heartbeat expires 1 s later and the ramp-down starts. No reconnect resumes motion; the operator must arm again [D], consistent with TD §7.3 and with the frontend's read-only, no-auto-reconnect link (§17).
+- If the controlling client disconnects, the heartbeat expires 1 s later and the ramp-down starts. No reconnect resumes motion; the operator must arm again [D], consistent with TD §7.3 and the frontend's no-auto-reconnect operator link (§17).
 
-This makes a read-only viewer, such as the current frontend's device link, harmless: it receives telemetry but can never keep an armed box alive (finding V-15).
+This makes a read-only viewer harmless: it receives telemetry but can never keep an armed box alive (finding V-15). The main UI can be either a viewer or the controlling client, depending on whether its operator has armed the box.
 
 ### 14.5 Watchdog
 
@@ -993,22 +993,22 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 
 The main UI is `frontend/`, Aaron's landing page and ground station, built with React, Vite, and TypeScript. It became the main UI on 2026-10-10 when PR #1 merged, and the owner decided that the backend matches it (finding U-3). For the wire interface (message fields, units, sign, endpoint) the UI leads. `protocol/schema-v1.json` encodes what the UI expects, and §15 and the firmware follow.
 
-`ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up and characterisation, and are not shown to judges. When the UI starts sending commands, its own TypeScript client must keep the safety rules `ground/link/` proves: a 5 Hz ping heartbeat, acks matched to commands by `seq`, an `estop` that is sent at once and never queued, and no automatic reconnect (§14.4, §21).
+`ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up and characterisation, and are not shown to judges. The UI's TypeScript operator client sends a 5 Hz ping heartbeat while controlling, matches acks to commands by `seq`, sends `estop` at once rather than queueing it, and does not reconnect or re-arm automatically (§14.4, §21).
 
 The bench console binds the e-stop to Space wherever focus is, its endpoint text field included, and a focused text field or button cannot take the key instead (finding V-63). A ground station that binds an e-stop key needs the same rule, or the key silently does nothing while a field has focus.
 
-The table records facts read from the `frontend/` source at PR #1 head 622150a (`src/hardware/deviceLink.ts`, `src/ground/*`, `src/simulation/*`, `src/data/assets.ts`) [V at that commit].
+The table records the main UI's current integration contract in `frontend/ground-station/src/{hardware,ground}/` and `frontend/shared/data/assets.ts`. Hardware behaviour remains subject to the Set 3 and Set 4 bench gates.
 
 | Main UI fact | Firmware consequence |
 | --- | --- |
-| The device link (`DeviceLink`, Device link panel) is read-only. It opens a WebSocket and never sends | The UI cannot arm or e-stop the box yet. A read-only viewer is harmless, because it can never keep an armed box alive (§14.4). The operator commands it will send are implemented when the UI defines them (repository Set 4, R4.1) |
-| `parseTelemetry` accepts `type:"tlm"` with `v` 1 or absent and requires a finite numeric `psi_deg`; anything else is counted as "ignored" | The firmware's `tlm` always carries numeric `psi_deg` (§15.3). Every non-`tlm` frame the box broadcasts (`event`, and `ack` or `pong` if the UI ever sends) is counted as ignored and shown in the panel's status line |
-| It reads `seq`, `t_ms`, `mode`, `psi_deg`, `psi_ref_deg`, `rate_dps`, `wheel_rpm`, `vbat`. It unwraps successive `psi_deg` values into a continuous heading, takes `psi_ref_deg` relative to the heading (null means "target = heading"), uses `t_ms` as its time base, and shows `mode` verbatim | All present in §15.3. `t_ms` must be monotonic, which it is (time since boot). The battery row appears only when `vbat` is numeric |
+| The device link can watch without sending. When operating, the UI sends `arm` after lock-pin confirmation, `disarm`, immediate `estop`, `mode`, `manual`, `respin`, and `zero_heading`. Its SAFE-only parameters panel sends `set_params` | A read-only viewer never keeps an armed box alive. The box checks all command guards and accepts `estop` from any client (§14.4). `set_params` is accepted only in SAFE and the ack returns the applied set. Bench-only `wheel_step` belongs in engineering tools, not the judge UI |
+| `parseTelemetry` accepts `type:"tlm"` with `v` 1 or absent and requires a finite numeric `psi_deg`; invalid frames are counted as "ignored". The operator client separately handles `ack`, `pong`, and `event` | The firmware's `tlm` always carries numeric `psi_deg` (§15.3). Acks echo the command `seq`; events go to clients that have sent at least one message, while a read-only viewer receives only telemetry |
+| It reads `seq`, `t_ms`, `mode`, `psi_deg`, `psi_ref_deg`, `rate_dps`, `wheel_rpm`, `wheel_ref_rpm`, `throttle_band`, `flags`, `vbat`, and optional sensor fields. It unwraps heading, uses `t_ms` as its time base, and shows mode and interlock flags from telemetry, not optimistically from button presses | All are described in §15.3. `t_ms` must be monotonic within a connection. The battery row appears only when `vbat` is numeric; missing optional fields remain visibly unavailable |
 | It does not reconnect automatically | Matches §14.4 |
 | Its endpoint placeholder is `ws://192.168.4.1/ws`, and it saves whatever URL the user enters | The firmware serves port 80 at `/ws` (§15.1, §15.2): SoftAP mode is exactly that default, and station mode is `ws://direcsun.local/ws` (finding U-2) |
 | **Positive heading is clockwise seen from above.** "Rotate right" commands +90°, the dial's needle is drawn at (sin ψ, -cos ψ) in screen coordinates, and the 3D model turns by `rotation.y = -ψ` | The wire is clockwise positive and the firmware converts in its protocol layer (§2.3, finding U-1). A box turning clockwise by hand must turn the UI's dial clockwise |
-| Its judge sequence turns 90° left or right, holds 1.0 s, and returns to the start heading, at 60 deg/s and 120 deg/s² (`src/simulation/constants.ts`), with Stop and Reset | The same trapezoid limits as §12.4. The UI sequences the turn itself (frontend PR #10): it captures `psi_deg`, sends `SLEW` to start ± 90 wrapped onto (−180, 180], waits for `slew_complete`, holds 1.0 s in `READY`, and sends `SLEW` back to the captured start; it stops on `SLEW_TIMEOUT`, a refusal, or `SAFE`, and "Stop turn" sends `mode READY`. R4.3 provides each step |
-| It loads `/assets/direcsun.glb` when present, and otherwise draws a schematic box ("SCHEMATIC MODEL, CAD NOT LOADED") | The CAD pipeline exports that model (repository Set 2, R2.5) |
+| Its judge sequence sends `zero_heading` and waits for its ack, then commands absolute `SLEW` to +90° or -90°, holds for 1.0 s, and commands `SLEW` back to 0°. The simulated path uses 60 deg/s and 120 deg/s² (`frontend/ground-station/src/simulation/constants.ts`) | The real box implements the same wire sequence and the §12.4 trapezoid limits. The UI waits for authoritative mode and `slew_complete` events rather than treating an ack as completed motion (repository Set 4, R4.1) |
+| The ground-station view loads `/assets/hardware-stack.glb` and falls back to a schematic if the asset or WebGL is unavailable. A separate `/assets/direcsun.glb` remains a Set 2 CAD handoff | The 3D display is a design-model view, not evidence of an assembled or tested box (repository Set 2, R2.5) |
 | While device telemetry is live, the simulation controls are locked and the header reads "DEVICE CONNECTED, RECEIVING TELEMETRY" | No firmware consequence |
 
 ---
