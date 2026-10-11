@@ -234,7 +234,13 @@ describe('ground station with a device link', () => {
     expect(rail.getByText(/10\.10 V/)).toBeTruthy();
     const sensors = within(screen.getByRole('region', { name: 'SENSOR READINGS' }));
     expect(sensors.getByText('FROM DEVICE')).toBeTruthy();
+    const toggle = sensors.getByRole('button', { name: /SENSOR READINGS/ });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(sensors.getByText('10.10 V')).toBeTruthy();
+    act(() => socket.message(tlm({ t_ms: 20, psi_deg: 47.3, mode: 'HOLD', vbat: 10.1 })));
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('button', { name: /Rotate right ninety/ }).hasAttribute('disabled')).toBe(true);
     expect(screen.queryByRole('button', { name: /Reset the simulation/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Emergency stop the box' }).hasAttribute('disabled')).toBe(false);
