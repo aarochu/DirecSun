@@ -183,7 +183,7 @@ The PR-1 requirement needs the gyro range to cover at least 360 deg/s, and TD §
 | DShot | DShot300 if ESC MCU is 48 MHz ("H" in its name), DShot150 if 24 MHz ("L") | [V] TD §5.2; [M] read in ESC Configurator |
 | DShot frame | 11-bit throttle, 1 telemetry bit, 4-bit CRC; 0 = disarm, 1–47 commands, 48–2047 throttle | [V] TD §6.3 |
 | Hall | 2 magnets, both south-out → 2 falling edges per wheel turn | [V] TD §4.6 |
-| Battery divider | 22/122 = 0.1803; 11.2 V → 2.02 V; 8.8 V → 1.59 V; 9.6 V → 1.73 V | [C] |
+| Battery divider | Design 22/122 = 0.1803; the bench rig measures 21.23/104.43 = 0.2033 (V-67): 11.2 V → 2.28 V; 9.6 V → 1.95 V; 8.8 V → 1.79 V; the ADC's 2.9 V limit is 14.3 V | [C] |
 | ADC | 12 dB attenuation, usable to about 2.9 V | [V] TD §5.1 |
 | Sensors' supply | 3.3 V from XIAO 3V3 | [V] TD §5.3 |
 
@@ -440,7 +440,7 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | Sun A | 1 (ADC1 ch0) | 50 Hz | Calibrated mV, 4-sample average | [V] pin; [D] averaging |
 | Sun B | 2 (ADC1 ch1) | 50 Hz | Same | n/a |
-| Battery | 8 (ADC1 ch7) | 50 Hz | mV / 0.1803, then a 1 s moving average for the undervoltage interlock | [C] ratio |
+| Battery | 8 (ADC1 ch7) | 50 Hz | mV / `kBatteryDividerRatio` (0.2033 on the bench rig, V-67), then a 1 s moving average for the undervoltage interlock | [C] ratio |
 
 Use the ESP-IDF `adc_oneshot` driver with `ADC_ATTEN_DB_12` and the `adc_cali` curve-fitting scheme for mV conversion [A]. ADC2 must not be used, because it is unavailable with Wi-Fi on [V] TD §5.4.
 
@@ -1235,6 +1235,7 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-64 | §14.1 and §16: `HALL_SILENT` arms above `hall_expect_throttle`; it and `spinup_throttle` each range over 48..2047 | Review of R3.7 before the first spin: host test with the Hall fitted but silent, both parameters at 2047 as NVS could hold them | Rung 1's `SPINUP` ramp tops out at `spinup_throttle`, and `SPINUP` is exempt from `UNDERSPEED`. With the threshold at or above the target, nothing stopped a `SPINUP` at full throttle | `hall_expect_throttle` must be below `spinup_throttle`: `set_params` refuses otherwise (`invalid param: hall_expect_throttle`), and a stored set that breaks it loads the defaults. Strictly below, because the trip condition is "above". The rule matches the intended values: FF(Ω_low) is below the throttle that drives the wheel toward the bias. With the defaults it trips 1.504 s after `arm`, at throttle 300 | High (this doc) |
 | V-65 | §13.1, §15.3, §16: `set_params` is accepted in `SAFE` | Review of R3.7 before the first spin: host test of a `set_params` sent during the 5 s ramp-down that follows an e-stop | The ramp-down is `SAFE` with the wheel still driven, so the update was accepted: a lowered cap did not apply to the running ramp, and `params_changed` asked for a flash write, which stalls both cores' caches and the tick alarm (§16, `control_task.cpp`), while the motor turned | `set_params` is refused until the ramp has ended, with the existing reason `ramp-down in progress`, the one `arm` already gives there; the refusal reasons stay a fixed list (§13.1), and the schema does not enumerate them, so this is no schema change | Medium (this doc) |
 | V-66 | §9.2, §14.1, §14.3: missed ticks are counted for `CONTROL_STALL`; the 1 s heartbeat, the 5 s ramp, and the 200 ms and 500 ms interlock durations are counted in ticks | Review of R3.7 before the first spin: read `control_task.cpp`; host test with 6 of every 14 timer alarms missed | The supervisor's tick count advanced once per executed tick, not per alarm, so missed ticks stretched every duration. At that miss rate the heartbeat expired after 1.75 s of wall time, `UNDERSPEED` after about 350 ms, and `HALL_SILENT` after about 875 ms | `TickClock` in the pure core advances by every alarm and keeps the missed-tick streak; the control task feeds it, and the supervisor's duration counters add the alarms each tick stands for (§9.2). Host tests drive the supervisor through it; mutants that count executed ticks fail them | High (this doc) |
+| V-67 | §8 and TD §5.1: the battery divider is 100 kΩ / 22 kΩ, ratio 0.1803 | Julian's meter on the bench rig's resistors, 2026-10-10 | The fitted resistors measure 83.2 kΩ and 21.23 kΩ, ratio 0.2033; with the design constant every battery reading, and so the 9.6 V arm guard and the low-battery trip, would read 12.8 % high | The ratio is computed from the two measured values in `adc_inputs.hpp`, which change with the resistors. R3.3's meter test (10.0 V and 9.0 V within 2 %) checks it | High (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
