@@ -8,17 +8,40 @@ The binding wire contract is [`../protocol/schema-v1.json`](../protocol/schema-v
 
 The browser and box use one full-duplex WebSocket carrying UTF-8 JSON text frames. There is no firmware HTTP API, UDP interface, or serial connection used by the frontend.
 
-| Purpose | Host and port | Path | Status and notes |
-| --- | --- | --- | --- |
-| Real box, station mode | `direcsun.local:80`, or the IPv4 address printed on the serial console | `/ws` | Contracted endpoint. Examples: `ws://direcsun.local/ws` and `ws://<printed-address>/ws`. The box and laptop must be on the same 2.4 GHz network. |
-| Real box, SoftAP mode | `192.168.4.1:80` | `/ws` | Contracted fallback and the frontend placeholder: `ws://192.168.4.1/ws`. SoftAP is selected at firmware build time. The box does not switch network modes automatically. |
-| Protocol mock | `127.0.0.1:8081` by default | `/ws` | Development only: `ws://127.0.0.1:8081/ws`. `tools/mock-box.py` uses 8081 because binding port 80 normally requires elevated privileges. |
+### Real hardware endpoints
+
+Use one of these only when connecting the frontend to a physical DirecSun box:
+
+| Box network mode | Real endpoint | When to use it |
+| --- | --- | --- |
+| Station mode with mDNS | `ws://direcsun.local/ws` | The laptop and physical box are on the same 2.4 GHz network and mDNS resolves. |
+| Station mode by address | `ws://<address-printed-on-serial>/ws` | Use the physical box's assigned IPv4 address when mDNS does not resolve. Port 80 is implicit. |
+| Box-hosted SoftAP | `ws://192.168.4.1/ws` | The laptop has joined the physical box's Wi-Fi. This is the frontend placeholder and contracted fallback. |
+
+**Real-box invariant:** firmware serves port **80** at path **`/ws`**. Never use port 8081 for physical hardware.
+
+SoftAP is selected at firmware build time. The box does not switch network modes automatically during a session.
+
+### Mock endpoint, development only
+
+Use this only with `tools/mock-box.py`:
+
+```text
+ws://127.0.0.1:8081/ws
+```
+
+**Mock invariant:** `127.0.0.1` is the developer laptop, not the ESP32. Port **8081** belongs to the mock process and is not part of the real firmware contract. The mock uses 8081 because binding port 80 normally requires elevated privileges.
+
+| Target selected in the UI | Process receiving the connection | Hardware evidence? |
+| --- | --- | --- |
+| `direcsun.local`, the printed box address, or `192.168.4.1`, all on port 80 | Physical ESP32 firmware | Yes, when the real-box test procedure is followed |
+| `127.0.0.1:8081` | Local Python mock | No. It validates frontend and wire behavior only |
 
 Only `/ws` is valid on the real box and mock. Port 81 at `/` is obsolete. Two comments in `firmware/sdkconfig.defaults` and `firmware/components/direcsun_comms/CMakeLists.txt` still say port 81, but the protocol schema, FD section 15, TD section 7, frontend placeholder, and mock all specify port 80 at `/ws`.
 
 The frontend accepts a user-entered `ws://` or `wss://` URL. Current firmware provides plain `ws://`, not TLS. A page loaded over HTTPS cannot open that insecure socket because browsers block mixed content. Serve the operator UI over plain HTTP for a real-box run.
 
-### Frontend-only HTTP ports
+### Frontend-only HTTP ports, not device endpoints
 
 These serve the browser application and are not firmware endpoints:
 
