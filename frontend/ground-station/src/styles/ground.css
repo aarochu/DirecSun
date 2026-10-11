@@ -816,6 +816,10 @@
     grid-column: 8 / span 5;
     grid-row: 1 / span 2;
     min-height: 0;
+    /* The main grid has a fixed height and the plots panel sits below it, so a
+       tall side column (the SAFE parameters panel open) scrolls here instead of
+       spilling under the plots panel, which would then take its clicks. */
+    overflow-y: auto;
   }
 
   .rail {
