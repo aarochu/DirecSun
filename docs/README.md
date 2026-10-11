@@ -4,6 +4,7 @@
 | --- | --- |
 | [technical-design.md](technical-design.md) | System design (TD): requirements, physics and sizing, mechanical and electrical design, firmware and ground-station architecture, test plan, risks, schedule, assumptions, and the validation log |
 | [firmware-design.md](firmware-design.md) | Firmware design (FD): architecture, drivers, estimation, control, modes, safety, the wire protocol, verification, and the rules for agents changing the firmware |
+| [hardware/perfboards.html](hardware/perfboards.html) | Perfboard build sheet: the XIAO carrier and power deck hole by hole, the cables between decks, the battery box wiring, and the checks before first power. Open it in a browser. TD Section 5 and `cad/` win if it disagrees with them |
 | [sizing.py](sizing.py) | Every number in TD Section 3. Run `.venv/bin/python docs/sizing.py > docs/sizing_output.txt` after changing an input |
 | [sizing_output.txt](sizing_output.txt) | The last run of `sizing.py` |
 | [reference/Electronics_Component_Inventory_with_Robotics.pdf](reference/Electronics_Component_Inventory_with_Robotics.pdf) | The owner's parts inventory referenced in TD Section 2 |
