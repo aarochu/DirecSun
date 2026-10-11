@@ -1,0 +1,19 @@
+$ /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/pr50/tools/bench/r35/t3-ui.py --url ws://127.0.0.1:39989/ws --turn-s 8 --turn-cmd /home/jazoe/projects/DirecSun/.venv/bin/python /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/pr50/tools/bench/r35/test/mock-turn.py --url ws://127.0.0.1:39989/ws --dps 30 --seconds 3
+[02:45:03] t3-ui: writing everything to /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/pr50/tools/bench/r35/results/mock-20261011-024102/runs/t3-ui-20261011-024503
+[02:45:05]     probe:    0.6 s  page opened a WebSocket to ws://127.0.0.1:39989/ws
+[02:45:05]     probe:    0.6 s  CONNECTED: the ground station shows DEVICE CONNECTED
+[02:45:05]     probe:    0.8 s  TURN NOW: turn the rig clockwise by hand, about 90 degrees, then hold it still (sampling 8 s)
+[02:45:05] >>> TURN THE RIG CLOCKWISE NOW, about 90 degrees, then hold it still <<<
+[02:45:13]     probe:    8.9 s  turn: readout +5.6° -> +18.8°, net 13.2 deg; needle net 13.09 deg (clockwise positive)
+[02:45:13]     probe:    9.0 s  wrote /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/pr50/tools/bench/r35/results/mock-20261011-024102/runs/t3-ui-20261011-024503/probe-turn/probe.json
+[02:45:14]   [info] turn command: exit 0, output in turn-cmd.txt
+[02:45:14]   [ok  ] device mode: header 'DEVICE CONNECTED' in every sample; mode readout ['SAFE / DEVICE', 'SPINUP / DEVICE', 'READY / DEVICE']
+[02:45:14]   [ok  ] ignored-frame counter 0: max 0 over 78 samples; last status 'RECEIVING TELEMETRY · 408 PACKETS'
+[02:45:14]   [ok  ] only tlm on the wire: page received {'tlm': 418}
+[02:45:14]   [ok  ] the page sent nothing (read-only viewer): 0 frames sent
+[02:45:14]   [FAIL] heading readout increased (clockwise): +5.6° -> +18.8°, net +13.2 deg (range +0.0 to +13.4); needs >= +30
+[02:45:14]   [FAIL] dial needle turned clockwise: net +13.1 deg on screen
+[02:45:14]   [ok  ] needle and readout agree: difference -0.1 deg
+[02:45:14]   [info] screenshots for the human check: 7 in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/pr50/tools/bench/r35/results/mock-20261011-024102/runs/t3-ui-20261011-024503/probe-turn: confirm the needle moves clockwise frame to frame, matching the physical turn
+RESULT t3-ui: FAIL (failed: heading readout increased (clockwise); dial needle turned clockwise)
+RESULT t3-ui: details in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/pr50/tools/bench/r35/results/mock-20261011-024102/runs/t3-ui-20261011-024503

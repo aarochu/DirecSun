@@ -1,0 +1,14 @@
+  2480 ms evaluate took 8 ms, packets shown null
+  4756 ms evaluate took 274 ms, packets shown 101
+  6949 ms evaluate took 192 ms, packets shown 214
+  9129 ms evaluate took 180 ms, packets shown 322
+ 11313 ms evaluate took 183 ms, packets shown 431
+ 13515 ms evaluate took 201 ms, packets shown 541
+ 15701 ms evaluate took 182 ms, packets shown 650
+ 17945 ms evaluate took 244 ms, packets shown 759
+ 20074 ms evaluate took 128 ms, packets shown 855
+ 22205 ms evaluate took 131 ms, packets shown 977
+ 24338 ms evaluate took 131 ms, packets shown 1075
+ 26512 ms evaluate took 173 ms, packets shown 1190
+ 28728 ms evaluate took 216 ms, packets shown 1300
+ 30784 ms evaluate took 56 ms, packets shown 1402

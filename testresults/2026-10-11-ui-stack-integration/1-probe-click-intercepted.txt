@@ -1,0 +1,10 @@
+
+Running 1 test using 1 worker
+
+[1/1] e2e/zz-params-probe.spec.ts:2:1 › probe apply click
+e2e/zz-params-probe.spec.ts:2:1 › probe apply click
+TRIAL FAILED: TimeoutError: locator.click: Timeout 6000ms exceeded. | Call log: |   - waiting for getByRole('button', { name: 'Apply changed parameters' }) |     - locator resolved to <button type="submit" class="button button--primary params__apply">Apply changed parameters</button> |   - attempting click action (trial run) |     - waiting for element to be visible, enabled and stable |     - element is visible, enabled and stable |     - scrolling into view if needed |     - done scrolling |     - <div class="rail__header">…</div> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events |   - retrying click action (trial run) |     - waiting for element to be visible, enabled and stable |     - element is visible, enabled and stable |     - scrolling into view if needed
+
+SCROLL CHAIN ["FORM.params__body overflowY=auto pos=static h=418 sh=1347"]
+
+  1 passed (11.3s)

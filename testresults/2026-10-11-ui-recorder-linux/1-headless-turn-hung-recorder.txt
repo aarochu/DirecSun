@@ -1,0 +1,10 @@
+scenario turn: arm, then 4 turns alternating right and left (each: zero_heading, SLEW +-90, 1 s hold, SLEW 0)
+box ws://127.0.0.1:8765/ws (loopback mock), UI http://127.0.0.1:4173, output /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/rec51/turn
+   0.7 s  operator: visibilityState visible
+   1.6 s  operator: WebSocket opened
+   1.9 s  connected
+  61.9 s  FAILED: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Arm the box' })[22m
+
+  61.9 s  stopped early, the capture so far is saved

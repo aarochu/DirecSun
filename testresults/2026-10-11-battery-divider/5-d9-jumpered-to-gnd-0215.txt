@@ -1,0 +1,28 @@
+Script started on 2026-10-11 02:15:24-04:00 [COMMAND="timeout 10 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/tools/idf.sh -B build-flight -D SDKCONFIG=build-flight/sdkconfig -p /dev/ttyACM0 monitor --no-reset" <not executed on terminal>]
+Executing action: monitor
+Running idf_monitor in directory /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/firmware
+Executing "/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python /home/jazoe/.espressif/v6.0/esp-idf/tools/idf_monitor.py -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/firmware/build-flight/direcsun.elf /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/firmware/build-flight/bootloader/bootloader.elf --no-reset -m '/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python' '/home/jazoe/.espressif/v6.0/esp-idf/tools/idf.py' '-B' 'build-flight' '-D' 'SDKCONFIG=build-flight/sdkconfig' '-p' '/dev/ttyACM0'"...
+--- esp-idf-monitor 1.9.0 on /dev/ttyACM0 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+I (25466) status: s 24 ticks 500 missed 0 (total 1) loop_us_max I (155568) status: s 154 ticks 500 missed 0 (total 1) loop_us_max 292 dev_max_us 2 p99_dev_us 1 dshot sent 77496 dropped 0 imu_invalid 500
+I (155569) status: mode SAFE throttle 0 vbat 1.08 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (156580) status: s 155 ticks 500 missed 0 (total 1) loop_us_max 291 dev_max_us 1 p99_dev_us 0 dshot sent 77996 dropped 0 imu_invalid 500
+I (156582) status: mode SAFE throttle 0 vbat 1.11 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (157592) status: s 156 ticks 500 missed 0 (total 1) loop_us_max 291 dev_max_us 4 p99_dev_us 1 dshot sent 78496 dropped 0 imu_invalid 500
+I (157593) status: mode SAFE throttle 0 vbat 1.07 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (158604) status: s 157 ticks 500 missed 0 (total 1) loop_us_max 292 dev_max_us 1 p99_dev_us 0 dshot sent 78996 dropped 0 imu_invalid 500
+I (158605) status: mode SAFE throttle 0 vbat 1.07 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (159616) status: s 158 ticks 500 missed 0 (total 1) loop_us_max 293 dev_max_us 1 p99_dev_us 0 dshot sent 79496 dropped 0 imu_invalid 500
+I (159617) status: mode SAFE throttle 0 vbat 1.09 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (160628) status: s 159 ticks 500 missed 0 (total 1) loop_us_max 292 dev_max_us 1 p99_dev_us 0 dshot sent 79996 dropped 0 imu_invalid 500
+I (160629) status: mode SAFE throttle 0 vbat 1.05 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (161640) status: s 160 ticks 500 missed 0 (total 1) loop_us_max 292 dev_max_us 1 p99_dev_us 0 dshot sent 80496 dropped 0 imu_invalid 500
+I (161642) status: mode SAFE throttle 0 vbat 1.08 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (162652) status: s 161 ticks 500 missed 0 (total 1) loop_us_max 292 dev_max_us 1 p99_dev_us 0 dshot sent 80996 dropped 0 imu_invalid 500
+I (162653) status: mode SAFE throttle 0 vbat 1.10 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (163664) status: s 162 ticks 500 missed 0 (total 1) loop_us_max 294 dev_max_us 1 p99_dev_us 0 dshot sent 81496 dropped 0 imu_invalid 500
+I (163665) status: mode SAFE throttle 0 vbat 1.07 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+I (164676) status: s 163 ticks 500 missed 0 (total 1) loop_us_max 292 dev_max_us 1 p99_dev_us 0 dshot sent 81996 dropped 0 imu_invalid 500
+I (164677) status: mode SAFE throttle 0 vbat 1.11 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0030 flags 0x00 baro ok
+
+Script done on 2026-10-11 02:15:34-04:00 [COMMAND_EXIT_CODE="124"]

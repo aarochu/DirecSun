@@ -1,0 +1,26 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request (30.8s)
+
+
+  1) e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.textContent: Target page, context or browser has been closed
+
+      10 | async function advanceSimulationTo(page: Page, status: string, maxSimulatedMs: number) {
+      11 |   for (let elapsed = 0; elapsed <= maxSimulatedMs; elapsed += 100) {
+    > 12 |     if ((await phase(page).textContent()) === status) return;
+         |                            ^
+      13 |     await page.clock.runFor(100);
+      14 |   }
+      15 |   await expect(phase(page)).toHaveText(status);
+        at advanceSimulationTo (/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/main/frontend/ground-station/e2e/smoke.spec.ts:12:28)
+        at /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/main/frontend/ground-station/e2e/smoke.spec.ts:87:5
+
+    Error Context: test-results/smoke-ground-station-judge-1431d-ol-makes-no-network-request/error-context.md
+
+  1 failed
+    e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request 

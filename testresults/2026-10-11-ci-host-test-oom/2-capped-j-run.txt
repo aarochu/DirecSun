@@ -1,0 +1,272 @@
+[doctest] doctest version is "2.4.11"
+[doctest] run with "--help" for options
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:202:
+TEST CASE:  HT-5 sim: READY detumbles a 1 rev/s spin within 5 s at the design gains
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:212: MESSAGE: friction 0 mN m: below 5 deg/s at 0.292 s, max after 5 s 0.0184116 deg/s, omega_ref 2409.68..3649.16 rpm
+  logged: friction := 0
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:212: MESSAGE: friction 1 mN m: below 5 deg/s at 0.284 s, max after 5 s 0 deg/s, omega_ref 2409.68..3610.27 rpm
+  logged: friction := 0.001
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:212: MESSAGE: friction 3 mN m: below 5 deg/s at 0.266 s, max after 5 s 0 deg/s, omega_ref 2409.68..3539.7 rpm
+  logged: friction := 0.003
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:221:
+TEST CASE:  HT-5 sim: a +-30 deg/s rate command is tracked within 10 % after 1 s
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:232: MESSAGE: friction 0 mN m, command 30: worst error after 1 s 1.01687 deg/s
+  logged: friction := 0
+          target := 30
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:232: MESSAGE: friction 0 mN m, command -30: worst error after 1 s 1.00415 deg/s
+  logged: friction := 0
+          target := -30
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:232: MESSAGE: friction 1 mN m, command 30: worst error after 1 s 0.270524 deg/s
+  logged: friction := 0.001
+          target := 30
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:232: MESSAGE: friction 1 mN m, command -30: worst error after 1 s 0.284211 deg/s
+  logged: friction := 0.001
+          target := -30
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:232: MESSAGE: friction 3 mN m, command 30: worst error after 1 s 2.35848 deg/s
+  logged: friction := 0.003
+          target := 30
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:232: MESSAGE: friction 3 mN m, command -30: worst error after 1 s 2.37106 deg/s
+  logged: friction := 0.003
+          target := -30
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:241:
+TEST CASE:  HT-5 sim: the sign-check gain (scale 0.2) damps a push and never amplifies it
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:250: MESSAGE: friction 0 mN m: peak 179.977 deg/s, max after 5 s 0.0402048 deg/s
+  logged: friction := 0
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:250: MESSAGE: friction 1 mN m: peak 179.873 deg/s, max after 5 s 0 deg/s
+  logged: friction := 0.001
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:250: MESSAGE: friction 3 mN m: peak 179.663 deg/s, max after 5 s 0 deg/s
+  logged: friction := 0.003
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:259:
+TEST CASE:  HT-6 positive control: with s_w wrong, the same detumble diverges past 2 rev/s
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:268: MESSAGE: scale 1: peak 859.687 deg/s
+  logged: scale := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:268: MESSAGE: scale 0.2: peak 855.401 deg/s
+  logged: scale := 0.2
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:273:
+TEST CASE:  R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:295: MESSAGE: saturated at 9.564 s; integral 0.0577177 rad, grew by 4.01959e-06 rad until release; lurch 0 deg/s
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:327:
+TEST CASE:  R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:335: MESSAGE: omega_ref 3360.43 rpm at 5 s, 3359.68 rpm at 20 s
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:357:
+TEST CASE:  R3.9 cascade in READY: supervisor, rate loop, and wheel PI detumble a hand spin
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:378: MESSAGE: cascade: below 5 deg/s at 0.398 s, max after 5 s 0 deg/s, wheel 3284.5 rpm, peak tau 31 mN m
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:404:
+TEST CASE:  V-52 floor: a reference pinned on the floor does not trip UNDERSPEED
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:428: MESSAGE: floor hold: mode 2, wheel min 890.991 rpm, now 899.949 rpm, box -544.709 deg/s, saturated 2500 of 2500 ticks
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:535:
+TEST CASE:  HT-5 sim: a 90 deg SLEW settles within 3 deg in under 3 s (PR-2)
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:555: MESSAGE: friction 0 mN m, target 90: settled at 2.29 s, worst after 3 s 1.63303 deg, slew_complete at 2.958 s, omega_ref 2241.87..2405.86 rpm
+  logged: friction := 0
+          target := 90
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:555: MESSAGE: friction 0 mN m, target -90: settled at 2.288 s, worst after 3 s 1.57629 deg, slew_complete at 2.968 s, omega_ref 2399.85..2563.32 rpm
+  logged: friction := 0
+          target := -90
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:555: MESSAGE: friction 1 mN m, target 90: settled at 2.308 s, worst after 3 s 0.924474 deg, slew_complete at 2.976 s, omega_ref 1991.64..2399.99 rpm
+  logged: friction := 0.001
+          target := 90
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:555: MESSAGE: friction 1 mN m, target -90: settled at 2.308 s, worst after 3 s 0.922903 deg, slew_complete at 2.978 s, omega_ref 2399.99..2810.74 rpm
+  logged: friction := 0.001
+          target := -90
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:555: MESSAGE: friction 3 mN m, target 90: settled at 2.354 s, worst after 3 s 0.93302 deg, slew_complete at 3.01 s, omega_ref 1169.48..2399.99 rpm
+  logged: friction := 0.003
+          target := 90
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:555: MESSAGE: friction 3 mN m, target -90: settled at 2.354 s, worst after 3 s 0.930363 deg, slew_complete at 3.012 s, omega_ref 2399.99..3633.03 rpm
+  logged: friction := 0.003
+          target := -90
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:572: MESSAGE: 60 slews: slowest settle 2.356 s, worst error after 3 s 1.66773 deg, largest move past the start away from the target 0.00114462 deg
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:577:
+TEST CASE:  HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:619: MESSAGE: friction 0 mN m, poke 10 mN m: peak 4.66144 deg, back within 2 deg at 0.322 s, omega_ref 2402.45..2658.68 rpm, walked 0.299072 rpm from 3 to 4 s
+  logged: friction := 0
+          poke := 0.01
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:619: MESSAGE: friction 0 mN m, poke -10 mN m: peak 4.67398 deg, back within 2 deg at 0.322 s, omega_ref 2146.53..2402.46 rpm, walked 0.280762 rpm from 3 to 4 s
+  logged: friction := 0
+          poke := -0.01
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:619: MESSAGE: friction 1 mN m, poke 10 mN m: peak 3.99894 deg, back within 2 deg at 0.314 s, omega_ref 2399.93..2617.11 rpm, walked 0.290771 rpm from 3 to 4 s
+  logged: friction := 0.001
+          poke := 0.01
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:619: MESSAGE: friction 1 mN m, poke -10 mN m: peak 3.99182 deg, back within 2 deg at 0.314 s, omega_ref 2183.31..2399.94 rpm, walked 0.215576 rpm from 3 to 4 s
+  logged: friction := 0.001
+          poke := -0.01
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:619: MESSAGE: friction 3 mN m, poke 10 mN m: peak 2.78218 deg, back within 2 deg at 0.316 s, omega_ref 2399.93..3204.91 rpm, walked 7.13306 rpm from 3 to 4 s
+  logged: friction := 0.003
+          poke := 0.01
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:619: MESSAGE: friction 3 mN m, poke -10 mN m: peak 2.77555 deg, back within 2 deg at 0.314 s, omega_ref 1595.73..2399.94 rpm, walked 7.06067 rpm from 3 to 4 s
+  logged: friction := 0.003
+          poke := -0.01
+          seed := 1
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:634: MESSAGE: 60 pokes: largest excursion 4.67398 deg, slowest return 0.322 s, largest wheel walk from 3 to 4 s 7.28027 rpm
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:638:
+TEST CASE:  R4.3 timeout path (sim): at 30 mN m of friction the SLEW times out at 6.0 s, then READY
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_closed_loop.cpp:643: MESSAGE: timeout at 6 s, peak error 90 deg, omega_ref 2399.99..4000 rpm
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_controllers.cpp:252:
+TEST CASE:  R3.8 wheel step 2400 to 2700 settles within 10 % in under 0.5 s, under 20 % overshoot
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_controllers.cpp:255: MESSAGE: overshoot 4.47274 %, settle 0.148 s
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_controllers.cpp:260:
+TEST CASE:  R3.8 positive control: a saturating step overshoots under 10 % with anti-windup
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_controllers.cpp:271: MESSAGE: saturating step overshoot 0.233496 %
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_heading.cpp:42:
+TEST CASE:  R4.2 heading: 30 deg/s for 3 s integrates to 90 deg
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_heading.cpp:46: MESSAGE: heading after 3 s at 30 deg/s: 90 deg
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_heading.cpp:51:
+TEST CASE:  R4.2 heading: a seeded 0.5 deg/s bias is removed before integration
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_heading.cpp:59: MESSAGE: heading with a 0.5 deg/s bias removed: 90 deg
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_selftest.cpp:7:
+TEST CASE:  selftest_must_fail
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_selftest.cpp:9: ERROR: CHECK( 1 == 2 ) is NOT correct!
+  values: CHECK( 1 == 2 )
+  logged: deliberate failure: the harness must report this
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:61:
+TEST CASE:  HT-4: the 90 deg trapezoid is 0.5 s accelerating, 1.0 s at 60 deg/s, 0.5 s decelerating
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:88: MESSAGE: peak 60 deg/s, 120 deg/s^2
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:99:
+TEST CASE:  HT-4: through the supervisor, the 90 deg reference reaches its target 2.0 s after entry
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:113: MESSAGE: reference at 90 deg 1000 ticks after entry
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:320:
+TEST CASE:  R4.3 SLEW: complete 0.5 s after the box settles on the target, then READY
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:329: MESSAGE: slew complete 1249 ticks after entry
+
+===============================================================================
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:384:
+TEST CASE:  R4.3 SLEW: a box that never arrives times out at 6.0 s with SLEW_TIMEOUT, then READY
+
+/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/firmware/test/host/test_slew.cpp:391: MESSAGE: timed out 3000 ticks after entry
+
+===============================================================================
+[doctest] test cases:     159 |     158 passed | 1 failed | 0 skipped
+[doctest] assertions: 1449215 | 1449214 passed | 1 failed |
+[doctest] Status: FAILURE!
+host-test selftest: PASSED, the deliberate failure was detected (1 failing, exit 1)
+host-test selftest: PASSED, mutant no_latch was caught by "HT-8 latch: no path leaves SAFE after a fault without a new arm"
+host-test selftest: PASSED, mutant no_bypass_clamp was caught by "bypass property: throttle never exceeds kBypassThrottleMax while bypassed"
+host-test selftest: PASSED, mutant no_still_gate was caught by "HT-3 positive control: a spinning box in SAFE leaves the bias unchanged"
+host-test selftest: PASSED, mutant absolute_stillness was caught by "boot bias seed: an uncalibrated 0.871 g accelerometer at rest still seeds"
+host-test selftest: PASSED, mutant no_wire_sign was caught by "sign conversion: internal CCW encodes as wire CW and decodes back"
+host-test selftest: PASSED, mutant no_spinup_ramp was caught by "rung 1: SPINUP ramps at 200 DShot units per second through the supervisor"
+host-test selftest: PASSED, mutant no_hall_expect_rule was caught by "HT-10 HALL_SILENT trips in SPINUP for every parameter set the box accepts"
+host-test selftest: PASSED, mutant params_during_ramp was caught by "HT-7 set_params is refused during the ramp-down and nothing changes or persists while the wheel turns"
+host-test selftest: PASSED, mutant ticks_not_alarms was caught by "missed ticks: HEARTBEAT_LOST trips at 1.0 s and the ramp ends at 5.0 s of wall time"
+host-test selftest: PASSED, mutant durations_per_step was caught by "missed ticks: HALL_SILENT UNDERSPEED and the SPINUP dwell run on wall time"
+host-test selftest: PASSED, mutant no_wheel_antiwindup was caught by "R3.8 positive control: a saturating step overshoots under 10 % with anti-windup"
+host-test selftest: PASSED, mutant rate_sign_flip was caught by "HT-5 sim: READY detumbles a 1 rev/s spin within 5 s at the design gains"
+host-test selftest: PASSED, mutant no_rate_antiwindup was caught by "R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up"
+host-test selftest: PASSED, mutant no_rate_bleed was caught by "R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit"
+host-test selftest: PASSED, mutant floor_at_low was caught by "V-52 floor: a reference pinned on the floor does not trip UNDERSPEED"
+host-test selftest: PASSED, mutant raw_rate_heading was caught by "R4.2 heading: a seeded 0.5 deg/s bias is removed before integration"
+host-test selftest: PASSED, mutant flip_kpsi was caught by "HT-5 sim: a 90 deg SLEW settles within 3 deg in under 3 s (PR-2)"
+host-test selftest: PASSED, mutant no_hold_deadband was caught by "HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s"
+host-test selftest: PASSED, mutant slew_settle_per_step was caught by "missed ticks: the SLEW settle dwell and timeout run on wall time"
+	Command being timed: "tools/host-test.sh --selftest"
+	User time (seconds): 885.85
+	System time (seconds): 62.90
+	Percent of CPU this job got: 390%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 4:02.97
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 330040
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 303
+	Minor (reclaiming a frame) page faults: 16449680
+	Voluntary context switches: 10614
+	Involuntary context switches: 402883
+	Swaps: 0
+	File system inputs: 45752
+	File system outputs: 4578032
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+exit 0

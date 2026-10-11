@@ -1,0 +1,6 @@
+arm: {'v': 1, 'type': 'ack', 'seq': 1, 'ok': True}
+READY: False
+mode MANUAL rate: {'v': 1, 'type': 'ack', 'seq': 27, 'ok': False, 'reason': 'not in READY'}
+sent 30 manual setpoints of 30.0 deg/s
+mode READY: {'v': 1, 'type': 'ack', 'seq': 81, 'ok': True}
+disarm: {'v': 1, 'type': 'ack', 'seq': 82, 'ok': True}

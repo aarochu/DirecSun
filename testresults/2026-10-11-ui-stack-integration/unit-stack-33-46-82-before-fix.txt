@@ -1,0 +1,42 @@
+
+> direcsun-ground-station@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.3 /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/sim/frontend/ground-station
+
+ ❯ src/tests/deviceControl.test.tsx (43 tests | 1 failed) 5188ms
+   ❯ ground station box controls (11)
+     × disables Rotate and explains an unavailable wheel loop before a turn 1756ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/tests/deviceControl.test.tsx > ground station box controls > disables Rotate and explains an unavailable wheel loop before a turn
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/tests/deviceControl.test.tsx:632:45
+    630|
+    631|     act(() => socket.message(tlm({ psi_deg: 0, mode: 'READY', wheel_re…
+    632|     expect(rotate.hasAttribute('disabled')).toBe(false);
+       |                                             ^
+    633|   });
+    634|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 9 passed (10)
+      Tests  1 failed | 126 passed (127)
+   Start at  04:31:32
+   Duration  11.09s (environment 51%, tests 25%, transform 10%, setup 7%, import 6%)
+
+Environment  jsdom was created 10 times · 27.62s total, 51% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+

@@ -1,0 +1,13 @@
+operator: 1 cmds, ack p50 25 ms, max 25 ms
+operator: 3 mode events checked against the next tlm, 0 stale
+operator: 0 SLEWs accepted
+operator: 54 pings, gap median 200 ms, max 244 ms, 0 outside 200 +/- 60
+watcher: 1 cmds, ack p50 28 ms, max 28 ms
+watcher: 1 mode events checked against the next tlm, 0 stale
+watcher: 0 SLEWs accepted
+watcher: 2 pings, gap median 227 ms, max 227 ms, 0 outside 200 +/- 60
+watcher: 184 frames received, 0 non-tlm before its first send
+comms phase: tlm.t_ms mod 20 is 1 in 492 of 738 tlm frames
+operator page hidden for 0.0 s (0 hidden events)
+check-ui-capture: ok
+checker exit 0

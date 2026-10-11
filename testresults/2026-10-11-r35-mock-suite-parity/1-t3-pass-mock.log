@@ -1,0 +1,44 @@
+[mock-box 1791701103.770] listening on ws://127.0.0.1:39989/ws (inputs: throttle,wheel,rate; characterised)
+[mock-box 1791701105.167] client 0 connected from ('127.0.0.1', 59806)
+[mock-box 1791701105.485] client 5392 connected from ('127.0.0.1', 59814)
+[mock-box 1791701105.487] mode SPINUP (cause arm)
+[mock-box 1791701110.491] refused seq 27: not in READY
+[mock-box 1791701110.494] refused seq 28: not in MANUAL
+[mock-box 1791701110.596] refused seq 30: not in MANUAL
+[mock-box 1791701110.699] refused seq 31: not in MANUAL
+[mock-box 1791701110.803] refused seq 33: not in MANUAL
+[mock-box 1791701110.905] refused seq 34: not in MANUAL
+[mock-box 1791701111.008] refused seq 36: not in MANUAL
+[mock-box 1791701111.111] refused seq 37: not in MANUAL
+[mock-box 1791701111.214] refused seq 39: not in MANUAL
+[mock-box 1791701111.316] refused seq 41: not in MANUAL
+[mock-box 1791701111.419] refused seq 42: not in MANUAL
+[mock-box 1791701111.521] refused seq 44: not in MANUAL
+[mock-box 1791701111.624] refused seq 45: not in MANUAL
+[mock-box 1791701111.728] refused seq 47: not in MANUAL
+[mock-box 1791701111.831] refused seq 48: not in MANUAL
+[mock-box 1791701111.872] mode READY (cause spinup_complete)
+[mock-box 1791701111.933] refused seq 50: not in MANUAL
+[mock-box 1791701112.036] refused seq 51: not in MANUAL
+[mock-box 1791701112.140] refused seq 53: not in MANUAL
+[mock-box 1791701112.244] refused seq 54: not in MANUAL
+[mock-box 1791701112.348] refused seq 56: not in MANUAL
+[mock-box 1791701112.451] refused seq 57: not in MANUAL
+[mock-box 1791701112.555] refused seq 59: not in MANUAL
+[mock-box 1791701112.658] refused seq 60: not in MANUAL
+[mock-box 1791701112.760] refused seq 62: not in MANUAL
+[mock-box 1791701112.864] refused seq 63: not in MANUAL
+[mock-box 1791701112.968] refused seq 65: not in MANUAL
+[mock-box 1791701113.071] refused seq 66: not in MANUAL
+[mock-box 1791701113.174] refused seq 68: not in MANUAL
+[mock-box 1791701113.281] refused seq 69: not in MANUAL
+[mock-box 1791701113.384] refused seq 71: not in MANUAL
+[mock-box 1791701113.488] refused seq 72: not in MANUAL
+[mock-box 1791701113.534] client 0 disconnected
+[mock-box 1791701113.591] refused seq 74: not in MANUAL
+[mock-box 1791701113.694] refused seq 75: not in MANUAL
+[mock-box 1791701113.797] refused seq 77: not in MANUAL
+[mock-box 1791701113.900] refused seq 78: not in MANUAL
+[mock-box 1791701114.003] refused seq 80: not in MANUAL
+[mock-box 1791701114.110] mode SAFE (cause disarm)
+[mock-box 1791701114.112] client 5392 disconnected

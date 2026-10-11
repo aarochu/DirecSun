@@ -1,0 +1,3 @@
+scenario turn: arm, then 4 turns alternating right and left (each: zero_heading, SLEW +-90, 1 s hold, SLEW 0)
+box ws://127.box.example/ws (loopback mock), UI http://127.0.0.1:4173, output /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/probe51/gate-out2
+Playwright is not installed under /nonexistent. Run npm ci there, or pass --ui-dir.

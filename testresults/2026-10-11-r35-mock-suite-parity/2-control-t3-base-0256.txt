@@ -1,0 +1,20 @@
+mock-suite: 5 cases, output in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r43/tools/bench/r35/results/mock-20261011-025620
+  ok  t3-pass: expected PASS, got PASS (12 s)
+  ok  t3-f-ccw: expected FAIL, got FAIL (11 s)
+  ok  t3-f-no-turn: expected FAIL, got FAIL (10 s)
+  ok  t3-f-junk: expected FAIL, got FAIL (10 s)
+  ok  t3-f-no-server: expected FAIL, got FAIL (18 s)
+mock suite mock-20261011-025620: 5/5 cases behaved as expected
+
+[ok ] t3-pass: expected PASS, got PASS, 12 s, exit 0
+[ok ] t3-f-ccw: expected FAIL, got FAIL, 11 s, exit 1
+      [FAIL] heading readout increased (clockwise): +10.0° -> −75.8°, net -85.8 deg (range -85.8 to +6.9); needs >= +30; it went DOWN: counter-clockwise on the wire
+      [FAIL] dial needle turned clockwise: net -86.0 deg on screen
+      [ok  ] ignored-frame counter 0: max 0 over 75 samples; last status 'RECEIVING TELEMETRY · 417 PACKETS'
+[ok ] t3-f-no-turn: expected FAIL, got FAIL, 10 s, exit 1
+      [FAIL] heading readout increased (clockwise): +10.1° -> +18.2°, net +8.1 deg (range +0.0 to +9.0); needs >= +30
+[ok ] t3-f-junk: expected FAIL, got FAIL, 10 s, exit 1
+      [FAIL] ignored-frame counter 0: max 7 over 58 samples; last status 'RECEIVING TELEMETRY · 318 PACKETS · 7 IGNORED'
+      [FAIL] only tlm on the wire: page received {'tlm': 331, 'debug': 7}; non-tlm samples ['{"v": 1, "type": "debug", "seq": 154, "text": "junk"}', '{"v": 1, "type": "debug", "seq": 205, "text": "junk"}', '{"v": 1, "type": "debug", "se
+[ok ] t3-f-no-server: expected FAIL, got FAIL, 18 s, exit 1
+      [FAIL] Device link connects: locator.waitFor: Timeout 15000ms exceeded. | Call log: | [2m  - waiting for getByText('DEVICE CONNECTED — RECEIVING TELEMETRY') to be visible[22m |

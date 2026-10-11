@@ -1,0 +1,4 @@
+  1875 ms evaluate took 11 ms, packets shown null
+  5320 ms evaluate took 1444 ms, packets shown 23
+ 23401 ms evaluate took 16080 ms, packets shown 178
+ 81714 ms evaluate took 56313 ms, packets shown 609

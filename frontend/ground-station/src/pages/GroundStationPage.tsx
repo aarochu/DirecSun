@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { DeviceControls } from '../ground/DeviceControls';
 import { DeviceLinkPanel } from '../ground/DeviceLinkPanel';
-import { simulationSource } from '../ground/displaySource';
+import { operatorDisplaySource, simulationSource } from '../ground/displaySource';
 import { GroundHeader } from '../ground/GroundHeader';
 import { JudgeControls } from '../ground/JudgeControls';
 import { ModelViewport } from '../ground/ModelViewport';
@@ -34,21 +34,24 @@ export default function GroundStationPage() {
   const link = useDeviceLink();
   const operator = useDeviceOperator(link);
   const deviceLive = useSyncExternalStore(link.subscribeState, () => link.receiving);
+  const operatorState = useSyncExternalStore(operator.subscribe, operator.getState);
+  const deviceDisplay = useMemo(() => operatorDisplaySource(link, operator), [link, operator]);
 
   useEffect(() => {
     if (deviceLive) plant.reset();
   }, [deviceLive, plant]);
 
-  const source = deviceLive ? link : simulation;
+  const showDeviceControls = deviceLive || operatorState.linkLost;
+  const source = showDeviceControls ? deviceDisplay : simulation;
   return (
     <div className="gs">
-      <GroundHeader deviceLive={deviceLive} />
+      <GroundHeader deviceLive={deviceLive} deviceClosed={!deviceLive && showDeviceControls} />
       <main className="gs-main" id="main">
         <h1 className="sr-only">
-          DirecSun ground station — {deviceLive ? 'device telemetry' : 'simulated, no device connection'}
+          DirecSun ground station — {deviceLive ? 'device telemetry' : showDeviceControls ? 'device link closed' : 'simulated, no device connection'}
         </h1>
         <ModelViewport source={source} />
-        {deviceLive ? <DeviceControls link={link} operator={operator} /> : <JudgeControls plant={plant} />}
+        {showDeviceControls ? <DeviceControls link={link} operator={operator} /> : <JudgeControls plant={plant} />}
         <div className="gs-side">
           <DeviceLinkPanel link={link} />
           {deviceLive ? <ParametersPanel link={link} /> : null}

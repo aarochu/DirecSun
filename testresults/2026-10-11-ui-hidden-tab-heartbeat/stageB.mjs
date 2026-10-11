@@ -1,0 +1,48 @@
+// Stage B: the real ground-station build, armed against tools/mock-box.py, hidden behind another tab.
+// usage: node stageB.mjs <uiUrl> <mockWsUrl> <hiddenSeconds>
+import { spawn } from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path';
+const [uiUrl, mockUrl, hiddenArg] = process.argv.slice(2);
+const HIDDEN_S = Number(hiddenArg ?? 30);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const profile = fs.mkdtempSync(path.join(process.env.PROBE_TMP, 'stageB-'));
+const port = 9800 + Math.floor(Math.random() * 150);
+const chrome = spawn('google-chrome', [`--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, '--no-first-run', '--no-default-browser-check', uiUrl], { stdio: 'ignore' });
+let targets; for (let i = 0; i < 75; i++) { try { targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); if (targets.some((t) => t.type === 'page' && t.url.startsWith(uiUrl))) break; } catch {} await sleep(200); }
+const tA = targets.find((t) => t.type === 'page' && t.url.startsWith(uiUrl));
+const ws = new WebSocket(tA.webSocketDebuggerUrl); await new Promise((r) => ws.addEventListener('open', r, { once: true }));
+let id = 0; const pending = new Map();
+ws.addEventListener('message', (e) => { const m = JSON.parse(e.data); if (pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (expr) => { const m = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }); if (m.result.exceptionDetails) throw new Error(JSON.stringify(m.result.exceptionDetails)); return m.result.result.value; };
+const waitFor = async (expr, ms, label) => { const end = Date.now() + ms; while (Date.now() < end) { if (await ev(expr)) return; await sleep(100); } throw new Error(`timed out waiting for ${label}`); };
+const byText = (sel, text) => `[...document.querySelectorAll(${JSON.stringify(sel)})].find((el) => (el.getAttribute('aria-label') ?? el.textContent).trim() === ${JSON.stringify(text)})`;
+await waitFor(`!!document.querySelector('input')`, 15000, 'page');
+await ev(`(() => { window.__pings = []; window.__vis = []; const orig = WebSocket.prototype.send;
+  WebSocket.prototype.send = function (d) { try { if (JSON.parse(d).type === 'ping') __pings.push(performance.now()); } catch {} return orig.call(this, d); };
+  document.addEventListener('visibilitychange', () => __vis.push([Math.round(performance.now()), document.visibilityState])); })()`);
+await ev(`(() => { const input = [...document.querySelectorAll('input')].find((i) => i.type !== 'checkbox');
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(mockUrl)});
+  input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+await ev(`${byText('button', 'Connect')}.click()`);
+await waitFor(`document.body.innerText.includes('DEVICE CONNECTED')`, 8000, 'connected');
+await ev(`${byText('button', 'Arm the box')}.click()`);
+await sleep(200);
+await ev(`document.querySelector('input[type=checkbox]').click()`);
+await sleep(200);
+await ev(`${byText('button', 'Arm now')}.click()`);
+await waitFor(`document.querySelector('.controls__status')?.textContent.includes('READY')`, 15000, 'READY');
+await sleep(1000);
+const hiddenAt = await ev(`[performance.now(), document.visibilityState]`);
+const tabB = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json();
+await sleep(1000);
+const nowHidden = await ev(`document.visibilityState`);
+await sleep(HIDDEN_S * 1000);
+const endHidden = await ev(`[performance.now(), document.visibilityState]`);
+await fetch(`http://127.0.0.1:${port}/json/activate/${tA.id}`);
+await sleep(1500);
+const out = await ev(`({ pings: __pings, vis: __vis, status: document.querySelector('.controls__status')?.textContent, result: document.querySelector('.controls__result')?.textContent, flags: document.querySelector('[aria-label="Device flags"]')?.textContent })`);
+ws.close(); chrome.kill();
+const t0 = hiddenAt[0] + 1000, t1 = endHidden[0];
+const inside = out.pings.filter((t) => t >= t0 && t <= t1); let gap = 0; for (let i = 1; i < inside.length; i++) gap = Math.max(gap, inside[i] - inside[i - 1]);
+console.log(JSON.stringify({ uiUrl, stateBeforeHide: hiddenAt[1], stateAfterHide: nowHidden, stateAtEnd: endHidden[1], visibility: out.vis, hiddenWindowS: +((t1 - t0) / 1000).toFixed(1), pingsHidden: inside.length, pingRateHz: +(inside.length / ((t1 - t0) / 1000)).toFixed(2), maxPingGapMs: Math.round(gap), finalStatus: out.status, finalResult: out.result, finalFlags: out.flags }, null, 1));
+process.exit(0);

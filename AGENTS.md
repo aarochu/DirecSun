@@ -4,7 +4,7 @@ This file is the entry point for every agent working in this repository (Claude 
 
 ## Start here
 
-1. Read `WORKSTREAMS.md`: who owns which paths (Julian or Aaron) and how to request work across the line. Never edit the other person's paths.
+1. Read `WORKSTREAMS.md`: who owns which paths (Julian or Aaron) and how to request work across the line. Never edit the other person's paths, except where `WORKSTREAMS.md` allows it (since 2026-10-11, Aaron's work may edit the unfinished software, #80).
 2. Read `changes/CONTEXT.md`. It holds the project invariants, the toolchain, the hardware facts that agents get wrong, and the safety rules.
 3. Find the open set in `changes/` (the highest-numbered `N-slug/` whose `_set.md` Status is not all `[x]`) and read its `_set.md`.
 4. Load only the feature file you are working on. Do not re-derive context from the whole codebase.
@@ -34,7 +34,7 @@ FD is `docs/firmware-design.md`; TD is `docs/technical-design.md`.
 
 ## The main UI
 
-`frontend/` (Aaron) is the main UI. The backend matches it: when the UI's expectations of the box differ from the plan, Julian changes the firmware and `protocol/schema-v1.json`, not the UI, and records the change in FD §15 and §17. Do not edit `frontend/` from backend work. From the UI side, request contract changes as `Contract:` issues (see `WORKSTREAMS.md`); do not edit `protocol/`, `firmware/`, or the mock box. `ground/link` and `ground/console` are engineering bench tools.
+`frontend/` (Aaron) is the main UI. The backend matches it: when the UI's expectations of the box differ from the plan, Julian changes the firmware and `protocol/schema-v1.json`, not the UI, and records the change in FD §15 and §17. Do not edit `frontend/` from backend work. From the UI side, request contract changes as `Contract:` issues (see `WORKSTREAMS.md`); do not edit `protocol/`, `firmware/`, or the mock box, except under the 2026-10-11 section of `WORKSTREAMS.md`. `ground/link` and `ground/console` are engineering bench tools.
 
 ## Hardware safety
 

@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 e2e/box-control.spec.ts:121:3 › box control against a scripted box › SAFE parameters send only changed values and show the applied set (1.5s)
+
+  1 passed (5.3s)
