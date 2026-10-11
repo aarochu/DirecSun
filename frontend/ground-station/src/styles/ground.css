@@ -731,3 +731,11 @@
     transition: none;
   }
 }
+
+.gs-header,
+.gs-header .button,
+.gs-header .wordmark,
+.gs-header a,
+.gs-header p {
+  font-family: var(--font-mono);
+}
