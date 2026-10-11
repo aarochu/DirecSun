@@ -579,3 +579,75 @@ TEST_CASE("R4.3 timeout path (sim): at 30 mN m of friction the SLEW times out at
     CHECK(r.ref_min >= 800.0);
     CHECK(r.ref_max <= 4000.0);
 }
+
+TEST_CASE("R4.4 DETUMBLE meets PR-1 both ways at every friction in the planning range")
+{
+    for (double friction : {0.0, 1e-3, 3e-3}) {
+        for (double dir : {1.0, -1.0}) {
+            CAPTURE(friction);
+            CAPTURE(dir);
+            Params p = cascade_params();
+            p.rate_gain_scale = 1.0f;
+            BoxRig rig(p);
+            rig.box.friction_nm = friction;
+            rig.arm_to_ready();
+            rig.tick({harness::mode_cmd(Mode::Detumble)});
+            REQUIRE(rig.out.mode == Mode::Detumble);
+            rig.release(dir * kOneRevPerSecondDps);
+            double after = 0.0;
+            for (int i = 0; i < static_cast<int>(10.0 / kDt); ++i) {
+                rig.run(1);
+                if ((i + 1) * kDt >= 5.0) after = std::fmax(after, std::fabs(rig.box.rate_dps()));
+                REQUIRE(rig.out.mode == Mode::Detumble);   // no interlock on the way
+            }
+            CHECK(after < 5.0);
+            CHECK((rig.out.flags & kFlagMomentumSaturated) == 0u);
+        }
+    }
+}
+
+TEST_CASE("R4.4 DETUMBLE past the absorbable spin saturates the wheel without tripping an interlock")
+{
+    Params p = cascade_params();
+    p.rate_gain_scale = 1.0f;
+    BoxRig rig(p);
+    rig.arm_to_ready();
+    rig.tick({harness::mode_cmd(Mode::Detumble)});
+    rig.release(2.2 * kOneRevPerSecondDps);
+    for (int i = 0; i < static_cast<int>(8.0 / kDt); ++i) {
+        rig.run(1);
+        REQUIRE(rig.out.mode == Mode::Detumble);
+        CHECK(rig.ctl.wheel_ref_rpm() <= 4000.0f + 0.5f);
+        CHECK(rig.ctl.wheel_ref_rpm() >= 800.0f);
+    }
+    CHECK(rig.saw_saturated_flag);
+    CHECK(rig.out.latched == 0);
+}
+
+TEST_CASE("R4.4 DETUMBLE and READY run the same controller: identical wheel reference trajectories")
+{
+    // The same hand spin, once in READY and once in DETUMBLE, tick for tick.
+    // A DETUMBLE with a gain, limit, or bleed of its own makes the two differ.
+    auto trajectory = [](bool detumble) {
+        Params p = cascade_params();
+        p.rate_gain_scale = 1.0f;
+        BoxRig rig(p);
+        rig.box.friction_nm = 1e-3;
+        rig.arm_to_ready();
+        if (detumble) rig.tick({harness::mode_cmd(Mode::Detumble)});
+        else rig.tick();
+        rig.release(kOneRevPerSecondDps);
+        std::vector<float> ref;
+        for (int i = 0; i < static_cast<int>(3.0 / kDt); ++i) {
+            rig.run(1);
+            ref.push_back(rig.ctl.wheel_ref_rpm());
+        }
+        return ref;
+    };
+    const std::vector<float> a = trajectory(false);
+    const std::vector<float> b = trajectory(true);
+    REQUIRE(a.size() == b.size());
+    double worst = 0.0;
+    for (std::size_t i = 0; i < a.size(); ++i) worst = std::fmax(worst, std::fabs(a[i] - b[i]));
+    CHECK(worst == doctest::Approx(0.0).epsilon(1e-6));
+}

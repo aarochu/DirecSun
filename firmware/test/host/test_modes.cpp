@@ -458,3 +458,100 @@ TEST_CASE("HT-11 entering MANUAL throttle starts from the current throttle")
     rig.tick({mode_cmd(Mode::Manual, ManualInput::Throttle)});
     CHECK(rig.ctl.last_demand.manual_throttle == 260);
 }
+
+namespace {
+
+Params characterised_params()
+{
+    Params params;
+    params.ff_count = static_cast<uint8_t>(kFfPoints);
+    for (std::size_t i = 0; i < kFfPoints; ++i) {
+        params.ff_rpm[i] = 500.0f * static_cast<float>(i + 1);
+        params.ff_throttle[i] = 48.0f + params.ff_rpm[i] / 2.5f;
+    }
+    return params;
+}
+
+void to_ready(Rig &rig)
+{
+    rig.tick({cmd(CommandKind::Arm)});
+    rig.in.wheel_rpm_safe = rig.sup.params().omega_bias_rpm;
+    rig.run(ticks_from_ms(kSpinupDwellMs));
+    REQUIRE(rig.out.mode == Mode::Ready);
+}
+
+}  // namespace
+
+TEST_CASE("R4.4 DETUMBLE refusals carry their exact reasons from every state")
+{
+    SUBCASE("SAFE")
+    {
+        Rig rig(characterised_params());
+        rig.tick({mode_cmd(Mode::Detumble)});
+        CHECK(rig.last_reason() == "not in READY");
+    }
+    SUBCASE("SPINUP")
+    {
+        Rig rig(characterised_params());
+        rig.tick({cmd(CommandKind::Arm)});
+        rig.tick({mode_cmd(Mode::Detumble)});
+        CHECK(rig.last_reason() == "not in READY");
+        CHECK(rig.out.mode == Mode::Spinup);
+    }
+    SUBCASE("MANUAL, HOLD, SLEW, and DETUMBLE itself")
+    {
+        for (Mode m : {Mode::Manual, Mode::Hold, Mode::Slew, Mode::Detumble}) {
+            Rig rig(characterised_params());
+            to_ready(rig);
+            Command c = m == Mode::Manual ? mode_cmd(m, ManualInput::Throttle) : mode_cmd(m);
+            if (m == Mode::Slew) c.psi_ref_deg = 30.0f;
+            rig.tick({c});
+            REQUIRE(rig.out.mode == m);
+            rig.tick({mode_cmd(Mode::Detumble, ManualInput::None, kOperator, 77)});
+            CHECK(rig.last_reason() == "not in READY");
+            CHECK(rig.out.mode == m);
+        }
+    }
+    SUBCASE("a second client")
+    {
+        Rig rig(characterised_params());
+        to_ready(rig);
+        rig.tick({mode_cmd(Mode::Detumble, ManualInput::None, kViewer)});
+        CHECK(rig.last_reason() == "not controlling client");
+        CHECK(rig.out.mode == Mode::Ready);
+    }
+}
+
+TEST_CASE("R4.4 every way out of DETUMBLE behaves as it does from READY")
+{
+    enum class Way { Disarm, Estop, Heartbeat, Tilt, Underspeed, Battery };
+    for (Way way : {Way::Disarm, Way::Estop, Way::Heartbeat, Way::Tilt, Way::Underspeed, Way::Battery}) {
+        std::string seen[2];
+        for (int variant = 0; variant < 2; ++variant) {
+            Rig rig(characterised_params());
+            to_ready(rig);
+            if (variant == 1) {
+                rig.tick({mode_cmd(Mode::Detumble)});
+                REQUIRE(rig.out.mode == Mode::Detumble);
+            }
+            switch (way) {
+            case Way::Disarm: rig.tick({cmd(CommandKind::Disarm)}); break;
+            case Way::Estop: rig.tick({}, true); break;
+            case Way::Heartbeat:
+                rig.tick({cmd(CommandKind::Ping)});
+                rig.run(ticks_from_ms(kHeartbeatTimeoutMs) + 2, false);
+                break;
+            case Way::Tilt: rig.in.tilt_deg = 35.0f; rig.run(ticks_from_ms(300)); break;
+            case Way::Underspeed: rig.in.wheel_rpm_safe = 500.0f; rig.run(ticks_from_ms(kUnderspeedMs) + 4); break;
+            case Way::Battery: rig.in.vbat_avg_v = 8.0f; rig.run(ticks_from_ms(1200)); break;
+            }
+            char buf[96];
+            std::snprintf(buf, sizeof buf, "mode=%d ramping=%d latched=%u events=%u", static_cast<int>(rig.out.mode),
+                          rig.out.ramping, static_cast<unsigned>(rig.out.latched), static_cast<unsigned>(rig.out.events.count));
+            seen[variant] = buf;
+            CHECK(rig.out.mode == Mode::Safe);
+        }
+        CAPTURE(static_cast<int>(way));
+        CHECK(seen[0] == seen[1]);
+    }
+}
