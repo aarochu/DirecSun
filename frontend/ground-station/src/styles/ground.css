@@ -370,13 +370,78 @@
 
 .controls__directions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
 .controls__direction {
-  height: 56px;
-  font-size: 14px;
+  height: 48px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.modemenu {
+  position: relative;
+}
+
+.modemenu .controls__mode {
+  width: 100%;
+}
+
+.modemenu__list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 100%;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface-elevated);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.modemenu__list[hidden] {
+  display: none;
+}
+
+.modemenu__item {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  text-align: left;
+  white-space: nowrap;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.modemenu__item:hover,
+.modemenu__item:focus-visible {
+  color: var(--text);
+  background: var(--button-primary-hover);
+}
+
+.modemenu__tag {
+  margin-left: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.modemenu__item:disabled {
+  color: var(--text-muted);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.modemenu__item[aria-current='true'] {
+  color: var(--accent);
 }
 
 .controls__secondary {
@@ -427,7 +492,7 @@
   }
 
   .controls__directions {
-    grid-template-columns: repeat(2, minmax(200px, auto));
+    grid-template-columns: repeat(2, minmax(160px, auto)) minmax(110px, auto);
   }
 
   .controls__secondary {
@@ -730,4 +795,43 @@
   .sensors__chevron {
     transition: none;
   }
+}
+
+.gs-header,
+.gs-header .button,
+.gs-header .wordmark,
+.gs-header a,
+.gs-header p {
+  font-family: var(--font-mono);
+}
+
+.controls__manual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.controls__manual-label {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+}
+
+.controls__manual input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.controls__manual-value {
+  min-width: 7ch;
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--accent);
+}
+
+.controls__manual .button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 36px;
 }

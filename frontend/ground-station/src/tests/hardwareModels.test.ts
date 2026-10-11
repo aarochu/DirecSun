@@ -24,9 +24,10 @@ describe('hardware CAD views', () => {
       const view = hardwareViews[part.id];
       expect(view, `no view for ${part.id}`).toBeDefined();
       expect(view!.subject.length).toBeGreaterThan(0);
-      for (const name of [...view!.subject, ...view!.carrier]) {
+      for (const name of [...view!.subject, ...view!.carrier, ...(view!.focus ?? [])]) {
         expect(nodes.has(name), `${part.id}: node ${name} is not in the model`).toBe(true);
       }
+      expect((view!.focus ?? []).every((name) => view!.subject.includes(name)), part.id).toBe(true);
       expect(view!.subject.filter((name) => view!.carrier.includes(name))).toEqual([]);
     }
   });

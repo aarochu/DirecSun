@@ -107,6 +107,13 @@ body {
   border-bottom-color: var(--line-soft);
 }
 
+.site-header,
+.site-header .button,
+.site-header .wordmark,
+.site-header .site-nav__link {
+  font-family: var(--font-mono);
+}
+
 .site-header__inner {
   height: 100%;
   display: flex;
@@ -592,11 +599,21 @@ body {
   display: block;
 }
 
-.part__func {
+.part__bullets {
   margin-top: 12px;
-  font-size: 15px;
-  line-height: 1.5;
+  padding-left: 19px;
+  list-style: disc;
+  font-size: 14px;
+  line-height: 1.42;
   color: var(--text-secondary);
+}
+
+.part__bullets li + li {
+  margin-top: 6px;
+}
+
+.part__bullets li::marker {
+  color: var(--accent);
 }
 
 /* Component rail, after animejs.com's toolbox labels */
@@ -724,7 +741,10 @@ body {
 }
 
 .ticker__label {
-  min-width: 15ch;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 10px;
   white-space: nowrap;
 }
@@ -732,6 +752,7 @@ body {
 .ticker__track {
   position: relative;
   display: flex;
+  flex: 0 0 auto;
   gap: 4px;
   align-items: center;
   height: 12px;

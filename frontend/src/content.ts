@@ -7,7 +7,7 @@ export { cubesatModel, hardwareStack, imageAssets } from '@shared/data/assets';
 
 export const hero = {
   title: 'Control the attitude.',
-  lead: 'A small CubeSat for your desk. It’s built to track which way it’s facing and turn itself with a wheel spinning inside.',
+  lead: 'A desk-sized CubeSat that turns 90° on command, pauses, and comes back to where it started, steered by a reaction wheel inside.',
   primary: 'Open Ground Station',
   secondary: 'See how it works',
   scroll: 'SCROLL',
@@ -25,18 +25,58 @@ export const hardware = {
   intro: 'Here’s what each part does.',
 } as const;
 
-// One line per part, keyed by hardwareParts id.
-export const blurbs: Record<string, string> = {
-  frame: 'The 3D-printed body. It spins on two bearings around a fixed bolt.',
-  esp32s3: 'The brain. It reads the sensors, works out how to turn, and sends data to your browser.',
-  mpu6050: 'Measures how fast the body is spinning.',
-  qmc5883p: 'A compass. It gives the heading.',
-  op550: 'Two light sensors that show which side the lamp is on.',
-  a1104: 'Counts magnets on the flywheel to measure its speed.',
-  'reaction-wheel': 'The motor and flywheel. Spin it up and the body turns the other way.',
-  esc: 'Turns the brain’s commands into motor power.',
-  power: 'Eight AA batteries power everything.',
-  bmp280: 'Optional extra: temperature and pressure.',
+// Three quick takeaways per landing-page component, keyed by hardwareParts id.
+export const componentBullets: Record<string, readonly [string, string, string]> = {
+  frame: [
+    'The printed stack carries the boards, battery, and motor.',
+    'Two bearings let the body turn around a bolt that stays put.',
+    'That free yaw axis is where the wheel’s reaction torque shows up.',
+  ],
+  esp32s3: [
+    'It brings sensor readings together and decides what the wheel should do.',
+    'D8 talks to the ESC; D10 listens for flywheel speed pulses.',
+    'It also sends readings to your browser and enforces the safety stops.',
+  ],
+  mpu6050: [
+    'Its gyro tells us how quickly the body is turning.',
+    'It shares the I²C bus with the compass and pressure sensor.',
+    'That fast rate reading is the controller’s first clue during a turn.',
+  ],
+  qmc5883p: [
+    'This compass gives the box a longer-term heading reference.',
+    'It rides the same I²C bus, away from the motor.',
+    'After calibration, it can correct the gyro’s slow drift.',
+  ],
+  op550: [
+    'Two angled light sensors compare how bright each side is.',
+    'Their voltages reach the XIAO on D0 and D1.',
+    'After calibration, that difference can point the box toward a lamp.',
+  ],
+  a1104: [
+    'It spots the magnets passing on the spinning flywheel.',
+    'Each pulse reaches D10, giving the controller wheel-speed feedback.',
+    'The same reading helps catch a wheel that runs too fast.',
+  ],
+  'reaction-wheel': [
+    'The motor speeds the washer-filled flywheel up or down.',
+    'Three phase wires bring motor power from the ESC.',
+    'Change the wheel’s speed and the body turns the other way.',
+  ],
+  esc: [
+    'It turns digital DShot requests into three-phase motor drive.',
+    'Battery power arrives through the fuse; D8 carries the signal.',
+    'The Hall switch supplies the RPM reading that throttle alone cannot.',
+  ],
+  power: [
+    'Eight rechargeable AAs are the planned untethered supply.',
+    'After a fuse, the pack feeds the ESC and a 5 V regulator.',
+    'A voltage divider lets the box refuse to arm a low pack.',
+  ],
+  bmp280: [
+    'It measures room temperature and air pressure.',
+    'It shares the I²C bus with the gyro and compass.',
+    'Those readings are optional telemetry, not steering inputs.',
+  ],
 };
 
 // `parts` names the CAD solids each step highlights (the avionics deck carries
