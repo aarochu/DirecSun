@@ -45,7 +45,7 @@ export const hardwareStack = {
 // heading; the base hub and bolt stay fixed.
 export const groundStationModel: ModelAsset = {
   src: hardwareStack.src,
-  available: hardwareStack.available,
+  available: true,
   sourceFile: CAD_SOURCE,
   fixedNodePattern: /^(base|fixed|hub|bolt|stand)/i,
   yawOffsetDeg: 0,
