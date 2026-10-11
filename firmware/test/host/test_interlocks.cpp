@@ -1,13 +1,63 @@
 // HT-8 (interlocks, FD section 14) and HT-10 (HALL_SILENT, finding V-11).
 
+#include <algorithm>
 #include <random>
 
+#include "direcsun/core/control.hpp"
 #include "doctest.h"
 #include "supervisor_harness.hpp"
 
 using namespace harness;
 
 namespace {
+
+// A bench rig with the Hall sensor absent and the bypass forgotten: the box
+// believes the Hall is fitted, but no edge ever arrives and the speed reads 0.
+// Arms and runs the real rung-1 controller (pinged every 100 ms) until the box
+// drops to SAFE or `max_ticks` pass.
+struct SilentHallSpinup {
+    uint32_t trip_tick = 0;  // ticks after the arm tick; 0 if it never left SPINUP
+    int peak = 0;            // highest throttle sent
+    InterlockSet latched = 0;
+};
+
+SilentHallSpinup run_silent_hall_spinup(const Params &p, uint32_t max_ticks)
+{
+    Supervisor sup(p);
+    OpenLoopThrottleController ctl;
+    TickInputs in;
+    in.hall_edge_age_ms = UINT32_MAX;
+    in.wheel_rpm_safe = 0.0f;
+    in.vbat_avg_v = 10.4f;
+    in.built_inputs = kRungOneBuiltInputs;
+    TickOutputs out;
+    uint32_t now = 1000;
+    SilentHallSpinup r;
+    for (uint32_t k = 0; k <= max_ticks; ++k) {
+        Command c = cmd(k == 0 ? CommandKind::Arm : CommandKind::Ping);
+        const bool send = k == 0 || k % 50 == 0;
+        in.tick = ++now;
+        in.commands = send ? &c : nullptr;
+        in.command_count = send ? 1 : 0;
+        sup.step(in, ctl, out);
+        if (k == 0) REQUIRE(out.mode == Mode::Spinup);
+        r.peak = std::max(r.peak, out.throttle);
+        if (out.mode == Mode::Safe) {
+            r.trip_tick = k;
+            r.latched = out.latched;
+            break;
+        }
+    }
+    return r;
+}
+
+// The tick on which HALL_SILENT must trip: the open-loop ramp (200 units/s, so
+// 2.5 ticks per unit) first exceeds hall_expect_throttle at ceil(2.5 (h + 1)),
+// and that tick is the first of the 250 (500 ms) the interlock needs.
+uint32_t expected_hall_silent_tick(uint16_t hall_expect)
+{
+    return (5u * (hall_expect + 1u) + 1u) / 2u + ticks_from_ms(kHallSilentMs) - 1u;
+}
 
 struct FaultCase {
     const char *name;
@@ -318,4 +368,48 @@ TEST_CASE("HT-10 HALL_SILENT stays quiet with edges arriving or with throttle at
         rig.run(2000);
         CHECK(rig.out.mode == Mode::Spinup);
     }
+}
+
+// V-64. With the Hall fitted, SPINUP is exempt from UNDERSPEED, so HALL_SILENT
+// is the only thing that notices a missing or disconnected sensor (V-11). The
+// rung-1 ramp tops out at spinup_throttle, and HALL_SILENT arms only above
+// hall_expect_throttle, so every parameter set the box accepts must keep the
+// threshold below the target.
+TEST_CASE("HT-10 HALL_SILENT trips in SPINUP for every parameter set the box accepts")
+{
+    std::mt19937 rng(0x5117u);
+    int accepted = 0;
+    int refused = 0;
+    std::vector<std::pair<uint16_t, uint16_t>> sets = {{300, 200}, {49, 48}, {300, 299}, {2047, 2046}};
+    while (accepted < 300) {
+        Params p;
+        p.spinup_throttle = static_cast<uint16_t>(48 + rng() % 2000);
+        p.hall_expect_throttle = static_cast<uint16_t>(48 + rng() % 2000);
+        if (!validate_params(p).ok) {
+            ++refused;
+            continue;
+        }
+        ++accepted;
+        sets.emplace_back(p.spinup_throttle, p.hall_expect_throttle);
+    }
+    for (const auto &set : sets) {
+        CAPTURE(set.first);
+        CAPTURE(set.second);
+        Params p;
+        p.spinup_throttle = set.first;
+        p.hall_expect_throttle = set.second;
+        REQUIRE(validate_params(p).ok);
+        const uint32_t expected = expected_hall_silent_tick(p.hall_expect_throttle);
+        const SilentHallSpinup r = run_silent_hall_spinup(p, expected + 10);
+        CHECK(r.trip_tick == expected);
+        CHECK((r.latched & interlock_bit(Interlock::HallSilent)) != 0);
+        CHECK(r.peak <= p.spinup_throttle);
+    }
+    // The stock parameters trip 1.504 s after arm, at throttle 300.
+    const SilentHallSpinup stock = run_silent_hall_spinup(Params{}, 2000);
+    CHECK(stock.trip_tick == 752);
+    CHECK(stock.peak == 300);
+    // The instrument drew both kinds of set: about half the random pairs put
+    // the threshold at or above the target, and the box refused every one.
+    CHECK(refused > 200);
 }
