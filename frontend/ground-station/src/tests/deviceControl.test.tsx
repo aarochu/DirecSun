@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { ACK_TIMEOUT_MS, DeviceCommandError, DeviceLink, PING_INTERVAL_MS } from '../hardware/deviceLink';
-import { DeviceOperator, HOLD_MS, SLEW_EVENT_WAIT_MS, SLEW_WAIT_MS } from '../hardware/deviceOperator';
+import { DeviceOperator, HOLD_MS, MANUAL_PERIOD_MS, SLEW_EVENT_WAIT_MS, SLEW_WAIT_MS } from '../hardware/deviceOperator';
 import { ack, FakeSocket, modeEvent, tlm } from './fakeSocket';
 
 const flush = () => vi.advanceTimersByTimeAsync(0);
@@ -154,6 +154,76 @@ describe('DeviceOperator', () => {
     await sun;
     expect(operator.getState().result).toEqual({ tone: 'error', text: 'MODE REFUSED: not implemented' });
     expect(operator.getState().busy).toBeNull();
+  });
+
+  it('streams the manual setpoint every 100 ms while the box is in MANUAL, and stops when it leaves', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const manualFrames = () => socket.commands().filter((frame) => frame.cmd === 'manual');
+
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'rate' }));
+    expect(operator.getState().manual).toMatchObject({ input: 'rate', value: 0, min: -90, max: 90 });
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 3);
+    expect(manualFrames()).toHaveLength(3);
+    expect(manualFrames().every((frame) => frame.rate_dps === 0 && Object.keys(frame).length === 5)).toBe(true);
+
+    operator.setManual(30);
+    operator.setManual(500);
+    expect(operator.getState().manual?.value).toBe(90);
+    operator.setManual(30);
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS);
+    expect(manualFrames().at(-1)).toMatchObject({ cmd: 'manual', rate_dps: 30 });
+
+    socket.message(tlm({ psi_deg: 10, mode: 'READY', manual_input: null }));
+    expect(operator.getState().manual).toBeNull();
+    const count = manualFrames().length;
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 5);
+    expect(manualFrames()).toHaveLength(count);
+  });
+
+  it('uses the throttle band from the box, starts wheel input at the current speed, and e-stop stops the stream', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+    expect(operator.getState().manual).toMatchObject({ input: 'throttle', value: 150, min: 150, max: 400 });
+    operator.setManual(1000);
+    expect(operator.getState().manual?.value).toBe(400);
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS);
+    expect(socket.commands().filter((frame) => frame.cmd === 'manual').at(-1)).toMatchObject({ throttle: 400 });
+
+    operator.estop();
+    expect(operator.getState().manual).toBeNull();
+    const count = socket.commands().length;
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 5);
+    expect(socket.commands()).toHaveLength(count);
+  });
+
+  it('does not restart the stream from a MANUAL frame that arrives after e-stop or disarm', async () => {
+    for (const stop of ['estop', 'disarm'] as const) {
+      const { socket, operator } = armed();
+      await armAndReady(socket, operator);
+      socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+      await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS);
+
+      if (stop === 'estop') operator.estop();
+      else void operator.disarm();
+      const count = socket.commands().filter((frame) => frame.cmd === 'manual').length;
+      // The box's next frames still say MANUAL until its mode event lands.
+      socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+      await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 5);
+      expect(operator.getState().manual).toBeNull();
+      expect(socket.commands().filter((frame) => frame.cmd === 'manual')).toHaveLength(count);
+      operator.detach();
+    }
+  });
+
+  it('does not stream for throttle input when the box sends no throttle band', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle' }));
+    expect(operator.getState().manual).toBeNull();
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 3);
+    expect(socket.commands().filter((frame) => frame.cmd === 'manual')).toEqual([]);
   });
 
   it('does not change mode unless it controls the box in a mode that allows it', async () => {

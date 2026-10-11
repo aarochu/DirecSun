@@ -21,6 +21,7 @@ describe('parseTelemetry', () => {
       seq: 1042,
       tMs: 83120,
       mode: 'HOLD',
+      manualInput: null,
       headingDeg: 47.2,
       targetDeg: 47,
       rateDegS: 0.3,

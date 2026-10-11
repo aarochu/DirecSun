@@ -798,3 +798,34 @@
 .gs-header p {
   font-family: var(--font-mono);
 }
+
+.controls__manual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.controls__manual-label {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+}
+
+.controls__manual input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.controls__manual-value {
+  min-width: 7ch;
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--accent);
+}
+
+.controls__manual .button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 36px;
+}
