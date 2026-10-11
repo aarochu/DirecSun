@@ -2,8 +2,8 @@ import { ArrowLeft, ArrowRight, OctagonX, Power, PowerOff, Square } from 'lucide
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { DeviceLink } from '../hardware/deviceLink';
 import type { DeviceOperator, TurnPhase } from '../hardware/deviceOperator';
-import { ARMED_MODES, MODES, modeSpec } from '../hardware/modes';
-import { ModeMenu } from './ModeMenu';
+import { ARMED_MODES, armBlock, canEnter, choiceBlock, MANUAL_NUDGE, MODE_CHOICES, MODES, modeSpec, NEAR_LIMIT_GUIDANCE, RESPIN_FIRMWARE, RESPIN_RANGE_RPM, respinBlock } from '../hardware/modes';
+import { ModeMenu, type MenuEntry } from './ModeMenu';
 
 const SEQUENCE_STEPS: readonly { label: string; phases: readonly TurnPhase[] }[] = [
   { label: 'Turn 90°', phases: ['rotating'] },
@@ -37,6 +37,47 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
   const [pinIn, setPinIn] = useState(false);
   const confirmId = useId();
   const manualId = useId();
+  const slewId = useId();
+  const [slewOpen, setSlewOpen] = useState(false);
+  const [slewTarget, setSlewTarget] = useState('');
+  const [respinOpen, setRespinOpen] = useState(false);
+  const [respinRpm, setRespinRpm] = useState('');
+  const [respinPinned, setRespinPinned] = useState(false);
+  const respinId = useId();
+  const arming = armBlock(telemetry);
+  const respinBlocked = respinBlock(mode, telemetry);
+  const menuEntries: MenuEntry[] = [
+    ...MODE_CHOICES.map((choice) => {
+      const block = choiceBlock(choice, telemetry);
+      return {
+        label: choice.label,
+        disabled: !canEnter(choice.mode, mode) || block !== null,
+        current: choice.mode === mode && choice.input === undefined && !choice.needsTarget,
+        tag: block ?? (MODES[choice.mode].firmware === 'pending' ? 'Firmware pending' : undefined),
+        onPick: () => {
+          if (choice.needsTarget) {
+            setRespinOpen(false);
+            setSlewTarget('');
+            setSlewOpen(true);
+          } else {
+            void operator.setMode(choice.mode, choice.input);
+          }
+        },
+      };
+    }),
+    {
+      label: 'Respin wheel…',
+      disabled: respinBlocked !== null,
+      tag: respinBlocked ?? (RESPIN_FIRMWARE === 'pending' ? 'Firmware pending' : undefined),
+      separated: true,
+      onPick: () => {
+        setSlewOpen(false);
+        setRespinRpm('');
+        setRespinPinned(false);
+        setRespinOpen(true);
+      },
+    },
+  ];
   const manual = state.manual;
   const armedRef = useRef(armed);
   armedRef.current = armed;
@@ -47,20 +88,37 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
       event.preventDefault();
       operator.estop();
     };
+    const onArrow = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || !operator.getState().manual) return;
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
+      // Arrow keys inside the open mode menu navigate it; they must not move the setpoint.
+      if (target instanceof Element && target.closest('[role="menu"]')) return;
+      const step = event.key === 'ArrowUp' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowDown' || event.key === 'ArrowLeft' ? -1 : 0;
+      if (step === 0) return;
+      event.preventDefault();
+      operator.nudgeManual(step);
+    };
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.code !== 'Space' || !armedRef.current) return;
       event.preventDefault();
     };
     window.addEventListener('keydown', onKey, { capture: true });
     window.addEventListener('keyup', onKeyUp, { capture: true });
+    window.addEventListener('keydown', onArrow);
     return () => {
       window.removeEventListener('keydown', onKey, { capture: true });
       window.removeEventListener('keyup', onKeyUp, { capture: true });
+      window.removeEventListener('keydown', onArrow);
     };
   }, [operator]);
 
   useEffect(() => {
     if (mode !== 'SAFE') setConfirming(false);
+    if (mode !== 'READY') {
+      setSlewOpen(false);
+      setRespinOpen(false);
+    }
   }, [mode]);
 
   const turning = state.phase !== 'idle';
@@ -100,11 +158,7 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
             Rotate right 90°
             <ArrowRight strokeWidth={1.75} aria-hidden />
           </button>
-          <ModeMenu
-            mode={mode}
-            disabled={!state.controlling || turning || state.busy !== null || !(ARMED_MODES as readonly string[]).includes(mode ?? '')}
-            onSelect={(next, input) => void operator.setMode(next, input)}
-          />
+          <ModeMenu entries={menuEntries} disabled={!state.controlling || turning || state.busy !== null || !(ARMED_MODES as readonly string[]).includes(mode ?? '')} />
         </div>
         <div className="controls__secondary">
           <button
@@ -164,11 +218,12 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
           <input type="checkbox" checked={pinIn} onChange={(event) => setPinIn(event.target.checked)} />
           The lock pin is in, or someone is holding the box still. Arming spins the wheel up to its bias speed.
         </label>
+        {arming ? <p className="controls__result controls__result--error mono-label">{arming}</p> : null}
         <div className="controls__confirm-actions">
           <button
             type="button"
             className="button button--primary"
-            disabled={!pinIn || state.busy !== null}
+            disabled={!pinIn || state.busy !== null || arming !== null}
             onClick={() => {
               setConfirming(false);
               void operator.arm();
@@ -182,10 +237,80 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
         </div>
       </div>
 
+      {slewOpen ? (
+        <form
+          className="controls__slew"
+          aria-label="Slew to a heading"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setSlewOpen(false);
+            void operator.slewToHeading(Number(slewTarget));
+          }}
+        >
+          <label className="controls__manual-label mono-label" htmlFor={slewId}>
+            TARGET HEADING, DEG CLOCKWISE FROM THE LAST ZERO
+          </label>
+          <input
+            id={slewId}
+            className="controls__slew-input"
+            type="number"
+            min={-180}
+            max={180}
+            step={0.5}
+            required
+            autoFocus
+            value={slewTarget}
+            onChange={(event) => setSlewTarget(event.target.value)}
+          />
+          <button type="submit" className="button button--primary" disabled={slewTarget.trim() === '' || mode !== 'READY'}>
+            Slew
+          </button>
+          <button type="button" className="button button--quiet" onClick={() => setSlewOpen(false)}>
+            Cancel
+          </button>
+        </form>
+      ) : null}
+
+      {respinOpen ? (
+        <form
+          className="controls__slew"
+          aria-label="Respin the wheel"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setRespinOpen(false);
+            void operator.respin(respinRpm.trim() === '' ? null : Number(respinRpm));
+          }}
+        >
+          <label className="controls__manual-label mono-label" htmlFor={respinId}>
+            WHEEL START SPEED, RPM ({RESPIN_RANGE_RPM[0]} TO {RESPIN_RANGE_RPM[1]}; BLANK FOR THE BIAS SPEED)
+          </label>
+          <input
+            id={respinId}
+            className="controls__slew-input"
+            type="number"
+            min={RESPIN_RANGE_RPM[0]}
+            max={RESPIN_RANGE_RPM[1]}
+            step={50}
+            value={respinRpm}
+            onChange={(event) => setRespinRpm(event.target.value)}
+          />
+          <label className="controls__check">
+            <input type="checkbox" checked={respinPinned} onChange={(event) => setRespinPinned(event.target.checked)} />
+            The lock pin is in. The wheel changes speed and the reaction goes into the bench.
+          </label>
+          <button type="submit" className="button button--primary" disabled={!respinPinned || respinBlocked !== null}>
+            Respin
+          </button>
+          <button type="button" className="button button--quiet" onClick={() => setRespinOpen(false)}>
+            Cancel
+          </button>
+        </form>
+      ) : null}
+
       {manual ? (
         <div className="controls__manual" role="group" aria-label="Manual setpoint">
           <label className="controls__manual-label mono-label" htmlFor={manualId}>
-            {MANUAL_LABEL[manual.input]}
+            {MANUAL_LABEL[manual.input]} · ARROW KEYS NUDGE
           </label>
           <input
             id={manualId}
@@ -201,11 +326,19 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
             {manual.value}
             {MANUAL_UNIT[manual.input]}
           </output>
-          {manual.input === 'rate' ? (
-            <button type="button" className="button button--quiet" onClick={() => operator.setManual(0)}>
-              Zero
+          <div className="controls__manual-nudges">
+            <button type="button" className="button button--quiet" aria-label={`Lower the ${manual.input} setpoint`} onClick={() => operator.nudgeManual(-1)}>
+              −{MANUAL_NUDGE[manual.input]}
             </button>
-          ) : null}
+            <button type="button" className="button button--quiet" aria-label={`Raise the ${manual.input} setpoint`} onClick={() => operator.nudgeManual(1)}>
+              +{MANUAL_NUDGE[manual.input]}
+            </button>
+            {manual.input === 'rate' ? (
+              <button type="button" className="button button--quiet" onClick={() => operator.setManual(0)}>
+                Zero
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -221,7 +354,9 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
         ))}
       </ol>
 
-      <p className="controls__note mono-label">{guidance(mode, state.controlling)}</p>
+      <p className="controls__note mono-label">
+        {telemetry.flags.includes('MOMENTUM_NEAR_LIMIT') && state.controlling ? NEAR_LIMIT_GUIDANCE : guidance(mode, state.controlling)}
+      </p>
       <p
         className={`controls__result mono-label${state.result?.tone === 'error' ? ' controls__result--error' : ''}`}
         role="status"

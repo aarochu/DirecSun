@@ -428,6 +428,12 @@
   background: var(--button-primary-hover);
 }
 
+.modemenu__separated {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
 .modemenu__tag {
   margin-left: 10px;
   font-size: 10px;
@@ -830,8 +836,38 @@
   color: var(--accent);
 }
 
-.controls__manual .button {
+.controls__manual-nudges {
   grid-column: 1 / -1;
-  justify-self: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.controls__manual-nudges .button,
+.controls__slew .button {
   min-height: 36px;
+  padding: 0 14px;
+}
+
+.controls__slew {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.controls__slew .controls__manual-label {
+  flex-basis: 100%;
+}
+
+.controls__slew-input {
+  width: 9ch;
+  min-height: 36px;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
 }
