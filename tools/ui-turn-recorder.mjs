@@ -24,6 +24,11 @@
 //          turns once; the watch page then presses E-stop; the operator re-arms
 //          after the ramp-down and closes its page, and the watch page's tlm
 //          shows HEARTBEAT_LOST about 1 s after the operator's last ping
+//   hidden arm, then put another tab in front of the ground station for 30 s and
+//          bring it back: the box must still be READY (no HEARTBEAT_LOST). Needs
+//          --headed: headless Chrome never hides a page (a background tab and a
+//          minimized window both stay "visible", with exact timers), so the
+//          scenario fails if the page was not hidden
 //
 // SAFETY. Against any box that is not on a loopback address this arms the real
 // box and spins the wheel. The recorder refuses unless --real-box-go is given,
@@ -44,7 +49,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SCENARIOS = new Set(["turn", "stop", "estop", "watch"]);
+const SCENARIOS = new Set(["turn", "stop", "estop", "watch", "hidden"]);
 const GPU_ARGS = ["--use-angle=vulkan", "--enable-features=Vulkan", "--ignore-gpu-blocklist", "--enable-gpu"];
 
 function parseArgs(argv) {
@@ -66,7 +71,7 @@ function parseArgs(argv) {
     else throw new Error(`unknown argument ${key}`);
   }
   if (!args.ui || !args.box || !args.out || !SCENARIOS.has(args.scenario)) {
-    throw new Error("usage: ui-turn-recorder.mjs --ui URL --box WS_URL --scenario turn|stop|estop|watch --out DIR");
+    throw new Error("usage: ui-turn-recorder.mjs --ui URL --box WS_URL --scenario turn|stop|estop|watch|hidden --out DIR");
   }
   if (!Number.isInteger(args.turns) || args.turns < 1) throw new Error("--turns must be a positive integer");
   return args;
@@ -111,6 +116,7 @@ async function main() {
   const lastPing = {};
   let recording = true;  // off before the end screenshots, which stall the pages' timers
   const watchTlm = [];
+  const latestTlm = {};
 
   const browser = await chromium.launch({ channel: "chrome", headless: !args.headed, args: GPU_ARGS });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -129,6 +135,7 @@ async function main() {
         }
         const t = now();
         if (dir === "tx" && frame.type === "ping") lastPing[name] = t;
+        if (dir === "rx" && frame.type === "tlm") latestTlm[name] = frame;
         if (name === "watch" && dir === "rx" && frame.type === "tlm") watchTlm.push({ t, frame });
         framesOut.write(`${JSON.stringify({ t, page: name, dir, frame })}\n`);
       };
@@ -182,7 +189,19 @@ async function main() {
     await page.getByRole("group", { name: "Confirm arming" }).getByRole("checkbox").check();
     await page.getByRole("button", { name: "Arm now" }).click();
   }
-  async function armToReady(page) {
+  async function wheelStopped(name) {
+    // As an operator would: arm only once any ramp-down has ended, which the
+    // box shows as SAFE at throttle 0 (it refuses arm during the ramp).
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const t = latestTlm[name];
+      if (t && t.mode === "SAFE" && t.throttle === 0) return;
+      await sleep(50);
+    }
+    throw new Error(`${name}: the box did not show SAFE at throttle 0 within 8 s`);
+  }
+  async function armToReady(page, name = "operator") {
+    await wheelStopped(name);
     await arm(page);
     await waitStatus(page, "READY / DEVICE", 20000);
   }
@@ -243,6 +262,23 @@ async function main() {
       meta.results.push({ t: now(), turn: "re-arm", result: text });
       console.log(`ui-turn-recorder: re-arm inside the ramp-down: ${text}`);
       if (text !== "ARM REFUSED: ramp-down in progress") failures.push(`re-arm: ${text}`);
+    } else if (args.scenario === "hidden") {
+      const cover = await context.newPage();
+      await cover.goto("about:blank");
+      await cover.bringToFront();
+      await sleep(1000);
+      const visibility = await operator.evaluate(() => document.visibilityState);
+      meta.hidden = { visibility, from_ms: now() };
+      await sleep(30000);
+      meta.hidden.until_ms = now();
+      await operator.bringToFront();
+      await sleep(1000);
+      const text = await status(operator);
+      meta.results.push({ t: now(), turn: "hidden", result: text });
+      console.log(`ui-turn-recorder: the ground station was ${visibility} for 30 s behind another tab; now ${text}`);
+      if (visibility !== "hidden") failures.push(`the page stayed ${visibility} behind another tab: run with --headed`);
+      if (text !== "READY / DEVICE") failures.push(`after 30 s behind another tab the status is ${text}`);
+      await disarm(operator);
     } else if (args.scenario === "watch") {
       const text = await turn(operator, 1);
       console.log(`ui-turn-recorder: watched turn: ${text}`);
