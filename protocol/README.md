@@ -29,7 +29,7 @@ Rules the schema enforces, so drift fails loudly:
 - `cmd manual` carries exactly one of `throttle`, `wheel_rpm`, `rate_dps`.
 - `set_params` cannot carry `omega_cap_rpm` or Wi-Fi settings.
 
-Ranges that depend on other values (a monotonic feed-forward table, the bias between the limits, the clamp bands) are checked by the box, not by the schema.
+Ranges that depend on other values (a monotonic feed-forward table, the bias between the limits, the clamp bands, `hall_expect_throttle` below `spinup_throttle`) are checked by the box, not by the schema.
 
 ## Fixtures
 
@@ -59,6 +59,8 @@ Either way, the schema, FD section 15, `ground/link/`, `tools/mock-box.py`, and 
 | 2026-10-10 | Events go only to clients that have sent at least one message (R3.5). A read-only viewer, like the main UI's device link today, receives only `tlm`, so its ignored-frame count stays 0 | Delivery rule, no schema change |
 | 2026-10-10 | Refusal reasons are fixed strings (FD section 15.3), and an `ack` for a frame with no readable `seq` (too large, malformed JSON) carries `seq` 0. `mag_deg` is null until magnetometer heading exists (Set 5) | Clarification, stays v1 |
 | 2026-10-10 | `tlm` may carry `throttle_band`: `[lo, hi]`, the band the box clamps MANUAL throttle setpoints into (`manual_throttle_min`, `manual_throttle_max`, with the top capped at 400 while the Hall is bypassed), or `null` until known (R3.7). The bench console draws its slider from it; the main UI may ignore it | Additive, stays v1 |
+| 2026-10-10 | `set_params` is refused with `invalid param: hall_expect_throttle` unless `hall_expect_throttle` stays below `spinup_throttle`, so the Hall-silent interlock arms in every spin-up. This holds for the merged set, so lowering `spinup_throttle` alone to the stored threshold is refused too; send both in one update. A stored set that breaks the rule loads the defaults (`PARAMS_RESET` `invalid`). FD section 16, V-64 | Box rule, no schema change |
+| 2026-10-10 | `set_params` is refused with the existing reason `ramp-down in progress` while the 5 s ramp-down after an e-stop, `disarm`, or heartbeat loss runs. The box reports `SAFE` then, with a non-zero `throttle`; wait for `throttle` 0. FD section 16, V-65 | Box rule, no schema change |
 | 2026-10-10 | `set_params` accepts `bench_underspeed_rpm` and `bench_cap_rpm` (numbers; 0 clears; bench mode only, never persisted, cleared when bench mode turns off). `tlm.flags` may contain `WHEEL_STEP` while a bench `wheel_step` hold is active, and `wheel_ref_rpm` is nonzero while the closed wheel loop runs (R3.8) | Additive, stays v1 |
 | 2026-10-10 | `set_params` accepts `rate_gain_scale` (number 0..1, default 0.2, persisted), which multiplies `k_omega` and `k_i`. In READY the rate loop runs: `tau_cmd_mNm` is its commanded torque, and `tlm.flags` may contain `MOMENTUM_SATURATED` while the wheel reference sits on a limit in the direction the loop needs (R3.9) | Additive, stays v1 |
 | 2026-10-10 | `tlm.flags` may contain `HEADING_GYRO`, set on every frame until Set 5: `psi_deg` is integrated from the gyro alone. `psi_deg`, `psi_ref_deg`, and SLEW's `psi_ref_deg` are relative to the last `zero_heading`, which the box accepts in SAFE and READY only and refuses elsewhere with `not in SAFE or READY` (R4.2). A UI should not present the heading as a compass bearing while the flag is set | Additive and clarification, stays v1 |

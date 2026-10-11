@@ -31,8 +31,11 @@ InterlockSet InterlockMonitor::evaluate(const FaultInputs &in, const Params &par
         faults |= interlock_bit(Interlock::Overspeed);
     }
 
+    // A tick that missed alarms saw the condition only now; it is counted for
+    // the whole interval since the previous tick, so a trip comes early, never
+    // late (V-66).
     if (in.hall_installed && in.underspeed_applies && in.wheel_rpm_safe < effective_underspeed_rpm(params)) {
-        ++underspeed_ticks_;
+        underspeed_ticks_ += in.elapsed_ticks;
     } else {
         underspeed_ticks_ = 0;
     }
@@ -46,7 +49,7 @@ InterlockSet InterlockMonitor::evaluate(const FaultInputs &in, const Params &par
     // HALL_SILENT (finding V-11): the throttle has been high enough for the
     // wheel to turn above the low limit for 500 ms, and no edge arrived.
     if (in.hall_installed && in.throttle > params.hall_expect_throttle) {
-        ++throttle_high_ticks_;
+        throttle_high_ticks_ += in.elapsed_ticks;
     } else {
         throttle_high_ticks_ = 0;
     }

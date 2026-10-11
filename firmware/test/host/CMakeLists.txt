@@ -51,6 +51,7 @@ if(DIRECSUN_HT_SELFTEST)
     # tools/host-test.sh --selftest runs each one and requires the test that
     # guards that mechanism to fail, proving the test can see the defect.
     foreach(mutant NO_LATCH NO_BYPASS_CLAMP NO_STILL_GATE ABSOLUTE_STILLNESS NO_WIRE_SIGN NO_SPINUP_RAMP
+            NO_HALL_EXPECT_RULE PARAMS_DURING_RAMP TICKS_NOT_ALARMS DURATIONS_PER_STEP
             NO_WHEEL_ANTIWINDUP RATE_SIGN_FLIP NO_RATE_ANTIWINDUP NO_RATE_BLEED FLOOR_AT_LOW RAW_RATE_HEADING)
         string(TOLOWER "${mutant}" mutant_lower)
         direcsun_host_test_target(host_tests_mutant_${mutant_lower})

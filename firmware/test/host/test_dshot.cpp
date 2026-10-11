@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "direcsun/core/dshot.hpp"
+#include "direcsun/core/interlocks.hpp"
 #include "doctest.h"
 
 using namespace direcsun;
@@ -118,4 +119,15 @@ TEST_CASE("dshot_frame_from_pulses needs exactly 16 pulses")
     CHECK_FALSE(dshot_frame_from_pulses(nullptr, 16, 150, &frame));
     CHECK(dshot_frame_from_pulses(pulses.data(), 16, 150, &frame));
     CHECK(frame == 0);
+}
+
+TEST_CASE("HT-1: the supervisor's DShot limits are the framing limits")
+{
+    // This file includes dshot.hpp and interlocks.hpp together, which did not
+    // compile while each header defined its own kDshotMinThrottle (an int and a
+    // uint16_t). Now there is one definition, seen through both.
+    CHECK(kDshotMinThrottle == 48);
+    CHECK(kDshotMaxThrottle == 2047);
+    CHECK(kDshotMaxThrottle == kDshotMaxValue);
+    CHECK(kBypassThrottleMax < kDshotMaxThrottle);
 }

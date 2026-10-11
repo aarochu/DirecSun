@@ -4,6 +4,12 @@
 #include <cstdio>
 #include <cstring>
 
+// Mutation-test switch (host selftest builds only): drops the rule that keeps
+// HALL_SILENT armed in SPINUP, so the HT-10 property test must notice.
+#if defined(ESP_PLATFORM) && defined(DIRECSUN_MUTANT_NO_HALL_EXPECT_RULE)
+#error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
+#endif
+
 namespace direcsun {
 
 namespace {
@@ -79,6 +85,15 @@ ParamsResult validate_params(const Params &p)
     if (p.manual_throttle_min >= p.manual_throttle_max) return invalid("manual_throttle_min");
     if (p.spinup_throttle < 48 || p.spinup_throttle > 2047) return invalid("spinup_throttle");
     if (p.hall_expect_throttle < 48 || p.hall_expect_throttle > 2047) return invalid("hall_expect_throttle");
+#ifndef DIRECSUN_MUTANT_NO_HALL_EXPECT_RULE
+    // HALL_SILENT must arm in every SPINUP (finding V-64). SPINUP is exempt from
+    // UNDERSPEED, so with the Hall fitted but silent HALL_SILENT is the only
+    // stop (V-11), and it arms only above hall_expect_throttle while rung 1's
+    // ramp tops out at spinup_throttle. The intended values agree: the threshold
+    // is FF(omega_low), and spinup_throttle drives the wheel toward the bias, at
+    // least 400 rpm faster.
+    if (p.hall_expect_throttle >= p.spinup_throttle) return invalid("hall_expect_throttle");
+#endif
 
     // The Hall bench bypass exists only inside bench mode.
     if (!p.hall_installed && !p.bench_mode) return fail("bench_mode required", "hall_installed");
