@@ -1,0 +1,530 @@
+5752.429427 rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+5752.429713 Saved PC:0x40382836
+5752.431038 SPIWP:0xee
+5752.433053 mode:DIO, clock div:1
+5752.433202 load:0x3fce2820,len:0x14f0
+5752.436545 load:0x403c8700,len:0xda0
+5752.438938 load:0x403cb700,len:0x2f58
+5752.446516 entry 0x403c8908
+5752.452417 I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+5752.452417 I (24) boot: compile time Oct 10 2026 17:28:13
+5752.452417 I (25) boot: Multicore bootloader
+5752.454569 I (25) boot: chip revision: v0.2
+5752.458384 I (27) boot: efuse block revision: v1.4
+5752.462091 I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+5752.465907 I (35) boot.esp32s3: SPI Mode       : DIO
+5752.471503 I (39) boot.esp32s3: SPI Flash Size : 8MB
+5752.473976 I (42) boot: Enabling RNG early entropy source...
+5752.476671 I (47) boot: Partition Table:
+5752.483155 I (49) boot: ## Label            Usage          Type ST Offset   Length
+5752.489758 I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+5752.496028 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+5752.503027 I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+5752.506064 I (75) boot: End of partition table
+5752.515146 I (79) esp_image: segment 0: paddr=00010020 vaddr=3c030020 size=0fdb8h ( 64952) map
+5752.525708 I (98) esp_image: segment 1: paddr=0001fde0 vaddr=3fc9b000 size=00238h (   568) load
+5752.528509 I (98) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=216cch (136908) map
+5752.554138 I (126) esp_image: segment 3: paddr=000416f4 vaddr=3fc9b238 size=03c48h ( 15432) load
+5752.557267 I (130) esp_image: segment 4: paddr=00045344 vaddr=40378000 size=12fbch ( 77756) load
+5752.574695 I (147) esp_image: segment 5: paddr=00058308 vaddr=50000004 size=00024h (    36) load
+5752.582936 I (155) boot: Loaded app from partition at offset 0x10000
+5752.583096 I (156) boot: Disabling RNG early entropy source...
+5752.593138 I (166) cpu_start: Multicore app
+5752.601686 I (174) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+5752.602200 I (175) cpu_start: Pro cpu start user code
+5752.603623 I (175) cpu_start: cpu freq: 240000000 Hz
+5752.607441 I (176) app_init: Application information:
+5752.611455 I (180) app_init: Project name:     direcsun
+5752.615880 I (184) app_init: App version:      1128a41-dirty
+5752.620970 I (189) app_init: Compile time:     Oct 10 2026 17:28:26
+5752.625370 I (194) app_init: ELF file SHA256:  8f07bf892...
+5752.629019 I (198) app_init: ESP-IDF:          v6.0
+5752.632694 I (202) efuse_init: Min chip rev:     v0.0
+5752.636743 I (205) efuse_init: Max chip rev:     v0.99
+5752.641089 I (209) efuse_init: Chip rev:         v0.2
+5752.649155 I (213) heap_init: Initializing. RAM available for dynamic allocation:
+5752.652096 I (220) heap_init: At 3FCA0E00 len 00048910 (290 KiB): RAM
+5752.657844 I (225) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+5752.662488 I (230) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+5752.667710 I (235) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+5752.671129 I (241) spi_flash: detected chip: gd
+5752.674091 I (244) spi_flash: flash io: dio
+5752.680080 I (247) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+5752.687261 I (253) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+5752.690039 I (260) main_task: Started on CPU0
+5752.693639 I (263) main_task: Calling app_main()
+5752.702996 I (276) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+5752.704882 I (276) direcsun: DirecSun flight firmware
+5752.710087 I (278) direcsun: firmware 1128a41-dirty, ESP-IDF v6.0
+5752.715711 I (283) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+5752.720916 I (289) direcsun: flash 8MB configured, 8MB detected
+5752.725092 I (293) direcsun: reset reason: USB peripheral (11)
+5752.730941 I (298) direcsun: DShot150 zeros on GPIO7 from 35299 us after boot
+5752.737123 W (304) direcsun: parameters reset to defaults (missing)
+5752.741950 I (309) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+5752.750859 I (315) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+5752.759249 I (324) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea568).
+5752.766407 I (331) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea568 (SDA=5, SCL=6, ref_count=0)
+5752.777493 I (339) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+5752.784322 I (348) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fceaadc, Speed: 400000 Hz).
+5752.791337 I (359) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+5752.794875 I (364) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+5752.798432 I (368) QMC5883P: QMC5883P Chip ID: 0x80
+5752.808874 I (381) QMC5883P: QMC5883P initialized successfully
+5752.810239 I (382) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+5752.814924 I (383) direcsun: magnetometer: ESP_OK (chip ID 0x80)
+5752.823926 I (388) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fceaba4, Speed: 400000 Hz).
+5752.829198 I (401) baro: BMP280 chip ID 0x58 at 0x77, 400000 Hz SCL
+5752.833302 I (402) direcsun: barometer: ESP_OK (chip ID 0x58)
+5752.840831 I (407) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+5752.848241 I (414) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+5752.859149 I (421) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+5753.705445 I (1277) direcsun: gyro z bias seeded at -2.080 deg/s from 424 still samples (range 0.122); accel reference 1.156 g (norm 1.150 to 1.160)
+5753.713658 I (1278) direcsun: boot window done: 502 DShot frames sent, battery 9.08 V over 43 readings
+5753.717540 I (1287) main_task: Returned from app_main()
+5753.723935 I (1287) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+5753.733617 I (1297) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+5754.966163 I (2537) status: s 1 ticks 501 missed 0 (total 0) loop_us_max 950 dev_max_us 0 p99_dev_us 0 dshot sent 1019 dropped 0 imu_invalid 0
+5754.976180 I (2537) status: mode SAFE throttle 0 vbat 9.77 rate 0.01 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5754.987176 I (2549) stages: s 1 max/mean us imu 697/455 mag 274/207 adc 99/49 hall 3/1 est 40/6 sup 18/4 dshot 23/15 out 13/0 snap 71/8
+5755.739703 I (3310) status: s 2 ticks 500 missed 0 (total 0) loop_us_max 938 dev_max_us 4 p99_dev_us 0 dshot sent 1519 dropped 0 imu_invalid 0
+5755.749386 I (3310) status: mode SAFE throttle 0 vbat 9.78 rate 0.01 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5755.773123 I (3322) stages: s 2 max/mean us imu 691/455 mag 279/207 adc 59/48 hall 3/1 est 9/6 sup 6/4 dshot 19/15 out 2/0 snap 11/7
+5756.759151 I (4332) status: s 3 ticks 500 missed 0 (total 0) loop_us_max 909 dev_max_us 2 p99_dev_us 0 dshot sent 2019 dropped 0 imu_invalid 0
+5756.771268 I (4332) status: mode SAFE throttle 0 vbat 9.79 rate -0.06 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5756.783328 I (4344) stages: s 3 max/mean us imu 661/455 mag 276/206 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5757.781042 I (5354) status: s 4 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 2519 dropped 0 imu_invalid 0
+5757.796173 I (5354) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5757.803428 I (5365) stages: s 4 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/2 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5758.803191 I (6376) status: s 5 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 3019 dropped 0 imu_invalid 0
+5758.814487 I (6376) status: mode SAFE throttle 0 vbat 9.80 rate -0.06 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5758.825476 I (6388) stages: s 5 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 2/0 snap 11/7
+5759.825244 I (7398) status: s 6 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 2 p99_dev_us 0 dshot sent 3519 dropped 0 imu_invalid 0
+5759.836395 I (7398) status: mode SAFE throttle 0 vbat 9.81 rate -0.06 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5759.847466 I (7410) stages: s 6 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5760.850182 I (8420) status: s 7 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 4019 dropped 0 imu_invalid 0
+5760.859211 I (8420) status: mode SAFE throttle 0 vbat 9.81 rate -0.06 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5760.870540 I (8432) stages: s 7 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5761.869282 I (9442) status: s 8 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 2 p99_dev_us 0 dshot sent 4519 dropped 0 imu_invalid 0
+5761.880672 I (9442) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5761.896980 I (9453) stages: s 8 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 11/7
+5762.891246 I (10464) status: s 9 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 5019 dropped 0 imu_invalid 0
+5762.902540 I (10464) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5762.914129 I (10476) stages: s 9 max/mean us imu 658/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 11/7
+5763.915155 I (11487) status: s 10 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 5519 dropped 0 imu_invalid 0
+5763.925588 I (11487) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5763.936942 I (11499) stages: s 10 max/mean us imu 657/455 mag 276/207 adc 55/48 hall 3/1 est 7/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5764.937260 I (12510) status: s 11 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 6019 dropped 0 imu_invalid 0
+5764.948535 I (12510) status: mode SAFE throttle 0 vbat 9.82 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5764.959722 I (12522) stages: s 11 max/mean us imu 658/455 mag 276/207 adc 52/48 hall 3/2 est 8/6 sup 6/4 dshot 17/15 out 2/0 snap 10/7
+5765.960731 I (13533) status: s 12 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 6519 dropped 0 imu_invalid 0
+5765.972188 I (13533) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5765.997317 I (13545) stages: s 12 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5766.985170 I (14556) status: s 13 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 3 p99_dev_us 0 dshot sent 7019 dropped 0 imu_invalid 0
+5766.995166 I (14556) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5767.006357 I (14568) stages: s 13 max/mean us imu 657/455 mag 278/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5767.756939 I (15329) status: s 14 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 7519 dropped 0 imu_invalid 0
+5767.767534 I (15329) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 166.9 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5767.779173 I (15341) stages: s 14 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5768.779292 I (16352) status: s 15 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 8019 dropped 0 imu_invalid 0
+5768.791214 I (16352) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5768.803419 I (16364) stages: s 15 max/mean us imu 657/455 mag 278/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5769.804154 I (17375) status: s 16 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 8519 dropped 0 imu_invalid 0
+5769.814940 I (17375) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5769.825433 I (17387) stages: s 16 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5770.825455 I (18398) status: s 17 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 9019 dropped 0 imu_invalid 0
+5770.836442 I (18398) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5770.848152 I (18410) stages: s 17 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5771.847966 I (19421) status: s 18 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 9519 dropped 0 imu_invalid 0
+5771.859628 I (19421) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5771.870642 I (19433) stages: s 18 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 11/7
+5772.875826 I (20444) status: s 19 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 10019 dropped 0 imu_invalid 0
+5772.883346 I (20444) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 167.0 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5772.893722 I (20456) stages: s 19 max/mean us imu 658/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5773.894065 I (21467) status: s 20 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 10519 dropped 0 imu_invalid 0
+5773.909764 I (21467) status: mode SAFE throttle 0 vbat 9.82 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5773.916697 I (21479) stages: s 20 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 7/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5774.917222 I (22490) status: s 21 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 11019 dropped 0 imu_invalid 0
+5774.928826 I (22490) status: mode SAFE throttle 0 vbat 9.82 rate 0.00 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5774.940145 I (22502) stages: s 21 max/mean us imu 658/455 mag 276/205 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 2/0 snap 10/7
+5775.942513 I (23513) status: s 22 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 11519 dropped 0 imu_invalid 0
+5775.955152 I (23513) status: mode SAFE throttle 0 vbat 9.82 rate -0.06 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5775.962800 I (23525) stages: s 22 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5776.963248 I (24536) status: s 23 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 12019 dropped 0 imu_invalid 0
+5776.978469 I (24536) status: mode SAFE throttle 0 vbat 9.82 rate 0.00 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5776.985808 I (24548) stages: s 23 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5777.986014 I (25559) status: s 24 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 12519 dropped 0 imu_invalid 0
+5777.997965 I (25559) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5778.009059 I (25571) stages: s 24 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5778.759052 I (26332) status: s 25 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 13019 dropped 0 imu_invalid 0
+5778.770414 I (26332) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5778.781810 I (26344) stages: s 25 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5779.782171 I (27355) status: s 26 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 13519 dropped 0 imu_invalid 0
+5779.795983 I (27355) status: mode SAFE throttle 0 vbat 9.80 rate 0.00 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5779.806945 I (27367) stages: s 26 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5780.806199 I (28378) status: s 27 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 14019 dropped 0 imu_invalid 0
+5780.819129 I (28378) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5780.828123 I (28390) stages: s 27 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5781.827903 I (29401) status: s 28 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 14519 dropped 0 imu_invalid 0
+5781.839535 I (29401) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5781.850629 I (29413) stages: s 28 max/mean us imu 657/455 mag 276/205 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5782.850886 I (30424) status: s 29 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 15019 dropped 0 imu_invalid 0
+5782.863183 I (30424) status: mode SAFE throttle 0 vbat 9.82 rate -0.06 bias -2.08 tilt 166.6 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5782.874225 I (30436) stages: s 29 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5783.873846 I (31447) status: s 30 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 15519 dropped 0 imu_invalid 0
+5783.885465 I (31447) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5783.896635 I (31459) stages: s 30 max/mean us imu 657/455 mag 276/207 adc 52/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5784.897075 I (32470) status: s 31 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 16019 dropped 0 imu_invalid 0
+5784.910219 I (32470) status: mode SAFE throttle 0 vbat 9.82 rate 0.00 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5784.919577 I (32482) stages: s 31 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5785.920235 I (33493) status: s 32 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 16519 dropped 0 imu_invalid 0
+5785.931386 I (33493) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5785.943181 I (33505) stages: s 32 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5786.943440 I (34516) status: s 33 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 17019 dropped 0 imu_invalid 0
+5786.954695 I (34516) status: mode SAFE throttle 0 vbat 9.81 rate 0.00 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5786.966024 I (34528) stages: s 33 max/mean us imu 657/455 mag 278/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5787.965978 I (35539) status: s 34 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 17519 dropped 0 imu_invalid 0
+5787.977278 I (35539) status: mode SAFE throttle 0 vbat 9.83 rate 0.01 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5787.988439 I (35551) stages: s 34 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5788.738834 I (36312) status: s 35 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 4 p99_dev_us 0 dshot sent 18019 dropped 0 imu_invalid 0
+5788.750312 I (36312) status: mode SAFE throttle 0 vbat 9.82 rate 0.01 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5788.761442 I (36324) stages: s 35 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 11/7
+5789.765600 I (37335) status: s 36 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 18519 dropped 0 imu_invalid 0
+5789.773308 I (37335) status: mode SAFE throttle 0 vbat 9.82 rate 0.01 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5789.784660 I (37347) stages: s 36 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5790.786975 I (38358) status: s 37 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 19019 dropped 0 imu_invalid 0
+5790.796247 I (38358) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro ok
+5790.809267 I (38370) stages: s 37 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5791.808120 I (39381) status: s 38 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 2 p99_dev_us 0 dshot sent 19519 dropped 0 imu_invalid 0
+5791.819466 I (39381) status: mode SAFE throttle 0 vbat 9.78 rate -0.05 bias -2.08 tilt 166.3 psi -11.4 wheel 0 latched 0x0040 flags 0x00 baro ok
+5791.831704 I (39393) stages: s 38 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5792.831358 I (40404) status: s 39 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 20019 dropped 0 imu_invalid 0
+5792.842362 I (40404) status: mode SAFE throttle 0 vbat 9.78 rate 0.03 bias -2.10 tilt 169.7 psi -10.6 wheel 0 latched 0x0040 flags 0x00 baro ok
+5792.855210 I (40416) stages: s 39 max/mean us imu 657/455 mag 276/206 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 19/15 out 1/0 snap 10/7
+5793.853715 I (41427) status: s 40 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 20519 dropped 0 imu_invalid 0
+5793.865334 I (41427) status: mode SAFE throttle 0 vbat 9.77 rate 0.03 bias -2.10 tilt 169.8 psi -10.6 wheel 0 latched 0x0040 flags 0x00 baro ok
+5793.877214 I (41439) stages: s 40 max/mean us imu 657/455 mag 276/207 adc 52/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5794.877031 I (42450) status: s 41 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 21019 dropped 0 imu_invalid 0
+5794.888349 I (42450) status: mode SAFE throttle 0 vbat 9.79 rate 0.02 bias -2.10 tilt 169.8 psi -10.6 wheel 0 latched 0x0040 flags 0x00 baro ok
+5794.899476 I (42462) stages: s 41 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5795.900143 I (43473) status: s 42 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 21519 dropped 0 imu_invalid 0
+5795.911629 I (43473) status: mode SAFE throttle 0 vbat 9.78 rate 0.02 bias -2.09 tilt 169.8 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5795.922833 I (43485) stages: s 42 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5796.926194 I (44496) status: s 43 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 22019 dropped 0 imu_invalid 0
+5796.934326 I (44496) status: mode SAFE throttle 0 vbat 9.77 rate 0.08 bias -2.09 tilt 169.9 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5796.947137 I (44508) stages: s 43 max/mean us imu 657/455 mag 278/206 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5797.946231 I (45519) status: s 44 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 22519 dropped 0 imu_invalid 0
+5797.958167 I (45519) status: mode SAFE throttle 0 vbat 9.78 rate 0.01 bias -2.08 tilt 169.9 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5797.968529 I (45531) stages: s 44 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5798.969155 I (46542) status: s 45 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 23019 dropped 0 imu_invalid 0
+5798.981065 I (46542) status: mode SAFE throttle 0 vbat 9.77 rate 0.01 bias -2.08 tilt 169.9 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5798.992323 I (46554) stages: s 45 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5799.742539 I (47315) status: s 46 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 23519 dropped 0 imu_invalid 0
+5799.754332 I (47315) status: mode SAFE throttle 0 vbat 9.77 rate -0.05 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5799.765974 I (47327) stages: s 46 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5800.764557 I (48338) status: s 47 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 24019 dropped 0 imu_invalid 0
+5800.776218 I (48338) status: mode SAFE throttle 0 vbat 9.76 rate 0.01 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5800.787532 I (48350) stages: s 47 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5801.788144 I (49361) status: s 48 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 24519 dropped 0 imu_invalid 0
+5801.800051 I (49361) status: mode SAFE throttle 0 vbat 9.76 rate 0.07 bias -2.08 tilt 169.9 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5801.812170 I (49373) stages: s 48 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 11/7
+5802.811504 I (50384) status: s 49 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 25019 dropped 0 imu_invalid 0
+5802.822522 I (50384) status: mode SAFE throttle 0 vbat 9.77 rate 0.01 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5802.834233 I (50396) stages: s 49 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/2 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5803.833523 I (51407) status: s 50 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 25519 dropped 0 imu_invalid 0
+5803.849151 I (51407) status: mode SAFE throttle 0 vbat 9.77 rate 0.01 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5803.857108 I (51419) stages: s 50 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 7/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5804.856547 I (52430) status: s 51 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 26019 dropped 0 imu_invalid 0
+5804.868197 I (52430) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 169.9 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5804.879420 I (52442) stages: s 51 max/mean us imu 657/455 mag 276/206 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5805.879488 I (53453) status: s 52 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 26519 dropped 0 imu_invalid 0
+5805.891265 I (53453) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5805.903167 I (53465) stages: s 52 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5806.902512 I (54476) status: s 53 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 4 p99_dev_us 0 dshot sent 27019 dropped 0 imu_invalid 0
+5806.914127 I (54476) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5806.925390 I (54488) stages: s 53 max/mean us imu 657/455 mag 278/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5807.925517 I (55499) status: s 54 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 27519 dropped 0 imu_invalid 0
+5807.937136 I (55499) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5807.948349 I (55511) stages: s 54 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5808.948565 I (56522) status: s 55 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 28019 dropped 0 imu_invalid 0
+5808.960112 I (56522) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5808.971275 I (56534) stages: s 55 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5809.971505 I (57545) status: s 56 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 28519 dropped 0 imu_invalid 0
+5809.983169 I (57545) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5809.994354 I (57557) stages: s 56 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5810.744481 I (58318) status: s 57 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 29019 dropped 0 imu_invalid 0
+5810.756130 I (58318) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5810.767319 I (58330) stages: s 57 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5811.767419 I (59341) status: s 58 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 29519 dropped 0 imu_invalid 0
+5811.779032 I (59341) status: mode SAFE throttle 0 vbat 9.75 rate 0.00 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5811.790265 I (59353) stages: s 58 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 17/15 out 1/0 snap 11/7
+5812.790509 I (60364) status: s 59 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 30019 dropped 0 imu_invalid 0
+5812.802052 I (60364) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5812.813255 I (60376) stages: s 59 max/mean us imu 657/455 mag 278/206 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5813.813414 I (61387) status: s 60 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 30519 dropped 0 imu_invalid 0
+5813.826102 I (61387) status: mode SAFE throttle 0 vbat 9.77 rate -0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5813.837124 I (61399) stages: s 60 max/mean us imu 657/455 mag 276/207 adc 52/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5814.836484 I (62410) status: s 61 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 31019 dropped 0 imu_invalid 0
+5814.848116 I (62410) status: mode SAFE throttle 0 vbat 9.77 rate -0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5814.859381 I (62422) stages: s 61 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5815.859466 I (63433) status: s 62 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 31519 dropped 0 imu_invalid 0
+5815.871196 I (63433) status: mode SAFE throttle 0 vbat 9.77 rate -0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5815.882253 I (63445) stages: s 62 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5816.882383 I (64456) status: s 63 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 32019 dropped 0 imu_invalid 0
+5816.893955 I (64456) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5816.905360 I (64468) stages: s 63 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5817.905646 I (65479) status: s 64 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 32519 dropped 0 imu_invalid 0
+5817.916935 I (65479) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5817.928170 I (65491) stages: s 64 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 11/7
+5818.928418 I (66502) status: s 65 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 33019 dropped 0 imu_invalid 0
+5818.939961 I (66502) status: mode SAFE throttle 0 vbat 9.77 rate 0.06 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5818.951320 I (66514) stages: s 65 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5819.954218 I (67525) status: s 66 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 33519 dropped 0 imu_invalid 0
+5819.962945 I (67525) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5819.976213 I (67537) stages: s 66 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5820.975692 I (68548) status: s 67 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 34019 dropped 0 imu_invalid 0
+5820.985881 I (68548) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5820.997268 I (68560) stages: s 67 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5821.747438 I (69321) status: s 68 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 2 p99_dev_us 0 dshot sent 34519 dropped 0 imu_invalid 0
+5821.760120 I (69321) status: mode SAFE throttle 0 vbat 9.78 rate 0.06 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5821.771274 I (69333) stages: s 68 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5822.770493 I (70344) status: s 69 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 35019 dropped 0 imu_invalid 0
+5822.781913 I (70344) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5822.794481 I (70356) stages: s 69 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5823.793325 I (71367) status: s 70 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 35519 dropped 0 imu_invalid 0
+5823.804851 I (71367) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5823.816213 I (71379) stages: s 70 max/mean us imu 657/455 mag 276/207 adc 52/48 hall 3/1 est 7/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5824.816388 I (72390) status: s 71 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 4 p99_dev_us 0 dshot sent 36019 dropped 0 imu_invalid 0
+5824.827927 I (72390) status: mode SAFE throttle 0 vbat 9.78 rate 0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5824.839088 I (72402) stages: s 71 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5825.839307 I (73413) status: s 72 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 36519 dropped 0 imu_invalid 0
+5825.851294 I (73413) status: mode SAFE throttle 0 vbat 9.78 rate -0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5825.862174 I (73425) stages: s 72 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5826.862276 I (74436) status: s 73 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 37019 dropped 0 imu_invalid 0
+5826.873855 I (74436) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5826.885035 I (74448) stages: s 73 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 19/15 out 1/0 snap 10/7
+5827.885208 I (75459) status: s 74 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 37519 dropped 0 imu_invalid 0
+5827.896761 I (75459) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5827.908313 I (75471) stages: s 74 max/mean us imu 657/455 mag 276/206 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5828.908290 I (76482) status: s 75 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 38019 dropped 0 imu_invalid 0
+5828.919860 I (76482) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5828.931025 I (76494) stages: s 75 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5829.931165 I (77505) status: s 76 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 38519 dropped 0 imu_invalid 0
+5829.942770 I (77505) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5829.954217 I (77517) stages: s 76 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5830.954392 I (78528) status: s 77 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 39019 dropped 0 imu_invalid 0
+5830.965804 I (78528) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5830.977215 I (78540) stages: s 77 max/mean us imu 658/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5831.977273 I (79551) status: s 78 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 39519 dropped 0 imu_invalid 0
+5831.988785 I (79551) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5831.999999 I (79563) stages: s 78 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5832.750103 I (80324) status: s 79 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 40019 dropped 0 imu_invalid 0
+5832.761734 I (80324) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5832.772975 I (80336) stages: s 79 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5833.773128 I (81347) status: s 80 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 40519 dropped 0 imu_invalid 0
+5833.786060 I (81347) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5833.795939 I (81359) stages: s 80 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 7/6 sup 6/4 dshot 18/15 out 2/0 snap 11/7
+5834.796124 I (82370) status: s 81 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 41019 dropped 0 imu_invalid 0
+5834.807698 I (82370) status: mode SAFE throttle 0 vbat 9.77 rate 0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5834.818928 I (82382) stages: s 81 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5835.819623 I (83393) status: s 82 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 41519 dropped 0 imu_invalid 0
+5835.830806 I (83393) status: mode SAFE throttle 0 vbat 9.77 rate -0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5835.841941 I (83405) stages: s 82 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5836.842210 I (84416) status: s 83 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 42019 dropped 0 imu_invalid 0
+5836.853630 I (84416) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5836.864850 I (84428) stages: s 83 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5837.865024 I (85439) status: s 84 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 42519 dropped 0 imu_invalid 0
+5837.876622 I (85439) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5837.887902 I (85451) stages: s 84 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5838.887985 I (86462) status: s 85 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 43019 dropped 0 imu_invalid 0
+5838.899683 I (86462) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5838.910996 I (86474) stages: s 85 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5839.910994 I (87485) status: s 86 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 43519 dropped 0 imu_invalid 0
+5839.922594 I (87485) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5839.933788 I (87497) stages: s 86 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 2/0 snap 10/7
+5840.933963 I (88508) status: s 87 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 44019 dropped 0 imu_invalid 0
+5840.945623 I (88508) status: mode SAFE throttle 0 vbat 9.77 rate 0.07 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5840.956872 I (88520) stages: s 87 max/mean us imu 657/455 mag 278/205 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5841.957125 I (89531) status: s 88 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 44519 dropped 0 imu_invalid 0
+5841.968993 I (89531) status: mode SAFE throttle 0 vbat 9.78 rate 0.07 bias -2.08 tilt 170.4 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5841.980212 I (89543) stages: s 88 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5842.980208 I (90554) status: s 89 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 45019 dropped 0 imu_invalid 0
+5842.991658 I (90554) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5843.003046 I (90566) stages: s 89 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5843.752943 I (91327) status: s 90 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 45519 dropped 0 imu_invalid 0
+5843.764567 I (91327) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5843.775778 I (91339) stages: s 90 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5844.775936 I (92350) status: s 91 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 46019 dropped 0 imu_invalid 0
+5844.787828 I (92350) status: mode SAFE throttle 0 vbat 9.77 rate 0.01 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5844.798846 I (92362) stages: s 91 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 17/15 out 1/0 snap 10/7
+5845.798882 I (93373) status: s 92 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 46519 dropped 0 imu_invalid 0
+5845.810740 I (93373) status: mode SAFE throttle 0 vbat 9.77 rate -0.06 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5845.822231 I (93385) stages: s 92 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5846.821880 I (94396) status: s 93 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 47019 dropped 0 imu_invalid 0
+5846.833552 I (94396) status: mode SAFE throttle 0 vbat 9.78 rate 0.00 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5846.844720 I (94408) stages: s 93 max/mean us imu 657/455 mag 277/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5847.845025 I (95419) status: s 94 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 47519 dropped 0 imu_invalid 0
+5847.856545 I (95419) status: mode SAFE throttle 0 vbat 9.77 rate 0.00 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5847.867875 I (95431) stages: s 94 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5848.871147 I (96442) status: s 95 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 48019 dropped 0 imu_invalid 0
+5848.879673 I (96442) status: mode SAFE throttle 0 vbat 9.78 rate -0.06 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5848.891156 I (96454) stages: s 95 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 11/7
+5849.890874 I (97465) status: s 96 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 48519 dropped 0 imu_invalid 0
+5849.902508 I (97465) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.0 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5849.913708 I (97477) stages: s 96 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5850.913838 I (98488) status: s 97 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 49019 dropped 0 imu_invalid 0
+5850.925552 I (98488) status: mode SAFE throttle 0 vbat 9.79 rate -0.05 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5850.936883 I (98500) stages: s 97 max/mean us imu 658/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5851.936822 I (99511) status: s 98 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 49519 dropped 0 imu_invalid 0
+5851.948677 I (99511) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5851.959678 I (99523) stages: s 98 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5852.959952 I (100534) status: s 99 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 4 p99_dev_us 0 dshot sent 50019 dropped 0 imu_invalid 0
+5852.971612 I (100534) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5852.983036 I (100546) stages: s 99 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5853.986401 I (101557) status: s 100 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 50519 dropped 0 imu_invalid 0
+5853.995196 I (101557) status: mode SAFE throttle 0 vbat 9.78 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5854.006179 I (101569) stages: s 100 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5854.756063 I (102330) status: s 101 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 51019 dropped 0 imu_invalid 0
+5854.767650 I (102330) status: mode SAFE throttle 0 vbat 9.78 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5854.779127 I (102342) stages: s 101 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 2/0 snap 10/7
+5855.779085 I (103353) status: s 102 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 51519 dropped 0 imu_invalid 0
+5855.790653 I (103353) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5855.802340 I (103365) stages: s 102 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
+5856.802086 I (104376) status: s 103 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 52019 dropped 0 imu_invalid 0
+5856.813644 I (104376) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.4 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5856.825108 I (104388) stages: s 103 max/mean us imu 658/455 mag 278/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5857.825097 I (105399) status: s 104 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 52519 dropped 0 imu_invalid 0
+5857.836663 I (105399) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5857.850223 I (105411) stages: s 104 max/mean us imu 658/455 mag 278/207 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5858.848046 I (106422) status: s 105 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 53019 dropped 0 imu_invalid 0
+5858.859731 I (106422) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5858.871124 I (106434) stages: s 105 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5859.871075 I (107445) status: s 106 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 53519 dropped 0 imu_invalid 0
+5859.882678 I (107445) status: mode SAFE throttle 0 vbat 9.80 rate -0.05 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5859.894059 I (107457) stages: s 106 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5860.893922 I (108468) status: s 107 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 54019 dropped 0 imu_invalid 0
+5860.905737 I (108468) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5860.916963 I (108480) stages: s 107 max/mean us imu 657/455 mag 277/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5861.916911 I (109491) status: s 108 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 54519 dropped 0 imu_invalid 0
+5861.928662 I (109491) status: mode SAFE throttle 0 vbat 9.80 rate -0.05 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5861.940193 I (109503) stages: s 108 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5862.939948 I (110514) status: s 109 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 55019 dropped 0 imu_invalid 0
+5862.951590 I (110514) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5862.963574 I (110526) stages: s 109 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/2 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5863.962950 I (111537) status: s 110 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 55519 dropped 0 imu_invalid 0
+5863.974719 I (111537) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5863.985901 I (111549) stages: s 110 max/mean us imu 658/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5864.735976 I (112310) status: s 111 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 56019 dropped 0 imu_invalid 0
+5864.747542 I (112310) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5864.759034 I (112322) stages: s 111 max/mean us imu 658/455 mag 277/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5865.759026 I (113333) status: s 112 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 56519 dropped 0 imu_invalid 0
+5865.770706 I (113333) status: mode SAFE throttle 0 vbat 9.79 rate -0.05 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5865.782118 I (113345) stages: s 112 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 17/15 out 1/0 snap 10/7
+5866.781998 I (114356) status: s 113 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 57019 dropped 0 imu_invalid 0
+5866.793526 I (114356) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5866.805059 I (114368) stages: s 113 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 11/7
+5867.804972 I (115379) status: s 114 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 57519 dropped 0 imu_invalid 0
+5867.816670 I (115379) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5867.827854 I (115391) stages: s 114 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5868.827957 I (116402) status: s 115 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 58019 dropped 0 imu_invalid 0
+5868.839549 I (116402) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5868.850986 I (116414) stages: s 115 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5869.851133 I (117425) status: s 116 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 58519 dropped 0 imu_invalid 0
+5869.862436 I (117425) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5869.873801 I (117437) stages: s 116 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5870.873731 I (118448) status: s 117 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 59019 dropped 0 imu_invalid 0
+5870.885511 I (118448) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5870.896864 I (118460) stages: s 117 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5871.896823 I (119471) status: s 118 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 2 p99_dev_us 0 dshot sent 59519 dropped 0 imu_invalid 0
+5871.908486 I (119471) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5871.920020 I (119483) stages: s 118 max/mean us imu 657/455 mag 278/203 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5872.919680 I (120494) status: s 119 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 60019 dropped 0 imu_invalid 0
+5872.931461 I (120494) status: mode SAFE throttle 0 vbat 9.79 rate -0.05 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5872.942996 I (120506) stages: s 119 max/mean us imu 658/455 mag 276/206 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5873.942767 I (121517) status: s 120 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 60519 dropped 0 imu_invalid 0
+5873.954630 I (121517) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5873.965920 I (121529) stages: s 120 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5874.966180 I (122540) status: s 121 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 61019 dropped 0 imu_invalid 0
+5874.978373 I (122540) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5874.989141 I (122552) stages: s 121 max/mean us imu 657/455 mag 277/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 2/0 snap 11/7
+5875.739119 I (123313) status: s 122 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 61519 dropped 0 imu_invalid 0
+5875.750378 I (123313) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5875.761736 I (123325) stages: s 122 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5876.761657 I (124336) status: s 123 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 62019 dropped 0 imu_invalid 0
+5876.777163 I (124336) status: mode SAFE throttle 0 vbat 9.80 rate -0.05 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5876.786144 I (124348) stages: s 123 max/mean us imu 657/455 mag 278/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 11/7
+5877.784656 I (125359) status: s 124 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 62519 dropped 0 imu_invalid 0
+5877.802277 I (125359) status: mode SAFE throttle 0 vbat 9.79 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5877.807678 I (125371) stages: s 124 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5878.808121 I (126382) status: s 125 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 63019 dropped 0 imu_invalid 0
+5878.820385 I (126382) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5878.831167 I (126394) stages: s 125 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5879.830799 I (127405) status: s 126 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 63519 dropped 0 imu_invalid 0
+5879.842395 I (127405) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5879.853794 I (127417) stages: s 126 max/mean us imu 657/455 mag 276/206 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5880.853684 I (128428) status: s 127 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 64019 dropped 0 imu_invalid 0
+5880.865467 I (128428) status: mode SAFE throttle 0 vbat 9.80 rate -0.05 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5880.878621 I (128440) stages: s 127 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/2 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5881.876653 I (129451) status: s 128 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 64519 dropped 0 imu_invalid 0
+5881.891155 I (129451) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5881.900282 I (129463) stages: s 128 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5882.899663 I (130474) status: s 129 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 65019 dropped 0 imu_invalid 0
+5882.911486 I (130474) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5882.922802 I (130486) stages: s 129 max/mean us imu 658/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 11/7
+5883.922624 I (131497) status: s 130 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 65519 dropped 0 imu_invalid 0
+5883.935914 I (131497) status: mode SAFE throttle 0 vbat 9.80 rate 0.07 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5883.946155 I (131509) stages: s 130 max/mean us imu 658/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 10/7
+5884.946110 I (132520) status: s 131 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 66019 dropped 0 imu_invalid 0
+5884.957440 I (132520) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5884.969143 I (132532) stages: s 131 max/mean us imu 657/455 mag 277/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5885.969148 I (133543) status: s 132 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 66519 dropped 0 imu_invalid 0
+5885.980257 I (133543) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5885.991707 I (133555) stages: s 132 max/mean us imu 658/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5886.742110 I (134316) status: s 133 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 67019 dropped 0 imu_invalid 0
+5886.754054 I (134316) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5886.766149 I (134328) stages: s 133 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5887.767053 I (135339) status: s 134 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 67519 dropped 0 imu_invalid 0
+5887.778142 I (135339) status: mode SAFE throttle 0 vbat 9.80 rate -0.05 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5887.790209 I (135351) stages: s 134 max/mean us imu 658/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 2/0 snap 11/7
+5888.787615 I (136362) status: s 135 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 68019 dropped 0 imu_invalid 0
+5888.799313 I (136362) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5888.812142 I (136374) stages: s 135 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 7/4 dshot 18/15 out 1/0 snap 10/7
+5889.813147 I (137385) status: s 136 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 68519 dropped 0 imu_invalid 0
+5889.824793 I (137385) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5889.834123 I (137397) stages: s 136 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 17/15 out 1/0 snap 10/7
+5890.836153 I (138408) status: s 137 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 69019 dropped 0 imu_invalid 0
+5890.845374 I (138408) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5890.856624 I (138420) stages: s 137 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5891.856587 I (139431) status: s 138 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 69519 dropped 0 imu_invalid 0
+5891.868163 I (139431) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5891.879563 I (139443) stages: s 138 max/mean us imu 657/455 mag 278/207 adc 53/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5892.879631 I (140454) status: s 139 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 70019 dropped 0 imu_invalid 0
+5892.898424 I (140454) status: mode SAFE throttle 0 vbat 9.80 rate -0.05 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5892.902579 I (140466) stages: s 139 max/mean us imu 658/455 mag 276/206 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5893.902484 I (141477) status: s 140 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 70519 dropped 0 imu_invalid 0
+5893.914128 I (141477) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5893.925473 I (141489) stages: s 140 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5894.926187 I (142500) status: s 141 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 71019 dropped 0 imu_invalid 0
+5894.937184 I (142500) status: mode SAFE throttle 0 vbat 9.81 rate -0.05 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5894.948685 I (142512) stages: s 141 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 1/0 snap 10/7
+5895.948430 I (143523) status: s 142 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 71519 dropped 0 imu_invalid 0
+5895.960122 I (143523) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5895.971668 I (143535) stages: s 142 max/mean us imu 657/455 mag 278/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5896.971482 I (144546) status: s 143 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 72019 dropped 0 imu_invalid 0
+5896.983329 I (144546) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5896.994442 I (144558) stages: s 143 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5897.744425 I (145319) status: s 144 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 72519 dropped 0 imu_invalid 0
+5897.756074 I (145319) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.3 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5897.767464 I (145331) stages: s 144 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/2 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5898.767320 I (146342) status: s 145 ticks 500 missed 0 (total 0) loop_us_max 904 dev_max_us 3 p99_dev_us 0 dshot sent 73019 dropped 0 imu_invalid 0
+5898.779186 I (146342) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5898.791123 I (146354) stages: s 145 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 11/7
+5899.790374 I (147365) status: s 146 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 73519 dropped 0 imu_invalid 0
+5899.802046 I (147365) status: mode SAFE throttle 0 vbat 9.81 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5899.813454 I (147377) stages: s 146 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5900.813314 I (148388) status: s 147 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 3 p99_dev_us 0 dshot sent 74019 dropped 0 imu_invalid 0
+5900.825099 I (148388) status: mode SAFE throttle 0 vbat 9.80 rate -0.06 bias -2.08 tilt 170.2 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5900.836503 I (148400) stages: s 147 max/mean us imu 657/455 mag 276/207 adc 54/48 hall 3/1 est 8/6 sup 6/4 dshot 18/15 out 1/0 snap 10/7
+5901.836416 I (149411) status: s 148 ticks 500 missed 0 (total 0) loop_us_max 905 dev_max_us 2 p99_dev_us 0 dshot sent 74519 dropped 0 imu_invalid 0
+5901.847977 I (149411) status: mode SAFE throttle 0 vbat 9.80 rate 0.01 bias -2.08 tilt 170.1 psi -10.5 wheel 0 latched 0x0040 flags 0x00 baro ok
+5901.859372 I (149423) stages: s 148 max/mean us imu 657/455 mag 276/207 adc 53/48 hall 3/1 est 8/6 sup 5/4 dshot 18/15 out 2/0 snap 10/7
