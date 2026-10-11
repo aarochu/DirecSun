@@ -13,7 +13,7 @@ type ModelStatus = 'schematic' | 'loading' | 'cad' | 'failed';
 const MODEL_LABEL: Record<ModelStatus, string> = {
   schematic: 'SCHEMATIC MODEL — CAD NOT LOADED',
   loading: 'LOADING CAD MODEL',
-  cad: 'CAD STACK — CAD/ASSEMBLY.PY',
+  cad: 'CAD STACK + ILLUSTRATIVE ELECTRONICS',
   failed: 'SCHEMATIC MODEL — CAD NOT LOADED',
 };
 

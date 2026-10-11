@@ -1,6 +1,7 @@
 export interface HardwareView {
   readonly subject: readonly string[];
   readonly carrier: readonly string[];
+  readonly focus?: readonly string[];
   readonly shows: string;
   readonly azimuthDeg: number;
   readonly elevationDeg: number;
@@ -39,16 +40,17 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   esp32s3: {
     subject: ['xiao_s3', 'board_xiao_carrier'],
     carrier: ['avionics_deck'],
-    shows: 'HIGHLIGHTED: XIAO ESP32-S3 AND ITS CARRIER BOARD ON THE AVIONICS DECK (STAND-IN SHAPES)',
+    focus: ['xiao_s3'],
+    shows: 'HIGHLIGHTED: XIAO ESP32-S3 AND CARRIER BOARD ON THE AVIONICS DECK. ELECTRONICS DETAIL IS ILLUSTRATIVE',
     azimuthDeg: 350,
     elevationDeg: 32,
     frame: 'subject',
-    zoom: 2.6,
+    zoom: 1.4,
   },
   mpu6050: {
     subject: ['mpu6050', ...screws('mpu6050')],
     carrier: ['avionics_deck'],
-    shows: 'HIGHLIGHTED: MPU-6050 BOARD ON ITS STANDOFFS, CENTRED ON THE SPIN AXIS (STAND-IN SHAPE)',
+    shows: 'HIGHLIGHTED: MPU-6050 BOARD ON ITS STANDOFFS, CENTRED ON THE SPIN AXIS. BOARD DETAIL IS ILLUSTRATIVE',
     azimuthDeg: 12,
     elevationDeg: 40,
     frame: 'subject',
@@ -57,7 +59,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   qmc5883p: {
     subject: ['qmc5883p', ...screws('qmc5883p')],
     carrier: ['top_deck'],
-    shows: 'HIGHLIGHTED: QMC5883P BOARD HANGING BELOW THE FLIPPED TOP DECK (STAND-IN SHAPE)',
+    shows: 'HIGHLIGHTED: QMC5883P BOARD BELOW THE TOP DECK. BOARD DETAIL IS ILLUSTRATIVE',
     azimuthDeg: 30,
     elevationDeg: -28,
     frame: 'subject',
@@ -66,7 +68,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   op550: {
     subject: ['avionics_deck'],
     carrier: [],
-    shows: 'HIGHLIGHTED: THE AVIONICS DECK, WHICH CARRIES THE OP550 SUN-SENSOR BLOCK ON ITS +X FACE. THE SENSORS THEMSELVES ARE NOT MODELLED',
+    shows: 'HIGHLIGHTED: THE AVIONICS DECK AND +X SUN-SENSOR BLOCK. OP550 BODIES ARE ILLUSTRATIVE, NOT PART OF THE CAD',
     azimuthDeg: 90,
     elevationDeg: 24,
     frame: 'subject',
@@ -75,7 +77,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   a1104: {
     subject: ['hall_bracket'],
     carrier: ['motor_deck'],
-    shows: 'HIGHLIGHTED: THE HALL BRACKET AT 45 DEGREES ON THE MOTOR DECK. THE SENSOR ITSELF IS NOT MODELLED',
+    shows: 'HIGHLIGHTED: THE HALL BRACKET AT 45 DEGREES ON THE MOTOR DECK. THE A1104 BODY IS ILLUSTRATIVE, NOT PART OF THE CAD',
     azimuthDeg: 72,
     elevationDeg: 42,
     frame: 'subject',
@@ -84,7 +86,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   'reaction-wheel': {
     subject: ['motor_2212', 'washer_flywheel', 'shaft_and_nuts'],
     carrier: ['motor_deck'],
-    shows: 'HIGHLIGHTED: 2212 MOTOR AND A WASHER-STACK FLYWHEEL, BOTH STAND-INS. THE PRINTED FLYWHEEL IS NOT MODELLED YET',
+    shows: 'HIGHLIGHTED: 2212 MOTOR WITH ILLUSTRATIVE DETAIL AND A WASHER-STACK FLYWHEEL STAND-IN. THE PRINTED FLYWHEEL IS NOT MODELLED YET',
     azimuthDeg: 40,
     elevationDeg: 22,
     frame: 'subject',
@@ -93,7 +95,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   esc: {
     subject: ['esc'],
     carrier: ['power_deck', 'board_power'],
-    shows: 'HIGHLIGHTED: ESC STAND-IN ON THE POWER DECK, ZIP-TIED ON THE +X SIDE',
+    shows: 'HIGHLIGHTED: ESC ON THE +X SIDE OF THE POWER DECK. BODY AND LEADS ARE ILLUSTRATIVE',
     azimuthDeg: 70,
     elevationDeg: 34,
     frame: 'subject',
@@ -112,7 +114,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
       'board_power',
     ],
     carrier: ['battery_deck', 'power_deck'],
-    shows: 'HIGHLIGHTED: EIGHT AA CELLS IN THE PRINTED HOLDER AND THE POWER-DECK PERFBOARD (STAND-IN SHAPES)',
+    shows: 'HIGHLIGHTED: EIGHT AA CELLS IN THE PRINTED HOLDER AND THE POWER-DECK PERFBOARD. BOARD DETAIL IS ILLUSTRATIVE',
     azimuthDeg: 48,
     elevationDeg: 24,
     frame: 'subject',
@@ -121,7 +123,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   bmp280: {
     subject: ['bmp280', ...screws('bmp280')],
     carrier: ['top_deck'],
-    shows: 'HIGHLIGHTED: BMP280 BOARD HANGING BELOW THE FLIPPED TOP DECK (STAND-IN SHAPE)',
+    shows: 'HIGHLIGHTED: BMP280 BOARD BELOW THE TOP DECK. BOARD DETAIL IS ILLUSTRATIVE',
     azimuthDeg: 150,
     elevationDeg: -28,
     frame: 'subject',

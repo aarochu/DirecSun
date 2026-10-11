@@ -198,6 +198,25 @@ describe('DeviceOperator', () => {
     expect(socket.commands()).toHaveLength(count);
   });
 
+  it('does not restart the stream from a MANUAL frame that arrives after e-stop or disarm', async () => {
+    for (const stop of ['estop', 'disarm'] as const) {
+      const { socket, operator } = armed();
+      await armAndReady(socket, operator);
+      socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+      await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS);
+
+      if (stop === 'estop') operator.estop();
+      else void operator.disarm();
+      const count = socket.commands().filter((frame) => frame.cmd === 'manual').length;
+      // The box's next frames still say MANUAL until its mode event lands.
+      socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+      await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 5);
+      expect(operator.getState().manual).toBeNull();
+      expect(socket.commands().filter((frame) => frame.cmd === 'manual')).toHaveLength(count);
+      operator.detach();
+    }
+  });
+
   it('does not stream for throttle input when the box sends no throttle band', async () => {
     const { socket, operator } = armed();
     await armAndReady(socket, operator);

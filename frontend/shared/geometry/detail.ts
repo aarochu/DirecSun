@@ -1,4 +1,4 @@
-// Visual detail for the electronics, added on the website only. The CAD in
+// Illustrative electronics detail shared by the landing page and Ground Station. The CAD in
 // cad/ models these parts as plain blocks (stand-ins), so this file rebuilds a
 // few of them, or adds parts on top, inside each part's own CAD bounding box.
 //
@@ -260,17 +260,19 @@ function motor(p: Mm): Detail {
   return { replace: true, items: b.items };
 }
 
-// BLHeli_S ESC: keep the CAD block (the heat-shrunk body) and add its leads:
+// BLHeli_S ESC: dark heat-shrink body with a simple seam and the leads:
 // three motor phases on one end; battery and signal on the other.
 function esc(p: Mm): Detail {
   const b = new Builder();
   const yc = (p.y0 + p.y1) / 2;
   const lead = 7;
+  b.box(p.x0, p.x1, p.y0, p.y1, p.z0, p.z1, 'chip');
+  b.box(p.x0 + 1, p.x1 - 1, p.y1, p.y1 + 0.15, p.z0 + 3, p.z0 + 4.2, 'metalDark');
   [-4.5, 0, 4.5].forEach((dx) => b.rod('z', p.z1, p.z1 + lead, yc, p.cx + dx, 0.9, 'wireBlack'));
   b.rod('z', p.z0 - lead, p.z0, yc, p.cx - 4, 1.1, 'wireRed');
   b.rod('z', p.z0 - lead, p.z0, yc, p.cx + 4, 1.1, 'wireBlack');
   b.rod('z', p.z0 - lead, p.z0, yc + 1.6, p.cx, 0.5, 'wireLight');
-  return { replace: false, items: b.items };
+  return { replace: true, items: b.items };
 }
 
 // Power-deck perfboard (TD 5.1, README "power_deck"): 5 V buck module, the
@@ -315,6 +317,33 @@ function carrier(p: Mm): Detail {
   return { replace: false, items: b.items };
 }
 
+// The CAD prints the two angled sensor pockets, but not the OP550 bodies.
+// These dark windows and leads are a visual cue, not a wiring or fit model.
+function sunSensors(p: Mm): Detail {
+  const b = new Builder();
+  for (const side of [-1, 1]) {
+    const z = p.cz + side * 4.5;
+    b.box(p.x1 - 1.4, p.x1 + 0.25, p.y0 + 5.0, p.y0 + 8.6, z - 1.3, z + 1.3, 'chip');
+    b.box(p.x1 + 0.25, p.x1 + 0.3, p.y0 + 5.7, p.y0 + 7.9, z - 0.8, z + 0.8, 'metalDark');
+    b.rod('z', z - 0.6, z + 0.6, p.y0 + 11.5, p.x1 - 2.2, 0.35, 'gold');
+  }
+  return { replace: false, items: b.items };
+}
+
+// The bracket pocket is modelled, but the Hall package is not. Keep its
+// body and three visible leads deliberately simple and illustrative.
+function hallSwitch(p: Mm): Detail {
+  const b = new Builder();
+  const radius = Math.hypot(p.cx, p.cz) || 1;
+  const x = p.cx - (p.cx / radius) * 2;
+  const z = p.cz - (p.cz / radius) * 2;
+  b.box(x - 2.05, x + 2.05, p.y0 + 13.5, p.y0 + 16.5, z - 0.8, z + 0.8, 'chip');
+  for (const dx of [-1.25, 0, 1.25]) {
+    b.box(x + dx - 0.2, x + dx + 0.2, p.y0 + 16.5, p.y1 + 0.8, z - 0.2, z + 0.2, 'gold');
+  }
+  return { replace: false, items: b.items };
+}
+
 export function detailFor(name: string, box: Box3): Detail | null {
   const p = toMm(box);
   switch (name) {
@@ -334,6 +363,10 @@ export function detailFor(name: string, box: Box3): Detail | null {
       return powerBoard(p);
     case 'board_xiao_carrier':
       return carrier(p);
+    case 'avionics_deck':
+      return sunSensors(p);
+    case 'hall_bracket':
+      return hallSwitch(p);
     default:
       return null;
   }
