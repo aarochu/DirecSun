@@ -1,0 +1,676 @@
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { App } from '../App';
+import { ACK_TIMEOUT_MS, DeviceCommandError, DeviceLink, PING_INTERVAL_MS } from '../hardware/deviceLink';
+import { DeviceOperator, HOLD_MS, MANUAL_PERIOD_MS, SLEW_EVENT_WAIT_MS, SLEW_WAIT_MS } from '../hardware/deviceOperator';
+import { ack, FakeSocket, modeEvent, tlm } from './fakeSocket';
+
+const flush = () => vi.advanceTimersByTimeAsync(0);
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'performance'] });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  FakeSocket.instances = [];
+  vi.unstubAllGlobals();
+});
+
+function openLink() {
+  let now = 0;
+  const link = new DeviceLink((url) => new FakeSocket(url) as unknown as WebSocket, () => (now += 5));
+  link.connect('ws://box/ws');
+  const socket = FakeSocket.instances.at(-1)!;
+  socket.open();
+  return { link, socket };
+}
+
+describe('DeviceLink commands', () => {
+  it('stays silent until the first command, then pings at 5 Hz', () => {
+    const { link, socket } = openLink();
+    socket.message(tlm({ psi_deg: 0, mode: 'SAFE' }));
+    vi.advanceTimersByTime(2000);
+    expect(socket.sent).toEqual([]);
+    expect(link.getState().talking).toBe(false);
+
+    void link.command('arm').catch(() => {});
+    expect(socket.frames().map((frame) => frame.type)).toEqual(['ping', 'cmd']);
+    expect(link.getState().talking).toBe(true);
+    vi.advanceTimersByTime(PING_INTERVAL_MS * 5);
+    expect(socket.frames().filter((frame) => frame.type === 'ping')).toHaveLength(6);
+  });
+
+  it('resolves a command on the ack with its seq and ignores acks for other seqs', async () => {
+    const { link, socket } = openLink();
+    let settled: unknown = null;
+    void link.command('arm').then((value) => (settled = value));
+    const { seq } = socket.lastCommand();
+    expect(socket.lastCommand()).toEqual({ v: 1, type: 'cmd', seq, cmd: 'arm' });
+    socket.message(ack((seq as number) + 1000));
+    await flush();
+    expect(settled).toBeNull();
+    socket.message(ack(seq));
+    await flush();
+    expect(settled).toEqual({ seq, ok: true, reason: null, applied: null });
+    expect(link.getState().ignored).toBe(0);
+  });
+
+  it('rejects with the box reason, after the ack timeout, and when the link closes', async () => {
+    const { link, socket } = openLink();
+    const refused = link.command('arm').catch((error: DeviceCommandError) => error);
+    socket.message(ack(socket.lastCommand().seq, false, 'box moving'));
+    expect(await refused).toMatchObject({ code: 'REFUSED', reason: 'box moving', command: 'arm' });
+
+    const late = link.command('disarm').catch((error: DeviceCommandError) => error);
+    await vi.advanceTimersByTimeAsync(ACK_TIMEOUT_MS);
+    expect(await late).toMatchObject({ code: 'TIMEOUT', command: 'disarm' });
+
+    const cut = link.command('mode', { mode: 'READY' }).catch((error: DeviceCommandError) => error);
+    socket.drop();
+    expect(await cut).toMatchObject({ code: 'CLOSED', command: 'mode' });
+    const sentAtDrop = socket.sent.length;
+    vi.advanceTimersByTime(2000);
+    expect(socket.sent).toHaveLength(sentAtDrop);
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
+
+  it('sends e-stop at once even with a command pending, and throws when the link is not open', () => {
+    const { link, socket } = openLink();
+    void link.command('arm').catch(() => {});
+    void link.estop().catch(() => {});
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+
+    link.disconnect();
+    expect(() => link.estop()).toThrow(DeviceCommandError);
+  });
+
+  it('measures round-trip time from pongs and reads events without counting them as ignored', () => {
+    const { link, socket } = openLink();
+    void link.command('arm').catch(() => {});
+    const ping = socket.frames().find((frame) => frame.type === 'ping')!;
+    socket.message(JSON.stringify({ v: 1, type: 'pong', seq: 5, ping_seq: ping.seq, t_client_ms: ping.t_client_ms, t_ms: 10 }));
+    expect(link.getState().rttMs).not.toBeNull();
+    socket.message(modeEvent('SPINUP', 'arm'));
+    expect(link.getState().lastEvent).toMatchObject({ event: 'mode', mode: 'SPINUP', cause: 'arm' });
+    socket.message(JSON.stringify({ v: 2, type: 'ack', seq: 1, ok: true }));
+    expect(link.getState().ignored).toBe(1);
+  });
+});
+
+describe('DeviceOperator', () => {
+  function armed(headingDeg = 10) {
+    const { link, socket } = openLink();
+    const operator = new DeviceOperator(link);
+    operator.attach();
+    socket.message(tlm({ psi_deg: headingDeg, mode: 'SAFE' }));
+    return { link, socket, operator };
+  }
+
+  async function armAndReady(socket: FakeSocket, operator: DeviceOperator, headingDeg = 10) {
+    const arming = operator.arm();
+    socket.message(ack(socket.lastCommand().seq));
+    await arming;
+    socket.message(tlm({ psi_deg: headingDeg, mode: 'SPINUP' }));
+    socket.message(tlm({ psi_deg: headingDeg, mode: 'READY' }));
+  }
+
+  async function finishSlew(socket: FakeSocket, headingDeg: number) {
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: headingDeg, mode: 'SLEW' }));
+    socket.message(tlm({ psi_deg: headingDeg, mode: 'READY' }));
+    socket.message(modeEvent('READY', 'slew_complete'));
+    await flush();
+  }
+
+  async function startTurn(socket: FakeSocket, operator: DeviceOperator, direction: 1 | -1) {
+    const turn = operator.rotate(direction);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'zero_heading' });
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    return { turn };
+  }
+
+  it('sends the chosen mode with its manual input, and reports the box answer', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+
+    const hold = operator.setMode('HOLD');
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'HOLD' });
+    expect(socket.lastCommand()).not.toHaveProperty('input');
+    socket.message(ack(socket.lastCommand().seq));
+    await hold;
+    expect(operator.getState().result).toEqual({ tone: 'ok', text: 'MODE HOLD ACCEPTED.' });
+
+    const manual = operator.setMode('MANUAL', 'rate');
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'MANUAL', input: 'rate' });
+    socket.message(ack(socket.lastCommand().seq));
+    await manual;
+
+    const sun = operator.setMode('SUN_POINT');
+    socket.message(ack(socket.lastCommand().seq, false, 'not implemented'));
+    await sun;
+    expect(operator.getState().result).toEqual({ tone: 'error', text: 'MODE REFUSED: not implemented. THE FIRMWARE DOES NOT RUN THIS YET' });
+    expect(operator.getState().busy).toBeNull();
+  });
+
+  it('streams the manual setpoint every 100 ms while the box is in MANUAL, and stops when it leaves', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const manualFrames = () => socket.commands().filter((frame) => frame.cmd === 'manual');
+
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'rate' }));
+    expect(operator.getState().manual).toMatchObject({ input: 'rate', value: 0, min: -90, max: 90 });
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 3);
+    expect(manualFrames()).toHaveLength(3);
+    expect(manualFrames().every((frame) => frame.rate_dps === 0 && Object.keys(frame).length === 5)).toBe(true);
+
+    operator.setManual(30);
+    operator.setManual(500);
+    expect(operator.getState().manual?.value).toBe(90);
+    operator.setManual(30);
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS);
+    expect(manualFrames().at(-1)).toMatchObject({ cmd: 'manual', rate_dps: 30 });
+
+    socket.message(tlm({ psi_deg: 10, mode: 'READY', manual_input: null }));
+    expect(operator.getState().manual).toBeNull();
+    const count = manualFrames().length;
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 5);
+    expect(manualFrames()).toHaveLength(count);
+  });
+
+  it('uses the throttle band from the box, starts wheel input at the current speed, and e-stop stops the stream', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+    expect(operator.getState().manual).toMatchObject({ input: 'throttle', value: 150, min: 150, max: 400 });
+    operator.setManual(1000);
+    expect(operator.getState().manual?.value).toBe(400);
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS);
+    expect(socket.commands().filter((frame) => frame.cmd === 'manual').at(-1)).toMatchObject({ throttle: 400 });
+
+    operator.estop();
+    expect(operator.getState().manual).toBeNull();
+    const count = socket.commands().length;
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 5);
+    expect(socket.commands()).toHaveLength(count);
+  });
+
+  it('does not restart the stream from a MANUAL frame that arrives after e-stop or disarm', async () => {
+    for (const stop of ['estop', 'disarm'] as const) {
+      const { socket, operator } = armed();
+      await armAndReady(socket, operator);
+      socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+      await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS);
+
+      if (stop === 'estop') operator.estop();
+      else void operator.disarm();
+      const count = socket.commands().filter((frame) => frame.cmd === 'manual').length;
+      // The box's next frames still say MANUAL until its mode event lands.
+      socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+      await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 5);
+      expect(operator.getState().manual).toBeNull();
+      expect(socket.commands().filter((frame) => frame.cmd === 'manual')).toHaveLength(count);
+      operator.detach();
+    }
+  });
+
+  it('does not stream for throttle input when the box sends no throttle band', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle' }));
+    expect(operator.getState().manual).toBeNull();
+    await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 3);
+    expect(socket.commands().filter((frame) => frame.cmd === 'manual')).toEqual([]);
+  });
+
+  it('only sends a mode the box can enter from its current mode, and names automatic exits', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const hold = operator.setMode('HOLD');
+    socket.message(ack(socket.lastCommand().seq));
+    await hold;
+    socket.message(tlm({ psi_deg: 10, psi_ref_deg: 10, mode: 'HOLD' }));
+    const before = socket.commands().length;
+    await operator.setMode('DETUMBLE');
+    expect(socket.commands()).toHaveLength(before);
+
+    const ready = operator.setMode('READY');
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'READY' });
+    socket.message(ack(socket.lastCommand().seq));
+    await ready;
+
+    socket.message(modeEvent('READY', 'sun_invalid'));
+    expect(operator.getState().result).toEqual({ tone: 'error', text: 'SUN POINT ENDED: THE SUN READING WAS INVALID FOR 0.5 S.' });
+  });
+
+  it('slews to a typed heading from READY, wraps it onto the wire, and reports slew_complete', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    await operator.setMode('SLEW');
+    expect(socket.commands().filter((frame) => frame.cmd === 'mode')).toEqual([]);
+
+    const slew = operator.slewToHeading(270);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: -90 });
+    socket.message(ack(socket.lastCommand().seq));
+    await slew;
+    expect(operator.getState().result).toEqual({ tone: 'ok', text: 'SLEW ACCEPTED: TURNING TO -90°.' });
+    socket.message(tlm({ psi_deg: -40, psi_ref_deg: -60, mode: 'SLEW' }));
+    await operator.slewToHeading(10);
+    expect(socket.commands().filter((frame) => frame.cmd === 'mode')).toHaveLength(1);
+
+    socket.message(modeEvent('READY', 'slew_complete'));
+    expect(operator.getState().result).toEqual({ tone: 'ok', text: 'SLEW COMPLETE: HOLDING AT THE TARGET HEADING IN READY.' });
+  });
+
+  it('nudges the manual setpoint by the step for its input, inside the limits', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+    operator.nudgeManual(1);
+    operator.nudgeManual(1);
+    expect(operator.getState().manual?.value).toBe(170);
+    operator.nudgeManual(-5);
+    expect(operator.getState().manual?.value).toBe(150);
+    operator.estop();
+  });
+
+  it('sends respin from READY only, with an optional start speed inside 1000 to 3800 rpm', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const bias = operator.respin(null);
+    expect(socket.lastCommand()).toEqual({ v: 1, type: 'cmd', seq: socket.lastCommand().seq, cmd: 'respin' });
+    socket.message(ack(socket.lastCommand().seq, false, 'not implemented'));
+    await bias;
+    expect(operator.getState().result?.text).toBe('RESPIN REFUSED: not implemented. THE FIRMWARE DOES NOT RUN THIS YET');
+
+    const before = socket.commands().length;
+    await operator.respin(4500);
+    expect(socket.commands()).toHaveLength(before);
+    expect(operator.getState().result?.text).toBe('RESPIN NOT SENT: THE START SPEED MUST BE 1000 TO 3800 RPM.');
+
+    const fast = operator.respin(3800);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'respin', wheel_rpm: 3800 });
+    socket.message(ack(socket.lastCommand().seq));
+    await fast;
+  });
+
+  it('does not change mode unless it controls the box in a mode that allows it', async () => {
+    const { socket, operator } = armed();
+    await operator.setMode('HOLD');
+    expect(socket.commands()).toEqual([]);
+
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'SPINUP' }));
+    await operator.setMode('HOLD');
+    expect(socket.commands().filter((frame) => frame.cmd === 'mode')).toEqual([]);
+  });
+
+  it('cannot rotate before it controls an armed box in READY', async () => {
+    const { socket, operator } = armed();
+    socket.message(tlm({ psi_deg: 10, mode: 'READY' }));
+    await operator.rotate(1);
+    expect(socket.commands()).toEqual([]);
+  });
+
+  it('zeros heading, runs right 90, holds 1.0 s, and SLEWs back to zero', async () => {
+    const { socket, operator } = armed(10);
+    await armAndReady(socket, operator, 10);
+    expect(operator.getState().controlling).toBe(true);
+
+    const turn = operator.rotate(1);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'zero_heading' });
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(0);
+    expect(operator.getState()).toMatchObject({ phase: 'rotating', originDeg: 0, targetDeg: 90 });
+
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: 90 });
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: 10, mode: 'READY' }));
+    await flush();
+    expect(operator.getState().phase).toBe('rotating');
+    socket.message(tlm({ psi_deg: 60, mode: 'SLEW' }));
+    socket.message(tlm({ psi_deg: 90, mode: 'READY' }));
+    await flush();
+    expect(operator.getState().phase).toBe('rotating');
+    socket.message(modeEvent('READY', 'slew_complete'));
+    await flush();
+    expect(operator.getState().phase).toBe('holding');
+    const commandsDuringHold = socket.commands().length;
+    await vi.advanceTimersByTimeAsync(HOLD_MS - 10);
+    expect(socket.commands()).toHaveLength(commandsDuringHold);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: 0 });
+    expect(operator.getState().phase).toBe('returning');
+
+    await finishSlew(socket, 0);
+    await turn;
+    expect(operator.getState()).toMatchObject({ phase: 'idle', result: { tone: 'ok' } });
+    expect(socket.commands().map((command) => command.cmd)).toEqual(['arm', 'zero_heading', 'mode', 'mode']);
+  });
+
+  it('uses zero-based targets regardless of the old heading, with a negative step for left', async () => {
+    const { socket, operator } = armed(-111.06);
+    await armAndReady(socket, operator, -111.06);
+    void startTurn(socket, operator, 1);
+    await flush();
+    expect(socket.lastCommand().psi_ref_deg).toBe(90);
+    const second = armed(90);
+    await armAndReady(second.socket, second.operator, 90);
+    void startTurn(second.socket, second.operator, -1);
+    await flush();
+    expect(second.socket.lastCommand().psi_ref_deg).toBe(-90);
+    const third = armed(-90);
+    await armAndReady(third.socket, third.operator, -90);
+    void startTurn(third.socket, third.operator, 1);
+    await flush();
+    expect(third.socket.lastCommand().psi_ref_deg).toBe(90);
+  });
+
+  it('does not SLEW if zero_heading is refused or the turn is stopped before its ack', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    let turn = operator.rotate(1);
+    socket.message(ack(socket.lastCommand().seq, false, 'heading unavailable'));
+    await turn;
+    expect(operator.getState().result).toMatchObject({ tone: 'error', text: expect.stringContaining('heading unavailable') });
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(0);
+
+    turn = operator.rotate(-1);
+    const zeroSeq = socket.lastCommand().seq;
+    await operator.stopTurn();
+    socket.message(ack(zeroSeq));
+    await turn;
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(0);
+  });
+
+  it('Stop turn cancels the sequence and sends mode READY while the box is slewing', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const { turn } = await startTurn(socket, operator, 1);
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: 40, mode: 'SLEW' }));
+    const stopping = operator.stopTurn();
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'READY' });
+    socket.message(ack(socket.lastCommand().seq));
+    await stopping;
+    await turn;
+    expect(operator.getState().phase).toBe('idle');
+    const count = socket.commands().length;
+    await vi.advanceTimersByTimeAsync(HOLD_MS * 3);
+    expect(socket.commands()).toHaveLength(count);
+  });
+
+  it('e-stop aborts the turn, and no return SLEW follows', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const { turn } = await startTurn(socket, operator, 1);
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    operator.estop();
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+    await turn;
+    await vi.advanceTimersByTimeAsync(SLEW_WAIT_MS * 2);
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(1);
+    expect(operator.getState().phase).toBe('idle');
+  });
+
+  it('stops on a refused SLEW, on the box SLEW_TIMEOUT, and when the box goes SAFE', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+
+    let { turn } = await startTurn(socket, operator, 1);
+    socket.message(ack(socket.lastCommand().seq, false, 'magnetometer not OK'));
+    await turn;
+    expect(operator.getState().result).toMatchObject({ tone: 'error', text: expect.stringContaining('magnetometer not OK') });
+
+    ({ turn } = await startTurn(socket, operator, 1));
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
+    socket.message(tlm({ psi_deg: 30, mode: 'READY' }));
+    await flush();
+    expect(operator.getState().phase).toBe('rotating');
+    socket.message(modeEvent('READY', 'SLEW_TIMEOUT'));
+    await turn;
+    expect(operator.getState().result!.text).toContain('TIMED OUT');
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(2);
+
+    socket.message(tlm({ psi_deg: 30, mode: 'READY' }));
+    ({ turn } = await startTurn(socket, operator, -1));
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
+    socket.message(modeEvent('SAFE', 'HEARTBEAT_LOST'));
+    socket.message(tlm({ psi_deg: 30, mode: 'SAFE' }));
+    await turn;
+    expect(operator.getState()).toMatchObject({ controlling: false, phase: 'idle' });
+  });
+
+  it('fails if READY telemetry arrives after SLEW but no completion event follows', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const { turn } = await startTurn(socket, operator, 1);
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
+    socket.message(tlm({ psi_deg: 30, mode: 'READY' }));
+    await flush();
+    expect(operator.getState().phase).toBe('rotating');
+    await vi.advanceTimersByTimeAsync(SLEW_EVENT_WAIT_MS);
+    await turn;
+    expect(operator.getState().result).toMatchObject({ tone: 'error', text: expect.stringContaining('WITHOUT A SLEW COMPLETION EVENT') });
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(1);
+  });
+
+  it('gives up when the slew never finishes', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const { turn } = await startTurn(socket, operator, 1);
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
+    await vi.advanceTimersByTimeAsync(SLEW_WAIT_MS);
+    await turn;
+    expect(operator.getState().result!.text).toContain('DID NOT FINISH');
+  });
+
+  it('drops control when the link closes and never reconnects', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.drop();
+    expect(operator.getState()).toMatchObject({ controlling: false, result: { tone: 'error' } });
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
+});
+
+describe('ground station box controls', () => {
+  function connect() {
+    vi.stubGlobal('WebSocket', FakeSocket);
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }), { target: { value: 'ws://127.0.0.1:8081/ws' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    const socket = FakeSocket.instances[0]!;
+    act(() => {
+      socket.open();
+      socket.message(tlm({ t_ms: 0, psi_deg: 0, mode: 'SAFE' }));
+    });
+    return socket;
+  }
+
+  it('asks to confirm the lock pin before it sends arm', async () => {
+    const socket = connect();
+    const armNow = () => screen.getByRole('button', { name: 'Arm now' });
+    const confirmGroup = () => document.querySelector<HTMLElement>('[aria-label="Confirm arming"]')!;
+    expect(confirmGroup().hidden).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    expect(screen.getByRole('group', { name: 'Confirm arming' }).hidden).toBe(false);
+    expect(armNow().hasAttribute('disabled')).toBe(true);
+    expect(socket.sent).toEqual([]);
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(armNow());
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'arm' });
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    expect(screen.getByText(/ARM ACCEPTED/)).toBeTruthy();
+  });
+
+  it('sends only changed SAFE parameters and shows the applied set or exact refusal reason', async () => {
+    const socket = connect();
+    const toggle = screen.getByRole('button', { name: /PARAMETERS \/ SAFE ONLY/ });
+    fireEvent.click(toggle);
+
+    fireEvent.change(screen.getByLabelText(/Rate gain/), { target: { value: '0.02' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changed parameters' }));
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'set_params', params: { k_omega: 0.02 } });
+    expect(Object.keys(socket.lastCommand().params as object)).toEqual(['k_omega']);
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq, true, undefined, { applied: { k_omega: 0.02 } }));
+      await flush();
+    });
+    expect(screen.getByText('Applied: k_omega = 0.02')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText(/Heading gain/), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changed parameters' }));
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq, false, 'invalid param: k_psi'));
+      await flush();
+    });
+    expect(screen.getByText('Set params refused: invalid param: k_psi')).toBeTruthy();
+
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    expect(screen.queryByRole('button', { name: /PARAMETERS \/ SAFE ONLY/ })).toBeNull();
+  });
+
+  it('the mode menu sends the chosen mode, and stays disabled until the box is armed', async () => {
+    const socket = connect();
+    const trigger = () => screen.getByRole('button', { name: 'Set the box mode' });
+    expect(trigger().hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm now' }));
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    expect(trigger().hasAttribute('disabled')).toBe(false);
+
+    fireEvent.click(trigger());
+    expect(trigger().getAttribute('aria-expanded')).toBe('true');
+    const items = screen.getAllByRole('menuitem').map((item) => item.getAttribute('aria-label'));
+    expect(items).toEqual(['Ready', 'Hold heading', 'Slew to heading…', 'Manual: rate', 'Manual: throttle', 'Manual: wheel speed', 'Detumble', 'Sun point', 'Respin wheel…']);
+    expect((screen.getByRole('menuitem', { name: 'Sun point' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('No valid sun')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Manual: throttle' }));
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'MANUAL', input: 'throttle' });
+    expect(trigger().getAttribute('aria-expanded')).toBe('false');
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    expect(screen.getByText('MODE MANUAL (THROTTLE) ACCEPTED.')).toBeTruthy();
+
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 200, psi_deg: 0, mode: 'MANUAL' })));
+    fireEvent.click(trigger());
+    const enabled = screen.getAllByRole('menuitem').filter((item) => !(item as HTMLButtonElement).disabled).map((item) => item.getAttribute('aria-label'));
+    expect(enabled).toEqual(['Ready']);
+    expect(screen.getAllByText('Firmware pending')).toHaveLength(1);
+    expect(screen.getByText('Ready only')).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    expect(trigger().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('arrow keys nudge the manual setpoint, but not while the mode menu is open', async () => {
+    const socket = connect();
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm now' }));
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'MANUAL', manual_input: 'rate' })));
+    const sentRate = async () => {
+      await act(() => vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS));
+      return socket.commands().filter((frame) => frame.cmd === 'manual').at(-1)?.rate_dps;
+    };
+    expect(await sentRate()).toBe(0);
+
+    fireEvent.keyDown(document.body, { key: 'ArrowUp' });
+    expect(await sentRate()).toBe(5);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set the box mode' }));
+    const item = screen.getByRole('menuitem', { name: 'Ready' });
+    fireEvent.keyDown(item, { key: 'ArrowRight' });
+    fireEvent.keyDown(item, { key: 'ArrowLeft' });
+    fireEvent.keyDown(item, { key: 'ArrowLeft' });
+    expect(await sentRate()).toBe(5);
+  });
+
+  it('keeps Arm now disabled while the box turns or the pack is low, and says why (TD 6.6)', async () => {
+    const socket = connect();
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 50, psi_deg: 0, rate_dps: 12, vbat: 10.1, mode: 'SAFE' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(screen.getByRole('button', { name: 'Arm now' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText(/THE BOX IS TURNING AT 12.0 DEG\/S/)).toBeTruthy();
+    expect(socket.commands()).toEqual([]);
+  });
+
+  it('the E-stop button sends estop; the space bar does too, only while the box is armed', async () => {
+    const socket = connect();
+    fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+    expect(socket.commands()).toEqual([]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Emergency stop the box' }));
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'SPINUP' })));
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 200, psi_deg: 0, mode: 'SPINUP' })));
+    const before = socket.commands().length;
+    fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+    expect(socket.commands()).toHaveLength(before + 1);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+  });
+
+  it('while armed, the space bar sends e-stop even from a focused text field, checkbox or slider (FD 17, V-63)', async () => {
+    const socket = connect();
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    const url = screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }) as HTMLInputElement;
+    for (const target of [url, document.createElement('input')]) {
+      if (target !== url) {
+        target.type = 'range';
+        document.body.append(target);
+      }
+      target.focus();
+      const before = socket.commands().length;
+      const event = fireEvent.keyDown(target, { code: 'Space', key: ' ' });
+      expect(event).toBe(false);
+      expect(socket.commands()).toHaveLength(before + 1);
+      expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+    }
+  });
+});

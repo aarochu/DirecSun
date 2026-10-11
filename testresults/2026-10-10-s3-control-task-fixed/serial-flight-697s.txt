@@ -1,0 +1,1493 @@
+Script started on 2026-10-10 17:44:06-04:00 [COMMAND="timeout 700 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/tools/idf.sh -p /dev/ttyACM0 monitor" <not executed on terminal>]
+Executing action: monitor
+Running idf_monitor in directory /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware
+Executing "/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python /home/jazoe/.espressif/v6.0/esp-idf/tools/idf_monitor.py -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/build/direcsun.elf /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/build/bootloader/bootloader.elf -m '/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python' '/home/jazoe/.espressif/v6.0/esp-idf/tools/idf.py' '-p' '/dev/ttyACM0'"...
+--- esp-idf-monitor 1.9.0 on /dev/ttyACM0 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+I (126) esp_image: segment 3: paddr=000415e8 vaddr=3fc9af88 sizeESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40382806
+--- 0x40382806: esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:64
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xda0
+--- 0x403c8700: _stext at ??:?
+load:0x403cb700,len:0x2f58
+entry 0x403c8908
+--- 0x403c8908: call_start_cpu0 at /home/jazoe/.espressif/v6.0/esp-idf/components/bootloader/subproject/main/bootloader_start.c:27
+I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+I (24) boot: compile time Oct 10 2026 17:41:42
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 8MB
+I (42) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (49) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+I (75) boot: End of partition table
+I (79) esp_image: segment 0: paddr=00010020 vaddr=3c030020 size=0fd68h ( 64872) map
+I (98) esp_image: segment 1: paddr=0001fd90 vaddr=3fc9ad00 size=00288h (   648) load
+I (98) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=215c0h (136640) map
+I (126) esp_image: segment 3: paddr=000415e8 vaddr=3fc9af88 size=03bf8h ( 15352) load
+I (129) esp_image: segment 4: paddr=000451e8 vaddr=40378000 size=12c58h ( 76888) load
+I (147) esp_image: segment 5: paddr=00057e48 vaddr=50000004 size=00024h (    36) load
+I (155) boot: Loaded app from partition at offset 0x10000
+I (155) boot: Disabling RNG early entropy source...
+I (165) cpu_start: Multicore app
+I (174) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (174) cpu_start: Pro cpu start user code
+I (174) cpu_start: cpu freq: 240000000 Hz
+I (176) app_init: Application information:
+I (180) app_init: Project name:     direcsun
+I (184) app_init: App version:      345e5f7-dirty
+I (188) app_init: Compile time:     Oct 10 2026 17:41:32
+I (193) app_init: ELF file SHA256:  b8acba6d2...
+I (198) app_init: ESP-IDF:          v6.0
+I (201) efuse_init: Min chip rev:     v0.0
+I (205) efuse_init: Max chip rev:     v0.99 
+I (209) efuse_init: Chip rev:         v0.2
+I (213) heap_init: Initializing. RAM available for dynamic allocation:
+I (219) heap_init: At 3FCA0A20 len 00048CF0 (291 KiB): RAM
+I (224) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (229) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (235) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (241) spi_flash: detected chip: gd
+I (243) spi_flash: flash io: dio
+I (247) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (253) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (259) main_task: Started on CPU0
+I (262) main_task: Calling app_main()
+I (275) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+I (275) direcsun: DirecSun flight firmware
+I (277) direcsun: firmware 345e5f7-dirty, ESP-IDF v6.0
+I (282) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+I (288) direcsun: flash 8MB configured, 8MB detected
+I (292) direcsun: reset reason: USB peripheral (11)
+I (297) direcsun: DShot150 zeros on GPIO7 from 35341 us after boot
+W (303) direcsun: parameters reset to defaults (missing)
+I (308) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+I (314) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+I (323) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea568).
+I (330) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea568 (SDA=5, SCL=6, ref_count=0)
+I (338) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+I (347) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fceaadc, Speed: 400000 Hz).
+I (358) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+I (363) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+I (367) QMC5883P: QMC5883P Chip ID: 0x80
+I (380) QMC5883P: QMC5883P initialized successfully
+I (381) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+I (382) direcsun: magnetometer: ESP_OK (chip ID 0x80)
+I (387) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fceaba4, Speed: 400000 Hz).
+I (400) baro: BMP280 chip ID 0x58 at 0x77, 400000 Hz SCL
+I (401) direcsun: barometer: ESP_OK (chip ID 0x58)
+I (406) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+I (413) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+I (420) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+I (1276) direcsun: gyro z bias seeded at -2.083 deg/s from 424 still samples (range 0.244); accel reference 0.871 g (norm 0.853 to 0.897)
+I (1277) direcsun: boot window done: 502 DShot frames sent, battery 5.72 V over 43 readings
+I (1286) main_task: Returned from app_main()
+I (1286) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+I (1296) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+I (2536) status: s 1 ticks 501 missed 0 (total 0) loop_us_max 976 dev_max_us 0 p99_dev_us 0 dshot sent 1019 dropped 0 imu_invalid 0
+I (2536) status: mode SAFE throttle 0 vbat 9.99 rate 0.01 bias -2.08 tilt 4.0 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (3548) status: s 2 ticks 500 missed 0 (total 0) loop_us_max 926 dev_max_us 2 p99_dev_us 0 dshot sent 1519 dropped 0 imu_invalid 0
+I (3548) status: mode SAFE throttle 0 vbat 9.98 rate -0.11 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (4309) status: s 3 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 2019 dropped 0 imu_invalid 0
+I (4309) status: mode SAFE throttle 0 vbat 9.98 rate -0.05 bias -2.09 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (5320) status: s 4 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 0 p99_dev_us 0 dshot sent 2519 dropped 0 imu_invalid 0
+I (5320) status: mode SAFE throttle 0 vbat 9.97 rate 0.01 bias -2.08 tilt 3.9 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (6331) status: s 5 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 3019 dropped 0 imu_invalid 0
+I (6331) status: mode SAFE throttle 0 vbat 9.97 rate 0.01 bias -2.08 tilt 3.9 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (7342) status: s 6 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 0 p99_dev_us 0 dshot sent 3519 dropped 0 imu_invalid 0
+I (7342) status: mode SAFE throttle 0 vbat 9.96 rate 0.07 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (8353) status: s 7 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 4019 dropped 0 imu_invalid 0
+I (8353) status: mode SAFE throttle 0 vbat 9.96 rate 0.01 bias -2.09 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (9364) status: s 8 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 0 p99_dev_us 0 dshot sent 4519 dropped 0 imu_invalid 0
+I (9364) status: mode SAFE throttle 0 vbat 9.97 rate 0.07 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (10375) status: s 9 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 5019 dropped 0 imu_invalid 0
+I (10375) status: mode SAFE throttle 0 vbat 9.96 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (11386) status: s 10 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 0 p99_dev_us 0 dshot sent 5519 dropped 0 imu_invalid 0
+I (11386) status: mode SAFE throttle 0 vbat 9.96 rate -0.05 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (12398) status: s 11 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 6019 dropped 0 imu_invalid 0
+I (12398) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (13410) status: s 12 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 6519 dropped 0 imu_invalid 0
+I (13410) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (14422) status: s 13 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 7019 dropped 0 imu_invalid 0
+I (14422) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.9 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (15434) status: s 14 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 7519 dropped 0 imu_invalid 0
+I (15434) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (16446) status: s 15 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 8019 dropped 0 imu_invalid 0
+I (16446) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (17458) status: s 16 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 8519 dropped 0 imu_invalid 0
+I (17458) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (18470) status: s 17 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 9019 dropped 0 imu_invalid 0
+I (18470) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (19482) status: s 18 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 9519 dropped 0 imu_invalid 0
+I (19482) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (20494) status: s 19 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 10019 dropped 0 imu_invalid 0
+I (20494) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (21506) status: s 20 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 10519 dropped 0 imu_invalid 0
+I (21506) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (22518) status: s 21 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 11019 dropped 0 imu_invalid 0
+I (22518) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.6 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (23530) status: s 22 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 11519 dropped 0 imu_invalid 0
+I (23530) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (24542) status: s 23 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 12019 dropped 0 imu_invalid 0
+I (24542) status: mode SAFE throttle 0 vbat 9.96 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (25554) status: s 24 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 12519 dropped 0 imu_invalid 0
+I (25554) status: mode SAFE throttle 0 vbat 9.96 rate 0.01 bias -2.08 tilt 3.5 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (26316) status: s 25 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 13019 dropped 0 imu_invalid 0
+I (26316) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (27328) status: s 26 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 13519 dropped 0 imu_invalid 0
+I (27328) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (28340) status: s 27 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 14019 dropped 0 imu_invalid 0
+I (28340) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.7 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (29352) status: s 28 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 14519 dropped 0 imu_invalid 0
+I (29352) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (30364) status: s 29 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 15019 dropped 0 imu_invalid 0
+I (30364) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.9 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (31376) status: s 30 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 15519 dropped 0 imu_invalid 0
+I (31376) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (32388) status: s 31 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 16019 dropped 0 imu_invalid 0
+I (32388) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (33400) status: s 32 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 16519 dropped 0 imu_invalid 0
+I (33400) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.6 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (34412) status: s 33 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 17019 dropped 0 imu_invalid 0
+I (34412) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (35424) status: s 34 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 17519 dropped 0 imu_invalid 0
+I (35424) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (36436) status: s 35 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 18019 dropped 0 imu_invalid 0
+I (36436) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (37448) status: s 36 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 18519 dropped 0 imu_invalid 0
+I (37448) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.9 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (38460) status: s 37 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 19019 dropped 0 imu_invalid 0
+I (38460) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (39472) status: s 38 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 19519 dropped 0 imu_invalid 0
+I (39472) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.6 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (40484) status: s 39 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 20019 dropped 0 imu_invalid 0
+I (40484) status: mode SAFE throttle 0 vbat 9.93 rate -0.11 bias -2.08 tilt 4.5 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (41496) status: s 40 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 20519 dropped 0 imu_invalid 0
+I (41496) status: mode SAFE throttle 0 vbat 9.95 rate 0.07 bias -2.08 tilt 3.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (42508) status: s 41 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 21019 dropped 0 imu_invalid 0
+I (42508) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.6 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (43520) status: s 42 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 21519 dropped 0 imu_invalid 0
+I (43520) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (44532) status: s 43 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 22019 dropped 0 imu_invalid 0
+I (44532) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 3.6 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (45544) status: s 44 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 22519 dropped 0 imu_invalid 0
+I (45544) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (46556) status: s 45 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 23019 dropped 0 imu_invalid 0
+I (46556) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (47318) status: s 46 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 23519 dropped 0 imu_invalid 0
+I (47318) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (48330) status: s 47 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 24019 dropped 0 imu_invalid 0
+I (48330) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (49342) status: s 48 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 24519 dropped 0 imu_invalid 0
+I (49342) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.9 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (50354) status: s 49 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 25019 dropped 0 imu_invalid 0
+I (50354) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.5 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (51366) status: s 50 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 25519 dropped 0 imu_invalid 0
+I (51366) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.6 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (52378) status: s 51 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 26019 dropped 0 imu_invalid 0
+I (52378) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (53390) status: s 52 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 26519 dropped 0 imu_invalid 0
+I (53390) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (54402) status: s 53 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 27019 dropped 0 imu_invalid 0
+I (54402) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.6 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (55414) status: s 54 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 27519 dropped 0 imu_invalid 0
+I (55414) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 3.3 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (56426) status: s 55 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 28019 dropped 0 imu_invalid 0
+I (56426) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (57438) status: s 56 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 28519 dropped 0 imu_invalid 0
+I (57438) status: mode SAFE throttle 0 vbat 9.93 rate 0.07 bias -2.09 tilt 3.9 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (58450) status: s 57 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 29019 dropped 0 imu_invalid 0
+I (58450) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.7 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (59462) status: s 58 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 29519 dropped 0 imu_invalid 0
+I (59462) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 3.5 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (60474) status: s 59 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 30019 dropped 0 imu_invalid 0
+I (60474) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.9 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (61486) status: s 60 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 30519 dropped 0 imu_invalid 0
+I (61486) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.6 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (62498) status: s 61 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 31019 dropped 0 imu_invalid 0
+I (62498) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 4.0 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (63510) status: s 62 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 31519 dropped 0 imu_invalid 0
+I (63510) status: mode SAFE throttle 0 vbat 9.92 rate -0.04 bias -2.09 tilt 3.4 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (64522) status: s 63 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 32019 dropped 0 imu_invalid 0
+I (64522) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (65534) status: s 64 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 32519 dropped 0 imu_invalid 0
+I (65534) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (66546) status: s 65 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 33019 dropped 0 imu_invalid 0
+I (66546) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (67558) status: s 66 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 33519 dropped 0 imu_invalid 0
+I (67558) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (68320) status: s 67 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 34019 dropped 0 imu_invalid 0
+I (68320) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.9 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (69332) status: s 68 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 34519 dropped 0 imu_invalid 0
+I (69332) status: mode SAFE throttle 0 vbat 9.92 rate 0.07 bias -2.09 tilt 3.9 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (70344) status: s 69 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 35019 dropped 0 imu_invalid 0
+I (70344) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (71356) status: s 70 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 35519 dropped 0 imu_invalid 0
+I (71356) status: mode SAFE throttle 0 vbat 9.93 rate 0.08 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (72368) status: s 71 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 36019 dropped 0 imu_invalid 0
+I (72368) status: mode SAFE throttle 0 vbat 9.93 rate 0.07 bias -2.08 tilt 3.0 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (73380) status: s 72 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 36519 dropped 0 imu_invalid 0
+I (73380) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (74392) status: s 73 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 37019 dropped 0 imu_invalid 0
+I (74392) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (75404) status: s 74 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 37519 dropped 0 imu_invalid 0
+I (75404) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (76416) status: s 75 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 38019 dropped 0 imu_invalid 0
+I (76416) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (77428) status: s 76 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 38519 dropped 0 imu_invalid 0
+I (77428) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (78440) status: s 77 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 39019 dropped 0 imu_invalid 0
+I (78440) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (79452) status: s 78 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 39519 dropped 0 imu_invalid 0
+I (79452) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (80464) status: s 79 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 40019 dropped 0 imu_invalid 0
+I (80464) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (81476) status: s 80 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 40519 dropped 0 imu_invalid 0
+I (81476) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (82488) status: s 81 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 41019 dropped 0 imu_invalid 0
+I (82488) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (83500) status: s 82 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 41519 dropped 0 imu_invalid 0
+I (83500) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (84512) status: s 83 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 42019 dropped 0 imu_invalid 0
+I (84512) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (85524) status: s 84 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 42519 dropped 0 imu_invalid 0
+I (85524) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (86536) status: s 85 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 43019 dropped 0 imu_invalid 0
+I (86536) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.9 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (87548) status: s 86 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 43519 dropped 0 imu_invalid 0
+I (87548) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (88310) status: s 87 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 44019 dropped 0 imu_invalid 0
+I (88310) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (89322) status: s 88 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 44519 dropped 0 imu_invalid 0
+I (89322) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (90334) status: s 89 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 45019 dropped 0 imu_invalid 0
+I (90334) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.4 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (91346) status: s 90 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 45519 dropped 0 imu_invalid 0
+I (91346) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (92358) status: s 91 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 46019 dropped 0 imu_invalid 0
+I (92358) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (93370) status: s 92 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 46519 dropped 0 imu_invalid 0
+I (93370) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (94382) status: s 93 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 47019 dropped 0 imu_invalid 0
+I (94382) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (95394) status: s 94 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 47519 dropped 0 imu_invalid 0
+I (95394) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (96406) status: s 95 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 48019 dropped 0 imu_invalid 0
+I (96406) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (97418) status: s 96 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 48519 dropped 0 imu_invalid 0
+I (97418) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (98430) status: s 97 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 49019 dropped 0 imu_invalid 0
+I (98430) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (99442) status: s 98 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 49519 dropped 0 imu_invalid 0
+I (99442) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (100454) status: s 99 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 50019 dropped 0 imu_invalid 0
+I (100454) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (101466) status: s 100 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 50519 dropped 0 imu_invalid 0
+I (101466) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (102478) status: s 101 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 51019 dropped 0 imu_invalid 0
+I (102478) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (103490) status: s 102 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 51519 dropped 0 imu_invalid 0
+I (103490) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (104502) status: s 103 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 52019 dropped 0 imu_invalid 0
+I (104502) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (105514) status: s 104 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 52519 dropped 0 imu_invalid 0
+I (105514) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (106526) status: s 105 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 53019 dropped 0 imu_invalid 0
+I (106526) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (107538) status: s 106 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 53519 dropped 0 imu_invalid 0
+I (107538) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 4.2 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (108550) status: s 107 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 54019 dropped 0 imu_invalid 0
+I (108550) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.9 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (109312) status: s 108 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 54519 dropped 0 imu_invalid 0
+I (109312) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (110324) status: s 109 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 55019 dropped 0 imu_invalid 0
+I (110324) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (111336) status: s 110 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 55519 dropped 0 imu_invalid 0
+I (111336) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (112348) status: s 111 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 56019 dropped 0 imu_invalid 0
+I (112348) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (113360) status: s 112 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 56519 dropped 0 imu_invalid 0
+I (113360) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (114372) status: s 113 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 57019 dropped 0 imu_invalid 0
+I (114372) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (115384) status: s 114 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 57519 dropped 0 imu_invalid 0
+I (115384) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (116396) status: s 115 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 58019 dropped 0 imu_invalid 0
+I (116396) status: mode SAFE throttle 0 vbat 9.93 rate 0.07 bias -2.08 tilt 3.9 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (117408) status: s 116 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 58519 dropped 0 imu_invalid 0
+I (117408) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (118420) status: s 117 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 59019 dropped 0 imu_invalid 0
+I (118420) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (119432) status: s 118 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 59519 dropped 0 imu_invalid 0
+I (119432) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (120444) status: s 119 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 60019 dropped 0 imu_invalid 0
+I (120444) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (121456) status: s 120 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 60519 dropped 0 imu_invalid 0
+I (121456) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (122468) status: s 121 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 61019 dropped 0 imu_invalid 0
+I (122468) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (123480) status: s 122 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 61519 dropped 0 imu_invalid 0
+I (123480) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (124492) status: s 123 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 62019 dropped 0 imu_invalid 0
+I (124492) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (125504) status: s 124 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 62519 dropped 0 imu_invalid 0
+I (125504) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (126516) status: s 125 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 63019 dropped 0 imu_invalid 0
+I (126516) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (127528) status: s 126 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 63519 dropped 0 imu_invalid 0
+I (127528) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (128540) status: s 127 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 64019 dropped 0 imu_invalid 0
+I (128540) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (129552) status: s 128 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 64519 dropped 0 imu_invalid 0
+I (129552) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (130314) status: s 129 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 65019 dropped 0 imu_invalid 0
+I (130314) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (131326) status: s 130 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 65519 dropped 0 imu_invalid 0
+I (131326) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (132338) status: s 131 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 66019 dropped 0 imu_invalid 0
+I (132338) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (133350) status: s 132 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 66519 dropped 0 imu_invalid 0
+I (133350) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (134362) status: s 133 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 67019 dropped 0 imu_invalid 0
+I (134362) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (135374) status: s 134 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 67519 dropped 0 imu_invalid 0
+I (135374) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (136386) status: s 135 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 68019 dropped 0 imu_invalid 0
+I (136386) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (137398) status: s 136 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 68519 dropped 0 imu_invalid 0
+I (137398) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (138410) status: s 137 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 69019 dropped 0 imu_invalid 0
+I (138410) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (139422) status: s 138 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 69519 dropped 0 imu_invalid 0
+I (139422) status: mode SAFE throttle 0 vbat 9.93 rate 0.07 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (140434) status: s 139 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 70019 dropped 0 imu_invalid 0
+I (140434) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (141446) status: s 140 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 70519 dropped 0 imu_invalid 0
+I (141446) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (142458) status: s 141 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 71019 dropped 0 imu_invalid 0
+I (142458) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (143470) status: s 142 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 71519 dropped 0 imu_invalid 0
+I (143470) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (144482) status: s 143 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 72019 dropped 0 imu_invalid 0
+I (144482) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (145494) status: s 144 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 72519 dropped 0 imu_invalid 0
+I (145494) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (146506) status: s 145 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 73019 dropped 0 imu_invalid 0
+I (146506) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (147518) status: s 146 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 73519 dropped 0 imu_invalid 0
+I (147518) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (148530) status: s 147 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 74019 dropped 0 imu_invalid 0
+I (148530) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (149542) status: s 148 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 74519 dropped 0 imu_invalid 0
+I (149542) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (150554) status: s 149 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 75019 dropped 0 imu_invalid 0
+I (150554) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (151316) status: s 150 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 75519 dropped 0 imu_invalid 0
+I (151316) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (152328) status: s 151 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 76019 dropped 0 imu_invalid 0
+I (152328) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (153340) status: s 152 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 76519 dropped 0 imu_invalid 0
+I (153340) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (154352) status: s 153 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 77019 dropped 0 imu_invalid 0
+I (154352) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (155364) status: s 154 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 77519 dropped 0 imu_invalid 0
+I (155364) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (156376) status: s 155 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 78019 dropped 0 imu_invalid 0
+I (156376) status: mode SAFE throttle 0 vbat 9.92 rate 0.07 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (157388) status: s 156 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 78519 dropped 0 imu_invalid 0
+I (157388) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (158400) status: s 157 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 79019 dropped 0 imu_invalid 0
+I (158400) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.4 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (159412) status: s 158 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 79519 dropped 0 imu_invalid 0
+I (159412) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (160424) status: s 159 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 80019 dropped 0 imu_invalid 0
+I (160424) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (161436) status: s 160 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 80519 dropped 0 imu_invalid 0
+I (161436) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (162448) status: s 161 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 81019 dropped 0 imu_invalid 0
+I (162448) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (163460) status: s 162 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 81519 dropped 0 imu_invalid 0
+I (163460) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (164472) status: s 163 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 82019 dropped 0 imu_invalid 0
+I (164472) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (165484) status: s 164 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 82519 dropped 0 imu_invalid 0
+I (165484) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (166496) status: s 165 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 83019 dropped 0 imu_invalid 0
+I (166496) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (167508) status: s 166 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 83519 dropped 0 imu_invalid 0
+I (167508) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (168520) status: s 167 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 84019 dropped 0 imu_invalid 0
+I (168520) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (169532) status: s 168 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 84519 dropped 0 imu_invalid 0
+I (169532) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (170544) status: s 169 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 85019 dropped 0 imu_invalid 0
+I (170544) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (171556) status: s 170 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 85519 dropped 0 imu_invalid 0
+I (171556) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (172318) status: s 171 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 86019 dropped 0 imu_invalid 0
+I (172318) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (173330) status: s 172 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 86519 dropped 0 imu_invalid 0
+I (173330) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (174342) status: s 173 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 87019 dropped 0 imu_invalid 0
+I (174342) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (175354) status: s 174 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 87519 dropped 0 imu_invalid 0
+I (175354) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (176366) status: s 175 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 88019 dropped 0 imu_invalid 0
+I (176366) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.09 tilt 2.4 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (177378) status: s 176 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 88519 dropped 0 imu_invalid 0
+I (177378) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (178390) status: s 177 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 89019 dropped 0 imu_invalid 0
+I (178390) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (179402) status: s 178 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 89519 dropped 0 imu_invalid 0
+I (179402) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (180414) status: s 179 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 90019 dropped 0 imu_invalid 0
+I (180414) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (181426) status: s 180 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 90519 dropped 0 imu_invalid 0
+I (181426) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (182438) status: s 181 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 91019 dropped 0 imu_invalid 0
+I (182438) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (183450) status: s 182 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 91519 dropped 0 imu_invalid 0
+I (183450) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (184462) status: s 183 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 92019 dropped 0 imu_invalid 0
+I (184462) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (185474) status: s 184 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 92519 dropped 0 imu_invalid 0
+I (185474) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 3.7 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (186486) status: s 185 ticks 500 missed 0 (total 0) loop_us_max 911 dev_max_us 4 p99_dev_us 0 dshot sent 93019 dropped 0 imu_invalid 0
+I (186486) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 4.0 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (187498) status: s 186 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 93519 dropped 0 imu_invalid 0
+I (187498) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (188510) status: s 187 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 94019 dropped 0 imu_invalid 0
+I (188510) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (189522) status: s 188 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 94519 dropped 0 imu_invalid 0
+I (189522) status: mode SAFE throttle 0 vbat 9.94 rate -0.11 bias -2.09 tilt 3.8 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (190534) status: s 189 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 95019 dropped 0 imu_invalid 0
+I (190534) status: mode SAFE throttle 0 vbat 9.93 rate 0.08 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (191546) status: s 190 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 95519 dropped 0 imu_invalid 0
+I (191546) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.6 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (192558) status: s 191 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 96019 dropped 0 imu_invalid 0
+I (192558) status: mode SAFE throttle 0 vbat 9.89 rate 0.08 bias -2.09 tilt 4.3 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (193320) status: s 192 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 96519 dropped 0 imu_invalid 0
+I (193320) status: mode SAFE throttle 0 vbat 9.88 rate 0.01 bias -2.09 tilt 3.5 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (194332) status: s 193 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 97019 dropped 0 imu_invalid 0
+I (194332) status: mode SAFE throttle 0 vbat 9.92 rate 0.08 bias -2.09 tilt 3.2 psi -0.1 wheel 0 latched 0x0010 flags 0x00 baro ok
+I (195344) status: s 194 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 97519 dropped 0 imu_invalid 0
+I (195344) status: mode SAFE throttle 0 vbat 9.92 rate 56.66 bias -2.09 tilt 20.4 psi -5.7 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (196356) status: s 195 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 98019 dropped 0 imu_invalid 0
+I (196356) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 3.1 psi -2.2 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (197368) status: s 196 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 98519 dropped 0 imu_invalid 0
+I (197368) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 3.1 psi -2.2 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (198380) status: s 197 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 99019 dropped 0 imu_invalid 0
+I (198380) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 3.3 psi -2.2 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (199392) status: s 198 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 99519 dropped 0 imu_invalid 0
+I (199392) status: mode SAFE throttle 0 vbat 9.92 rate -0.01 bias -2.06 tilt 3.1 psi -1.9 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (200404) status: s 199 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 100019 dropped 0 imu_invalid 0
+I (200405) status: mode SAFE throttle 0 vbat 9.93 rate 0.12 bias -2.07 tilt 3.1 psi -2.0 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (201416) status: s 200 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 100519 dropped 0 imu_invalid 0
+I (201417) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (202428) status: s 201 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 101019 dropped 0 imu_invalid 0
+I (202429) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (203440) status: s 202 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 101519 dropped 0 imu_invalid 0
+I (203441) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (204452) status: s 203 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 102019 dropped 0 imu_invalid 0
+I (204453) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (205464) status: s 204 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 102519 dropped 0 imu_invalid 0
+I (205465) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (206476) status: s 205 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 103019 dropped 0 imu_invalid 0
+I (206477) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (207488) status: s 206 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 103519 dropped 0 imu_invalid 0
+I (207489) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (208500) status: s 207 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 104019 dropped 0 imu_invalid 0
+I (208501) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (209512) status: s 208 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 104519 dropped 0 imu_invalid 0
+I (209513) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (210524) status: s 209 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 105019 dropped 0 imu_invalid 0
+I (210525) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (211536) status: s 210 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 2 p99_dev_us 0 dshot sent 105519 dropped 0 imu_invalid 0
+I (211537) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (212548) status: s 211 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 106019 dropped 0 imu_invalid 0
+I (212549) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 2.4 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (213310) status: s 212 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 106519 dropped 0 imu_invalid 0
+I (213311) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (214322) status: s 213 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 107019 dropped 0 imu_invalid 0
+I (214323) status: mode SAFE throttle 0 vbat 9.93 rate -0.11 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (215334) status: s 214 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 107519 dropped 0 imu_invalid 0
+I (215335) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (216346) status: s 215 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 108019 dropped 0 imu_invalid 0
+I (216347) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (217358) status: s 216 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 108519 dropped 0 imu_invalid 0
+I (217359) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.9 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (218370) status: s 217 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 109019 dropped 0 imu_invalid 0
+I (218371) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.4 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (219382) status: s 218 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 109519 dropped 0 imu_invalid 0
+I (219383) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (220394) status: s 219 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 110019 dropped 0 imu_invalid 0
+I (220395) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (221406) status: s 220 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 110519 dropped 0 imu_invalid 0
+I (221407) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (222418) status: s 221 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 111019 dropped 0 imu_invalid 0
+I (222419) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (223430) status: s 222 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 111519 dropped 0 imu_invalid 0
+I (223431) status: mode SAFE throttle 0 vbat 9.92 rate 0.07 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (224442) status: s 223 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 112019 dropped 0 imu_invalid 0
+I (224443) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (225454) status: s 224 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 112519 dropped 0 imu_invalid 0
+I (225455) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (226466) status: s 225 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 113019 dropped 0 imu_invalid 0
+I (226467) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (227478) status: s 226 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 113519 dropped 0 imu_invalid 0
+I (227479) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (228490) status: s 227 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 114019 dropped 0 imu_invalid 0
+I (228491) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.3 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (229502) status: s 228 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 114519 dropped 0 imu_invalid 0
+I (229503) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (230514) status: s 229 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 115019 dropped 0 imu_invalid 0
+I (230515) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (231526) status: s 230 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 115519 dropped 0 imu_invalid 0
+I (231527) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (232538) status: s 231 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 116019 dropped 0 imu_invalid 0
+I (232539) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (233550) status: s 232 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 116519 dropped 0 imu_invalid 0
+I (233551) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (234312) status: s 233 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 117019 dropped 0 imu_invalid 0
+I (234313) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (235324) status: s 234 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 117519 dropped 0 imu_invalid 0
+I (235325) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (236336) status: s 235 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 118019 dropped 0 imu_invalid 0
+I (236337) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (237348) status: s 236 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 118519 dropped 0 imu_invalid 0
+I (237349) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (238360) status: s 237 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 119019 dropped 0 imu_invalid 0
+I (238361) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (239372) status: s 238 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 119519 dropped 0 imu_invalid 0
+I (239373) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (240384) status: s 239 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 120019 dropped 0 imu_invalid 0
+I (240385) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (241396) status: s 240 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 120519 dropped 0 imu_invalid 0
+I (241397) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (242408) status: s 241 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 121019 dropped 0 imu_invalid 0
+I (242409) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (243420) status: s 242 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 121519 dropped 0 imu_invalid 0
+I (243421) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (244432) status: s 243 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 122019 dropped 0 imu_invalid 0
+I (244433) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (245444) status: s 244 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 122519 dropped 0 imu_invalid 0
+I (245445) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (246456) status: s 245 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 123019 dropped 0 imu_invalid 0
+I (246457) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (247468) status: s 246 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 123519 dropped 0 imu_invalid 0
+I (247469) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (248480) status: s 247 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 124019 dropped 0 imu_invalid 0
+I (248481) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (249492) status: s 248 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 124519 dropped 0 imu_invalid 0
+I (249493) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (250504) status: s 249 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 125019 dropped 0 imu_invalid 0
+I (250505) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (251516) status: s 250 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 125519 dropped 0 imu_invalid 0
+I (251517) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (252528) status: s 251 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 126019 dropped 0 imu_invalid 0
+I (252529) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (253540) status: s 252 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 126519 dropped 0 imu_invalid 0
+I (253541) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (254552) status: s 253 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 127019 dropped 0 imu_invalid 0
+I (254553) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (255314) status: s 254 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 127519 dropped 0 imu_invalid 0
+I (255315) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (256326) status: s 255 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 128019 dropped 0 imu_invalid 0
+I (256327) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (257338) status: s 256 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 128519 dropped 0 imu_invalid 0
+I (257339) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (258350) status: s 257 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 129019 dropped 0 imu_invalid 0
+I (258351) status: mode SAFE throttle 0 vbat 9.93 rate 0.07 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (259362) status: s 258 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 129519 dropped 0 imu_invalid 0
+I (259363) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (260374) status: s 259 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 130019 dropped 0 imu_invalid 0
+I (260375) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (261386) status: s 260 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 130519 dropped 0 imu_invalid 0
+I (261387) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (262398) status: s 261 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 131019 dropped 0 imu_invalid 0
+I (262399) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (263410) status: s 262 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 131519 dropped 0 imu_invalid 0
+I (263411) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (264422) status: s 263 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 132019 dropped 0 imu_invalid 0
+I (264423) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (265434) status: s 264 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 132519 dropped 0 imu_invalid 0
+I (265435) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (266446) status: s 265 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 133019 dropped 0 imu_invalid 0
+I (266447) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (267458) status: s 266 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 133519 dropped 0 imu_invalid 0
+I (267459) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (268470) status: s 267 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 134019 dropped 0 imu_invalid 0
+I (268471) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (269482) status: s 268 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 134519 dropped 0 imu_invalid 0
+I (269483) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (270494) status: s 269 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 135019 dropped 0 imu_invalid 0
+I (270495) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (271506) status: s 270 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 135519 dropped 0 imu_invalid 0
+I (271507) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (272518) status: s 271 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 136019 dropped 0 imu_invalid 0
+I (272519) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (273530) status: s 272 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 136519 dropped 0 imu_invalid 0
+I (273531) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (274542) status: s 273 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 137019 dropped 0 imu_invalid 0
+I (274543) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (275554) status: s 274 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 137519 dropped 0 imu_invalid 0
+I (275555) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (276316) status: s 275 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 138019 dropped 0 imu_invalid 0
+I (276317) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (277328) status: s 276 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 138519 dropped 0 imu_invalid 0
+I (277329) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (278340) status: s 277 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 139019 dropped 0 imu_invalid 0
+I (278341) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (279352) status: s 278 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 139519 dropped 0 imu_invalid 0
+I (279353) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (280364) status: s 279 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 140019 dropped 0 imu_invalid 0
+I (280365) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (281376) status: s 280 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 140519 dropped 0 imu_invalid 0
+I (281377) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.9 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (282388) status: s 281 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 141019 dropped 0 imu_invalid 0
+I (282389) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (283400) status: s 282 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 141519 dropped 0 imu_invalid 0
+I (283401) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (284412) status: s 283 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 142019 dropped 0 imu_invalid 0
+I (284413) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (285424) status: s 284 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 142519 dropped 0 imu_invalid 0
+I (285425) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (286436) status: s 285 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 143019 dropped 0 imu_invalid 0
+I (286437) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (287448) status: s 286 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 143519 dropped 0 imu_invalid 0
+I (287449) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (288460) status: s 287 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 144019 dropped 0 imu_invalid 0
+I (288461) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (289472) status: s 288 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 144519 dropped 0 imu_invalid 0
+I (289473) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (290484) status: s 289 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 145019 dropped 0 imu_invalid 0
+I (290485) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (291496) status: s 290 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 145519 dropped 0 imu_invalid 0
+I (291497) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (292508) status: s 291 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 146019 dropped 0 imu_invalid 0
+I (292509) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (293520) status: s 292 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 146519 dropped 0 imu_invalid 0
+I (293521) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (294532) status: s 293 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 147019 dropped 0 imu_invalid 0
+I (294533) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (295544) status: s 294 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 147519 dropped 0 imu_invalid 0
+I (295545) status: mode SAFE throttle 0 vbat 9.94 rate -0.04 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (296556) status: s 295 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 148019 dropped 0 imu_invalid 0
+I (296557) status: mode SAFE throttle 0 vbat 9.94 rate -0.04 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (297318) status: s 296 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 148519 dropped 0 imu_invalid 0
+I (297319) status: mode SAFE throttle 0 vbat 9.96 rate -0.04 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (298330) status: s 297 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 149019 dropped 0 imu_invalid 0
+I (298331) status: mode SAFE throttle 0 vbat 9.95 rate -0.04 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (299342) status: s 298 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 149519 dropped 0 imu_invalid 0
+I (299343) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (300354) status: s 299 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 150019 dropped 0 imu_invalid 0
+I (300355) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (301366) status: s 300 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 150519 dropped 0 imu_invalid 0
+I (301367) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (302378) status: s 301 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 151019 dropped 0 imu_invalid 0
+I (302379) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (303390) status: s 302 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 151519 dropped 0 imu_invalid 0
+I (303391) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (304402) status: s 303 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 152019 dropped 0 imu_invalid 0
+I (304403) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (305414) status: s 304 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 152519 dropped 0 imu_invalid 0
+I (305415) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (306426) status: s 305 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 153019 dropped 0 imu_invalid 0
+I (306427) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (307438) status: s 306 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 153519 dropped 0 imu_invalid 0
+I (307439) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (308450) status: s 307 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 154019 dropped 0 imu_invalid 0
+I (308451) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (309462) status: s 308 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 154519 dropped 0 imu_invalid 0
+I (309463) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (310474) status: s 309 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 155019 dropped 0 imu_invalid 0
+I (310475) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (311486) status: s 310 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 155519 dropped 0 imu_invalid 0
+I (311487) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (312498) status: s 311 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 156019 dropped 0 imu_invalid 0
+I (312499) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (313510) status: s 312 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 156519 dropped 0 imu_invalid 0
+I (313511) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (314522) status: s 313 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 157019 dropped 0 imu_invalid 0
+I (314523) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (315534) status: s 314 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 157519 dropped 0 imu_invalid 0
+I (315535) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (316546) status: s 315 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 158019 dropped 0 imu_invalid 0
+I (316547) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (317558) status: s 316 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 158519 dropped 0 imu_invalid 0
+I (317559) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (318320) status: s 317 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 159019 dropped 0 imu_invalid 0
+I (318321) status: mode SAFE throttle 0 vbat 9.94 rate -0.04 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (319332) status: s 318 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 159519 dropped 0 imu_invalid 0
+I (319333) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (320344) status: s 319 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 160019 dropped 0 imu_invalid 0
+I (320345) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (321356) status: s 320 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 160519 dropped 0 imu_invalid 0
+I (321357) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (322368) status: s 321 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 161019 dropped 0 imu_invalid 0
+I (322369) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (323380) status: s 322 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 161519 dropped 0 imu_invalid 0
+I (323381) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (324392) status: s 323 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 162019 dropped 0 imu_invalid 0
+I (324393) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (325404) status: s 324 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 162519 dropped 0 imu_invalid 0
+I (325405) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (326416) status: s 325 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 163019 dropped 0 imu_invalid 0
+I (326417) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (327428) status: s 326 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 163519 dropped 0 imu_invalid 0
+I (327429) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (328440) status: s 327 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 164019 dropped 0 imu_invalid 0
+I (328441) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (329452) status: s 328 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 164519 dropped 0 imu_invalid 0
+I (329453) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (330464) status: s 329 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 165019 dropped 0 imu_invalid 0
+I (330465) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (331476) status: s 330 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 165519 dropped 0 imu_invalid 0
+I (331477) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (332488) status: s 331 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 166019 dropped 0 imu_invalid 0
+I (332489) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (333500) status: s 332 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 166519 dropped 0 imu_invalid 0
+I (333501) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (334512) status: s 333 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 167019 dropped 0 imu_invalid 0
+I (334513) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (335524) status: s 334 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 167519 dropped 0 imu_invalid 0
+I (335525) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (336536) status: s 335 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 168019 dropped 0 imu_invalid 0
+I (336537) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (337548) status: s 336 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 168519 dropped 0 imu_invalid 0
+I (337549) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (338310) status: s 337 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 169019 dropped 0 imu_invalid 0
+I (338311) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (339322) status: s 338 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 169519 dropped 0 imu_invalid 0
+I (339323) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (340334) status: s 339 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 170019 dropped 0 imu_invalid 0
+I (340335) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (341346) status: s 340 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 170519 dropped 0 imu_invalid 0
+I (341347) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (342358) status: s 341 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 171019 dropped 0 imu_invalid 0
+I (342359) status: mode SAFE throttle 0 vbat 9.93 rate 0.07 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (343370) status: s 342 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 171519 dropped 0 imu_invalid 0
+I (343371) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (344382) status: s 343 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 172019 dropped 0 imu_invalid 0
+I (344383) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (345394) status: s 344 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 172519 dropped 0 imu_invalid 0
+I (345395) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (346406) status: s 345 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 173019 dropped 0 imu_invalid 0
+I (346407) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (347418) status: s 346 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 173519 dropped 0 imu_invalid 0
+I (347419) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (348430) status: s 347 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 174019 dropped 0 imu_invalid 0
+I (348431) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (349442) status: s 348 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 174519 dropped 0 imu_invalid 0
+I (349443) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (350454) status: s 349 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 175019 dropped 0 imu_invalid 0
+I (350455) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (351466) status: s 350 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 175519 dropped 0 imu_invalid 0
+I (351467) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (352478) status: s 351 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 176019 dropped 0 imu_invalid 0
+I (352479) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (353490) status: s 352 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 176519 dropped 0 imu_invalid 0
+I (353491) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (354502) status: s 353 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 177019 dropped 0 imu_invalid 0
+I (354503) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (355514) status: s 354 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 177519 dropped 0 imu_invalid 0
+I (355515) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (356526) status: s 355 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 178019 dropped 0 imu_invalid 0
+I (356527) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (357538) status: s 356 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 178519 dropped 0 imu_invalid 0
+I (357539) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (358550) status: s 357 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 179019 dropped 0 imu_invalid 0
+I (358551) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (359312) status: s 358 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 179519 dropped 0 imu_invalid 0
+I (359313) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (360324) status: s 359 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 180019 dropped 0 imu_invalid 0
+I (360325) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (361336) status: s 360 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 180519 dropped 0 imu_invalid 0
+I (361337) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (362348) status: s 361 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 181019 dropped 0 imu_invalid 0
+I (362349) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (363360) status: s 362 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 181519 dropped 0 imu_invalid 0
+I (363361) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (364372) status: s 363 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 182019 dropped 0 imu_invalid 0
+I (364373) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (365384) status: s 364 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 182519 dropped 0 imu_invalid 0
+I (365385) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (366396) status: s 365 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 183019 dropped 0 imu_invalid 0
+I (366397) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (367408) status: s 366 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 183519 dropped 0 imu_invalid 0
+I (367409) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (368420) status: s 367 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 184019 dropped 0 imu_invalid 0
+I (368421) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (369432) status: s 368 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 184519 dropped 0 imu_invalid 0
+I (369433) status: mode SAFE throttle 0 vbat 9.96 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (370444) status: s 369 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 185019 dropped 0 imu_invalid 0
+I (370445) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (371456) status: s 370 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 185519 dropped 0 imu_invalid 0
+I (371457) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (372468) status: s 371 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 186019 dropped 0 imu_invalid 0
+I (372469) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (373480) status: s 372 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 186519 dropped 0 imu_invalid 0
+I (373481) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (374492) status: s 373 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 187019 dropped 0 imu_invalid 0
+I (374493) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (375504) status: s 374 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 187519 dropped 0 imu_invalid 0
+I (375505) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (376516) status: s 375 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 188019 dropped 0 imu_invalid 0
+I (376517) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (377528) status: s 376 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 188519 dropped 0 imu_invalid 0
+I (377529) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (378540) status: s 377 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 189019 dropped 0 imu_invalid 0
+I (378541) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (379552) status: s 378 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 189519 dropped 0 imu_invalid 0
+I (379553) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (380314) status: s 379 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 190019 dropped 0 imu_invalid 0
+I (380315) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (381326) status: s 380 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 190519 dropped 0 imu_invalid 0
+I (381327) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (382338) status: s 381 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 191019 dropped 0 imu_invalid 0
+I (382339) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (383350) status: s 382 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 191519 dropped 0 imu_invalid 0
+I (383351) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (384362) status: s 383 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 192019 dropped 0 imu_invalid 0
+I (384363) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (385374) status: s 384 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 192519 dropped 0 imu_invalid 0
+I (385375) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (386386) status: s 385 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 193019 dropped 0 imu_invalid 0
+I (386387) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (387398) status: s 386 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 193519 dropped 0 imu_invalid 0
+I (387399) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (388410) status: s 387 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 194019 dropped 0 imu_invalid 0
+I (388411) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (389422) status: s 388 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 194519 dropped 0 imu_invalid 0
+I (389423) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (390434) status: s 389 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 195019 dropped 0 imu_invalid 0
+I (390435) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (391446) status: s 390 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 195519 dropped 0 imu_invalid 0
+I (391447) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (392458) status: s 391 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 196019 dropped 0 imu_invalid 0
+I (392459) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (393470) status: s 392 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 196519 dropped 0 imu_invalid 0
+I (393471) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (394482) status: s 393 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 197019 dropped 0 imu_invalid 0
+I (394483) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (395494) status: s 394 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 197519 dropped 0 imu_invalid 0
+I (395495) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (396506) status: s 395 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 198019 dropped 0 imu_invalid 0
+I (396507) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (397518) status: s 396 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 198519 dropped 0 imu_invalid 0
+I (397519) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (398530) status: s 397 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 199019 dropped 0 imu_invalid 0
+I (398531) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (399542) status: s 398 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 199519 dropped 0 imu_invalid 0
+I (399543) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (400554) status: s 399 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 200019 dropped 0 imu_invalid 0
+I (400555) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (401316) status: s 400 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 200519 dropped 0 imu_invalid 0
+I (401317) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (402328) status: s 401 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 201019 dropped 0 imu_invalid 0
+I (402329) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (403340) status: s 402 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 201519 dropped 0 imu_invalid 0
+I (403341) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (404352) status: s 403 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 202019 dropped 0 imu_invalid 0
+I (404353) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (405364) status: s 404 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 202519 dropped 0 imu_invalid 0
+I (405365) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (406376) status: s 405 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 203019 dropped 0 imu_invalid 0
+I (406377) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (407388) status: s 406 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 203519 dropped 0 imu_invalid 0
+I (407389) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (408400) status: s 407 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 204019 dropped 0 imu_invalid 0
+I (408401) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (409412) status: s 408 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 204519 dropped 0 imu_invalid 0
+I (409413) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (410424) status: s 409 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 205019 dropped 0 imu_invalid 0
+I (410425) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (411436) status: s 410 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 205519 dropped 0 imu_invalid 0
+I (411437) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (412448) status: s 411 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 206019 dropped 0 imu_invalid 0
+I (412449) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (413460) status: s 412 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 206519 dropped 0 imu_invalid 0
+I (413461) status: mode SAFE throttle 0 vbat 9.95 rate 0.08 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (414472) status: s 413 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 207019 dropped 0 imu_invalid 0
+I (414473) status: mode SAFE throttle 0 vbat 9.96 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (415484) status: s 414 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 207519 dropped 0 imu_invalid 0
+I (415485) status: mode SAFE throttle 0 vbat 9.95 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (416496) status: s 415 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 208019 dropped 0 imu_invalid 0
+I (416497) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (417508) status: s 416 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 208519 dropped 0 imu_invalid 0
+I (417509) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (418520) status: s 417 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 209019 dropped 0 imu_invalid 0
+I (418521) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (419532) status: s 418 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 209519 dropped 0 imu_invalid 0
+I (419533) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (420544) status: s 419 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 210019 dropped 0 imu_invalid 0
+I (420545) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (421556) status: s 420 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 210519 dropped 0 imu_invalid 0
+I (421557) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (422318) status: s 421 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 211019 dropped 0 imu_invalid 0
+I (422319) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (423330) status: s 422 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 211519 dropped 0 imu_invalid 0
+I (423331) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (424342) status: s 423 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 212019 dropped 0 imu_invalid 0
+I (424343) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (425354) status: s 424 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 212519 dropped 0 imu_invalid 0
+I (425355) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (426366) status: s 425 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 213019 dropped 0 imu_invalid 0
+I (426367) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (427378) status: s 426 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 213519 dropped 0 imu_invalid 0
+I (427379) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (428390) status: s 427 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 214019 dropped 0 imu_invalid 0
+I (428391) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (429402) status: s 428 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 214519 dropped 0 imu_invalid 0
+I (429403) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (430414) status: s 429 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 215019 dropped 0 imu_invalid 0
+I (430415) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (431426) status: s 430 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 215519 dropped 0 imu_invalid 0
+I (431427) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (432438) status: s 431 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 216019 dropped 0 imu_invalid 0
+I (432439) status: mode SAFE throttle 0 vbat 9.94 rate 0.07 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (433450) status: s 432 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 216519 dropped 0 imu_invalid 0
+I (433451) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (434462) status: s 433 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 217019 dropped 0 imu_invalid 0
+I (434463) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (435474) status: s 434 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 217519 dropped 0 imu_invalid 0
+I (435475) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (436486) status: s 435 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 218019 dropped 0 imu_invalid 0
+I (436487) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (437498) status: s 436 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 218519 dropped 0 imu_invalid 0
+I (437499) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (438510) status: s 437 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 219019 dropped 0 imu_invalid 0
+I (438511) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (439522) status: s 438 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 219519 dropped 0 imu_invalid 0
+I (439523) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (440534) status: s 439 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 220019 dropped 0 imu_invalid 0
+I (440535) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (441546) status: s 440 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 220519 dropped 0 imu_invalid 0
+I (441547) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (442558) status: s 441 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 221019 dropped 0 imu_invalid 0
+I (442559) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (443320) status: s 442 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 221519 dropped 0 imu_invalid 0
+I (443321) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (444332) status: s 443 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 222019 dropped 0 imu_invalid 0
+I (444333) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (445344) status: s 444 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 222519 dropped 0 imu_invalid 0
+I (445345) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (446356) status: s 445 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 223019 dropped 0 imu_invalid 0
+I (446357) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (447368) status: s 446 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 223519 dropped 0 imu_invalid 0
+I (447369) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (448380) status: s 447 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 224019 dropped 0 imu_invalid 0
+I (448381) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (449392) status: s 448 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 224519 dropped 0 imu_invalid 0
+I (449393) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (450404) status: s 449 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 225019 dropped 0 imu_invalid 0
+I (450405) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (451416) status: s 450 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 225519 dropped 0 imu_invalid 0
+I (451417) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (452428) status: s 451 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 226019 dropped 0 imu_invalid 0
+I (452429) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (453440) status: s 452 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 226519 dropped 0 imu_invalid 0
+I (453441) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (454452) status: s 453 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 227019 dropped 0 imu_invalid 0
+I (454453) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (455464) status: s 454 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 227519 dropped 0 imu_invalid 0
+I (455465) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (456476) status: s 455 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 228019 dropped 0 imu_invalid 0
+I (456477) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (457488) status: s 456 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 228519 dropped 0 imu_invalid 0
+I (457489) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (458500) status: s 457 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 229019 dropped 0 imu_invalid 0
+I (458501) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (459512) status: s 458 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 229519 dropped 0 imu_invalid 0
+I (459513) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (460524) status: s 459 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 230019 dropped 0 imu_invalid 0
+I (460525) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (461536) status: s 460 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 2 p99_dev_us 0 dshot sent 230519 dropped 0 imu_invalid 0
+I (461537) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (462548) status: s 461 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 231019 dropped 0 imu_invalid 0
+I (462549) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (463310) status: s 462 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 231519 dropped 0 imu_invalid 0
+I (463311) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (464322) status: s 463 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 232019 dropped 0 imu_invalid 0
+I (464323) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.9 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (465334) status: s 464 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 232519 dropped 0 imu_invalid 0
+I (465335) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (466346) status: s 465 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 233019 dropped 0 imu_invalid 0
+I (466347) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (467358) status: s 466 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 233519 dropped 0 imu_invalid 0
+I (467359) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (468370) status: s 467 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 234019 dropped 0 imu_invalid 0
+I (468371) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (469382) status: s 468 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 234519 dropped 0 imu_invalid 0
+I (469383) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (470394) status: s 469 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 235019 dropped 0 imu_invalid 0
+I (470395) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (471406) status: s 470 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 235519 dropped 0 imu_invalid 0
+I (471407) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (472418) status: s 471 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 236019 dropped 0 imu_invalid 0
+I (472419) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (473430) status: s 472 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 236519 dropped 0 imu_invalid 0
+I (473431) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (474442) status: s 473 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 237019 dropped 0 imu_invalid 0
+I (474443) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (475454) status: s 474 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 237519 dropped 0 imu_invalid 0
+I (475455) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (476466) status: s 475 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 238019 dropped 0 imu_invalid 0
+I (476467) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (477478) status: s 476 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 238519 dropped 0 imu_invalid 0
+I (477479) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (478490) status: s 477 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 239019 dropped 0 imu_invalid 0
+I (478491) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (479502) status: s 478 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 239519 dropped 0 imu_invalid 0
+I (479503) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (480514) status: s 479 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 240019 dropped 0 imu_invalid 0
+I (480515) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (481526) status: s 480 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 240519 dropped 0 imu_invalid 0
+I (481527) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (482538) status: s 481 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 241019 dropped 0 imu_invalid 0
+I (482539) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (483550) status: s 482 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 241519 dropped 0 imu_invalid 0
+I (483551) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (484312) status: s 483 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 242019 dropped 0 imu_invalid 0
+I (484313) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (485324) status: s 484 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 242519 dropped 0 imu_invalid 0
+I (485325) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (486336) status: s 485 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 243019 dropped 0 imu_invalid 0
+I (486337) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (487348) status: s 486 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 243519 dropped 0 imu_invalid 0
+I (487349) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (488360) status: s 487 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 244019 dropped 0 imu_invalid 0
+I (488361) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (489372) status: s 488 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 244519 dropped 0 imu_invalid 0
+I (489373) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (490384) status: s 489 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 245019 dropped 0 imu_invalid 0
+I (490385) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (491396) status: s 490 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 245519 dropped 0 imu_invalid 0
+I (491397) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (492408) status: s 491 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 246019 dropped 0 imu_invalid 0
+I (492409) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (493420) status: s 492 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 246519 dropped 0 imu_invalid 0
+I (493421) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (494432) status: s 493 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 247019 dropped 0 imu_invalid 0
+I (494433) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (495444) status: s 494 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 247519 dropped 0 imu_invalid 0
+I (495445) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.08 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (496456) status: s 495 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 248019 dropped 0 imu_invalid 0
+I (496457) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (497468) status: s 496 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 248519 dropped 0 imu_invalid 0
+I (497469) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (498480) status: s 497 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 249019 dropped 0 imu_invalid 0
+I (498481) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (499492) status: s 498 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 249519 dropped 0 imu_invalid 0
+I (499493) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (500504) status: s 499 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 250019 dropped 0 imu_invalid 0
+I (500505) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (501516) status: s 500 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 250519 dropped 0 imu_invalid 0
+I (501517) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (502528) status: s 501 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 251019 dropped 0 imu_invalid 0
+I (502529) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (503540) status: s 502 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 251519 dropped 0 imu_invalid 0
+I (503541) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (504552) status: s 503 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 252019 dropped 0 imu_invalid 0
+I (504553) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (505314) status: s 504 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 252519 dropped 0 imu_invalid 0
+I (505315) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (506326) status: s 505 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 253019 dropped 0 imu_invalid 0
+I (506327) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (507338) status: s 506 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 253519 dropped 0 imu_invalid 0
+I (507339) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (508350) status: s 507 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 254019 dropped 0 imu_invalid 0
+I (508351) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (509362) status: s 508 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 254519 dropped 0 imu_invalid 0
+I (509363) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (510374) status: s 509 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 255019 dropped 0 imu_invalid 0
+I (510375) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (511386) status: s 510 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 255519 dropped 0 imu_invalid 0
+I (511387) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (512398) status: s 511 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 256019 dropped 0 imu_invalid 0
+I (512399) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (513410) status: s 512 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 256519 dropped 0 imu_invalid 0
+I (513411) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (514422) status: s 513 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 257019 dropped 0 imu_invalid 0
+I (514423) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (515434) status: s 514 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 257519 dropped 0 imu_invalid 0
+I (515435) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (516446) status: s 515 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 258019 dropped 0 imu_invalid 0
+I (516447) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (517458) status: s 516 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 258519 dropped 0 imu_invalid 0
+I (517459) status: mode SAFE throttle 0 vbat 9.93 rate -0.04 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (518470) status: s 517 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 259019 dropped 0 imu_invalid 0
+I (518471) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (519482) status: s 518 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 259519 dropped 0 imu_invalid 0
+I (519483) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (520494) status: s 519 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 260019 dropped 0 imu_invalid 0
+I (520495) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (521506) status: s 520 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 260519 dropped 0 imu_invalid 0
+I (521507) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (522518) status: s 521 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 261019 dropped 0 imu_invalid 0
+I (522519) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (523530) status: s 522 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 261519 dropped 0 imu_invalid 0
+I (523531) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (524542) status: s 523 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 262019 dropped 0 imu_invalid 0
+I (524543) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (525554) status: s 524 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 262519 dropped 0 imu_invalid 0
+I (525555) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (526316) status: s 525 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 263019 dropped 0 imu_invalid 0
+I (526317) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (527328) status: s 526 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 263519 dropped 0 imu_invalid 0
+I (527329) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (528340) status: s 527 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 264019 dropped 0 imu_invalid 0
+I (528341) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (529352) status: s 528 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 264519 dropped 0 imu_invalid 0
+I (529353) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (530364) status: s 529 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 265019 dropped 0 imu_invalid 0
+I (530365) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (531376) status: s 530 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 265519 dropped 0 imu_invalid 0
+I (531377) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (532388) status: s 531 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 266019 dropped 0 imu_invalid 0
+I (532389) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (533400) status: s 532 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 266519 dropped 0 imu_invalid 0
+I (533401) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (534412) status: s 533 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 267019 dropped 0 imu_invalid 0
+I (534413) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (535424) status: s 534 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 267519 dropped 0 imu_invalid 0
+I (535425) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (536436) status: s 535 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 268019 dropped 0 imu_invalid 0
+I (536437) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (537448) status: s 536 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 268519 dropped 0 imu_invalid 0
+I (537449) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (538460) status: s 537 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 269019 dropped 0 imu_invalid 0
+I (538461) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (539472) status: s 538 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 269519 dropped 0 imu_invalid 0
+I (539473) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (540484) status: s 539 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 270019 dropped 0 imu_invalid 0
+I (540485) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (541496) status: s 540 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 270519 dropped 0 imu_invalid 0
+I (541497) status: mode SAFE throttle 0 vbat 9.91 rate 0.07 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (542508) status: s 541 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 271019 dropped 0 imu_invalid 0
+I (542509) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (543520) status: s 542 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 271519 dropped 0 imu_invalid 0
+I (543521) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (544532) status: s 543 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 272019 dropped 0 imu_invalid 0
+I (544533) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (545544) status: s 544 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 272519 dropped 0 imu_invalid 0
+I (545545) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (546556) status: s 545 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 273019 dropped 0 imu_invalid 0
+I (546557) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (547318) status: s 546 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 273519 dropped 0 imu_invalid 0
+I (547319) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (548330) status: s 547 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 274019 dropped 0 imu_invalid 0
+I (548331) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (549342) status: s 548 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 274519 dropped 0 imu_invalid 0
+I (549343) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (550354) status: s 549 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 275019 dropped 0 imu_invalid 0
+I (550355) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (551366) status: s 550 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 275519 dropped 0 imu_invalid 0
+I (551367) status: mode SAFE throttle 0 vbat 9.93 rate 0.07 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (552378) status: s 551 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 276019 dropped 0 imu_invalid 0
+I (552379) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.5 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (553390) status: s 552 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 276519 dropped 0 imu_invalid 0
+I (553391) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (554402) status: s 553 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 277019 dropped 0 imu_invalid 0
+I (554403) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (555414) status: s 554 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 277519 dropped 0 imu_invalid 0
+I (555415) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (556426) status: s 555 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 278019 dropped 0 imu_invalid 0
+I (556427) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (557438) status: s 556 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 278519 dropped 0 imu_invalid 0
+I (557439) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (558450) status: s 557 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 279019 dropped 0 imu_invalid 0
+I (558451) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (559462) status: s 558 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 279519 dropped 0 imu_invalid 0
+I (559463) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (560474) status: s 559 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 280019 dropped 0 imu_invalid 0
+I (560475) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (561486) status: s 560 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 280519 dropped 0 imu_invalid 0
+I (561487) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (562498) status: s 561 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 281019 dropped 0 imu_invalid 0
+I (562499) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (563510) status: s 562 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 281519 dropped 0 imu_invalid 0
+I (563511) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (564522) status: s 563 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 282019 dropped 0 imu_invalid 0
+I (564523) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (565534) status: s 564 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 282519 dropped 0 imu_invalid 0
+I (565535) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (566546) status: s 565 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 283019 dropped 0 imu_invalid 0
+I (566547) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (567558) status: s 566 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 283519 dropped 0 imu_invalid 0
+I (567559) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (568320) status: s 567 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 284019 dropped 0 imu_invalid 0
+I (568321) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (569332) status: s 568 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 284519 dropped 0 imu_invalid 0
+I (569333) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (570344) status: s 569 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 285019 dropped 0 imu_invalid 0
+I (570345) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (571356) status: s 570 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 285519 dropped 0 imu_invalid 0
+I (571357) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (572368) status: s 571 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 286019 dropped 0 imu_invalid 0
+I (572369) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (573380) status: s 572 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 286519 dropped 0 imu_invalid 0
+I (573381) status: mode SAFE throttle 0 vbat 9.91 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (574392) status: s 573 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 287019 dropped 0 imu_invalid 0
+I (574393) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (575404) status: s 574 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 287519 dropped 0 imu_invalid 0
+I (575405) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (576416) status: s 575 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 288019 dropped 0 imu_invalid 0
+I (576417) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (577428) status: s 576 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 288519 dropped 0 imu_invalid 0
+I (577429) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (578440) status: s 577 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 289019 dropped 0 imu_invalid 0
+I (578441) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (579452) status: s 578 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 289519 dropped 0 imu_invalid 0
+I (579453) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (580464) status: s 579 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 290019 dropped 0 imu_invalid 0
+I (580465) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.6 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (581476) status: s 580 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 290519 dropped 0 imu_invalid 0
+I (581477) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.4 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (582488) status: s 581 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 291019 dropped 0 imu_invalid 0
+I (582489) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (583500) status: s 582 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 291519 dropped 0 imu_invalid 0
+I (583501) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (584512) status: s 583 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 292019 dropped 0 imu_invalid 0
+I (584513) status: mode SAFE throttle 0 vbat 9.92 rate -0.04 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (585524) status: s 584 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 292519 dropped 0 imu_invalid 0
+I (585525) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (586536) status: s 585 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 293019 dropped 0 imu_invalid 0
+I (586537) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (587548) status: s 586 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 293519 dropped 0 imu_invalid 0
+I (587549) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (588310) status: s 587 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 294019 dropped 0 imu_invalid 0
+I (588311) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (589322) status: s 588 ticks 500 missed 0 (total 0) loop_us_max 916 dev_max_us 1 p99_dev_us 0 dshot sent 294519 dropped 0 imu_invalid 0
+I (589323) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (590334) status: s 589 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 295019 dropped 0 imu_invalid 0
+I (590335) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (591346) status: s 590 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 295519 dropped 0 imu_invalid 0
+I (591347) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (592358) status: s 591 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 296019 dropped 0 imu_invalid 0
+I (592359) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.9 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (593370) status: s 592 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 296519 dropped 0 imu_invalid 0
+I (593371) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (594382) status: s 593 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 297019 dropped 0 imu_invalid 0
+I (594383) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (595394) status: s 594 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 297519 dropped 0 imu_invalid 0
+I (595395) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (596406) status: s 595 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 298019 dropped 0 imu_invalid 0
+I (596407) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (597418) status: s 596 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 298519 dropped 0 imu_invalid 0
+I (597419) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (598430) status: s 597 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 299019 dropped 0 imu_invalid 0
+I (598431) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (599442) status: s 598 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 299519 dropped 0 imu_invalid 0
+I (599443) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (600454) status: s 599 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 300019 dropped 0 imu_invalid 0
+I (600455) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (601466) status: s 600 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 300519 dropped 0 imu_invalid 0
+I (601467) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (602478) status: s 601 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 301019 dropped 0 imu_invalid 0
+I (602479) status: mode SAFE throttle 0 vbat 9.92 rate 0.08 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (603490) status: s 602 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 301519 dropped 0 imu_invalid 0
+I (603491) status: mode SAFE throttle 0 vbat 9.92 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (604502) status: s 603 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 302019 dropped 0 imu_invalid 0
+I (604503) status: mode SAFE throttle 0 vbat 9.95 rate -0.04 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (605514) status: s 604 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 302519 dropped 0 imu_invalid 0
+I (605515) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (606526) status: s 605 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 303019 dropped 0 imu_invalid 0
+I (606527) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (607538) status: s 606 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 303519 dropped 0 imu_invalid 0
+I (607539) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (608550) status: s 607 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 304019 dropped 0 imu_invalid 0
+I (608551) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (609312) status: s 608 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 304519 dropped 0 imu_invalid 0
+I (609313) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (610324) status: s 609 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 305019 dropped 0 imu_invalid 0
+I (610325) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (611336) status: s 610 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 305519 dropped 0 imu_invalid 0
+I (611337) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (612348) status: s 611 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 306019 dropped 0 imu_invalid 0
+I (612349) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (613360) status: s 612 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 306519 dropped 0 imu_invalid 0
+I (613361) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (614372) status: s 613 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 307019 dropped 0 imu_invalid 0
+I (614373) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (615384) status: s 614 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 307519 dropped 0 imu_invalid 0
+I (615385) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (616396) status: s 615 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 308019 dropped 0 imu_invalid 0
+I (616397) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (617408) status: s 616 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 308519 dropped 0 imu_invalid 0
+I (617409) status: mode SAFE throttle 0 vbat 9.94 rate -0.04 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (618420) status: s 617 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 309019 dropped 0 imu_invalid 0
+I (618421) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (619432) status: s 618 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 309519 dropped 0 imu_invalid 0
+I (619433) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (620444) status: s 619 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 310019 dropped 0 imu_invalid 0
+I (620445) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (621456) status: s 620 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 310519 dropped 0 imu_invalid 0
+I (621457) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (622468) status: s 621 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 311019 dropped 0 imu_invalid 0
+I (622469) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (623480) status: s 622 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 311519 dropped 0 imu_invalid 0
+I (623481) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.9 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (624492) status: s 623 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 312019 dropped 0 imu_invalid 0
+I (624493) status: mode SAFE throttle 0 vbat 9.95 rate 0.07 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (625504) status: s 624 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 312519 dropped 0 imu_invalid 0
+I (625505) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (626516) status: s 625 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 313019 dropped 0 imu_invalid 0
+I (626517) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (627528) status: s 626 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 313519 dropped 0 imu_invalid 0
+I (627529) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (628540) status: s 627 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 314019 dropped 0 imu_invalid 0
+I (628541) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.8 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (629552) status: s 628 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 314519 dropped 0 imu_invalid 0
+I (629553) status: mode SAFE throttle 0 vbat 9.92 rate -0.05 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (630314) status: s 629 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 315019 dropped 0 imu_invalid 0
+I (630315) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.09 tilt 2.7 psi -3.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (631326) status: s 630 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 315519 dropped 0 imu_invalid 0
+I (631327) status: mode SAFE throttle 0 vbat 9.93 rate -0.08 bias -2.11 tilt 1.5 psi 17.1 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (632338) status: s 631 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 316019 dropped 0 imu_invalid 0
+I (632339) status: mode SAFE throttle 0 vbat 9.92 rate -0.21 bias -2.16 tilt 1.4 psi 16.8 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (633350) status: s 632 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 316519 dropped 0 imu_invalid 0
+I (633351) status: mode SAFE throttle 0 vbat 9.93 rate 0.05 bias -2.18 tilt 1.4 psi 16.7 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (634362) status: s 633 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 317019 dropped 0 imu_invalid 0
+I (634363) status: mode SAFE throttle 0 vbat 9.92 rate -1.00 bias -2.23 tilt 2.7 psi 2.0 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (635374) status: s 634 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 317519 dropped 0 imu_invalid 0
+I (635375) status: mode SAFE throttle 0 vbat 9.92 rate -0.00 bias -2.32 tilt 2.8 psi 1.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (636386) status: s 635 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 318019 dropped 0 imu_invalid 0
+I (636387) status: mode SAFE throttle 0 vbat 9.92 rate -0.00 bias -2.32 tilt 2.7 psi 1.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (637398) status: s 636 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 318519 dropped 0 imu_invalid 0
+I (637399) status: mode SAFE throttle 0 vbat 9.93 rate 0.24 bias -2.31 tilt 2.7 psi 1.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (638410) status: s 637 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 319019 dropped 0 imu_invalid 0
+I (638411) status: mode SAFE throttle 0 vbat 9.94 rate 0.21 bias -2.29 tilt 2.8 psi 1.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (639422) status: s 638 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 319519 dropped 0 imu_invalid 0
+I (639423) status: mode SAFE throttle 0 vbat 9.93 rate 0.19 bias -2.27 tilt 2.8 psi 1.6 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (640434) status: s 639 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 320019 dropped 0 imu_invalid 0
+I (640435) status: mode SAFE throttle 0 vbat 9.92 rate 0.17 bias -2.24 tilt 2.7 psi 1.8 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (641446) status: s 640 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 320519 dropped 0 imu_invalid 0
+I (641447) status: mode SAFE throttle 0 vbat 9.93 rate 0.15 bias -2.22 tilt 2.8 psi 1.9 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (642458) status: s 641 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 321019 dropped 0 imu_invalid 0
+I (642459) status: mode SAFE throttle 0 vbat 9.92 rate 0.06 bias -2.20 tilt 2.8 psi 2.0 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (643470) status: s 642 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 321519 dropped 0 imu_invalid 0
+I (643471) status: mode SAFE throttle 0 vbat 9.92 rate 0.11 bias -2.19 tilt 2.7 psi 2.0 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (644482) status: s 643 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 322019 dropped 0 imu_invalid 0
+I (644483) status: mode SAFE throttle 0 vbat 9.93 rate 0.10 bias -2.17 tilt 2.7 psi 2.1 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (645494) status: s 644 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 322519 dropped 0 imu_invalid 0
+I (645495) status: mode SAFE throttle 0 vbat 9.94 rate 0.08 bias -2.15 tilt 2.7 psi 2.2 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (646506) status: s 645 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 323019 dropped 0 imu_invalid 0
+I (646507) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.15 tilt 2.7 psi 2.2 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (647518) status: s 646 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 323519 dropped 0 imu_invalid 0
+I (647519) status: mode SAFE throttle 0 vbat 9.95 rate 0.07 bias -2.14 tilt 2.7 psi 2.2 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (648530) status: s 647 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 324019 dropped 0 imu_invalid 0
+I (648531) status: mode SAFE throttle 0 vbat 9.94 rate 0.06 bias -2.13 tilt 2.8 psi 2.3 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (649542) status: s 648 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 324519 dropped 0 imu_invalid 0
+I (649543) status: mode SAFE throttle 0 vbat 9.95 rate 0.05 bias -2.12 tilt 2.8 psi 2.3 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (650554) status: s 649 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 325019 dropped 0 imu_invalid 0
+I (650555) status: mode SAFE throttle 0 vbat 9.95 rate 0.04 bias -2.12 tilt 2.8 psi 2.3 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (651316) status: s 650 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 325519 dropped 0 imu_invalid 0
+I (651317) status: mode SAFE throttle 0 vbat 9.95 rate 0.04 bias -2.11 tilt 2.8 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (652328) status: s 651 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 326019 dropped 0 imu_invalid 0
+I (652329) status: mode SAFE throttle 0 vbat 9.93 rate 0.03 bias -2.11 tilt 2.6 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (653340) status: s 652 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 326519 dropped 0 imu_invalid 0
+I (653341) status: mode SAFE throttle 0 vbat 9.93 rate 0.03 bias -2.10 tilt 2.7 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (654352) status: s 653 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 327019 dropped 0 imu_invalid 0
+I (654353) status: mode SAFE throttle 0 vbat 9.94 rate 0.03 bias -2.10 tilt 2.7 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (655364) status: s 654 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 327519 dropped 0 imu_invalid 0
+I (655365) status: mode SAFE throttle 0 vbat 9.93 rate 0.03 bias -2.10 tilt 2.6 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (656376) status: s 655 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 328019 dropped 0 imu_invalid 0
+I (656377) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.10 tilt 2.7 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (657388) status: s 656 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 328519 dropped 0 imu_invalid 0
+I (657389) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.8 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (658400) status: s 657 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 329019 dropped 0 imu_invalid 0
+I (658401) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.8 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (659412) status: s 658 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 329519 dropped 0 imu_invalid 0
+I (659413) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (660424) status: s 659 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 330019 dropped 0 imu_invalid 0
+I (660425) status: mode SAFE throttle 0 vbat 9.94 rate -0.04 bias -2.09 tilt 2.7 psi 2.4 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (661436) status: s 660 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 330519 dropped 0 imu_invalid 0
+I (661437) status: mode SAFE throttle 0 vbat 9.94 rate -0.04 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (662448) status: s 661 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 331019 dropped 0 imu_invalid 0
+I (662449) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (663460) status: s 662 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 331519 dropped 0 imu_invalid 0
+I (663461) status: mode SAFE throttle 0 vbat 9.95 rate 0.08 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (664472) status: s 663 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 332019 dropped 0 imu_invalid 0
+I (664473) status: mode SAFE throttle 0 vbat 9.95 rate -0.04 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (665484) status: s 664 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 332519 dropped 0 imu_invalid 0
+I (665485) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (666496) status: s 665 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 333019 dropped 0 imu_invalid 0
+I (666497) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (667508) status: s 666 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 333519 dropped 0 imu_invalid 0
+I (667509) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.6 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (668520) status: s 667 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 334019 dropped 0 imu_invalid 0
+I (668521) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (669532) status: s 668 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 334519 dropped 0 imu_invalid 0
+I (669533) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (670544) status: s 669 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 335019 dropped 0 imu_invalid 0
+I (670545) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (671556) status: s 670 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 335519 dropped 0 imu_invalid 0
+I (671557) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (672318) status: s 671 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 336019 dropped 0 imu_invalid 0
+I (672319) status: mode SAFE throttle 0 vbat 9.93 rate 0.08 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (673330) status: s 672 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 336519 dropped 0 imu_invalid 0
+I (673331) status: mode SAFE throttle 0 vbat 9.93 rate -0.04 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (674342) status: s 673 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 337019 dropped 0 imu_invalid 0
+I (674343) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (675354) status: s 674 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 337519 dropped 0 imu_invalid 0
+I (675355) status: mode SAFE throttle 0 vbat 9.93 rate -0.04 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (676366) status: s 675 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 338019 dropped 0 imu_invalid 0
+I (676367) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (677378) status: s 676 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 338519 dropped 0 imu_invalid 0
+I (677379) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (678390) status: s 677 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 339019 dropped 0 imu_invalid 0
+I (678391) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (679402) status: s 678 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 339519 dropped 0 imu_invalid 0
+I (679403) status: mode SAFE throttle 0 vbat 9.96 rate -0.04 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (680414) status: s 679 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 340019 dropped 0 imu_invalid 0
+I (680415) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (681426) status: s 680 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 340519 dropped 0 imu_invalid 0
+I (681427) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (682438) status: s 681 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 341019 dropped 0 imu_invalid 0
+I (682439) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (683450) status: s 682 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 341519 dropped 0 imu_invalid 0
+I (683451) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.6 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (684462) status: s 683 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 342019 dropped 0 imu_invalid 0
+I (684463) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (685474) status: s 684 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 342519 dropped 0 imu_invalid 0
+I (685475) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (686486) status: s 685 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 343019 dropped 0 imu_invalid 0
+I (686487) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (687498) status: s 686 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 343519 dropped 0 imu_invalid 0
+I (687499) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (688510) status: s 687 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 344019 dropped 0 imu_invalid 0
+I (688511) status: mode SAFE throttle 0 vbat 9.94 rate -0.05 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (689522) status: s 688 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 344519 dropped 0 imu_invalid 0
+I (689523) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (690534) status: s 689 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 345019 dropped 0 imu_invalid 0
+I (690535) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (691546) status: s 690 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 345519 dropped 0 imu_invalid 0
+I (691547) status: mode SAFE throttle 0 vbat 9.93 rate 0.01 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (692558) status: s 691 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 346019 dropped 0 imu_invalid 0
+I (692559) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (693320) status: s 692 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 346519 dropped 0 imu_invalid 0
+I (693321) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (694332) status: s 693 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 347019 dropped 0 imu_invalid 0
+I (694333) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (695344) status: s 694 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 347519 dropped 0 imu_invalid 0
+I (695345) status: mode SAFE throttle 0 vbat 9.93 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (696356) status: s 695 ticks 500 missed 0 (total 0) loop_us_max 912 dev_max_us 4 p99_dev_us 0 dshot sent 348019 dropped 0 imu_invalid 0
+I (696357) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (697368) status: s 696 ticks 500 missed 0 (total 0) loop_us_max 917 dev_max_us 1 p99_dev_us 0 dshot sent 348519 dropped 0 imu_invalid 0
+I (697369) status: mode SAFE throttle 0 vbat 9.94 rate 0.02 bias -2.09 tilt 2.7 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+I (698380) status: s 697 ticks 500 missed 0 (total 0) loop_us_max 913 dev_max_us 4 p99_dev_us 0 dshot sent 349019 dropped 0 imu_invalid 0
+I (698381) status: mode SAFE throttle 0 vbat 9.95 rate 0.02 bias -2.09 tilt 2.8 psi 2.5 wheel 0 latched 0x0050 flags 0x00 baro ok
+
+Script done on 2026-10-10 17:55:46-04:00 [COMMAND_EXIT_CODE="124"]

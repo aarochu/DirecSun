@@ -1,0 +1,35 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
+  },
+  "installCommand": "npm ci --prefix frontend && npm ci --prefix frontend/ground-station",
+  "buildCommand": "npm run build --prefix frontend && npm run build:deploy --prefix frontend/ground-station",
+  "outputDirectory": "frontend/dist",
+  "redirects": [
+    {
+      "source": "/draft/ground-station",
+      "destination": "/ground-station/",
+      "permanent": false
+    },
+    {
+      "source": "/draft/:path*",
+      "destination": "/ground-station/overview",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/ground-station",
+      "destination": "/ground-station/index.html"
+    },
+    {
+      "source": "/ground-station/([^.]*)",
+      "destination": "/ground-station/index.html"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ The demonstration modes are detumble (stop a hand spin), hold (keep a heading ag
 
 | Path | What |
 | --- | --- |
-| `frontend/` | The main UI: landing page and ground station (React, Vite, TypeScript) |
+| `frontend/` | The main UI: the landing page (Vite, TypeScript, three.js); the ground station (operator client) is in `frontend/ground-station/` (React); `frontend/shared/` holds the data and styles both use |
 | `firmware/` | ESP-IDF v6.0 project for the XIAO ESP32-S3, in C++17 |
 | `protocol/` | Wire schema v1: the contract between the box and any ground station |
 | `ground/link/` | Engineering bench client: dependency-free JavaScript module for the protocol |
@@ -32,10 +32,11 @@ Each area adds its commands here as it lands.
 
 ### Frontend (main UI)
 
-The landing page and ground station live in `frontend/`. The backend matches what this UI expects. Setup and commands are in [frontend/README.md](frontend/README.md); in short:
+The landing page lives in `frontend/` and the ground station in `frontend/ground-station/`. The backend matches what this UI expects. Setup and commands are in [frontend/README.md](frontend/README.md); in short:
 
 ```bash
-cd frontend && npm ci && npm run dev     # http://localhost:5173
+cd frontend && npm ci && npm run dev           # landing page, http://localhost:5173
+cd frontend/ground-station && npm ci && npm run dev     # ground station, http://localhost:5174
 ```
 
 ### CAD
