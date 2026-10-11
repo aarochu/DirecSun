@@ -94,6 +94,7 @@ else
         "sun_extrapolate|R5.4 sun angle: outside the calibrated range is invalid and not extrapolated"
         "no_respin_range|R5.3 respin: start speeds outside the guarded range are refused"
         "no_sun_lost|R5.4 SUN_POINT: 0.5 s of invalid sun drops to READY"
+        "snapshot_cadence_only|HT-13 (c): the first tlm after every ack and mode event is at least as new at every comms phase"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

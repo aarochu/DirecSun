@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 9,
+  "cmd": "mode",
+  "mode": "SLEW",
+  "psi_ref_deg": 0
+}

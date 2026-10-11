@@ -1,363 +1,330 @@
 #!/usr/bin/env node
-// Drives the ground station (frontend/ground-station) through its own controls and
-// records every WebSocket frame in both directions for tools/check-ui-capture.py.
+// Drive the main UI (frontend/ground-station) against a box through the UI's
+// own controls, and record every WebSocket frame both ways (R4.1, FD
+// section 17). Check the result with tools/check-ui-capture.py.
 //
-//   node tools/ui-turn-recorder.mjs --scenario turn|stop|estop|watch|hidden
-//        --url ws://127.0.0.1:8765/ws --base http://127.0.0.1:4173 --out <dir>
-//        [--turns 4] [--hidden-s 30] [--ui-dir frontend/ground-station]
-//        [--chrome <path to Google Chrome>] [--confirm-arm julian-go]
+//   node tools/ui-turn-recorder.mjs --ui URL --box WS_URL --scenario NAME --out DIR
+//        [--turns N] [--playwright PATH] [--headed] [--real-box-go]
 //
-// The UI must already be served at --base (npm run build, then npx vite preview, in
-// frontend/ground-station). The box is whatever --url names.
+// --ui is the built ground station, served (in frontend/ground-station:
+// npm run build, then npx vite preview). --box is the endpoint typed into the
+// UI's DEVICE LINK field. DIR receives frames.jsonl (every frame, both ways,
+// with the recorder's clock in ms), timeline.jsonl (the status and result
+// lines as they change), meta.json (what the checker needs), and a screenshot
+// of each page at the end. Screenshots are taken only once the scenario is over
+// (or has failed): a full-page screenshot stalls the page's timers, and a
+// mid-run one delayed a 200 ms ping to 304 ms.
 //
-// THIS ARMS THE MOTOR when --url is a real box. The recorder sends arm only to a loopback
-// address unless --confirm-arm julian-go is given, and Julian's go is needed every time.
+// Scenarios:
+//   turn   arm, then --turns turns (default 4) alternating right and left, then disarm
+//   stop   arm, start a right turn, press Stop the turn mid-slew, then disarm
+//   estop  arm, start a right turn, press the space bar mid-slew, then press
+//          Arm again at once: the box must refuse it (ramp-down in progress)
+//   watch  a second page connects and only watches while the operator arms and
+//          turns once; the watch page then presses E-stop; the operator re-arms
+//          after the ramp-down and closes its page, and the watch page's tlm
+//          shows HEARTBEAT_LOST about 1 s after the operator's last ping
+//   hidden arm, then put another tab in front of the ground station for 30 s and
+//          bring it back: the box must still be READY (no HEARTBEAT_LOST). Needs
+//          --headed: headless Chrome never hides a page (a background tab and a
+//          minimized window both stay "visible", with exact timers), so the
+//          scenario fails if the page was not hidden
 //
-// Writes frames.jsonl, timeline.jsonl, summary.json and screenshots into --out.
-import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+// SAFETY. Against any box that is not on a loopback address this arms the real
+// box and spins the wheel. The recorder refuses unless --real-box-go is given,
+// and that flag is given only with Julian's explicit go for that run
+// (changes/CONTEXT.md, safety rules).
+//
+// Playwright comes from frontend/ground-station/node_modules (no new
+// dependency); --playwright or $DIRECSUN_PLAYWRIGHT names another
+// playwright/index.mjs. The UI runs in the installed Google Chrome, on the GPU
+// (ANGLE on Vulkan), as an operator's browser does. With headless Chrome's
+// default software WebGL (SwiftShader) the ground station's 3D view takes the
+// page's whole main thread once the heading moves, and the page stops
+// answering (measured 2026-10-11: 15.6 s of main-thread work in 15.7 s, of
+// which 0.08 s was script; on the GPU, 1.1 s in 4 s).
 
-const argv = process.argv.slice(2);
-const arg = (name, fallback) => {
-  const i = argv.indexOf(`--${name}`);
-  return i >= 0 && i + 1 < argv.length ? argv[i + 1] : fallback;
-};
-const scenario = arg('scenario');
-const boxUrl = arg('url');
-const base = arg('base', 'http://127.0.0.1:4173');
-const out = arg('out');
-const turns = Number(arg('turns', 4));
-const hiddenS = Number(arg('hidden-s', 30));
-const uiDir = path.resolve(arg('ui-dir', 'frontend/ground-station'));
-const confirm = arg('confirm-arm');
-const chromePath = arg(
-  'chrome',
-  process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome',
-);
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-const SCENARIOS = ['turn', 'stop', 'estop', 'watch', 'hidden'];
-if (!SCENARIOS.includes(scenario) || !boxUrl || !out) {
-  console.error('usage: ui-turn-recorder.mjs --scenario turn|stop|estop|watch|hidden --url ws://host/ws --out dir [--base http://127.0.0.1:4173]');
-  process.exit(2);
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const SCENARIOS = new Set(["turn", "stop", "estop", "watch", "hidden"]);
+const GPU_ARGS = ["--use-angle=vulkan", "--enable-features=Vulkan", "--ignore-gpu-blocklist", "--enable-gpu"];
+
+function parseArgs(argv) {
+  const args = { turns: 4, headed: false, realBoxGo: false };
+  for (let i = 0; i < argv.length; i++) {
+    const key = argv[i];
+    const value = () => {
+      if (i + 1 >= argv.length) throw new Error(`${key} needs a value`);
+      return argv[++i];
+    };
+    if (key === "--ui") args.ui = value();
+    else if (key === "--box") args.box = value();
+    else if (key === "--scenario") args.scenario = value();
+    else if (key === "--out") args.out = value();
+    else if (key === "--turns") args.turns = Number(value());
+    else if (key === "--playwright") args.playwright = value();
+    else if (key === "--headed") args.headed = true;
+    else if (key === "--real-box-go") args.realBoxGo = true;
+    else throw new Error(`unknown argument ${key}`);
+  }
+  if (!args.ui || !args.box || !args.out || !SCENARIOS.has(args.scenario)) {
+    throw new Error("usage: ui-turn-recorder.mjs --ui URL --box WS_URL --scenario turn|stop|estop|watch|hidden --out DIR");
+  }
+  if (!Number.isInteger(args.turns) || args.turns < 1) throw new Error("--turns must be a positive integer");
+  return args;
 }
 
-const host = new URL(boxUrl).hostname.replace(/^\[|\]$/g, '');
-const loopback = host === 'localhost' || host === '::1' || /^127\./.test(host);
-if (!loopback && confirm !== 'julian-go') {
-  console.error(`refusing: ${boxUrl} is not a loopback address, and this scenario arms the motor.`);
-  console.error('Run it against tools/mock-box.py, or get Julian\'s explicit go and pass --confirm-arm julian-go.');
-  process.exit(3);
-}
+const isLoopback = (url) => ["127.0.0.1", "localhost", "[::1]", "::1"].includes(new URL(url).hostname);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const PLAN = {
-  turn: `arm, then ${turns} turns alternating right and left (each: zero_heading, SLEW +-90, 1 s hold, SLEW 0)`,
-  stop: 'arm, start a right turn, press Stop turn mid-slew',
-  estop: 'arm, press the space bar to e-stop, then try to re-arm 1 s later',
-  watch: 'one page arms; a second page only watches for 3 s, then presses the space bar (e-stop)',
-  hidden: `arm, hide the operator tab behind another tab for ${hiddenS} s in plain Chrome, bring it back`,
-};
-console.log(`scenario ${scenario}: ${PLAN[scenario]}`);
-console.log(`box ${boxUrl} (${loopback ? 'loopback mock' : 'REAL BOX, arming confirmed with --confirm-arm'}), UI ${base}, output ${out}`);
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (!isLoopback(args.box) && !args.realBoxGo) {
+    console.error(
+      `ui-turn-recorder: ${args.box} is not a loopback address, so this would arm the real box and spin the wheel ` +
+        `(scenario ${args.scenario}). It runs only with --real-box-go, given with Julian's explicit go for this run.`,
+    );
+    process.exit(2);
+  }
+  if (!isLoopback(args.box)) {
+    console.log(`ui-turn-recorder: arming the real box at ${args.box} for scenario ${args.scenario} (--real-box-go given)`);
+  }
 
-fs.mkdirSync(out, { recursive: true });
-const require = createRequire(path.join(uiDir, 'package.json'));
-let chromium;
-try {
-  ({ chromium } = require('@playwright/test'));
-} catch {
-  console.error(`Playwright is not installed under ${uiDir}. Run npm ci there, or pass --ui-dir.`);
-  process.exit(2);
-}
+  const playwrightPath =
+    args.playwright ??
+    process.env.DIRECSUN_PLAYWRIGHT ??
+    path.join(REPO, "frontend", "ground-station", "node_modules", "playwright", "index.mjs");
+  const { chromium } = await import(pathToFileURL(playwrightPath).href);
 
-const t0 = Date.now();
-const now = () => Date.now() - t0;
-const framesFile = fs.createWriteStream(path.join(out, 'frames.jsonl'));
-const timelineFile = fs.createWriteStream(path.join(out, 'timeline.jsonl'));
-const drains = new Map();
-const record = (entry) => framesFile.write(JSON.stringify(entry) + '\n');
-const summary = { scenario, url: boxUrl, startedAt: new Date(t0).toISOString(), screenshots: [], notes: [] };
-const log = (text) => console.log(`${(now() / 1000).toFixed(1).padStart(6)} s  ${text}`);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  fs.mkdirSync(args.out, { recursive: true });
+  const framesOut = fs.createWriteStream(path.join(args.out, "frames.jsonl"));
+  const timelineOut = fs.createWriteStream(path.join(args.out, "timeline.jsonl"));
+  const t0 = performance.now();
+  const now = () => Math.round((performance.now() - t0) * 1000) / 1000;
+  const meta = {
+    scenario: args.scenario,
+    ui: args.ui,
+    box: args.box,
+    expected_refusals: args.scenario === "estop" ? ["ramp-down in progress"] : [],
+    slews_interrupted: args.scenario === "stop" || args.scenario === "estop",
+    results: [],
+  };
+  const failures = [];
+  const lastPing = {};
+  let recording = true;  // off before the end screenshots, which stall the pages' timers
+  const watchTlm = [];
+  const latestTlm = {};
 
-function makeDrain(page, name) {
-  return async () => {
-    const frames = await page.evaluate(() => window.__frames.splice(0)).catch(() => []);
-    for (const f of frames) {
-      if (f.dir === 'meta') {
-        record({ t: f.epoch - t0, page: name, dir: 'meta', what: f.what, state: f.state });
-        log(`${name}: visibilityState ${f.state}`);
-      } else {
-        record({ t: f.epoch - t0, page: name, dir: f.dir, msg: f.msg });
+  const browser = await chromium.launch({ channel: "chrome", headless: !args.headed, args: GPU_ARGS });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+
+  async function openPage(name) {
+    const page = await context.newPage();
+    page.on("websocket", (ws) => {
+      if (ws.url() !== args.box) return;
+      const record = (dir) => (f) => {
+        if (!recording) return;
+        let frame;
+        try {
+          frame = JSON.parse(String(f.payload));
+        } catch {
+          frame = { unparsed: String(f.payload) };
+        }
+        const t = now();
+        if (dir === "tx" && frame.type === "ping") lastPing[name] = t;
+        if (dir === "rx" && frame.type === "tlm") latestTlm[name] = frame;
+        if (name === "watch" && dir === "rx" && frame.type === "tlm") watchTlm.push({ t, frame });
+        framesOut.write(`${JSON.stringify({ t, page: name, dir, frame })}\n`);
+      };
+      ws.on("framesent", record("tx"));
+      ws.on("framereceived", record("rx"));
+    });
+    // The status and result lines, as the operator sees them change.
+    let stopped = false;
+    let last = "";
+    (async () => {
+      while (!stopped && !page.isClosed()) {
+        try {
+          const seen = await page.evaluate(() => ({
+            status: document.querySelector(".controls__status")?.textContent ?? null,
+            result: document.querySelector(".controls__result")?.textContent ?? null,
+          }));
+          const key = JSON.stringify(seen);
+          if (key !== last) {
+            last = key;
+            timelineOut.write(`${JSON.stringify({ t: now(), page: name, ...seen })}\n`);
+          }
+        } catch {
+          // The page is navigating or closing.
+        }
+        await sleep(50);
       }
+    })();
+    page.stopTimeline = () => {
+      stopped = true;
+    };
+    await page.goto(args.ui);
+    await page.getByRole("textbox", { name: "DEVICE LINK / WEBSOCKET" }).fill(args.box);
+    await page.getByRole("button", { name: "Connect" }).click();
+    await page.getByText(/DEVICE CONNECTED/).waitFor({ timeout: 10000 });
+    return page;
+  }
+
+  const status = (page) => page.locator(".controls__status").textContent();
+  const result = async (page) => ((await page.locator(".controls__result").count()) ? page.locator(".controls__result").textContent() : "");
+  const waitStatus = (page, text, timeout) =>
+    page.waitForFunction((want) => document.querySelector(".controls__status")?.textContent === want, text, { timeout });
+  const waitResult = (page, pattern, timeout) =>
+    page.waitForFunction(
+      (source) => new RegExp(source).test(document.querySelector(".controls__result")?.textContent ?? ""),
+      pattern.source,
+      { timeout },
+    );
+
+  async function arm(page) {
+    await page.getByRole("button", { name: "Arm the box" }).click();
+    await page.getByRole("group", { name: "Confirm arming" }).getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Arm now" }).click();
+  }
+  async function wheelStopped(name) {
+    // As an operator would: arm only once any ramp-down has ended, which the
+    // box shows as SAFE at throttle 0 (it refuses arm during the ramp).
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const t = latestTlm[name];
+      if (t && t.mode === "SAFE" && t.throttle === 0) return;
+      await sleep(50);
     }
-  };
-}
-
-async function instrument(page, name) {
-  page.on('websocket', (socket) => {
-    if (socket.url() === boxUrl) log(`${name}: WebSocket opened`);
-  });
-  await page.addInitScript((url) => {
-    const Native = window.WebSocket;
-    window.__frames = [];
-    const stamp = () => performance.timeOrigin + performance.now();
-    const push = (dir, data) => {
-      let msg;
-      try {
-        msg = JSON.parse(String(data));
-      } catch {
-        msg = { type: '(not JSON)' };
-      }
-      window.__frames.push({ epoch: stamp(), dir, msg });
-    };
-    window.WebSocket = class extends Native {
-      constructor(target, protocols) {
-        super(target, protocols);
-        if (String(target) === url) this.addEventListener('message', (event) => push('rx', event.data));
-        this.__recorded = String(target) === url;
-      }
-      send(data) {
-        if (this.__recorded) push('tx', data);
-        super.send(data);
-      }
-    };
-    const report = () => window.__frames.push({ epoch: stamp(), dir: 'meta', what: 'visibility', state: document.visibilityState });
-    document.addEventListener('visibilitychange', report);
-    window.addEventListener('load', report);
-  }, boxUrl);
-  drains.set(name, makeDrain(page, name));
-}
-
-function sampleTimeline(page, name) {
-  let last = '';
-  const timer = setInterval(async () => {
-    await drains.get(name)();
-    try {
-      const sample = await page.evaluate(() => ({
-        status: document.querySelector('.controls__status')?.textContent ?? '',
-        result: document.querySelector('.controls__result')?.textContent ?? '',
-        link: document.querySelector('.link__status')?.textContent ?? '',
-      }));
-      const key = JSON.stringify(sample);
-      if (key !== last) {
-        last = key;
-        timelineFile.write(JSON.stringify({ t: now(), page: name, ...sample }) + '\n');
-      }
-    } catch {}
-  }, 250);
-  return async () => {
-    clearInterval(timer);
-    await drains.get(name)();
-  };
-}
-
-async function shot(page, name) {
-  const file = path.join(out, `${String(summary.screenshots.length + 1).padStart(2, '0')}-${name}.png`);
-  await page.screenshot({ path: file }).catch(() => {});
-  summary.screenshots.push(file);
-}
-
-const status = (page) => page.locator('.controls__status');
-const result = (page) => page.locator('.controls__result');
-
-async function waitUntil(page, locator, predicate, timeout, what) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const text = (await locator.textContent().catch(() => '')) ?? '';
-    if (predicate(text)) return text;
-    await sleep(100);
+    throw new Error(`${name}: the box did not show SAFE at throttle 0 within 8 s`);
   }
-  throw new Error(`timed out after ${timeout} ms waiting for ${what}`);
-}
-
-async function connect(page) {
-  await page.goto(base);
-  await page.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }).fill(boxUrl);
-  await page.getByRole('button', { name: 'Connect' }).click();
-  await page.getByText('DEVICE CONNECTED — RECEIVING TELEMETRY').waitFor({ timeout: 10000 });
-  log('connected');
-}
-
-async function arm(page) {
-  await page.getByRole('button', { name: 'Arm the box' }).click();
-  await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Arm now' }).click();
-}
-
-async function armToReady(page) {
-  await arm(page);
-  const deadline = Date.now() + 30000;
-  while ((await status(page).textContent()) !== 'READY / DEVICE') {
-    const text = (await result(page).textContent().catch(() => '')) ?? '';
-    if (/ARM REFUSED/i.test(text)) throw new Error(`the box refused to arm: ${text}`);
-    if (Date.now() > deadline) throw new Error('timed out after 30000 ms waiting for READY after arm');
-    await sleep(100);
-  }
-  log('armed, READY');
-}
-
-async function turn(page, side, index) {
-  const name = `Rotate ${side} ninety degrees and return`;
-  await page.getByRole('button', { name }).click();
-  const text = await waitUntil(page, result(page), (t) => /TURN COMPLETE|ABORT|FAIL|REFUSED|TIMED OUT/i.test(t), 30000, `turn ${index + 1} result`);
-  log(`turn ${index + 1} (${side}): ${text}`);
-  summary.notes.push(`turn ${index + 1} ${side}: ${text}`);
-  await sleep(500);
-}
-
-async function pressSpace(page) {
-  await page.getByRole('button', { name: 'Disconnect' }).focus();
-  await page.keyboard.press('Space');
-}
-
-async function runOperator(page) {
-  await connect(page);
-  await shot(page, 'connected');
-  await armToReady(page);
-  await shot(page, 'ready');
-
-  if (scenario === 'turn') {
-    for (let i = 0; i < turns; i += 1) await turn(page, i % 2 === 0 ? 'right' : 'left', i);
-    await shot(page, 'after-turns');
-  } else if (scenario === 'stop') {
-    await page.getByRole('button', { name: 'Rotate right ninety degrees and return' }).click();
-    await waitUntil(page, status(page), (t) => t.includes('TURNING'), 10000, 'TURNING');
-    await sleep(700);
-    await page.getByRole('button', { name: 'Stop the turn' }).click();
-    await waitUntil(page, status(page), (t) => t === 'READY / DEVICE', 10000, 'READY after Stop turn');
-    summary.notes.push(`stop: ${await result(page).textContent()}`);
-    log(`stop: ${summary.notes.at(-1)}`);
-    await shot(page, 'after-stop');
-  } else if (scenario === 'estop') {
-    await pressSpace(page);
-    await waitUntil(page, status(page), (t) => t === 'SAFE / DEVICE', 10000, 'SAFE after e-stop');
-    await shot(page, 'after-estop');
-    await sleep(1000);
+  async function armToReady(page, name = "operator") {
+    await wheelStopped(name);
     await arm(page);
-    await sleep(1000);
-    const text = (await result(page).textContent()) ?? '';
-    summary.notes.push(`re-arm 1 s after the e-stop: ${text}`);
-    log(`re-arm 1 s after the e-stop: ${text}`);
-    summary.rearmRefusedRampDown = /ramp-down in progress/i.test(text);
-    await shot(page, 'rearm');
+    await waitStatus(page, "READY / DEVICE", 20000);
   }
-}
-
-async function runWatch(browser) {
-  const operator = await (await browser.newContext()).newPage();
-  const watcher = await (await browser.newContext()).newPage();
-  await instrument(operator, 'operator');
-  await instrument(watcher, 'watcher');
-  const stops = [sampleTimeline(operator, 'operator'), sampleTimeline(watcher, 'watcher')];
-  await connect(operator);
-  await armToReady(operator);
-  await connect(watcher);
-  log('watcher connected, only watching');
-  await sleep(3000);
-  await shot(watcher, 'watching');
-  await pressSpace(watcher);
-  await waitUntil(watcher, status(watcher), (t) => t === 'SAFE / DEVICE', 10000, 'SAFE on the watcher after its e-stop');
-  await waitUntil(operator, status(operator), (t) => t === 'SAFE / DEVICE', 10000, 'SAFE on the operator after the watcher\'s e-stop');
-  await shot(watcher, 'after-estop');
-  for (const stop of stops) await stop();
-}
-
-async function launchPlainChrome() {
-  const port = 9222 + Math.floor(Math.random() * 500);
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'ui-turn-recorder-'));
-  const child = spawn(chromePath, [`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: 'ignore' });
-  const endpoint = `http://127.0.0.1:${port}`;
-  for (let i = 0; i < 100; i += 1) {
-    try {
-      await fetch(`${endpoint}/json/version`);
-      return { child, endpoint, profile };
-    } catch {
-      await sleep(100);
-    }
+  async function turn(page, direction) {
+    const label = direction > 0 ? "Rotate right ninety degrees and return" : "Rotate left ninety degrees and return";
+    await page.getByRole("button", { name: label }).click();
+    await waitResult(page, /^TURN (COMPLETE|STOPPED)/, 30000);
+    const text = await result(page);
+    meta.results.push({ t: now(), turn: direction > 0 ? "right" : "left", result: text });
+    return text;
   }
-  child.kill();
-  throw new Error('plain Chrome did not open its debugging port');
-}
-
-async function runHidden() {
-  const { child, endpoint, profile } = await launchPlainChrome();
-  try {
-    let browser = await chromium.connectOverCDP(endpoint);
-    const context = browser.contexts()[0];
-    const page = context.pages()[0] ?? (await context.newPage());
-    await instrument(page, 'operator');
-    let stop = sampleTimeline(page, 'operator');
-    await connect(page);
-    await armToReady(page);
-    await stop();
-    await browser.close().catch(() => {});
-
-    // Playwright's CDP session keeps its pages "focused", so a tab hidden while it is attached
-    // still reports visible. Detach, hide the tab, and reattach after it is back in front.
-    const targets = await (await fetch(`${endpoint}/json/list`)).json();
-    const target = targets.find((t) => t.type === 'page' && t.url.startsWith(base));
-    if (!target) throw new Error('could not find the operator tab in /json/list');
-    await fetch(`${endpoint}/json/new?about:blank`, { method: 'PUT' });
-    log(`Playwright detached; operator tab ${target.id} hidden behind a new tab for ${hiddenS} s`);
-    await sleep(hiddenS * 1000);
-    await fetch(`${endpoint}/json/activate/${target.id}`);
-    await sleep(2500);
-
-    browser = await chromium.connectOverCDP(endpoint);
-    const back = browser.contexts()[0].pages().find((p) => p.url().startsWith(base));
-    if (!back) throw new Error('the operator tab is gone after the hidden period');
-    drains.set('operator', makeDrain(back, 'operator'));
-    await drains.get('operator')();
-    const mode = await status(back).textContent();
-    summary.statusAfterReturn = mode;
-    log(`operator tab back in front: ${mode}`);
-    await shot(back, 'after-return');
-    stop = sampleTimeline(back, 'operator');
+  async function midSlew(page) {
+    // The SLEW is under way once the status shows it: the box's own tlm says SLEW.
+    await page.waitForFunction(() => /^SLEW \/ DEVICE/.test(document.querySelector(".controls__status")?.textContent ?? ""), null, {
+      timeout: 5000,
+    });
     await sleep(500);
-    await stop();
-    await browser.close().catch(() => {});
-  } finally {
-    const exited = new Promise((resolve) => child.once('exit', resolve));
-    child.kill();
-    await Promise.race([exited, sleep(5000)]);
-    try {
-      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
-    } catch {}
   }
-}
+  async function disarm(page) {
+    await page.getByRole("button", { name: "Disarm the box" }).click();
+    await waitStatus(page, "SAFE / DEVICE", 3000);
+  }
 
-try {
-  if (scenario === 'hidden') {
-    await runHidden();
-  } else {
-    const browser = await chromium.launch({ channel: 'chrome' });
-    if (scenario === 'watch') {
-      await runWatch(browser);
-    } else {
-      const page = await browser.newPage();
-      await instrument(page, 'operator');
-      const stop = sampleTimeline(page, 'operator');
-      await runOperator(page);
-      await stop();
+  let watch = null;
+  try {
+    if (args.scenario === "watch") watch = await openPage("watch");
+    const operator = await openPage("operator");
+    await armToReady(operator);
+
+    if (args.scenario === "turn") {
+      for (let i = 0; i < args.turns; i++) {
+        const text = await turn(operator, i % 2 === 0 ? 1 : -1);
+        console.log(`ui-turn-recorder: turn ${i + 1} ${i % 2 === 0 ? "right" : "left"}: ${text}`);
+        if (!text.startsWith("TURN COMPLETE")) failures.push(`turn ${i + 1}: ${text}`);
+      }
+      await disarm(operator);
+    } else if (args.scenario === "stop") {
+      await operator.getByRole("button", { name: "Rotate right ninety degrees and return" }).click();
+      await midSlew(operator);
+      await operator.getByRole("button", { name: "Stop the turn" }).click();
+      await waitResult(operator, /^TURN STOPPED/, 5000);
+      await waitStatus(operator, "READY / DEVICE", 5000);
+      const text = await result(operator);
+      meta.results.push({ t: now(), turn: "stop", result: text });
+      console.log(`ui-turn-recorder: stop: ${text}`);
+      await sleep(1500);  // the box comes to rest on the rate loop
+      await disarm(operator);
+    } else if (args.scenario === "estop") {
+      await operator.getByRole("button", { name: "Rotate right ninety degrees and return" }).click();
+      await midSlew(operator);
+      await operator.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : null));
+      await operator.keyboard.press("Space");
+      await waitStatus(operator, "SAFE / DEVICE", 3000);
+      // Arm again at once, inside the 5 s ramp-down.
+      await arm(operator);
+      await waitResult(operator, /^ARM /, 3000);
+      const text = await result(operator);
+      meta.results.push({ t: now(), turn: "re-arm", result: text });
+      console.log(`ui-turn-recorder: re-arm inside the ramp-down: ${text}`);
+      if (text !== "ARM REFUSED: ramp-down in progress") failures.push(`re-arm: ${text}`);
+    } else if (args.scenario === "hidden") {
+      const cover = await context.newPage();
+      await cover.goto("about:blank");
+      await cover.bringToFront();
+      await sleep(1000);
+      const visibility = await operator.evaluate(() => document.visibilityState);
+      meta.hidden = { visibility, from_ms: now() };
+      await sleep(30000);
+      meta.hidden.until_ms = now();
+      await operator.bringToFront();
+      await sleep(1000);
+      const text = await status(operator);
+      meta.results.push({ t: now(), turn: "hidden", result: text });
+      console.log(`ui-turn-recorder: the ground station was ${visibility} for 30 s behind another tab; now ${text}`);
+      if (visibility !== "hidden") failures.push(`the page stayed ${visibility} behind another tab: run with --headed`);
+      if (text !== "READY / DEVICE") failures.push(`after 30 s behind another tab the status is ${text}`);
+      await disarm(operator);
+    } else if (args.scenario === "watch") {
+      const text = await turn(operator, 1);
+      console.log(`ui-turn-recorder: watched turn: ${text}`);
+      if (!text.startsWith("TURN COMPLETE")) failures.push(`watched turn: ${text}`);
+      await watch.getByRole("button", { name: "Emergency stop the box" }).click();
+      await waitStatus(operator, "SAFE / DEVICE", 3000);
+      await sleep(5500);  // the ramp-down
+      await armToReady(operator);
+      await sleep(1000);
+      operator.stopTimeline();
+      const closedAt = now();
+      await operator.close();
+      const operatorLastPing = lastPing.operator;
+      const deadline = Date.now() + 4000;
+      let lost = null;
+      while (Date.now() < deadline && lost === null) {
+        lost = watchTlm.find((r) => r.t > closedAt && r.frame.mode === "SAFE" && (r.frame.flags ?? []).includes("HEARTBEAT_LOST")) ?? null;
+        await sleep(50);
+      }
+      if (lost === null) {
+        failures.push("the watch page saw no SAFE tlm with HEARTBEAT_LOST within 4 s of the operator page closing");
+      } else {
+        meta.heartbeat_lost_after_ms = Math.round(lost.t - operatorLastPing);
+        console.log(`ui-turn-recorder: HEARTBEAT_LOST in the watch page's tlm ${meta.heartbeat_lost_after_ms} ms after the operator's last ping`);
+      }
     }
+  } catch (error) {
+    failures.push(String(error).split("\n").slice(0, 3).join(" | "));
+  } finally {
+    recording = false;
+    for (const [i, page] of context.pages().entries()) {
+      await page.screenshot({ path: path.join(args.out, `end-${i}.png`), fullPage: true }).catch(() => {});
+    }
+    for (const page of context.pages()) page.stopTimeline?.();
     await browser.close();
+    meta.failures = failures;
+    fs.writeFileSync(path.join(args.out, "meta.json"), `${JSON.stringify(meta, null, 2)}\n`);
+    await new Promise((resolve) => framesOut.end(resolve));
+    await new Promise((resolve) => timelineOut.end(resolve));
   }
-  summary.ok = true;
-} catch (error) {
-  summary.ok = false;
-  summary.error = String(error?.message ?? error);
-  log(`FAILED: ${summary.error}`);
+  for (const f of failures) console.error(`ui-turn-recorder: FAILED, ${f}`);
+  console.log(`ui-turn-recorder: ${failures.length ? "FAILED" : "done"}, capture in ${args.out}`);
+  process.exit(failures.length ? 1 : 0);
 }
 
-summary.endedAt = new Date().toISOString();
-fs.writeFileSync(path.join(out, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
-const finish = (stream) => new Promise((resolve, reject) => {
-  stream.once('error', reject);
-  stream.end(resolve);
+main().catch((error) => {
+  console.error(`ui-turn-recorder: ${error.message}`);
+  process.exit(64);
 });
-await Promise.all([finish(framesFile), finish(timelineFile)]);
-log(summary.ok ? `done, frames in ${path.join(out, 'frames.jsonl')}` : 'stopped early, the capture so far is saved');
-process.exitCode = summary.ok ? 0 : 1;
