@@ -1,22 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { CommandableMode, ManualInput } from '../hardware/deviceOperator';
-
-interface ModeChoice {
-  readonly label: string;
-  readonly mode: CommandableMode;
-  readonly input?: ManualInput;
-}
-
-export const MODE_CHOICES: readonly ModeChoice[] = [
-  { label: 'Ready', mode: 'READY' },
-  { label: 'Hold heading', mode: 'HOLD' },
-  { label: 'Manual: rate', mode: 'MANUAL', input: 'rate' },
-  { label: 'Manual: throttle', mode: 'MANUAL', input: 'throttle' },
-  { label: 'Manual: wheel speed', mode: 'MANUAL', input: 'wheel' },
-  { label: 'Detumble', mode: 'DETUMBLE' },
-  { label: 'Sun point', mode: 'SUN_POINT' },
-];
+import { canEnter, MODE_CHOICES, MODES, type CommandableMode, type ManualInput } from '../hardware/modes';
 
 interface ModeMenuProps {
   readonly mode: string | null;
@@ -93,7 +77,8 @@ export function ModeMenu({ mode, disabled, onSelect }: ModeMenuProps) {
                 items.current[index] = node;
               }}
               className="modemenu__item"
-              disabled={(choice.mode === 'HOLD' || choice.mode === 'MANUAL') && mode !== 'READY'}
+              disabled={!canEnter(choice.mode, mode)}
+              aria-label={choice.label}
               aria-current={choice.mode === mode && choice.input === undefined ? 'true' : undefined}
               onKeyDown={(event) => {
                 if (event.key === 'ArrowDown') {
@@ -111,6 +96,7 @@ export function ModeMenu({ mode, disabled, onSelect }: ModeMenuProps) {
               }}
             >
               {choice.label}
+              {MODES[choice.mode].firmware === 'pending' ? <span className="modemenu__tag mono-label">Firmware pending</span> : null}
             </button>
           </li>
         ))}

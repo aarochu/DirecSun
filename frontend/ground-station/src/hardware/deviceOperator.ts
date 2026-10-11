@@ -1,5 +1,6 @@
 import { normalizeDeg } from '../simulation/physics';
 import type { Direction } from '../simulation/types';
+import { ARMED_MODES, AUTO_EXITS, canEnter, modeCommand, REFUSAL_HINTS, type CommandableMode, type ManualInput } from './modes';
 import { DeviceCommandError, type DeviceEvent, type DeviceLink } from './deviceLink';
 
 export type TurnPhase = 'idle' | 'rotating' | 'holding' | 'returning';
@@ -20,8 +21,7 @@ export interface OperatorState {
   readonly result: OperatorResult | null;
 }
 
-export type CommandableMode = 'READY' | 'HOLD' | 'MANUAL' | 'DETUMBLE' | 'SUN_POINT';
-export type ManualInput = 'rate' | 'throttle' | 'wheel';
+export type { CommandableMode, ManualInput } from './modes';
 
 export interface ManualState {
   readonly input: ManualInput;
@@ -34,8 +34,6 @@ export const MANUAL_PERIOD_MS = 100;
 const MANUAL_SETPOINT_KEY: Record<ManualInput, string> = { rate: 'rate_dps', throttle: 'throttle', wheel: 'wheel_rpm' };
 const WHEEL_RANGE: readonly [number, number] = [800, 4000];
 const RATE_RANGE: readonly [number, number] = [-90, 90];
-
-const MODE_CHANGE_FROM = ['READY', 'HOLD', 'SLEW', 'MANUAL', 'DETUMBLE', 'SUN_POINT'];
 
 export const TURN_STEP_DEG = 90;
 export const HOLD_MS = 1000;
@@ -65,7 +63,10 @@ class TurnAborted extends Error {}
 
 const describe = (error: unknown): string => {
   if (error instanceof DeviceCommandError) {
-    if (error.code === 'REFUSED') return `${error.command.toUpperCase()} REFUSED: ${error.reason ?? 'no reason given'}`;
+    if (error.code === 'REFUSED') {
+      const hint = error.reason ? REFUSAL_HINTS[error.reason] : undefined;
+      return `${error.command.toUpperCase()} REFUSED: ${error.reason ?? 'no reason given'}${hint ? `. ${hint}` : ''}`;
+    }
     if (error.code === 'TIMEOUT') return `${error.command.toUpperCase()}: NO ANSWER FROM THE BOX`;
     return `${error.command.toUpperCase()} NOT SENT: THE LINK IS NOT OPEN`;
   }
@@ -116,15 +117,15 @@ export class DeviceOperator {
   }
 
   get canChangeMode(): boolean {
-    return this.state.controlling && this.state.phase === 'idle' && this.state.busy === null && MODE_CHANGE_FROM.includes(this.boxMode ?? '');
+    return this.state.controlling && this.state.phase === 'idle' && this.state.busy === null && (ARMED_MODES as readonly string[]).includes(this.boxMode ?? '');
   }
 
   async setMode(mode: CommandableMode, input?: ManualInput): Promise<void> {
-    if (!this.canChangeMode) return;
+    if (!this.canChangeMode || !canEnter(mode, this.boxMode)) return;
     const label = input ? `${mode} (${input.toUpperCase()})` : mode.replace('_', ' ');
     this.set({ busy: 'mode', result: null });
     try {
-      await this.link.command('mode', input ? { mode, input } : { mode });
+      await this.link.command('mode', modeCommand({ mode, input }));
       this.set({ busy: null, result: { tone: 'ok', text: `MODE ${label} ACCEPTED.` } });
     } catch (error) {
       this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
@@ -333,6 +334,8 @@ export class DeviceOperator {
   };
 
   private onEvent = (event: DeviceEvent) => {
+    const exit = event.event === 'mode' && event.cause ? AUTO_EXITS[event.cause] : undefined;
+    if (exit && this.state.controlling) this.set({ result: { tone: 'error', text: exit } });
     if (event.event === 'mode' && event.mode === 'SAFE' && this.state.controlling && event.cause && event.cause !== 'disarm') {
       this.set({ result: { tone: 'error', text: `THE BOX WENT SAFE: ${event.cause.replace(/_/g, ' ')}` } });
     }

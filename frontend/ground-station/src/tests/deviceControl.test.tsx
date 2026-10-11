@@ -152,7 +152,7 @@ describe('DeviceOperator', () => {
     const sun = operator.setMode('SUN_POINT');
     socket.message(ack(socket.lastCommand().seq, false, 'not implemented'));
     await sun;
-    expect(operator.getState().result).toEqual({ tone: 'error', text: 'MODE REFUSED: not implemented' });
+    expect(operator.getState().result).toEqual({ tone: 'error', text: 'MODE REFUSED: not implemented. THE FIRMWARE DOES NOT RUN THIS YET' });
     expect(operator.getState().busy).toBeNull();
   });
 
@@ -205,6 +205,26 @@ describe('DeviceOperator', () => {
     expect(operator.getState().manual).toBeNull();
     await vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS * 3);
     expect(socket.commands().filter((frame) => frame.cmd === 'manual')).toEqual([]);
+  });
+
+  it('only sends a mode the box can enter from its current mode, and names automatic exits', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const hold = operator.setMode('HOLD');
+    socket.message(ack(socket.lastCommand().seq));
+    await hold;
+    socket.message(tlm({ psi_deg: 10, psi_ref_deg: 10, mode: 'HOLD' }));
+    const before = socket.commands().length;
+    await operator.setMode('DETUMBLE');
+    expect(socket.commands()).toHaveLength(before);
+
+    const ready = operator.setMode('READY');
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'READY' });
+    socket.message(ack(socket.lastCommand().seq));
+    await ready;
+
+    socket.message(modeEvent('READY', 'sun_invalid'));
+    expect(operator.getState().result).toEqual({ tone: 'error', text: 'SUN POINT ENDED: THE SUN READING WAS INVALID FOR 0.5 S.' });
   });
 
   it('does not change mode unless it controls the box in a mode that allows it', async () => {
@@ -456,7 +476,7 @@ describe('ground station box controls', () => {
 
     fireEvent.click(trigger());
     expect(trigger().getAttribute('aria-expanded')).toBe('true');
-    const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+    const items = screen.getAllByRole('menuitem').map((item) => item.getAttribute('aria-label'));
     expect(items).toEqual(['Ready', 'Hold heading', 'Manual: rate', 'Manual: throttle', 'Manual: wheel speed', 'Detumble', 'Sun point']);
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Manual: throttle' }));
@@ -471,8 +491,9 @@ describe('ground station box controls', () => {
     await act(() => vi.advanceTimersByTimeAsync(60));
     act(() => socket.message(tlm({ t_ms: 200, psi_deg: 0, mode: 'MANUAL' })));
     fireEvent.click(trigger());
-    const enabled = screen.getAllByRole('menuitem').filter((item) => !(item as HTMLButtonElement).disabled).map((item) => item.textContent);
-    expect(enabled).toEqual(['Ready', 'Detumble', 'Sun point']);
+    const enabled = screen.getAllByRole('menuitem').filter((item) => !(item as HTMLButtonElement).disabled).map((item) => item.getAttribute('aria-label'));
+    expect(enabled).toEqual(['Ready']);
+    expect(screen.getAllByText('Firmware pending')).toHaveLength(2);
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     expect(trigger().getAttribute('aria-expanded')).toBe('false');
   });

@@ -428,6 +428,12 @@
   background: var(--button-primary-hover);
 }
 
+.modemenu__tag {
+  margin-left: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
 .modemenu__item:disabled {
   color: var(--text-muted);
   opacity: 0.45;
