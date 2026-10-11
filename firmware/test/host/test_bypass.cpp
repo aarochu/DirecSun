@@ -34,8 +34,10 @@ Params random_params(std::mt19937 &rng)
                        static_cast<float>(rng() % static_cast<unsigned>(kOmegaCapMaxRpm - 800.0f - p.omega_low_rpm + 1));
     p.manual_throttle_min = static_cast<uint16_t>(48 + rng() % 1500);
     p.manual_throttle_max = static_cast<uint16_t>(p.manual_throttle_min + 1 + rng() % (2047 - p.manual_throttle_min));
-    p.spinup_throttle = static_cast<uint16_t>(48 + rng() % 2000);
-    p.hall_expect_throttle = static_cast<uint16_t>(48 + rng() % 2000);
+    // hall_expect_throttle must sit below spinup_throttle (V-64); a set that
+    // breaks it would fall back to the defaults and test nothing new.
+    p.spinup_throttle = static_cast<uint16_t>(49 + rng() % 1999);
+    p.hall_expect_throttle = static_cast<uint16_t>(48 + rng() % (p.spinup_throttle - 48u));
     return p;
 }
 

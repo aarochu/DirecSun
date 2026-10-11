@@ -203,6 +203,74 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
     }
 }
 
+// V-65. The ramp-down is SAFE with the wheel still driven. A set_params then
+// would lower a cap under the running ramp (which ignores it) and ask for a
+// flash write while the motor turns, so it waits until the ramp has ended.
+TEST_CASE("HT-7 set_params is refused during the ramp-down and nothing changes or persists while the wheel turns")
+{
+    enum Start { kDisarm, kEstop, kHeartbeat };
+    for (int start = kDisarm; start <= kHeartbeat; ++start) {
+        CAPTURE(start);
+        Rig rig;
+        rig.ctl.throttle_value = 400;
+        ParamUpdate bench;
+        add_bool(bench, "bench_mode", true);
+        rig.tick({set_params_cmd(&bench)});
+        REQUIRE(rig.last_ok());
+        rig.arm_to_ready();
+        REQUIRE(rig.out.throttle == 400);
+        if (start == kDisarm) rig.tick({cmd(CommandKind::Disarm)});
+        if (start == kEstop) rig.tick({}, true);
+        if (start == kHeartbeat) {
+            for (uint32_t k = 0; k <= ticks_from_ms(kHeartbeatTimeoutMs) && rig.out.mode != Mode::Safe; ++k) rig.tick();
+        }
+        REQUIRE(rig.out.mode == Mode::Safe);
+        REQUIRE(rig.out.ramping);
+        REQUIRE(rig.out.throttle == 400);
+        const uint32_t ramp_start = rig.now;
+
+        // What a bench setup or a careless operator would send mid-ramp.
+        ParamUpdate lower_cap;
+        add_number(lower_cap, "manual_throttle_min", 100);
+        add_number(lower_cap, "manual_throttle_max", 200);
+        ParamUpdate bypass_on;
+        add_bool(bypass_on, "hall_installed", false);
+        ParamUpdate bench_off;
+        add_bool(bench_off, "bench_mode", false);
+        const Params before = rig.sup.params();
+        for (const ParamUpdate *u : {&lower_cap, &bypass_on, &bench_off}) {
+            rig.tick({set_params_cmd(u)});
+            CHECK(rig.last_reason() == "ramp-down in progress");
+            CHECK_FALSE(rig.out.params_changed);
+            CHECK(rig.out.events.count == 0);  // no HALL_BYPASS notice either
+            CHECK(rig.out.ramping);
+            CHECK(rig.out.mode == Mode::Safe);
+        }
+        CHECK(rig.sup.params().manual_throttle_max == before.manual_throttle_max);
+        CHECK(rig.sup.params().hall_installed == before.hall_installed);
+        CHECK(rig.sup.params().bench_mode == before.bench_mode);
+
+        // The ramp runs on untouched: throttle_0 x (1 - t / 5 s) to DShot 0 at 5.0 s.
+        const uint32_t total = ticks_from_ms(kRampDownMs);
+        while (rig.out.ramping) {
+            const uint32_t k = rig.now - ramp_start;
+            const long raw = 400L * static_cast<long>(total - k) / static_cast<long>(total);
+            REQUIRE(rig.out.throttle == (raw < 48 ? 0 : static_cast<int>(raw)));
+            rig.tick({set_params_cmd(&lower_cap)});
+            REQUIRE_FALSE(rig.out.params_changed);
+        }
+        CHECK(rig.now - ramp_start == total);
+        CHECK(rig.out.throttle == 0);
+
+        // Positive control: once the ramp has ended the same update applies, so
+        // the refusal above was the ramp and nothing else.
+        rig.tick({set_params_cmd(&lower_cap)});
+        CHECK(rig.last_ok());
+        CHECK(rig.out.params_changed);
+        CHECK(rig.sup.params().manual_throttle_max == 200);
+    }
+}
+
 TEST_CASE("HT-7 FR-2: a command takes effect in the tick it is dequeued")
 {
     Rig rig;
