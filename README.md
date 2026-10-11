@@ -81,7 +81,7 @@ Build defaults live in `firmware/sdkconfig.defaults`. Wi-Fi credentials go in `f
 `tools/check-all.sh` runs every repository check in a fixed order, the same way locally and in CI (`.github/workflows/ci.yml`). Each check that has a `--selftest` mode runs it too, proving the check can fail.
 
 ```bash
-tools/check-all.sh              # purity, host tests, schema, link, mock box, CAD staleness
+tools/check-all.sh              # purity, host tests, schema, link, mock box, trial scorer, CAD staleness
 tools/check-all.sh --firmware   # also builds the firmware (needs ESP-IDF v6.0)
 ```
 
