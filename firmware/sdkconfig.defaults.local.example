@@ -10,7 +10,7 @@
 CONFIG_DIRECSUN_WIFI_SSID="your-network"
 CONFIG_DIRECSUN_WIFI_PASSWORD="your-password"
 
-# mDNS hostname: the box answers at ws://<hostname>.local:81/
+# mDNS hostname: the box answers at ws://<hostname>.local/ws
 CONFIG_DIRECSUN_HOSTNAME="direcsun"
 
 # Optional static address instead of DHCP (for example on the OM5P-AC radio).

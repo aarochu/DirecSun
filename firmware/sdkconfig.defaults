@@ -142,7 +142,7 @@ CONFIG_I2C_MASTER_ISR_HANDLER_IN_IRAM=y
 # ---------------------------------------------------------------------------
 # Wi-Fi and WebSocket (from DirecSun1, the verified link)
 # ---------------------------------------------------------------------------
-# The ground link is an esp_http_server WebSocket on port 81 (FD section 15).
+# The ground link is an esp_http_server WebSocket on port 80 at /ws (FD section 15).
 CONFIG_HTTPD_WS_SUPPORT=y
 
 # No modem sleep while the station is disconnected. DirecSun1 wrote this as
