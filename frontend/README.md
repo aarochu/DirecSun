@@ -46,3 +46,5 @@ Open the ground station over plain `http`, as above, so the browser allows `ws:/
 ## Deploying (Vercel)
 
 `vercel.json` at the repository root (and a copy here, for a project whose Root Directory is `frontend`) installs both apps and builds the landing page to `dist/` and the ground station to `dist/ground-station/`. No framework preset is used.
+
+Automatic Vercel deployment is enabled only for `main`. Feature and pull-request branches rely on GitHub CI instead of creating rate-limited preview deployments; merging to `main` still produces the production deployment.
