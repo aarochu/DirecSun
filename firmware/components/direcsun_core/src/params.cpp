@@ -48,7 +48,7 @@ bool key_is(const ParamKeyValue &kv, const char *name)
 }
 
 // Keys of FD section 16 that later sets implement (Set 5: heading and sun).
-constexpr const char *kDeferredKeys[] = {"mag_axis_map", "mag_cal", "sun_cal", "light_threshold"};
+constexpr const char *kDeferredKeys[] = {"mag_axis_map", "mag_cal"};
 
 }  // namespace
 
@@ -69,6 +69,18 @@ ParamsResult validate_params(const Params &p)
         if (i > 0 && !(p.ff_rpm[i] > p.ff_rpm[i - 1])) return invalid("ff_table");
         if (i > 0 && p.ff_throttle[i] < p.ff_throttle[i - 1]) return invalid("ff_table");
     }
+
+    if (p.sun_cal_count != 0 && (p.sun_cal_count < 2 || p.sun_cal_count > kSunCalPoints)) return invalid("sun_cal");
+    for (std::size_t i = 0; i < p.sun_cal_count; ++i) {
+        if (!finite_in(p.sun_cal_d[i], -1.0f, 1.0f) || !finite_in(p.sun_cal_deg[i], -90.0f, 90.0f)) return invalid("sun_cal");
+        if (i > 0 && !(p.sun_cal_d[i] > p.sun_cal_d[i - 1])) return invalid("sun_cal");
+        // Strictly monotonic angle, in either direction, so each d maps to one angle (T-10).
+        if (i > 1 && (p.sun_cal_deg[i] - p.sun_cal_deg[i - 1]) * (p.sun_cal_deg[i - 1] - p.sun_cal_deg[i - 2]) <= 0.0f) {
+            return invalid("sun_cal");
+        }
+        if (i == 1 && p.sun_cal_deg[1] == p.sun_cal_deg[0]) return invalid("sun_cal");
+    }
+    if (!finite_in(p.light_threshold_mv, 0.0f, 3300.0f)) return invalid("light_threshold");
 
     if (!finite_in(p.omega_cap_rpm, 0.0f, kOmegaCapMaxRpm)) return invalid("omega_cap_rpm");
     if (!finite_in(p.omega_low_rpm, 500.0f, 1500.0f)) return invalid("omega_low_rpm");
@@ -214,6 +226,21 @@ ParamsResult apply_param_update(const Params &current, const ParamUpdate &update
             }
             continue;
         }
+        if (key_is(kv, "sun_cal")) {
+            // Flattened (d, deg) pairs; the degrees arrive already in the internal frame.
+            if (v.type != ParamValue::Type::Array || v.array_len < 4 || v.array_len % 2 != 0 ||
+                v.array_len > 2 * kSunCalPoints) {
+                return invalid("sun_cal");
+            }
+            c.sun_cal_count = static_cast<uint8_t>(v.array_len / 2);
+            for (std::size_t k = 0; k < c.sun_cal_count; ++k) {
+                c.sun_cal_d[k] = v.array[2 * k];
+                c.sun_cal_deg[k] = v.array[2 * k + 1];
+            }
+            for (std::size_t k = c.sun_cal_count; k < kSunCalPoints; ++k) c.sun_cal_d[k] = c.sun_cal_deg[k] = 0.0f;
+            continue;
+        }
+        if (set_float("light_threshold", c.light_threshold_mv)) continue;
         return fail("unknown param", kv.key);
     }
 
@@ -244,7 +271,7 @@ namespace {
 
 constexpr const char *kKeyVersion = "param_version";
 constexpr const char *kKeyBlob = "params";
-constexpr std::size_t kBlobSize = 6 * 4 + 1 + 2 * kFfPoints * 4 + 2 * 4 + 2 * 1 + 5 * 2;
+constexpr std::size_t kBlobSize = 6 * 4 + 1 + 2 * kFfPoints * 4 + 2 * 4 + 2 * 1 + 5 * 2 + 1 + 2 * kSunCalPoints * 4 + 4;
 
 class Writer {
 public:
@@ -323,6 +350,10 @@ void encode(const Params &p, Writer &w)
     w.u16(p.manual_throttle_max);
     w.u16(p.spinup_throttle);
     w.u16(p.hall_expect_throttle);
+    w.u8(p.sun_cal_count);
+    for (float v : p.sun_cal_d) w.f32(v);
+    for (float v : p.sun_cal_deg) w.f32(v);
+    w.f32(p.light_threshold_mv);
 }
 
 bool decode(Reader &r, Params &p)
@@ -334,7 +365,10 @@ bool decode(Reader &r, Params &p)
     for (float &v : p.ff_throttle) ok = ok && r.f32(v);
     ok = ok && r.f32(p.omega_low_rpm) && r.f32(p.omega_bias_rpm) && r.u8(sw) && r.u8(sg) && r.u16(p.dshot_rate) &&
          r.u16(p.manual_throttle_min) && r.u16(p.manual_throttle_max) && r.u16(p.spinup_throttle) &&
-         r.u16(p.hall_expect_throttle);
+         r.u16(p.hall_expect_throttle) && r.u8(p.sun_cal_count);
+    for (float &v : p.sun_cal_d) ok = ok && r.f32(v);
+    for (float &v : p.sun_cal_deg) ok = ok && r.f32(v);
+    ok = ok && r.f32(p.light_threshold_mv);
     p.s_w = static_cast<int8_t>(sw);
     p.s_gyro = static_cast<int8_t>(sg);
     return ok && r.at_end();

@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 8,
+  "cmd": "set_params",
+  "params": {
+    "sun_cal": [
+      { "d": -0.6, "deg": -60 },
+      { "d": -0.3, "deg": -28 },
+      { "d": 0, "deg": 0 },
+      { "d": 0.3, "deg": 27 },
+      { "d": 0.6, "deg": 58 }
+    ],
+    "light_threshold": 250
+  }
+}

@@ -55,6 +55,7 @@ constexpr uint32_t kImuSilentReads = 25;            // 25 consecutive invalid re
 constexpr float kTiltMaxDeg = 30.0f;                // more than 30 deg from vertical
 constexpr uint32_t kControlStallTicks = 25;         // 25 consecutive missed ticks (50 ms)
 constexpr uint32_t kHallSilentMs = 500;             // throttle high, no Hall edge, for 500 ms
+constexpr uint32_t kSunInvalidMs = 500;               // SUN_POINT returns to READY after this long without a valid sun (R5.4)
 constexpr uint32_t kHeartbeatTimeoutMs = 1000;      // no ping or cmd from the controlling client
 constexpr float kMomentumWarnRpm = 300.0f;          // MOMENTUM_NEAR_LIMIT band
 constexpr uint32_t kRampDownMs = 5000;              // e-stop, disarm, heartbeat loss

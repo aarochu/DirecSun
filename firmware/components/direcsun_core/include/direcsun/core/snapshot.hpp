@@ -138,6 +138,8 @@ struct TelemetrySnapshot {
     float accel_rms_g = 0.0f;          // T-7 (R4.5): imbalance vibration, bench mode only
     int16_t mag_raw[3] = {0, 0, 0};
     bool mag_fresh = false;            // a new magnetometer sample arrived in the last 20 ms
+    bool sun_valid = false;            // the sun angle is usable (R5.4)
+    float sun_deg = 0.0f;              // internal frame (counter-clockwise positive); the encoder converts
     int sun_a_mv = 0;
     int sun_b_mv = 0;
 

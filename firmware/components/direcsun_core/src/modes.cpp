@@ -1,4 +1,5 @@
 #include "direcsun/core/modes.hpp"
+#include "direcsun/core/sun.hpp"
 
 #include <cmath>
 
@@ -80,11 +81,12 @@ constexpr const char *kInvalidMode = "invalid mode";
 constexpr const char *kInvalidSetpoint = "invalid setpoint";
 constexpr const char *kNoParams = "no params";
 constexpr float kRespinMarginRpm = 200.0f;   // FD section 13.4: [Omega_low + 200, Omega_cap - 200]
+constexpr const char *kSunNotValid = "sun not valid";
 constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
 
-bool is_later_set_mode(Mode m)
+bool is_later_set_mode(Mode)
 {
-    return m == Mode::SunPoint;
+    return false;   // every wire mode runs from R5.4
 }
 
 bool has_heading_reference(Mode m)
@@ -272,7 +274,7 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
                 pending_wheel_step_rpm_ = 0.0f;
                 return ack_ok(out, cmd);
             }
-            if (mode_ == Mode::Manual || mode_ == Mode::Detumble || has_heading_reference(mode_)) {
+            if (mode_ == Mode::Manual || mode_ == Mode::Detumble || mode_ == Mode::SunPoint || has_heading_reference(mode_)) {
                 enter(Mode::Ready, t);
                 post_mode_event(out, "mode");
                 return ack_ok(out, cmd);
@@ -302,6 +304,17 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
             if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
             if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
             enter(Mode::Detumble, t);
+            post_mode_event(out, "mode");
+            return ack_ok(out, cmd);
+        }
+        if (target == Mode::SunPoint) {
+            // R5.4: from READY only, on the closed wheel loop, and only with a valid sun
+            // angle now (TD section 6.6). The sun leaves valid or the mode leaves in 0.5 s.
+            if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+            if (!evaluate_sun(in.sun_a_mv, in.sun_b_mv, params_).valid) return ack(out, cmd, kSunNotValid);
+            enter(Mode::SunPoint, t);
+            sun_invalid_ticks_ = 0;
             post_mode_event(out, "mode");
             return ack_ok(out, cmd);
         }
@@ -477,6 +490,14 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         manual_stale_ = ticks_since(t, manual_fresh_tick_) >= ticks_from_ms(kManualStaleMs);
         if (manual_stale_ && manual_input_ == ManualInput::Rate) manual_rate_dps_ = 0.0f;
     }
+    const SunReading sun = evaluate_sun(in.sun_a_mv, in.sun_b_mv, params_);
+    if (mode_ == Mode::SunPoint) {
+        sun_invalid_ticks_ = sun.valid ? 0 : sun_invalid_ticks_ + elapsed;
+        if (sun_invalid_ticks_ >= ticks_from_ms(kSunInvalidMs)) {
+            enter(Mode::Ready, t);
+            post_mode_event(out, "sun_invalid");
+        }
+    }
     const double psi = in.heading_deg - heading_zero_deg_;
     bool reference_still = mode_ == Mode::Hold;
     if (mode_ == Mode::Slew) {
@@ -528,6 +549,14 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
                               ? attitude_rate_cmd_dps(psi_ref_deg_, psi, params_.k_psi,
                                                       reference_still ? kHoldDeadbandDeg : 0.0f)
                               : 0.0f;
+        // SUN_POINT (R5.4): the attitude block with the sun angle as the error,
+        // through the same deadband as HOLD; with the sun invalid for a moment the rate
+        // loop just holds rate (the 0.5 s timer above ends the mode).
+        if (mode_ == Mode::SunPoint) {
+            d.omega_cmd_dps = sun.valid ? attitude_rate_cmd_dps(static_cast<double>(sun.angle_deg), 0.0, params_.k_psi,
+                                                                kHoldDeadbandDeg)
+                                        : 0.0f;
+        }
         pending_wheel_step_rpm_ = 0.0f;
         int request = controller.throttle(d, in, params_);
         if (request < 0) request = 0;
@@ -607,7 +636,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;
     if (armed()) flags |= controller.flags();
-    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Detumble ||
+    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Detumble || mode_ == Mode::SunPoint ||
                                    mode_ == Mode::Manual || has_heading_reference(mode_))) {
         const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;
@@ -624,6 +653,8 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     out.heading_deg = in.heading_deg - heading_zero_deg_;
     out.psi_ref_valid = has_heading_reference(mode_);
     out.psi_ref_deg = out.psi_ref_valid ? psi_ref_deg_ : 0.0;
+    out.sun_valid = sun.valid;
+    out.sun_deg = sun.valid ? sun.angle_deg : 0.0f;
 }
 
 }  // namespace direcsun

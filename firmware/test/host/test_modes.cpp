@@ -202,19 +202,6 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
         rig.tick({mode_cmd(Mode::Manual, ManualInput::None)});
         CHECK(rig.last_reason() == "input not available");
     }
-    SUBCASE("not implemented: later-set modes")
-    {
-        Rig rig;
-        rig.arm_to_ready();
-        // HOLD and SLEW are implemented from R4.3 (test_slew.cpp), respin from R5.3
-        // (test_teleop_extras.cpp); wheel_step is bench only (test_controllers.cpp) and
-        // zero_heading is R4.2's (test_heading.cpp).
-        for (Mode m : {Mode::SunPoint}) {
-            rig.tick({mode_cmd(m)});
-            CHECK(rig.last_reason() == "not implemented");
-            CHECK(rig.out.mode == Mode::Ready);
-        }
-    }
     SUBCASE("MANUAL only from READY")
     {
         Rig rig;

@@ -29,7 +29,8 @@ int OpenLoopThrottleController::throttle(const ControlDemand &demand, const Tick
     switch (demand.mode) {
     case Mode::Spinup: return spinup_ramp_throttle(demand.ticks_in_mode, params.spinup_throttle);
     case Mode::Ready:
-    case Mode::Detumble: return params.spinup_throttle;
+    case Mode::Detumble:
+    case Mode::SunPoint: return params.spinup_throttle;
     case Mode::Manual:
         // Only the throttle input is built at rung 1; the supervisor refuses the
         // others. Hold the last throttle if one is ever demanded anyway.
@@ -87,7 +88,7 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
     const bool manual_rate = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Rate;
     const bool manual_wheel = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Wheel;
     const bool rate_mode = demand.mode == Mode::Ready || demand.mode == Mode::Detumble ||
-                           demand.mode == Mode::Hold || demand.mode == Mode::Slew || manual_rate;
+                           demand.mode == Mode::Hold || demand.mode == Mode::Slew || demand.mode == Mode::SunPoint || manual_rate;
     if (!wheel_loop_available(params) || demand.spinup_open_loop || manual_throttle ||
         (demand.mode != Mode::Spinup && !rate_mode && !manual_wheel)) {
         closed_loop_ = false;

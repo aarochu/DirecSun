@@ -247,6 +247,22 @@ bool valid_sun_cal(const cJSON *item)
     return true;
 }
 
+// The T-10 table arrives clockwise positive; the core keeps it counter-clockwise
+// positive like every angle (FD section 2.3), so the degrees are negated here.
+// The pairs are flattened (d, deg) into the ParamValue array; the box checks
+// monotonicity (validate_params).
+bool sun_cal_from_wire(const cJSON *item, ParamValue &value)
+{
+    if (!valid_sun_cal(item) || cJSON_GetArraySize(item) > static_cast<int>(kSunCalPoints)) return false;
+    value.type = ParamValue::Type::Array;
+    value.array_len = 0;
+    for (const cJSON *point = item->child; point != nullptr; point = point->next) {
+        value.array[value.array_len++] = static_cast<float>(member(point, "d")->valuedouble);
+        value.array[value.array_len++] = -static_cast<float>(member(point, "deg")->valuedouble);
+    }
+    return true;
+}
+
 // Checks one params member against the schema and converts it. Returns false
 // with `unknown` set for a key the schema does not have.
 bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
@@ -304,8 +320,8 @@ bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
     }
     if (std::strcmp(key, "mag_axis_map") == 0) return deferred(valid_mag_axis_map(item));
     if (std::strcmp(key, "mag_cal") == 0) return deferred(valid_mag_cal(item));
-    if (std::strcmp(key, "sun_cal") == 0) return deferred(valid_sun_cal(item));
-    if (std::strcmp(key, "light_threshold") == 0) return deferred(in_range(item, 0.0, kInf));
+    if (std::strcmp(key, "sun_cal") == 0) return sun_cal_from_wire(item, value);
+    if (std::strcmp(key, "light_threshold") == 0) return number(0.0, 3300.0);
     unknown = true;
     return false;
 }
@@ -623,7 +639,10 @@ std::size_t encode_tlm(const TelemetrySnapshot &snap, uint32_t seq, uint32_t tlm
     else w.raw("null");
     w.raw(",\"rate_dps\":");
     w.num(signed_to_wire(snap.rate_dps), 2);
-    w.raw(",\"mag_deg\":null,\"sun_deg\":null,\"sun_valid\":false,\"wheel_rpm\":");
+    w.raw(",\"mag_deg\":null,\"sun_deg\":");
+    if (snap.sun_valid) w.num(angle_to_wire(snap.sun_deg), 2);
+    else w.raw("null");
+    w.raw(snap.sun_valid ? ",\"sun_valid\":true,\"wheel_rpm\":" : ",\"sun_valid\":false,\"wheel_rpm\":");
     w.num(snap.wheel_rpm > 0.0f ? snap.wheel_rpm : 0.0f, 1);
     w.raw(",\"wheel_ref_rpm\":");
     w.num(snap.wheel_ref_rpm > 0.0f ? snap.wheel_ref_rpm : 0.0f, 1);

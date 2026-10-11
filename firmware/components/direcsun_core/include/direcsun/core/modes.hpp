@@ -74,6 +74,8 @@ struct TickInputs {
     const Command *commands = nullptr;          // drained from the command queue this tick
     std::size_t command_count = 0;
     ManualInputSet built_inputs = 0;            // MANUAL inputs whose loops exist
+    float sun_a_mv = 0.0f;                      // OP550 channels, 4-sample averages (R5.4)
+    float sun_b_mv = 0.0f;
 };
 
 // What the controller is asked to do this tick.
@@ -96,8 +98,8 @@ struct ControlDemand {
     bool wheel_hold = false;
     // The rate loop's command, deg/s, internal frame (counter-clockwise
     // positive). READY holds rate, so it is 0 there (TD section 6.6); in HOLD
-    // and SLEW it is the attitude loop's output (R4.3); MANUAL `rate` (Set 5)
-    // will drive it too.
+    // and SLEW it is the attitude loop's output (R4.3); SUN_POINT drives it
+    // from the sun angle (R5.4); MANUAL `rate` passes the operator's value separately.
     float omega_cmd_dps = 0.0f;
 };
 
@@ -127,6 +129,8 @@ struct TickOutputs {
     double heading_deg = 0.0;         // heading relative to the last zero_heading, continuous, internal frame (R4.2)
     bool psi_ref_valid = false;       // a heading reference exists: HOLD and SLEW (R4.3)
     double psi_ref_deg = 0.0;         // that reference, same frame as heading_deg
+    bool sun_valid = false;           // the sun angle this tick (R5.4)
+    float sun_deg = 0.0f;             // internal frame; meaningful when sun_valid
     Outbox<Ack, 16> acks;
     Outbox<Event, 8> events;
 };
@@ -188,6 +192,9 @@ private:
     double psi_ref_deg_ = 0.0;
     SlewProfile slew_;
     uint32_t slew_settled_ticks_ = 0;
+
+    // SUN_POINT (R5.4): ticks the sun angle has been invalid in a row.
+    uint32_t sun_invalid_ticks_ = 0;
 
     // zero_heading (R4.2): the estimator's continuous heading at the last zero.
     // The supervisor keeps the offset, not the estimator, so a zero and a HOLD

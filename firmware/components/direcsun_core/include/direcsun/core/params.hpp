@@ -20,9 +20,10 @@ constexpr float kOmegaCapMaxRpm = 4000.0f;
 // Version of the persisted layout. Bump it whenever a persisted field is added,
 // removed, or reinterpreted; a stored blob with another version is discarded
 // and the defaults load (event PARAMS_RESET).
-constexpr uint32_t kParamVersion = 2;  // 2: rate_gain_scale (R3.9)
+constexpr uint32_t kParamVersion = 3;  // 2: rate_gain_scale (R3.9); 3: sun_cal and light_threshold (R5.4)
 
 constexpr std::size_t kFfPoints = 8;
+constexpr std::size_t kSunCalPoints = 8;
 
 struct Params {
     // Attitude and rate loops (FD section 12.2).
@@ -52,6 +53,16 @@ struct Params {
     int8_t s_gyro = 1;
 
     uint16_t dshot_rate = 150;
+
+    // Sun sensor (FD section 11.4, R5.4). The table maps d = (A - B)/(A + B) to
+    // the sun angle in the internal frame (counter-clockwise positive; the wire
+    // table is clockwise positive and is converted at decode). sun_cal_count is
+    // 0 (identity) or 2..kSunCalPoints, with d strictly increasing and the angle
+    // strictly monotonic. light_threshold_mv is the least A + B that counts as a lamp.
+    uint8_t sun_cal_count = 0;
+    float sun_cal_d[kSunCalPoints] = {};
+    float sun_cal_deg[kSunCalPoints] = {};
+    float light_threshold_mv = 0.0f;
 
     // MANUAL throttle band (FD section 13.5). Bench-safe defaults until the
     // T-5 throttle-to-speed map exists [D]: the ceiling equals kBypassThrottleMax.

@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "type": "tlm",
+  "seq": 4410,
+  "t_ms": 91240,
+  "mode": "SUN_POINT",
+  "manual_input": null,
+  "psi_deg": 12.5,
+  "psi_ref_deg": null,
+  "rate_dps": -7.5,
+  "mag_deg": null,
+  "sun_deg": -12.4,
+  "sun_valid": true,
+  "wheel_rpm": 2311.0,
+  "wheel_ref_rpm": 2304.5,
+  "throttle": 440,
+  "tau_cmd_mNm": 0.0,
+  "vbat": 10.2,
+  "loop_us": 744,
+  "flags": [
+    "MOMENTUM_OK",
+    "HEADING_GYRO"
+  ],
+  "t_c": null,
+  "p_pa": null,
+  "tlm_dropped": 0,
+  "dropped_events": 0
+}

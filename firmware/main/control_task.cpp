@@ -357,6 +357,8 @@ void control_task(void *)
         in.command_count = shared_drain_commands(commands, kCommandQueueDepth);
         in.commands = commands;
         in.built_inputs = kAllBuiltInputs;  // MANUAL throttle, wheel and rate (R5.2)
+        in.sun_a_mv = sun_a_mv > 0 ? static_cast<float>(sun_a_mv) : 0.0f;   // R5.4; a failed read is no light
+        in.sun_b_mv = sun_b_mv > 0 ? static_cast<float>(sun_b_mv) : 0.0f;
         supervisor.step(in, controller, out);
         outbox_dropped_total = saturating_add(outbox_dropped_total, out.acks.dropped + out.events.dropped);
         STAGE_END(stages, TickStage::Supervisor);
@@ -410,6 +412,8 @@ void control_task(void *)
             }
             snap.accel_rms_g = snap.bench_mode ? estimator.accel_rms_g() : 0.0f;
             snap.mag_fresh = mag_fresh;
+            snap.sun_valid = out.sun_valid;
+            snap.sun_deg = out.sun_deg;
             snap.sun_a_mv = sun_a_mv;
             snap.sun_b_mv = sun_b_mv;
             BaroReading baro;
