@@ -121,7 +121,7 @@ export function ParametersPanel({ link }: { link: DeviceLink }) {
           </fieldset>
 
           <p className="params__deferred">
-            Calibration arrays and the light threshold are not implemented by firmware yet. Bench mode stays in the engineering tools.
+            The compass and sun calibrations (arrays and light threshold) are set from tools/calibrate.py or the engineering console, not here. Bench mode stays in the engineering tools.
           </p>
           <button type="submit" className="button button--primary params__apply" disabled={busy}>
             {busy ? 'Waiting for box…' : 'Apply changed parameters'}
