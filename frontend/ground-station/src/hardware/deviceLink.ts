@@ -60,7 +60,7 @@ const FAULT_FLAGS = new Set([
 ]);
 
 export function flagSeverity(flag: string): FlagSeverity {
-  if (flag === 'MOMENTUM_OK') return 'ok';
+  if (flag === 'MOMENTUM_OK' || flag === 'HEADING_GYRO') return 'ok';
   return FAULT_FLAGS.has(flag) ? 'fault' : 'warning';
 }
 

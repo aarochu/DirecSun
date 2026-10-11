@@ -1,6 +1,6 @@
 # DirecSun ground station
 
-The operator client for the box, and the previous landing page. It is the page that arms, e-stops and turns the DirecSun trainer, so the safety rules in `changes/CONTEXT.md` apply to it: a 5 Hz heartbeat, acks matched by `seq`, an e-stop that is never queued, and no automatic reconnect.
+The operator client for the box, and the previous landing page. It is the page that arms, e-stops and turns the DirecSun trainer, so the safety rules in `changes/CONTEXT.md` apply to it: a 5 Hz heartbeat, acks matched by `seq`, an e-stop that is never queued, and no automatic reconnect. Keep the operator tab in the foreground while armed: browsers can throttle background timers below the required heartbeat rate. If the tab is hidden or the link closes, expect the box to go SAFE; verify its mode and re-arm deliberately before continuing.
 
 ## Routes
 

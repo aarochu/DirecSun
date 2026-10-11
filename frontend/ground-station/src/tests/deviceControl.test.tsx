@@ -231,6 +231,37 @@ describe('DeviceOperator', () => {
     expect(socket.commands()).toHaveLength(count);
   });
 
+  it('sends READY when Stop races telemetry and the SLEW acknowledgement', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const { turn } = await startTurn(socket, operator, 1);
+    const slewSeq = socket.lastCommand().seq;
+    const stopping = operator.stopTurn();
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'READY' });
+    socket.message(ack(slewSeq));
+    socket.message(ack(socket.lastCommand().seq));
+    await stopping;
+    await turn;
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(1);
+  });
+
+  it('trusts completion over a stale SLEW telemetry frame during the hold', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const { turn } = await startTurn(socket, operator, 1);
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    socket.message(modeEvent('READY', 'slew_complete'));
+    await flush();
+    expect(operator.getState().phase).toBe('holding');
+    socket.message(tlm({ psi_deg: 89, mode: 'SLEW' }));
+    await vi.advanceTimersByTimeAsync(HOLD_MS);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: 0 });
+    await finishSlew(socket, 0);
+    await turn;
+    expect(operator.getState().result).toMatchObject({ tone: 'ok' });
+  });
+
   it('e-stop aborts the turn, and no return SLEW follows', async () => {
     const { socket, operator } = armed();
     await armAndReady(socket, operator);
@@ -243,6 +274,36 @@ describe('DeviceOperator', () => {
     await vi.advanceTimersByTimeAsync(SLEW_WAIT_MS * 2);
     expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(1);
     expect(operator.getState().phase).toBe('idle');
+  });
+
+  it('does not report the operator’s own accepted E-stop as an unexpected fault', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    operator.estop();
+    const seq = socket.lastCommand().seq;
+    socket.message(modeEvent('SAFE', 'ESTOP'));
+    socket.message(tlm({ psi_deg: 0, mode: 'SAFE' }));
+    socket.message(ack(seq));
+    await flush();
+    expect(operator.getState().result).toMatchObject({ tone: 'ok', text: expect.stringContaining('E-STOP ACCEPTED') });
+  });
+
+  it('keeps the armed-link warning visible after the controls switch to simulation', async () => {
+    vi.stubGlobal('WebSocket', FakeSocket);
+    render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
+    fireEvent.change(screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }), { target: { value: 'ws://box/ws' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    const socket = FakeSocket.instances.at(-1)!;
+    act(() => { socket.open(); socket.message(tlm({ psi_deg: 0, mode: 'SAFE' })); });
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm now' }));
+    await act(async () => { socket.message(ack(socket.lastCommand().seq)); await flush(); });
+    act(() => socket.message(tlm({ psi_deg: 0, mode: 'READY' })));
+    act(() => socket.drop());
+    expect(screen.getByRole('alert').textContent).toContain('LINK CLOSED:');
+    expect(screen.getByRole('alert').textContent).toContain('SIMULATION IS NOW ACTIVE');
+    expect(screen.getByRole('button', { name: 'Rotate right ninety degrees and return' })).toBeTruthy();
   });
 
   it('stops on a refused SLEW, on the box SLEW_TIMEOUT, and when the box goes SAFE', async () => {
@@ -351,6 +412,22 @@ describe('ground station box controls', () => {
       await flush();
     });
     expect(screen.getByText(/ARM ACCEPTED/)).toBeTruthy();
+  });
+
+  it('shows the operator’s 90° target while the box reports a moving reference', async () => {
+    const socket = connect();
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm now' }));
+    await act(async () => { socket.message(ack(socket.lastCommand().seq)); await flush(); });
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate right ninety degrees and return' }));
+    await act(async () => { socket.message(ack(socket.lastCommand().seq)); await flush(); });
+    act(() => socket.message(tlm({ t_ms: 200, psi_deg: 15, psi_ref_deg: 25, mode: 'SLEW' })));
+    const rail = screen.getByRole('region', { name: 'TELEMETRY' });
+    const target = rail.querySelector('.readout--target .readout__value');
+    expect(target?.textContent).toBe('+90.0°');
+    expect(screen.getByText('TGT +90.0°')).toBeTruthy();
   });
 
   it('the E-stop button sends estop; the space bar does too, only while the box is armed', async () => {

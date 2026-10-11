@@ -32,7 +32,8 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export function DeviceControls({ link, operator }: { link: DeviceLink; operator: DeviceOperator }) {
   const state = useSyncExternalStore(operator.subscribe, operator.getState);
   const telemetry = useSyncExternalStore(link.subscribeTelemetry, link.getTelemetry);
-  const mode = telemetry.statusWord === '—' ? null : telemetry.statusWord;
+  const latest = useSyncExternalStore(link.subscribeFrame, () => link.latestReading);
+  const mode = latest?.mode ?? (telemetry.statusWord === '—' ? null : telemetry.statusWord);
   const armed = mode !== null && mode !== 'SAFE';
   const [confirming, setConfirming] = useState(false);
   const [pinIn, setPinIn] = useState(false);
@@ -189,6 +190,7 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
       </ol>
 
       <p className="controls__note mono-label">{guidance(mode, state.controlling)}</p>
+      {armed && <p className="controls__note mono-label">KEEP THIS TAB IN FRONT WHILE ARMED. BACKGROUND TABS MAY DELAY THE 5 HZ HEARTBEAT AND TRIP THE BOX TO SAFE.</p>}
       <p
         className={`controls__result mono-label${state.result?.tone === 'error' ? ' controls__result--error' : ''}`}
         role="status"

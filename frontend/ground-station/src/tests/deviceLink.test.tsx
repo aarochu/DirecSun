@@ -12,6 +12,9 @@ afterEach(() => {
 });
 
 describe('parseTelemetry', () => {
+  it('treats gyro heading as normal status, not a warning', () => {
+    expect(flagSeverity('HEADING_GYRO')).toBe('ok');
+  });
   it('reads the v1 telemetry shape', () => {
     expect(
       parseTelemetry(
@@ -210,6 +213,17 @@ describe('DeviceLink', () => {
 });
 
 describe('ground station with a device link', () => {
+  it('uses the latest mode for control guidance before the throttled readout updates', () => {
+    vi.stubGlobal('WebSocket', FakeSocket);
+    render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
+    fireEvent.change(screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }), { target: { value: 'ws://box/ws' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    const socket = FakeSocket.instances.at(-1)!;
+    act(() => { socket.open(); socket.message(tlm({ psi_deg: 0, mode: 'READY' })); });
+    act(() => socket.message(tlm({ psi_deg: 0, mode: 'SAFE' })));
+    expect(screen.getByText('INSERT THE LOCK PIN, THEN ARM. WHILE ARMED, THE SPACE BAR SENDS E-STOP')).toBeTruthy();
+    expect(screen.queryByText('ANOTHER CLIENT IS CONTROLLING THE BOX. E-STOP STILL WORKS FROM HERE')).toBeNull();
+  });
   it('switches every view to device telemetry and swaps in the box controls, still sending nothing', () => {
     vi.stubGlobal('WebSocket', FakeSocket);
     render(

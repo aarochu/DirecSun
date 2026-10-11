@@ -4,7 +4,7 @@ import type { DisplayTelemetry } from './displaySource';
 
 const flagLabel = (flag: string) => flag.replace(/_/g, ' ');
 
-export function TelemetryReadouts({ telemetry }: { telemetry: DisplayTelemetry }) {
+export function TelemetryReadouts({ telemetry, operatorTarget = null }: { telemetry: DisplayTelemetry; operatorTarget?: number | null }) {
   return (
     <dl className="readouts">
       <div className="readout readout--phase">
@@ -32,7 +32,7 @@ export function TelemetryReadouts({ telemetry }: { telemetry: DisplayTelemetry }
       </div>
       <div className="readout readout--target">
         <dt className="mono-label">TARGET</dt>
-        <dd className="readout__value">{formatHeading(telemetry.targetDeg)}</dd>
+        <dd className="readout__value">{formatHeading(operatorTarget ?? telemetry.targetDeg)}</dd>
       </div>
       <div className="readout">
         <dt className="mono-label">BODY RATE</dt>

@@ -57,6 +57,8 @@ export class DeviceOperator {
   private state: OperatorState = IDLE;
   private readonly listeners = new Set<() => void>();
   private armedSeen = false;
+  private slewInFlight = false;
+  private ownEstop = false;
   private turnToken = 0;
   private cancelWait: ((reason: string) => void) | null = null;
   private unsubscribe: (() => void)[] = [];
@@ -99,6 +101,7 @@ export class DeviceOperator {
     try {
       await this.link.command('arm');
       this.armedSeen = false;
+      this.ownEstop = false;
       this.set({ busy: null, controlling: true, result: { tone: 'ok', text: 'ARM ACCEPTED: SPINNING UP. KEEP THE LOCK PIN IN.' } });
     } catch (error) {
       this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
@@ -126,10 +129,14 @@ export class DeviceOperator {
       this.set({ result: { tone: 'error', text: describe(error) } });
       return;
     }
+    this.ownEstop = true;
     this.set({ busy: 'estop', result: { tone: 'ok', text: 'E-STOP SENT.' } });
     sent.then(
       () => this.set({ busy: null, result: { tone: 'ok', text: 'E-STOP ACCEPTED: THE WHEEL RAMPS DOWN.' } }),
-      (error: unknown) => this.set({ busy: null, result: { tone: 'error', text: describe(error) } }),
+      (error: unknown) => {
+        this.ownEstop = false;
+        this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+      },
     );
   }
 
@@ -144,7 +151,12 @@ export class DeviceOperator {
       if (token !== this.turnToken) throw new TurnAborted('Superseded');
       await this.slewTo(target, token);
       this.set({ phase: 'holding' });
-      await this.watch(token, HOLD_MS, (mode) => (mode === 'READY' ? 'continue' : `THE BOX LEFT READY (${mode})`));
+      // A completion event is authoritative. Firmware may deliver one last SLEW
+      // telemetry frame after it, so only a subsequent mode event can end hold.
+      await this.watch(token, HOLD_MS, (_mode, event) =>
+        event?.event === 'mode' && event.mode !== 'READY'
+          ? `THE BOX LEFT READY (${event.mode ?? 'NO MODE'})`
+          : 'continue');
       this.set({ phase: 'returning', targetDeg: origin });
       await this.slewTo(origin, token);
       this.finishTurn(token, { tone: 'ok', text: 'TURN COMPLETE: BACK AT THE START HEADING.' });
@@ -156,10 +168,11 @@ export class DeviceOperator {
 
   async stopTurn(): Promise<void> {
     const wasTurning = this.state.phase !== 'idle';
+    const mustStopBox = this.slewInFlight || this.boxMode === 'SLEW';
     this.abortTurn('Stop requested');
-    if (this.boxMode !== 'SLEW' && !wasTurning) return;
+    if (!mustStopBox && !wasTurning) return;
     this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
-    if (this.boxMode !== 'SLEW') return;
+    if (!mustStopBox) return;
     try {
       await this.link.command('mode', { mode: 'READY' });
     } catch (error) {
@@ -168,22 +181,27 @@ export class DeviceOperator {
   }
 
   private async slewTo(targetDeg: number, token: number) {
-    await this.link.command('mode', { mode: 'SLEW', psi_ref_deg: targetDeg });
-    if (token !== this.turnToken) throw new TurnAborted('Superseded');
-    let seenSlew = false;
-    await this.watch(token, SLEW_WAIT_MS, (mode, event) => {
-      if (event?.event === 'mode' && event.cause === 'SLEW_TIMEOUT') return 'THE BOX TIMED OUT THE SLEW';
-      if (event?.event === 'mode' && event.mode === 'READY' && event.cause === 'slew_complete') return 'done';
-      if (event?.event === 'mode' && event.mode === 'READY') return `THE BOX ENDED THE SLEW (${event.cause ?? 'NO CAUSE'})`;
-      if (mode === 'SLEW') {
-        seenSlew = true;
-        return 'continue';
-      }
-      if (mode === 'READY') return seenSlew
-        ? { waitMs: SLEW_EVENT_WAIT_MS, timeoutMessage: 'THE BOX RETURNED READY WITHOUT A SLEW COMPLETION EVENT' }
-        : 'continue';
-      return `THE BOX LEFT THE SLEW (${mode ?? 'NO MODE'})`;
-    }, 'THE SLEW DID NOT FINISH IN TIME');
+    this.slewInFlight = true;
+    try {
+      await this.link.command('mode', { mode: 'SLEW', psi_ref_deg: targetDeg });
+      if (token !== this.turnToken) throw new TurnAborted('Superseded');
+      let seenSlew = false;
+      await this.watch(token, SLEW_WAIT_MS, (mode, event) => {
+        if (event?.event === 'mode' && event.cause === 'SLEW_TIMEOUT') return 'THE BOX TIMED OUT THE SLEW';
+        if (event?.event === 'mode' && event.mode === 'READY' && event.cause === 'slew_complete') return 'done';
+        if (event?.event === 'mode' && event.mode === 'READY') return `THE BOX ENDED THE SLEW (${event.cause ?? 'NO CAUSE'})`;
+        if (mode === 'SLEW') {
+          seenSlew = true;
+          return 'continue';
+        }
+        if (mode === 'READY') return seenSlew
+          ? { waitMs: SLEW_EVENT_WAIT_MS, timeoutMessage: 'THE BOX RETURNED READY WITHOUT A SLEW COMPLETION EVENT' }
+          : 'continue';
+        return `THE BOX LEFT THE SLEW (${mode ?? 'NO MODE'})`;
+      }, 'THE SLEW DID NOT FINISH IN TIME');
+    } finally {
+      if (token === this.turnToken) this.slewInFlight = false;
+    }
   }
 
   private watch(
@@ -225,6 +243,7 @@ export class DeviceOperator {
   private abortTurn(reason: string) {
     if (this.state.phase === 'idle' && !this.cancelWait) return;
     this.turnToken += 1;
+    this.slewInFlight = false;
     const cancel = this.cancelWait;
     this.cancelWait = null;
     cancel?.(reason);
@@ -249,6 +268,7 @@ export class DeviceOperator {
 
   private onEvent = (event: DeviceEvent) => {
     if (event.event === 'mode' && event.mode === 'SAFE' && this.state.controlling && event.cause && event.cause !== 'disarm') {
+      if (event.cause === 'ESTOP' && this.ownEstop) return;
       this.set({ result: { tone: 'error', text: `THE BOX WENT SAFE: ${event.cause.replace(/_/g, ' ')}` } });
     }
   };

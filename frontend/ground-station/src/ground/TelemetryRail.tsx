@@ -3,7 +3,7 @@ import type { DisplaySource } from './displaySource';
 import { HeadingHistoryChart } from './HeadingHistoryChart';
 import { TelemetryReadouts } from './TelemetryReadouts';
 
-export function TelemetryRail({ source }: { source: DisplaySource }) {
+export function TelemetryRail({ source, operatorTarget = null }: { source: DisplaySource; operatorTarget?: number | null }) {
   const telemetry = useSyncExternalStore(source.subscribeTelemetry, source.getTelemetry);
   const live = telemetry.source === 'hardware';
   return (
@@ -16,7 +16,7 @@ export function TelemetryRail({ source }: { source: DisplaySource }) {
           {live ? 'FROM DEVICE — WEBSOCKET' : 'SIMULATED VALUES — NOT SENSOR DATA'}
         </p>
       </div>
-      <TelemetryReadouts telemetry={telemetry} />
+      <TelemetryReadouts telemetry={telemetry} operatorTarget={operatorTarget} />
       <div className="rail__history">
         <h3 className="mono-label">HEADING HISTORY</h3>
         <HeadingHistoryChart telemetry={telemetry} />

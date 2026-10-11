@@ -17,7 +17,7 @@ const MODEL_LABEL: Record<ModelStatus, string> = {
   failed: 'SCHEMATIC MODEL — CAD NOT LOADED',
 };
 
-export function ModelViewport({ source }: { source: DisplaySource }) {
+export function ModelViewport({ source, operatorTarget = null }: { source: DisplaySource; operatorTarget?: number | null }) {
   const state = useSyncExternalStore(source.subscribeFrame, source.getFrame);
   const [status, setStatus] = useState<ModelStatus>(() =>
     groundStationModel.available && isWebGLAvailable() ? 'loading' : 'schematic',
@@ -56,10 +56,10 @@ export function ModelViewport({ source }: { source: DisplaySource }) {
         </span>
       </div>
       <div className="viewport__dial">
-        <HeadingDial headingDeg={state.headingDeg} targetDeg={state.targetDeg} originDeg={state.originDeg} />
+        <HeadingDial headingDeg={state.headingDeg} targetDeg={operatorTarget ?? state.targetDeg} originDeg={state.originDeg} />
       </div>
 
-      <ViewportReadout source={source} />
+      <ViewportReadout source={source} operatorTarget={operatorTarget} />
 
       <p className="viewport__corner viewport__corner--left mono-label">+Z / YAW AXIS</p>
       <p className="viewport__corner viewport__corner--right mono-label">
@@ -70,12 +70,12 @@ export function ModelViewport({ source }: { source: DisplaySource }) {
   );
 }
 
-function ViewportReadout({ source }: { source: DisplaySource }) {
+function ViewportReadout({ source, operatorTarget }: { source: DisplaySource; operatorTarget: number | null }) {
   const telemetry = useSyncExternalStore(source.subscribeTelemetry, source.getTelemetry);
   return (
     <p className="viewport__readout mono-label" aria-hidden="true">
       <span>HDG {formatHeading(telemetry.headingDeg)}</span>
-      <span className="viewport__readout-target">TGT {formatHeading(telemetry.targetDeg)}</span>
+      <span className="viewport__readout-target">TGT {formatHeading(operatorTarget ?? telemetry.targetDeg)}</span>
       <span>{telemetry.statusWord}</span>
     </p>
   );
