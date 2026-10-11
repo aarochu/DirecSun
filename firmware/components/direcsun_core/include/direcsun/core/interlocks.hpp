@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "direcsun/core/commands.hpp"
+#include "direcsun/core/dshot.hpp"
 #include "direcsun/core/params.hpp"
 #include "direcsun/core/timebase.hpp"
 
@@ -64,9 +65,10 @@ constexpr uint32_t kRampDownMs = 5000;              // e-stop, disarm, heartbeat
 // 2000 rpm.
 constexpr int kBypassThrottleMax = 400;
 
-// Lowest DShot throttle value; 1..47 are ESC commands flight code never sends.
-constexpr int kDshotMinThrottle = 48;
-constexpr int kDshotMaxThrottle = 2047;
+// The DShot throttle range comes from dshot.hpp, its one definition:
+// kDshotMinThrottle (48; 1..47 are ESC commands flight code never sends) and
+// kDshotMaxValue. The supervisor computes throttle in int.
+constexpr int kDshotMaxThrottle = kDshotMaxValue;
 
 // What the monitor needs each tick.
 struct FaultInputs {
