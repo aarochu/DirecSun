@@ -86,7 +86,7 @@
 
     "tlm": {
       "type": "object",
-      "description": "Telemetry, box to all clients at 50 Hz (FD section 15.3). Every documented field is always present; values the box cannot provide are null.",
+      "description": "Telemetry, box to all clients at 50 Hz (FD section 15.3). Every documented field is always present; values the box cannot provide are null. The first tlm a client receives after an ack or event reflects the control tick that produced it, or a later one (FD section 7.4).",
       "additionalProperties": false,
       "required": [
         "v", "type", "seq", "t_ms", "mode", "manual_input", "psi_deg", "psi_ref_deg", "rate_dps",
@@ -412,7 +412,7 @@
     },
 
     "event": {
-      "description": "Box to every client that has sent at least one message, on every mode change (including every interlock trip, which changes the mode to SAFE) and on notices. A read-only viewer that never sends receives only tlm, which carries the mode in every frame (the main UI counts every non-tlm frame as ignored).",
+      "description": "Box to every client that has sent at least one message, on every mode change (including every interlock trip, which changes the mode to SAFE) and on notices. A page that only watches, never sending, receives only tlm, which carries the mode in every frame. t_ms is when comms encoded the event, a different clock from tlm's: order events against tlm by socket order. In socket order the first tlm after an event already shows its change (FD section 7.4).",
       "type": "object",
       "required": ["v", "type", "seq", "t_ms", "event"],
       "properties": { "type": { "const": "event" } },

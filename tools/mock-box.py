@@ -8,12 +8,34 @@
 Speaks wire schema v1 (protocol/schema-v1.json) the way the firmware does:
 50 Hz tlm to every client, an ack for every cmd, an event on every mode change,
 pong for every ping. Like the firmware (R3.5), events go only to clients that
-have sent at least one message: a read-only viewer such as the main UI's device
-link receives only tlm, which carries the mode in every frame. It follows the mode machine of docs/firmware-design.md
-section 13.1 (SAFE, arm to SPINUP, READY 2 s later, mode commands, MANUAL with
-its 250 ms staleness rule), the controlling-client rule and the 1 s heartbeat of
-section 14.4, and the e-stop. It is not a plant model: headings and speeds are
-plausible shapes, not physics, and it is no evidence about the hardware.
+have sent at least one message: a page that only watches receives only tlm,
+which carries the mode in every frame. It follows the mode machine of
+docs/firmware-design.md section 13.1, the controlling-client rule and the 1 s
+heartbeat of section 14.4, and the e-stop. It is not a plant model: headings and
+speeds are plausible shapes, not physics, and it is no evidence about the hardware.
+
+On every path the main UI can reach it answers as the firmware does (R4.1,
+finding U-7), with the same refusal reasons:
+- arm, guarded in the firmware's order: not in SAFE, ramp-down in progress (for
+  the 5 s after any drop to SAFE from an armed mode), bench_mode required, box
+  not still (|rate| at or above 5 deg/s), battery low. A latched fault cannot
+  block it here: the mock latches only ESTOP and HEARTBEAT_LOST, which arm
+  releases;
+- disarm and mode READY in SAFE: not armed; mode READY in SPINUP: wheel not at
+  bias; MANUAL, HOLD, and SLEW outside READY: not in READY; DETUMBLE, SUN_POINT,
+  and respin: not implemented, as at R4.3;
+- SPINUP as FD section 13.3 runs it: with the wheel loop available, omega_ref
+  ramps from the wheel's speed toward the bias at 400 rpm/s, and READY comes
+  after 0.5 s within 5 % of it, about 6.3 s after arm. Without the T-5 table
+  it is rung 1: the throttle ramps to spinup_throttle at 200 units/s, READY
+  comes 0.5 s after the ramp with the Hall bypassed, and with the Hall fitted
+  the wheel never reaches the bias, so the box stays in SPINUP, as the firmware
+  does;
+- MOMENTUM_OK or MOMENTUM_NEAR_LIMIT only in READY, MANUAL, HOLD, and SLEW, with
+  the Hall fitted.
+The mock starts characterised (the T-5 table set), because the UI is developed
+against a ready box; the firmware's own default is uncharacterised (ff_count 0,
+rate_gain_scale 0.2). --uncharacterised starts as the firmware does.
 
 HOLD and SLEW follow the firmware's rules (R4.3, FD sections 12.4 and 13.1):
 entered from READY only, and only once the wheel loop is available (the
@@ -81,7 +103,11 @@ except ImportError:
 WS_PATH = "/ws"          # the firmware's and the main UI's endpoint path
 TICK_S = 0.02            # 50 Hz telemetry
 HEARTBEAT_S = 1.0        # FD section 14.4
-SPINUP_S = 2.0           # mock shortcut: SPINUP becomes READY after this
+SPINUP_REF_RAMP_RPM_S = 400.0   # kWheelRefRampRpmPerS: SPINUP omega_ref slope (FD section 13.3)
+SPINUP_BAND = 0.05               # kSpinupBand: READY within 5 % of the target ...
+SPINUP_DWELL_S = 0.5             # kSpinupDwellMs: ... for this long
+ARM_MAX_RATE_DPS = 5.0           # kArmMaxRateDps: arm needs the box still
+ARM_MIN_VBAT = 9.6               # kArmMinBatteryV
 RAMP_S = 5.0             # e-stop and heartbeat ramp-down (FD section 14.3)
 MANUAL_STALE_S = 0.25    # FD section 13.5
 MANUAL_MIN_SPACING_S = 0.05
@@ -94,7 +120,7 @@ BYPASS_THROTTLE_MAX = 400                 # kBypassThrottleMax in the firmware
 SPINUP_THROTTLE = 300                     # spinup_throttle default; rung 1 holds it in READY
 HALL_EXPECT_THROTTLE = 200                # hall_expect_throttle default; must stay below spinup_throttle
 SPINUP_RAMP_PER_S = 200                   # open-loop ramp, DShot units per second (R3.7)
-ACTIVE_MODES = {"DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"}
+LATER_SET_MODES = {"DETUMBLE", "SUN_POINT"}   # not implemented at R4.3
 # HOLD and SLEW as the firmware (R4.3): controllers.hpp and FD section 12.
 SLEW_RATE_DPS, SLEW_ACCEL_DPS2 = 60.0, 120.0
 SLEW_SETTLE_DEG, SLEW_SETTLE_RATE_DPS, SLEW_SETTLE_S = 3.0, 5.0, 0.5
@@ -184,6 +210,8 @@ class Box:
         self.wheel = 0.0
         self.wheel_ref = 0.0
         self.spinup_target = OMEGA_BIAS
+        self.spinup_in_band_since = None
+        self.vbat = 10.1
         self.ramp = None                  # (start time, start wheel) while ramping down
         self.manual_value = None
         self.manual_last = -1.0
@@ -289,18 +317,28 @@ class Box:
             self.last_heartbeat = self.clock()
 
         if cmd == "arm":
+            # The firmware's arm guards, in its order (FD section 13.1).
             if self.mode != "SAFE":
-                return self._ack(conn, seq, False, f"not allowed in {self.mode}")
+                return self._ack(conn, seq, False, "not in SAFE")
+            if self.ramp:
+                return self._ack(conn, seq, False, "ramp-down in progress")
+            if not self.params["hall_installed"] and not self.params["bench_mode"]:
+                return self._ack(conn, seq, False, "bench_mode required")
+            if not abs(self.rate) < ARM_MAX_RATE_DPS:
+                return self._ack(conn, seq, False, "box not still")
+            if not self.vbat > ARM_MIN_VBAT:
+                return self._ack(conn, seq, False, "battery low")
             self.controller = conn
             self.last_heartbeat = self.clock()
             self.latched.clear()
-            self.ramp = None
             self.spinup_target = OMEGA_BIAS
+            self.wheel_ref = max(0.0, self.wheel)   # omega_ref starts at the measured speed
+            self.spinup_in_band_since = None
             self._ack(conn, seq, True)
             self._set_mode("SPINUP", "arm")
         elif cmd == "disarm":
             if self.mode == "SAFE":
-                return self._ack(conn, seq, False, "already SAFE")
+                return self._ack(conn, seq, False, "not armed")
             self._ack(conn, seq, True)
             self._to_safe("disarm")
         elif cmd == "mode":
@@ -308,14 +346,7 @@ class Box:
         elif cmd == "manual":
             self._manual(conn, seq, message)
         elif cmd == "respin":
-            if self.mode != "READY":
-                return self._ack(conn, seq, False, f"not allowed in {self.mode}")
-            target = message.get("wheel_rpm", OMEGA_BIAS)
-            if not OMEGA_LOW + 200 <= target <= OMEGA_CAP - 200:
-                return self._ack(conn, seq, False, f"wheel_rpm outside {OMEGA_LOW + 200:.0f}..{OMEGA_CAP - 200:.0f}")
-            self.spinup_target = float(target)
-            self._ack(conn, seq, True)
-            self._set_mode("SPINUP", "respin")
+            self._ack(conn, seq, False, "not implemented")   # as the firmware at R4.3
         elif cmd == "zero_heading":
             # As the firmware (R4.2): SAFE and READY only, so a zero can never move
             # the reference of a HOLD or SLEW in progress.
@@ -369,15 +400,19 @@ class Box:
 
     def _mode_command(self, conn, seq, message):
         target = message["mode"]
+        if target in LATER_SET_MODES:
+            return self._ack(conn, seq, False, "not implemented")
         if target == "READY":
-            if self.mode in ACTIVE_MODES:
+            if self.mode in ("MANUAL", "HOLD", "SLEW"):
                 self._ack(conn, seq, True)
                 self._set_mode("READY", "mode")
             elif self.mode == "READY":
                 self.wheel_hold = False   # `mode READY` in READY ends a wheel-step hold
                 self._ack(conn, seq, True)
+            elif self.mode == "SPINUP":
+                self._ack(conn, seq, False, "wheel not at bias")
             else:
-                self._ack(conn, seq, False, f"not allowed in {self.mode}")
+                self._ack(conn, seq, False, "not armed")
             return
         if target in ("HOLD", "SLEW"):
             # As the firmware supervisor (R4.3): from READY only, and only with the
@@ -397,11 +432,9 @@ class Box:
                 self.slew = (self.psi, -wrap_deg(self.psi - goal), self.clock())
                 self.slew_settled_since = None
             return
-        if self.mode != "READY":
-            return self._ack(conn, seq, False, f"not allowed in {self.mode}")
-        if target == "SUN_POINT":
-            return self._ack(conn, seq, False, "sun not valid")
         if target == "MANUAL":
+            if self.mode != "READY":
+                return self._ack(conn, seq, False, "not in READY")
             if message["input"] not in self.inputs:
                 return self._ack(conn, seq, False, "input not available")
             self._ack(conn, seq, True)
@@ -414,8 +447,24 @@ class Box:
                 self.manual_value = float(min(hi, max(lo, self.last_throttle)))
             self.manual_last = self.clock()
             return
-        self._ack(conn, seq, True)
-        self._set_mode(target, "mode")
+        self._ack(conn, seq, False, "invalid mode")
+
+    def _spinup_throttle(self, now):
+        # Rung 1's open-loop ramp (R3.7): 200 units/s up to spinup_throttle.
+        return min(self.params["spinup_throttle"], (now - self.mode_since) * SPINUP_RAMP_PER_S)
+
+    def _spinup_complete(self, now):
+        # The supervisor's rule (FD section 13.3): the wheel within 5 % of the
+        # target for 0.5 s; with the Hall bypassed, 0.5 s after the open-loop ramp.
+        if not self.params["hall_installed"]:
+            ramp_s = self.params["spinup_throttle"] / SPINUP_RAMP_PER_S
+            return now - self.mode_since >= ramp_s + SPINUP_DWELL_S - 1e-9
+        if abs(self.wheel - self.spinup_target) > SPINUP_BAND * self.spinup_target:
+            self.spinup_in_band_since = None
+            return False
+        if self.spinup_in_band_since is None:
+            self.spinup_in_band_since = now
+        return now - self.spinup_in_band_since >= SPINUP_DWELL_S - 1e-9
 
     def _wheel_loop_available(self):
         # The firmware's wheel_loop_available(): Hall fitted and the T-5 table set.
@@ -477,7 +526,7 @@ class Box:
         dt = TICK_S
         if self.mode != "SAFE" and now - self.last_heartbeat > HEARTBEAT_S:
             self._to_safe("HEARTBEAT_LOST", latch="HEARTBEAT_LOST")
-        if self.mode == "SPINUP" and now - self.mode_since >= SPINUP_S:
+        if self.mode == "SPINUP" and self._spinup_complete(now):
             self._set_mode("READY", "spinup_complete")
         slew_ended = False
         if self.mode == "SLEW" and self.slew:
@@ -509,9 +558,12 @@ class Box:
                     self.ramp = None
             else:
                 self.wheel_ref = 0.0
+        elif self.mode == "SPINUP" and self._wheel_loop_available():
+            # FD section 13.3: omega_ref ramps toward the target at 400 rpm/s.
+            self.wheel_ref = min(min(self.spinup_target, self._cap()), self.wheel_ref + SPINUP_REF_RAMP_RPM_S * dt)
         elif self.mode == "SPINUP":
-            fraction = min(1.0, (now - self.mode_since) / SPINUP_S)
-            self.wheel_ref = self.spinup_target * fraction
+            # Rung 1 (R3.7): the wheel follows the open-loop throttle ramp.
+            self.wheel_ref = max(0.0, (self._spinup_throttle(now) - 48) / 0.17)
         elif self.mode == "MANUAL" and self.manual_input == "throttle" and self.manual_value is not None:
             self.wheel_ref = min(OMEGA_CAP, (self.manual_value - 48) / 0.17)
         elif self.mode == "MANUAL" and self.manual_input == "wheel" and self.manual_value is not None:
@@ -554,10 +606,9 @@ class Box:
                                                   - WHEEL_RPM_PER_BOX_DPS * (self.rate - previous_rate)))
 
         flags = []
-        if self.mode == "SAFE" or OMEGA_LOW + 300 < self.wheel < OMEGA_CAP - 300:
-            flags.append("MOMENTUM_OK")
-        else:
-            flags.append("MOMENTUM_NEAR_LIMIT")
+        if self.params["hall_installed"] and self.mode in ("READY", "MANUAL", "HOLD", "SLEW"):
+            near = self.wheel > self._cap() - 300 or self.wheel < OMEGA_LOW + 300
+            flags.append("MOMENTUM_NEAR_LIMIT" if near else "MOMENTUM_OK")
         if stale:
             flags.append("MANUAL_STALE")
         if not self.params["hall_installed"]:
@@ -570,12 +621,12 @@ class Box:
         # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
         # spin-up throttle held in READY, the setpoint in MANUAL throttle.
         throttle = 0
-        if self.mode == "SPINUP":
-            throttle = int(min(SPINUP_THROTTLE, (now - self.mode_since) * SPINUP_RAMP_PER_S))
-        elif self.mode in ("READY", "HOLD", "SLEW") and self._wheel_loop_available():
+        if self.mode in ("SPINUP", "READY", "HOLD", "SLEW") and self._wheel_loop_available():
             throttle = int(round(self._ff(self.wheel_ref)))   # closed wheel loop at steady state (R3.8)
+        elif self.mode == "SPINUP":
+            throttle = int(self._spinup_throttle(now))
         elif self.mode != "SAFE":
-            throttle = SPINUP_THROTTLE
+            throttle = self.params["spinup_throttle"]
         elif self.ramp:
             throttle = int(48 + self.wheel_ref * 0.17)
         if 0 < throttle < 48:
@@ -599,7 +650,7 @@ class Box:
             "wheel_ref_rpm": round(max(0.0, self.wheel_ref), 1)
             if self.mode in ("SPINUP", "READY", "HOLD", "SLEW") and self._wheel_loop_available() else 0,
             "throttle": throttle, "throttle_band": [band_lo, band_hi], "tau_cmd_mNm": round(tau_mnm, 2),
-            "vbat": round(10.1 + random.uniform(-0.03, 0.03), 2),
+            "vbat": round(self.vbat + random.uniform(-0.03, 0.03), 2),
             "loop_us": random.randint(690, 790), "flags": flags,
             "t_c": 23.5, "p_pa": 101300.0, "tlm_dropped": 0, "dropped_events": 0,
             **({"gyro_raw": [0, 0, int(max(-32768, min(32767, -self.rate * 16.4)))], "mag_raw": [812, -1234, 300],
@@ -745,22 +796,38 @@ def selftest_attitude(schema):
         new = [m for _t, m in box.outbox[start:]]
         return [m for m in new if m["type"] == "tlm"], [m for m in new if m["type"] == "event"]
 
-    def armed(**kwargs):
+    def armed(bypass=False, **kwargs):
         clock = Clock()
         box = Box(schema, {"throttle"}, clock=clock, **kwargs)
         conn = Conn()
+        if bypass:
+            send(box, conn, 101, cmd="set_params", params={"bench_mode": True})
+            send(box, conn, 102, cmd="set_params", params={"hall_installed": False})
         send(box, conn, 1, cmd="arm")
-        run(box, clock, SPINUP_S + 2 * TICK_S)
+        for _ in range(int(10.0 / TICK_S)):
+            if box.mode == "READY":
+                break
+            run(box, clock, TICK_S)
         if box.mode != "READY":
-            problems.append(f"the attitude selftest box is in {box.mode}, not READY, after arming")
+            problems.append(f"the attitude selftest box is in {box.mode}, not READY, 10 s after arming")
         return box, conn, clock
 
-    # Refusals with the firmware's reasons.
-    box, conn, clock = armed(characterised=False)
+    # Refusals with the firmware's reasons. An uncharacterised box reaches READY
+    # only with the Hall bypassed (rung 1), and then has no wheel loop.
+    box, conn, clock = armed(bypass=True, characterised=False)
     for seq, cmd in ((2, {"mode": "HOLD"}), (3, {"mode": "SLEW", "psi_ref_deg": 90})):
         reason = send(box, conn, seq, cmd="mode", **cmd).get("reason")
         if reason != "wheel loop not available":
             problems.append(f"uncharacterised {cmd['mode']} refused with {reason!r}")
+    # With the Hall fitted and no T-5 table, rung 1 never brings the wheel to the
+    # bias, so the box stays in SPINUP, as the firmware does (R4.1 open question 2).
+    clock = Clock()
+    box = Box(schema, {"throttle"}, clock=clock, characterised=False)
+    conn = Conn()
+    send(box, conn, 1, cmd="arm")
+    run(box, clock, 10.0)
+    if box.mode != "SPINUP":
+        problems.append(f"an uncharacterised box with the Hall fitted reached {box.mode}; the firmware stays in SPINUP")
     box, conn, clock = armed()
     send(box, conn, 2, cmd="mode", mode="MANUAL", input="throttle")
     reason = send(box, conn, 3, cmd="mode", mode="HOLD").get("reason")
@@ -871,15 +938,42 @@ def selftest():
     class Conn:
         pass
 
-    box = Box(schema, {"throttle", "wheel", "rate"})
+    class Clock:
+        def __init__(self):
+            self.t = 1000.0
+
+        def __call__(self):
+            return self.t
+
+    clock = Clock()
+    box = Box(schema, {"throttle", "wheel", "rate"}, clock=clock)
     a, b = Conn(), Conn()
     send = lambda conn, msg: box.receive(conn, json.dumps(msg))
+    cmd = lambda conn, seq, name, **fields: send(conn, {"v": 1, "type": "cmd", "seq": seq, "cmd": name, **fields})
+
+    def spin_up():
+        """Ticks with the operator's heartbeat until READY (at most 10 s); returns the seconds taken."""
+        start = clock.t
+        for _ in range(int(10.0 / TICK_S)):
+            clock.t += TICK_S
+            box.last_heartbeat = clock.t
+            box.tick()
+            if box.mode == "READY":
+                break
+        return clock.t - start
+
     box.tick()
+    cmd(a, 105, "disarm")                                                            # not armed
+    cmd(a, 106, "mode", mode="READY")                                                # not armed
     send(a, {"v": 1, "type": "ping", "seq": 1, "t_client_ms": 10.5})
-    send(a, {"v": 1, "type": "cmd", "seq": 2, "cmd": "arm"})
+    cmd(a, 2, "arm")
     send(b, {"v": 1, "type": "cmd", "seq": 3, "cmd": "mode", "mode": "READY"})      # not controlling client
-    box.mode_since -= SPINUP_S
-    box.tick()                                                                        # SPINUP to READY
+    cmd(a, 107, "arm")                                                               # not in SAFE
+    cmd(a, 108, "mode", mode="READY")                                                # wheel not at bias
+    spinup_s = spin_up()                                                             # SPINUP to READY
+    cmd(a, 109, "mode", mode="DETUMBLE")                                             # not implemented
+    cmd(a, 110, "mode", mode="SUN_POINT")                                            # not implemented
+    cmd(a, 111, "respin")                                                            # not implemented
     send(a, {"v": 1, "type": "cmd", "seq": 4, "cmd": "mode", "mode": "MANUAL", "input": "rate"})
     box.manual_last -= 1.0
     send(a, {"v": 1, "type": "cmd", "seq": 5, "cmd": "manual", "rate_dps": 30})
@@ -889,7 +983,13 @@ def selftest():
     send(a, "not json at all")
     send(a, {"v": 2, "type": "ping", "seq": 7, "t_client_ms": 1})
     send(b, {"v": 1, "type": "cmd", "seq": 8, "cmd": "estop"})
+    cmd(a, 104, "arm")                                                               # ramp-down in progress
     box.last_heartbeat -= 5.0
+    box.tick()
+    box.ramp = (box.ramp[0] - RAMP_S, box.ramp[1])
+    box.tick()                                                                        # the e-stop's ramp ends
+    box.rate = ARM_MAX_RATE_DPS
+    cmd(a, 112, "arm")                                                               # box not still
     box.tick()
     send(a, {"v": 1, "type": "cmd", "seq": 9, "cmd": "arm"})
     box.last_heartbeat -= 5.0
@@ -914,11 +1014,10 @@ def selftest():
     send(a, {"v": 1, "type": "cmd", "seq": 17, "cmd": "set_params", "params": {
         "bench_mode": True, "bench_cap_rpm": 2500, "bench_underspeed_rpm": 300,
         "ff_table": [{"rpm": 500 * (i + 1), "throttle": 48 + 100 * (i + 1)} for i in range(8)]}})
-    box.last_heartbeat = time.monotonic()
+    box.last_heartbeat = clock.t
     send(a, {"v": 1, "type": "cmd", "seq": 18, "cmd": "wheel_step", "delta_rpm": 300})          # refused: SAFE
     send(a, {"v": 1, "type": "cmd", "seq": 19, "cmd": "arm"})
-    box.mode_since -= SPINUP_S
-    box.tick()                                                                        # READY
+    spin_up()                                                                         # READY
     send(a, {"v": 1, "type": "cmd", "seq": 20, "cmd": "wheel_step", "delta_rpm": 300})          # ok
     box.tick()                                                                        # WHEEL_STEP flag
     stepped_ref = box.wheel_ref
@@ -973,6 +1072,23 @@ def selftest():
         problems.append("HEADING_GYRO missing from a tlm frame")
     if abs(zeroed_psi) > 1.0:
         problems.append(f"zero_heading in READY left psi_deg at {zeroed_psi}")
+    # The firmware's answers on the UI's paths (R4.1, finding U-7), reason for reason.
+    gap3 = {104: "ramp-down in progress", 105: "not armed", 106: "not armed", 107: "not in SAFE",
+            108: "wheel not at bias", 109: "not implemented", 110: "not implemented", 111: "not implemented",
+            112: "box not still"}
+    for seq, reason in gap3.items():
+        if reasons.get(seq) != reason:
+            problems.append(f"seq {seq} refused with {reasons.get(seq)!r}, expected {reason!r} as the firmware")
+    print(f"mock-box selftest: READY {spinup_s:.2f} s after arm (the firmware's omega_ref ramp, about 6.3 s)")
+    if not 6.0 <= spinup_s <= 7.0:
+        problems.append(f"SPINUP took {spinup_s:.2f} s; the firmware's ramp takes about 6.3 s")
+    misflagged = [m["mode"] for _t, m in box.outbox if m["type"] == "tlm" and m["mode"] in ("SAFE", "SPINUP")
+                  and any(f.startswith("MOMENTUM_") for f in m["flags"])]
+    if misflagged:
+        problems.append(f"{len(misflagged)} tlm frames in SAFE or SPINUP carry a MOMENTUM flag")
+    if not all(any(f.startswith("MOMENTUM_") for f in m["flags"]) for _t, m in box.outbox
+               if m["type"] == "tlm" and m["mode"] == "READY" and "HALL_BYPASS" not in m["flags"]):
+        problems.append("a READY tlm with the Hall fitted has no MOMENTUM flag")
     # Box rules the mock mirrors: each one refused, and the nearest legal update accepted.
     acks = {m["seq"]: m for _t, m in box.outbox if m["type"] == "ack" and m["seq"] in (101, 102, 103)}
     expected = {101: (False, "invalid param: hall_expect_throttle"), 102: (True, None),
@@ -995,8 +1111,10 @@ def main():
     parser.add_argument("--inputs", default="throttle,wheel,rate",
                         help="MANUAL inputs the stub accepts, comma-separated (others get 'input not available')")
     parser.add_argument("--uncharacterised", action="store_true",
-                        help="start without the T-5 ff_table, as a fresh box: HOLD, SLEW, and wheel_step are "
-                             "refused with 'wheel loop not available' until set_params sends one")
+                        help="start without the T-5 ff_table, as the firmware does: with the Hall fitted, rung 1 "
+                             "never brings the wheel to the bias and the box stays in SPINUP; with the Hall bypassed "
+                             "it reaches READY, and HOLD, SLEW, and wheel_step are refused with 'wheel loop not "
+                             "available' until set_params sends a table")
     parser.add_argument("--stuck", action="store_true",
                         help="a box that cannot turn, so every SLEW ends in SLEW_TIMEOUT")
     parser.add_argument("--selftest", action="store_true", help="validate one of each outbound kind and exit")

@@ -4,7 +4,8 @@
 // lock-free double buffer it publishes through.
 //
 //   TelemetrySnapshot  everything a `tlm` frame needs (FD section 15.3), written
-//                      every 10th tick (50 Hz). Comms (R3.5) encodes it.
+//                      every 10th tick (50 Hz) and on every tick that posts an
+//                      ack or event (snapshot_due). Comms (R3.5) encodes it.
 //   TickStats          per-second timing for the bench checks (BC-3, F-4).
 //   SeqlockBuffer<T>   single writer, any number of readers; the writer never
 //                      waits, a reader retries if the writer overtook its copy.
@@ -18,7 +19,34 @@
 #include "direcsun/core/commands.hpp"
 #include "direcsun/core/interlocks.hpp"
 
+// Mutation-test switch (host selftest builds only): snapshots follow the
+// 50 Hz cadence alone, as before R4.1, so HT-13 (c) must see a stale tlm.
+#if defined(ESP_PLATFORM) && defined(DIRECSUN_MUTANT_SNAPSHOT_CADENCE_ONLY)
+#error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
+#endif
+
 namespace direcsun {
+
+// Telemetry cadence: a snapshot every 10th control tick, 50 Hz.
+constexpr uint32_t kTicksPerSnapshot = 10;
+
+// The ordering guarantee (FD section 7.4, R4.1): the first tlm a client
+// receives after an ack or event reflects the control tick that produced it,
+// or a later one. The control task writes a snapshot on the cadence and on
+// every tick that posts an ack or event (`outbound_count` > 0), and writes it
+// before it posts them. Comms pops the posted items before it reads the
+// snapshot, so any item it sends already has a snapshot at least that new,
+// which its flush sends after the item. Comms still publishes at most one
+// snapshot per 20 ms period, so the tlm rate stays 50 Hz.
+constexpr bool snapshot_due(uint32_t tick, std::size_t outbound_count)
+{
+#ifdef DIRECSUN_MUTANT_SNAPSHOT_CADENCE_ONLY
+    (void)outbound_count;
+    return tick % kTicksPerSnapshot == 0;
+#else
+    return tick % kTicksPerSnapshot == 0 || outbound_count > 0;
+#endif
+}
 
 // Single-writer double buffer with a sequence counter (FD section 7.4, V-12).
 //
