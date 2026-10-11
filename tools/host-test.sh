@@ -73,6 +73,7 @@ else
         "absolute_stillness|boot bias seed: an uncalibrated 0.871 g accelerometer at rest still seeds"
         "no_wire_sign|sign conversion: internal CCW encodes as wire CW and decodes back"
         "no_spinup_ramp|rung 1: SPINUP ramps at 200 DShot units per second through the supervisor"
+        "no_hall_expect_rule|HT-10 HALL_SILENT trips in SPINUP for every parameter set the box accepts"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

@@ -70,6 +70,87 @@ TEST_CASE("params: cross-key, type, and unknown-key errors name the key")
     CHECK(rig.last_reason() == "invalid param: k_psi");
 }
 
+TEST_CASE("params: hall_expect_throttle below spinup_throttle by every route (V-64)")
+{
+    // Direct validation: the review's 2047/2047 set, equality, and one below.
+    Params p;
+    p.spinup_throttle = 2047;
+    p.hall_expect_throttle = 2047;
+    p.manual_throttle_max = 2047;
+    ParamsResult r = validate_params(p);
+    CHECK_FALSE(r.ok);
+    CHECK(std::string(r.reason) == "invalid param: hall_expect_throttle");
+    p.spinup_throttle = 300;
+    p.hall_expect_throttle = 300;
+    CHECK_FALSE(validate_params(p).ok);
+    p.hall_expect_throttle = 299;
+    CHECK(validate_params(p).ok);
+
+    // Over the wire: refused whole, nothing applied, nothing persisted.
+    {
+        Rig rig;
+        ParamUpdate u;
+        add_number(u, "spinup_throttle", 2047);
+        add_number(u, "hall_expect_throttle", 2047);
+        rig.tick({set_params_cmd(&u)});
+        CHECK(rig.last_reason() == "invalid param: hall_expect_throttle");
+        CHECK_FALSE(rig.out.params_changed);
+        CHECK(rig.sup.params().spinup_throttle == 300);
+        CHECK(rig.sup.params().hall_expect_throttle == 200);
+    }
+    {
+        // Lowering the target alone to the stored threshold is refused too.
+        Rig rig;
+        ParamUpdate u;
+        add_number(u, "spinup_throttle", 200);
+        rig.tick({set_params_cmd(&u)});
+        CHECK(rig.last_reason() == "invalid param: hall_expect_throttle");
+        CHECK(rig.sup.params().spinup_throttle == 300);
+    }
+    {
+        Rig rig;
+        ParamUpdate u;
+        add_number(u, "spinup_throttle", 2047);
+        add_number(u, "hall_expect_throttle", 2046);
+        rig.tick({set_params_cmd(&u)});
+        CHECK(rig.last_ok());
+        CHECK(rig.out.params_changed);
+        CHECK(rig.sup.params().hall_expect_throttle == 2046);
+    }
+
+    // A stored set that breaks the rule loads the defaults, as any invalid set does.
+    MemoryStore store;
+    Params bad;
+    bad.spinup_throttle = 2047;
+    bad.hall_expect_throttle = 2047;
+    REQUIRE(save_params(store, bad));
+    Params loaded;
+    const ParamsLoad load = load_params(store, loaded);
+    CHECK(load.reset);
+    CHECK(std::string(load.detail) == "invalid");
+    CHECK(loaded.spinup_throttle == 300);
+    CHECK(loaded.hall_expect_throttle == 200);
+    // Positive control: the same store round-trips a set that keeps the rule.
+    bad.hall_expect_throttle = 2046;
+    REQUIRE(save_params(store, bad));
+    CHECK_FALSE(load_params(store, loaded).reset);
+    CHECK(loaded.hall_expect_throttle == 2046);
+
+    // And a supervisor handed such a set runs on the defaults and says so.
+    bad.hall_expect_throttle = 2047;
+    Supervisor sup(bad);
+    CHECK(sup.params().spinup_throttle == 300);
+    CHECK(sup.params().hall_expect_throttle == 200);
+    ScriptedController ctl;
+    TickInputs in;
+    in.vbat_avg_v = 10.4f;
+    TickOutputs out;
+    sup.step(in, ctl, out);
+    REQUIRE(out.events.count == 1);
+    CHECK(std::string(out.events.items[0].notice) == "PARAMS_RESET");
+    CHECK(std::string(out.events.items[0].detail) == "invalid");
+}
+
 TEST_CASE("params: the feed-forward table must be monotonic")
 {
     ParamUpdate u;

@@ -29,7 +29,7 @@ Rules the schema enforces, so drift fails loudly:
 - `cmd manual` carries exactly one of `throttle`, `wheel_rpm`, `rate_dps`.
 - `set_params` cannot carry `omega_cap_rpm` or Wi-Fi settings.
 
-Ranges that depend on other values (a monotonic feed-forward table, the bias between the limits, the clamp bands) are checked by the box, not by the schema.
+Ranges that depend on other values (a monotonic feed-forward table, the bias between the limits, the clamp bands, `hall_expect_throttle` below `spinup_throttle`) are checked by the box, not by the schema.
 
 ## Fixtures
 
@@ -59,3 +59,4 @@ Either way, the schema, FD section 15, `ground/link/`, `tools/mock-box.py`, and 
 | 2026-10-10 | Events go only to clients that have sent at least one message (R3.5). A read-only viewer, like the main UI's device link today, receives only `tlm`, so its ignored-frame count stays 0 | Delivery rule, no schema change |
 | 2026-10-10 | Refusal reasons are fixed strings (FD section 15.3), and an `ack` for a frame with no readable `seq` (too large, malformed JSON) carries `seq` 0. `mag_deg` is null until magnetometer heading exists (Set 5) | Clarification, stays v1 |
 | 2026-10-10 | `tlm` may carry `throttle_band`: `[lo, hi]`, the band the box clamps MANUAL throttle setpoints into (`manual_throttle_min`, `manual_throttle_max`, with the top capped at 400 while the Hall is bypassed), or `null` until known (R3.7). The bench console draws its slider from it; the main UI may ignore it | Additive, stays v1 |
+| 2026-10-10 | `set_params` is refused with `invalid param: hall_expect_throttle` unless `hall_expect_throttle` stays below `spinup_throttle`, so the Hall-silent interlock arms in every spin-up. This holds for the merged set, so lowering `spinup_throttle` alone to the stored threshold is refused too; send both in one update. A stored set that breaks the rule loads the defaults (`PARAMS_RESET` `invalid`). FD section 16, V-64 | Box rule, no schema change |
