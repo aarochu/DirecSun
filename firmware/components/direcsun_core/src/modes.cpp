@@ -75,7 +75,6 @@ constexpr const char *kBatteryLow = "battery low";
 constexpr const char *kInputNotAvailable = "input not available";
 constexpr const char *kInputMismatch = "input mismatch";
 constexpr const char *kTooFast = "too fast";
-constexpr const char *kNotImplemented = "not implemented";
 constexpr const char *kWheelNotAtBias = "wheel not at bias";
 constexpr const char *kInvalidMode = "invalid mode";
 constexpr const char *kInvalidSetpoint = "invalid setpoint";
@@ -104,15 +103,28 @@ Supervisor::Supervisor(const Params &params, bool params_were_reset, const char 
     params_.bench_mode = false;
     params_.bench_underspeed_rpm = 0.0f;
     params_.bench_cap_rpm = 0.0f;
-    pending_reset_notice_ = params_were_reset;
+    params_reset_ = params_were_reset;
     reset_detail_ = reset_detail ? reset_detail : "";
     // A set that fails validation (for example a cap above kOmegaCapMaxRpm)
     // never reaches the control loop: the defaults load instead.
     if (!validate_params(params_).ok) {
         params_ = Params{};
-        pending_reset_notice_ = true;
+        params_reset_ = true;
         reset_detail_ = "invalid";
     }
+}
+
+bool Supervisor::reset_notice_due(uint32_t client)
+{
+    if (client == 0) return false;
+    for (std::size_t i = 0; i < reset_notified_count_; ++i) {
+        if (reset_notified_[i] == client) return false;
+    }
+    // A full list stops the notices rather than repeating them for a stranger
+    // every tick; four clients is the box's limit (FD section 15.2).
+    if (reset_notified_count_ >= kResetNotifiedMax) return false;
+    reset_notified_[reset_notified_count_++] = client;
+    return true;
 }
 
 void Supervisor::ack(TickOutputs &out, const Command &cmd, const char *reason)
@@ -456,13 +468,19 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     last_step_tick_ = t;
     stepped_ = true;
 
-    if (pending_reset_notice_) {
-        Event e;
-        e.kind = Event::Kind::Notice;
-        e.notice = "PARAMS_RESET";
-        e.detail = reset_detail_;
-        out.events.push(e);
-        pending_reset_notice_ = false;
+    // PARAMS_RESET (FD section 16) goes out when a client first speaks, not at
+    // boot: events reach only clients that have sent a message (R3.5), and at the
+    // first tick nobody has. Each client hears it once, the tick its first
+    // message (a ping included) is handled; the notice repeats for the others.
+    if (params_reset_ && in.commands != nullptr) {
+        for (std::size_t i = 0; i < in.command_count; ++i) {
+            if (!reset_notice_due(in.commands[i].client)) continue;
+            Event e;
+            e.kind = Event::Kind::Notice;
+            e.notice = "PARAMS_RESET";
+            e.detail = reset_detail_;
+            out.events.push(e);
+        }
     }
 
     // 1. Commands, in arrival order (FD section 9.1, T9).

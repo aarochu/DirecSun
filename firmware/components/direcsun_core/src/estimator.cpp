@@ -15,6 +15,7 @@ namespace direcsun {
 namespace {
 
 constexpr double kDegPerRad = 180.0 / 3.14159265358979323846;
+constexpr float kDegPerRadF = 57.2957795130823208768f;
 
 }  // namespace
 
@@ -123,13 +124,16 @@ void Estimator::update_mag(const float raw[3], bool safe_mode)
     // The field is fixed in the world, so a counter-clockwise turn of the box
     // rotates it clockwise in the box frame: the heading is minus the field's
     // bearing in the box frame, which makes a counter-clockwise turn increase it
-    // (FD section 11.3).
+    // (FD section 11.3). Single precision (the S3's FPU) on purpose: this runs in
+    // the worst tick of the 2 ms budget (FD section 9.2), and a double atan2 or
+    // remainder would cost it tens of microseconds in software.
 #ifdef DIRECSUN_MUTANT_MAG_SIGN_FLIP
-    const double psi_mag = std::atan2(static_cast<double>(hy), static_cast<double>(hx)) * kDegPerRad;
+    float psi_mag = std::atan2(hy, hx) * kDegPerRadF;
 #else
-    const double psi_mag = -std::atan2(static_cast<double>(hy), static_cast<double>(hx)) * kDegPerRad;
+    float psi_mag = -std::atan2(hy, hx) * kDegPerRadF;
 #endif
-    wrap_mag_heading_deg_ = wrap_deg180(psi_mag);
+    if (psi_mag <= -180.0f) psi_mag += 360.0f;  // atan2 gives [-pi, pi]: put the half-turn on +180
+    wrap_mag_heading_deg_ = psi_mag;
     mag_have_heading_ = true;
     mag_ticks_since_ = 0;
     if (!mag_started_) {
@@ -138,12 +142,15 @@ void Estimator::update_mag(const float raw[3], bool safe_mode)
 #else
         (void)safe_mode;
 #endif
-        heading_deg_ = psi_mag;
+        heading_deg_ = static_cast<double>(psi_mag);
         mag_started_ = true;
         return;
     }
-    const double k = static_cast<double>(config_.mag_dt_s / config_.mag_tau_s);
-    heading_deg_ += k * static_cast<double>(wrap_deg180(psi_mag - heading_deg_));
+    // The error onto (-180, 180]: ψ̂ is unwrapped (it may hold many turns), so reduce
+    // the difference by whole turns. The floor is a double operation, once per sample.
+    double error = static_cast<double>(psi_mag) - heading_deg_;
+    error -= 360.0 * std::floor(error / 360.0 + 0.5);
+    heading_deg_ += static_cast<double>(config_.mag_dt_s / config_.mag_tau_s) * error;
 }
 
 void GyroBiasSeed::add(float gyro_z_dps, const float accel_g[3])

@@ -46,7 +46,7 @@ export const MODES: Readonly<Record<WireMode, ModeSpec>> = {
     label: 'Detumble',
     guidance: 'DETUMBLE: THE BOX DAMPS ITS ROTATION TO ZERO. SPACE BAR SENDS E-STOP',
     enterFrom: ['READY'],
-    firmware: 'pending',
+    firmware: 'available',
     reference: 'none',
   },
   HOLD: {
@@ -70,7 +70,7 @@ export const MODES: Readonly<Record<WireMode, ModeSpec>> = {
     label: 'Sun point',
     guidance: 'SUN POINT: TURNING TO FACE THE LIGHT. THE BOX RETURNS TO READY IF THE SUN IS LOST FOR 0.5 S',
     enterFrom: ['READY'],
-    firmware: 'pending',
+    firmware: 'available',
     reference: 'sun',
   },
   MANUAL: {
@@ -126,6 +126,8 @@ export const REFUSAL_HINTS: Readonly<Record<string, string>> = {
   'input not available': 'THIS BOX DOES NOT OFFER THAT MANUAL INPUT',
   'sun not valid': 'NO VALID SUN READING: LIGHT THE SUN SENSORS FIRST',
   'not controlling client': 'ANOTHER CLIENT IS CONTROLLING THE BOX',
+  'box not still': 'HOLD THE BOX STILL (UNDER 5 DEG/S) AND TRY AGAIN',
+  'invalid setpoint': 'THE START SPEED MUST BE 1000 TO 3800 RPM',
 };
 
 export const AUTO_EXITS: Readonly<Record<string, { readonly tone: 'ok' | 'error'; readonly text: string }>> = {
@@ -139,7 +141,9 @@ export type GuardReadout = Pick<DisplayTelemetry, 'flags' | 'rateDegS' | 'batter
 export const ARM_MAX_RATE_DPS = 5;
 export const ARM_MIN_BATTERY_V = 9.6;
 export const RESPIN_RANGE_RPM: readonly [number, number] = [1000, 3800];
-export const RESPIN_FIRMWARE: FirmwareSupport = 'pending';
+// The box runs respin (R5.3), DETUMBLE (R4.4) and SUN_POINT (R5.4); 'pending' stays
+// in the type for a mode the UI lists before the firmware has it.
+export const RESPIN_FIRMWARE: FirmwareSupport = 'available';
 
 const turning = (readout: GuardReadout) => readout.rateDegS !== null && Math.abs(readout.rateDegS) >= ARM_MAX_RATE_DPS;
 

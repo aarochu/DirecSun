@@ -58,6 +58,7 @@ step host-tests-selftest   "$repo_root/tools/host-test.sh" --selftest
 step schema-fixtures       "$python" "$repo_root/tools/check-schema.py"
 step link-tests            "$repo_root/tools/check-link.sh"
 step mock-box-selftest     "$python" "$repo_root/tools/mock-box.py" --selftest
+step calibrate-selftest    "$python" "$repo_root/tools/calibrate.py" --selftest
 step cad-stale             "$python" "$repo_root/tools/check-cad-stale.py"
 step cad-stale-selftest    "$python" "$repo_root/tools/check-cad-stale.py" --selftest
 if [[ "$firmware" -eq 1 ]]; then

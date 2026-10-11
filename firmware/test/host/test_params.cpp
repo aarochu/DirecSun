@@ -146,6 +146,12 @@ TEST_CASE("params: hall_expect_throttle below spinup_throttle by every route (V-
     in.vbat_avg_v = 10.4f;
     TickOutputs out;
     sup.step(in, ctl, out);
+    CHECK(out.events.count == 0);  // nobody has spoken yet: events reach only clients that have
+    const Command hello = cmd(CommandKind::Ping);
+    in.tick = 1;
+    in.commands = &hello;
+    in.command_count = 1;
+    sup.step(in, ctl, out);
     REQUIRE(out.events.count == 1);
     CHECK(std::string(out.events.items[0].notice) == "PARAMS_RESET");
     CHECK(std::string(out.events.items[0].detail) == "invalid");
@@ -190,6 +196,9 @@ TEST_CASE("params: omega_cap_rpm = 4001 is rejected by every route")
     ScriptedController ctl;
     TickInputs in;
     TickOutputs out;
+    const Command hello = cmd(CommandKind::Ping);
+    in.commands = &hello;
+    in.command_count = 1;
     sup.step(in, ctl, out);
     REQUIRE(out.events.count >= 1);
     CHECK(std::string(out.events.items[0].notice) == "PARAMS_RESET");
@@ -265,7 +274,7 @@ TEST_CASE("params: the volatile fields never persist")
     CHECK(loaded.hall_installed);
 }
 
-TEST_CASE("params: PARAMS_RESET is posted once, on the first tick")
+TEST_CASE("params: PARAMS_RESET reaches each client once, the tick it first speaks")
 {
     Params p;
     Supervisor sup(p, true, "version");
@@ -273,14 +282,42 @@ TEST_CASE("params: PARAMS_RESET is posted once, on the first tick")
     TickInputs in;
     in.vbat_avg_v = 10.4f;  // a charged battery, so no BATTERY_LOW event joins the notice
     TickOutputs out;
+
+    // Boot: nobody is connected, and an event posted now would be lost (R3.5).
+    sup.step(in, ctl, out);
+    CHECK(out.events.count == 0);
+
+    // The first client to speak, with a ping, hears it.
+    Command ping = cmd(CommandKind::Ping, harness::kOperator);
+    in.tick = 1;
+    in.commands = &ping;
+    in.command_count = 1;
     sup.step(in, ctl, out);
     REQUIRE(out.events.count == 1);
     CHECK(out.events.items[0].kind == Event::Kind::Notice);
     CHECK(std::string(out.events.items[0].notice) == "PARAMS_RESET");
     CHECK(std::string(out.events.items[0].detail) == "version");
-    in.tick = 1;
+
+    // The same client does not hear it again.
+    in.tick = 2;
     sup.step(in, ctl, out);
     CHECK(out.events.count == 0);
+
+    // A second client that connects later does.
+    Command other = cmd(CommandKind::Ping, harness::kViewer);
+    in.tick = 3;
+    in.commands = &other;
+    sup.step(in, ctl, out);
+    REQUIRE(out.events.count == 1);
+    CHECK(std::string(out.events.items[0].notice) == "PARAMS_RESET");
+
+    // A box whose parameters loaded fine posts nothing.
+    Supervisor clean{Params{}};
+    TickOutputs quiet;
+    in.tick = 1;
+    in.commands = &ping;
+    clean.step(in, ctl, quiet);
+    CHECK(quiet.events.count == 0);
 }
 
 TEST_CASE("params: rate_gain_scale defaults to 0.2, stays in 0..1, and persists")

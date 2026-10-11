@@ -140,8 +140,9 @@ struct TickOutputs {
 
 class Supervisor {
 public:
-    // `params` comes from load_params(); if that reset them, the first step()
-    // posts the PARAMS_RESET notice with `reset_detail`.
+    // `params` comes from load_params(); if that reset them, step() posts the
+    // PARAMS_RESET notice with `reset_detail` to each client the first time it
+    // speaks.
     explicit Supervisor(const Params &params, bool params_were_reset = false, const char *reset_detail = "");
 
     void step(const TickInputs &in, ThrottleController &controller, TickOutputs &out);
@@ -204,7 +205,12 @@ private:
     // or SLEW in the same tick use the same reference.
     double heading_zero_deg_ = 0.0;
 
-    bool pending_reset_notice_ = false;
+    // PARAMS_RESET: every client that speaks hears it once (see step()).
+    static constexpr std::size_t kResetNotifiedMax = 8;
+    bool reset_notice_due(uint32_t client);
+    bool params_reset_ = false;
+    uint32_t reset_notified_[kResetNotifiedMax] = {};
+    std::size_t reset_notified_count_ = 0;
     const char *reset_detail_ = "";
 };
 

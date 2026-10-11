@@ -593,7 +593,7 @@ describe('ground station box controls', () => {
     fireEvent.click(trigger());
     const enabled = screen.getAllByRole('menuitem').filter((item) => !(item as HTMLButtonElement).disabled).map((item) => item.getAttribute('aria-label'));
     expect(enabled).toEqual(['Ready']);
-    expect(screen.getAllByText('Firmware pending')).toHaveLength(1);
+    expect(screen.queryAllByText('Firmware pending')).toHaveLength(0);  // DETUMBLE, SUN_POINT and respin are on the box
     expect(screen.getByText('Ready only')).toBeTruthy();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     expect(trigger().getAttribute('aria-expanded')).toBe('false');

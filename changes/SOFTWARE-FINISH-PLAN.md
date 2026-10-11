@@ -21,3 +21,20 @@ The supplied GitHub-state inventory, `changes/CONTEXT.md`, TD, FD, the wire sche
 9. Resolve TD §7.4 versus §11.5 on balancing UI (#66) before implementing that scope. Rebuild `hardware-stack.glb` and posters through the CAD pipeline (#22), then run staleness checks. Synchronize FD §17, TD §7.4, the Hold/Slew heading rule and refusal strings after the implementation lands.
 
 Integrate feature branches in dependency order and resolve conflicts against the current docs and tests. Run each feature's exact `## Tests` list, recording `[x]` or `[FAIL]` truthfully. Run `tools/check-all.sh --firmware --frontend` and the real-box capture and bench checks on the integrated candidate before the set PRs reach `main`. Any command that can turn the motor needs Julian's explicit go for that step. Commits carry no Codex co-author trailer.
+
+## Status after the Set 5 pass (2026-10-11)
+
+Plan items 4 to 7 are built on the R4.4 stack and verified on the host and the mock box; none has run on hardware.
+
+| Item | Feature | Where | Host evidence | Hardware still owed |
+| --- | --- | --- | --- | --- |
+| 4 | Compass heading, `mag_axis_map`, `mag_cal`, absolute HOLD | R5.1 | `test_pointing.cpp` (26 new cases across R5.1 to R5.4), mutants `mag_snap_armed` and `mag_sign_flip`, `tools/calibrate.py mag` | T-9 at three wheel speeds (spin needs Julian's go); 60 s HOLD drift |
+| 5 | MANUAL `wheel` and `rate` | R5.2 | `test_pointing.cpp`, HT-11 re-run with a characterised box | Step and rate tracking on the pinned box |
+| 6 | `sun_cal`, `light_threshold`, `sun_deg`, SUN_POINT, `sun_invalid` exit | R5.4 | `test_pointing.cpp` sun and SUN_POINT cases, closed-loop lamp sim, mutants `sun_extrapolate` and `no_sun_lost`, `tools/calibrate.py sun` | T-10 and a lamp |
+| 7 | Guarded respin, `FF_TABLE_MISSING`, `RATE_GAIN_REDUCED`, `PARAMS_RESET` reachable | R5.2, R5.3 | 3 respin cases, mutant `no_respin_range`, the PARAMS_RESET case | Respin on the pinned box |
+
+Integration done in the same pass: schema flags and examples; the mock box (`--lamp`, the firmware's reasons for the new commands, a selftest each); `ground/link` and `tools/check-link.sh` (TAP summary on Node 22); the UI's mode menu (DETUMBLE, SUN_POINT and respin no longer "Firmware pending"), refusal hints, and parameter panel (`rate_gain_scale`, `spinup_throttle`, `hall_expect_throttle`; the bench keys stay with the bench console); FD §11.3, §11.4, §13.1, §15.3, §16, §23 (V-68 to V-70) and `protocol/README.md` Changes.
+
+Items 8 and 9 are not part of this pass. #69, #70, #74, #75, #50 and #51 are still separate PRs against `main` or the Set 4 stack. This branch merges `origin/main` as of 2026-10-11, so it already carries the UI that is on `main`; the unmerged UI PRs (#33 and the PRs stacked on it) are not in it.
+
+What no check here can show: the ESP-IDF build (no toolchain in the cloud container, so `control_task.cpp` is reviewed, not compiled, and IRAM use is unmeasured), the 1000 µs tick budget with the compass step in the tick (the step is single precision to keep it near 2 µs; F-4 must be re-run on the R3.5 build with Wi-Fi), and every hardware gate.
