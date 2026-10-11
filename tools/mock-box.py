@@ -22,8 +22,9 @@ finding U-7), with the same refusal reasons:
   block it here: the mock latches only ESTOP and HEARTBEAT_LOST, which arm
   releases;
 - disarm and mode READY in SAFE: not armed; mode READY in SPINUP: wheel not at
-  bias; MANUAL, HOLD, and SLEW outside READY: not in READY; DETUMBLE, SUN_POINT,
-  and respin: not implemented, as at R4.3;
+  bias; MANUAL, HOLD, SLEW, and DETUMBLE outside READY: not in READY; DETUMBLE
+  without the wheel loop: wheel loop not available (R4.4); SUN_POINT and respin:
+  not implemented, as at R4.3;
 - SPINUP as FD section 13.3 runs it: with the wheel loop available, omega_ref
   ramps from the wheel's speed toward the bias at 400 rpm/s, and READY comes
   after 0.5 s within 5 % of it, about 6.3 s after arm. Without the T-5 table
@@ -120,7 +121,7 @@ BYPASS_THROTTLE_MAX = 400                 # kBypassThrottleMax in the firmware
 SPINUP_THROTTLE = 300                     # spinup_throttle default; rung 1 holds it in READY
 HALL_EXPECT_THROTTLE = 200                # hall_expect_throttle default; must stay below spinup_throttle
 SPINUP_RAMP_PER_S = 200                   # open-loop ramp, DShot units per second (R3.7)
-LATER_SET_MODES = {"DETUMBLE", "SUN_POINT"}   # not implemented at R4.3
+LATER_SET_MODES = {"SUN_POINT"}   # not implemented before Set 5
 # HOLD and SLEW as the firmware (R4.3): controllers.hpp and FD section 12.
 SLEW_RATE_DPS, SLEW_ACCEL_DPS2 = 60.0, 120.0
 SLEW_SETTLE_DEG, SLEW_SETTLE_RATE_DPS, SLEW_SETTLE_S = 3.0, 5.0, 0.5
@@ -403,7 +404,7 @@ class Box:
         if target in LATER_SET_MODES:
             return self._ack(conn, seq, False, "not implemented")
         if target == "READY":
-            if self.mode in ("MANUAL", "HOLD", "SLEW"):
+            if self.mode in ("MANUAL", "HOLD", "SLEW", "DETUMBLE"):
                 self._ack(conn, seq, True)
                 self._set_mode("READY", "mode")
             elif self.mode == "READY":
@@ -413,6 +414,15 @@ class Box:
                 self._ack(conn, seq, False, "wheel not at bias")
             else:
                 self._ack(conn, seq, False, "not armed")
+            return
+        if target == "DETUMBLE":
+            # R4.4: READY's controller under its own name. From READY only, with the wheel loop.
+            if self.mode != "READY":
+                return self._ack(conn, seq, False, "not in READY")
+            if not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")
+            self._ack(conn, seq, True)
+            self._set_mode("DETUMBLE", "mode")
             return
         if target in ("HOLD", "SLEW"):
             # As the firmware supervisor (R4.3): from READY only, and only with the
@@ -590,7 +600,7 @@ class Box:
             command = 0.0 if still and abs(error) < HOLD_DEADBAND_DEG \
                 else max(-ATTITUDE_RATE_LIMIT_DPS, min(ATTITUDE_RATE_LIMIT_DPS, K_PSI * error))
             self.rate += ((0.0 if self.stuck else command) - self.rate) * min(1.0, dt / RATE_LAG_S)
-        elif self.mode == "READY" and self._wheel_loop_available():
+        elif self.mode in ("READY", "DETUMBLE") and self._wheel_loop_available():
             self.rate += (0.0 - self.rate) * min(1.0, dt / RATE_LAG_S)   # the rate loop holds 0 (R3.9)
         else:
             self.rate = 4.0 * math.cos(2 * math.pi * (now - self.t0) / 30.0) + reaction
@@ -606,7 +616,7 @@ class Box:
                                                   - WHEEL_RPM_PER_BOX_DPS * (self.rate - previous_rate)))
 
         flags = []
-        if self.params["hall_installed"] and self.mode in ("READY", "MANUAL", "HOLD", "SLEW"):
+        if self.params["hall_installed"] and self.mode in ("READY", "DETUMBLE", "MANUAL", "HOLD", "SLEW"):
             near = self.wheel > self._cap() - 300 or self.wheel < OMEGA_LOW + 300
             flags.append("MOMENTUM_NEAR_LIMIT" if near else "MOMENTUM_OK")
         if stale:
@@ -621,7 +631,7 @@ class Box:
         # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
         # spin-up throttle held in READY, the setpoint in MANUAL throttle.
         throttle = 0
-        if self.mode in ("SPINUP", "READY", "HOLD", "SLEW") and self._wheel_loop_available():
+        if self.mode in ("SPINUP", "READY", "DETUMBLE", "HOLD", "SLEW") and self._wheel_loop_available():
             throttle = int(round(self._ff(self.wheel_ref)))   # closed wheel loop at steady state (R3.8)
         elif self.mode == "SPINUP":
             throttle = int(self._spinup_throttle(now))
@@ -648,7 +658,7 @@ class Box:
             # As the firmware: the wheel reference is reported only while the closed
             # wheel loop runs (SPINUP, READY, HOLD, and SLEW with the T-5 table), else 0.
             "wheel_ref_rpm": round(max(0.0, self.wheel_ref), 1)
-            if self.mode in ("SPINUP", "READY", "HOLD", "SLEW") and self._wheel_loop_available() else 0,
+            if self.mode in ("SPINUP", "READY", "DETUMBLE", "HOLD", "SLEW") and self._wheel_loop_available() else 0,
             "throttle": throttle, "throttle_band": [band_lo, band_hi], "tau_cmd_mNm": round(tau_mnm, 2),
             "vbat": round(self.vbat + random.uniform(-0.03, 0.03), 2),
             "loop_us": random.randint(690, 790), "flags": flags,
@@ -971,7 +981,9 @@ def selftest():
     cmd(a, 107, "arm")                                                               # not in SAFE
     cmd(a, 108, "mode", mode="READY")                                                # wheel not at bias
     spinup_s = spin_up()                                                             # SPINUP to READY
-    cmd(a, 109, "mode", mode="DETUMBLE")                                             # not implemented
+    cmd(a, 109, "mode", mode="DETUMBLE")                                             # accepted (R4.4)
+    cmd(a, 113, "mode", mode="DETUMBLE")                                             # not in READY
+    cmd(a, 114, "mode", mode="READY")                                                # leaves DETUMBLE
     cmd(a, 110, "mode", mode="SUN_POINT")                                            # not implemented
     cmd(a, 111, "respin")                                                            # not implemented
     send(a, {"v": 1, "type": "cmd", "seq": 4, "cmd": "mode", "mode": "MANUAL", "input": "rate"})
@@ -1072,9 +1084,11 @@ def selftest():
         problems.append("HEADING_GYRO missing from a tlm frame")
     if abs(zeroed_psi) > 1.0:
         problems.append(f"zero_heading in READY left psi_deg at {zeroed_psi}")
+    if 109 in reasons or 114 in reasons:
+        problems.append(f"DETUMBLE entry or exit refused: {reasons.get(109)!r} {reasons.get(114)!r}")
     # The firmware's answers on the UI's paths (R4.1, finding U-7), reason for reason.
     gap3 = {104: "ramp-down in progress", 105: "not armed", 106: "not armed", 107: "not in SAFE",
-            108: "wheel not at bias", 109: "not implemented", 110: "not implemented", 111: "not implemented",
+            108: "wheel not at bias", 113: "not in READY", 110: "not implemented", 111: "not implemented",
             112: "box not still"}
     for seq, reason in gap3.items():
         if reasons.get(seq) != reason:
