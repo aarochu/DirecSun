@@ -454,3 +454,96 @@ TEST_CASE("HT-11 entering MANUAL throttle starts from the current throttle")
     rig.tick({mode_cmd(Mode::Manual, ManualInput::Throttle)});
     CHECK(rig.ctl.last_demand.manual_throttle == 260);
 }
+
+namespace {
+
+// A box with the T-5 table, so the wheel loop is available (ff_count 8).
+Params characterised_params()
+{
+    Params params;
+    params.ff_count = static_cast<uint8_t>(kFfPoints);
+    for (std::size_t i = 0; i < kFfPoints; ++i) {
+        params.ff_rpm[i] = 500.0f * static_cast<float>(i + 1);
+        params.ff_throttle[i] = 48.0f + params.ff_rpm[i] / 2.5f;
+    }
+    return params;
+}
+
+}  // namespace
+
+TEST_CASE("R4.4 DETUMBLE refusals: DETUMBLE itself and a second client")
+{
+    // SAFE, SPINUP, MANUAL, HOLD, and SLEW are R4.6's test (test_status_flags.cpp).
+    SUBCASE("DETUMBLE itself")
+    {
+        Rig rig(characterised_params());
+        rig.arm_to_ready();
+        rig.tick({mode_cmd(Mode::Detumble)});
+        REQUIRE(rig.out.mode == Mode::Detumble);
+        rig.tick({mode_cmd(Mode::Detumble, ManualInput::None, kOperator, 77)});
+        CHECK(rig.last_reason() == "not in READY");
+        CHECK(rig.out.mode == Mode::Detumble);
+        CHECK(rig.out.events.count == 0);
+    }
+    SUBCASE("a second client, from READY")
+    {
+        Rig rig(characterised_params());
+        rig.arm_to_ready();
+        rig.tick({mode_cmd(Mode::Detumble, ManualInput::None, kViewer)});
+        CHECK(rig.last_reason() == "not controlling client");
+        CHECK(rig.out.mode == Mode::Ready);
+        CHECK(rig.out.events.count == 0);
+    }
+}
+
+TEST_CASE("R4.4 every way out of DETUMBLE behaves as it does from READY")
+{
+    // The same trigger from READY and from DETUMBLE must reach SAFE on the same
+    // tick, with the same mode event cause, latch, and ramp.
+    enum class Way { Disarm, Estop, Heartbeat, Tilt, Underspeed, Battery };
+    for (Way way : {Way::Disarm, Way::Estop, Way::Heartbeat, Way::Tilt, Way::Underspeed, Way::Battery}) {
+        CAPTURE(static_cast<int>(way));
+        std::string seen[2];
+        for (int variant = 0; variant < 2; ++variant) {
+            Rig rig(characterised_params());
+            rig.arm_to_ready();
+            REQUIRE(rig.out.mode == Mode::Ready);
+            // One tick in both variants: DETUMBLE's command, or a ping in READY.
+            rig.tick({variant == 1 ? mode_cmd(Mode::Detumble) : cmd(CommandKind::Ping)});
+            REQUIRE(rig.out.mode == (variant == 1 ? Mode::Detumble : Mode::Ready));
+
+            switch (way) {
+            case Way::Disarm: rig.tick({cmd(CommandKind::Disarm)}); break;
+            case Way::Estop: rig.tick({}, true); break;
+            case Way::Heartbeat: rig.tick(); break;
+            case Way::Tilt: rig.in.tilt_deg = 35.0f; rig.tick(); break;
+            case Way::Underspeed: rig.in.wheel_rpm_safe = 500.0f; rig.tick(); break;
+            case Way::Battery: rig.in.vbat_avg_v = 8.0f; rig.tick(); break;
+            }
+            uint32_t ticks = 1;
+            // The operator keeps pinging, except when the heartbeat is the trigger.
+            while (rig.out.mode != Mode::Safe && ticks < ticks_from_ms(3000)) {
+                if (way != Way::Heartbeat && ticks % 50 == 0) {
+                    rig.tick({cmd(CommandKind::Ping)});
+                } else {
+                    rig.tick();
+                }
+                ++ticks;
+            }
+            std::string cause = "<none>";
+            for (std::size_t i = 0; i < rig.out.events.count; ++i) {
+                const Event &e = rig.out.events.items[i];
+                if (e.kind == Event::Kind::Mode && e.mode == Mode::Safe) cause = e.cause;
+            }
+            char buf[160];
+            std::snprintf(buf, sizeof buf, "mode=%d after %u ticks, cause=%s, ramping=%d, latched=%u",
+                          static_cast<int>(rig.out.mode), static_cast<unsigned>(ticks), cause.c_str(),
+                          rig.out.ramping ? 1 : 0, static_cast<unsigned>(rig.out.latched));
+            seen[variant] = buf;
+            CHECK(rig.out.mode == Mode::Safe);
+            CHECK(cause != "<none>");
+        }
+        MESSAGE("from READY: " << seen[0] << "; from DETUMBLE: " << seen[1]);
+        CHECK(seen[0] == seen[1]);
+    }
+}

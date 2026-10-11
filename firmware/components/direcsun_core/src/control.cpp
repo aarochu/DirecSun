@@ -4,9 +4,10 @@
 
 #include "direcsun/core/timebase.hpp"
 
-// Mutation-test switch (host selftest builds only): SPINUP steps straight to
-// spinup_throttle instead of ramping, so the ramp test must notice.
-#if defined(ESP_PLATFORM) && defined(DIRECSUN_MUTANT_NO_SPINUP_RAMP)
+// Mutation-test switches (host selftest builds only): SPINUP steps straight to
+// spinup_throttle instead of ramping, so the ramp test must notice; DETUMBLE
+// runs the rate loop at half gain, so the same-controller test must notice.
+#if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_SPINUP_RAMP) || defined(DIRECSUN_MUTANT_DETUMBLE_OWN_GAIN))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -123,7 +124,13 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
         } else {
             // A rate loop that was not running starts with an empty integral.
             if (!rate_active_) rate_.reset();
+#ifdef DIRECSUN_MUTANT_DETUMBLE_OWN_GAIN
+            Params mutated = params;
+            if (demand.mode == Mode::Detumble) mutated.rate_gain_scale *= 0.5f;
+            const RateLoopStep r = rate_.step(demand.omega_cmd_dps, in.rate_dps, omega_ref_rpm_, dt, mutated, cap);
+#else
             const RateLoopStep r = rate_.step(demand.omega_cmd_dps, in.rate_dps, omega_ref_rpm_, dt, params, cap);
+#endif
             omega_ref_rpm_ = r.omega_ref_rpm;
             tau_cmd_nm_ = r.tau_cmd_nm;
             momentum_saturated_ = r.momentum_saturated;

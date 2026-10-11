@@ -93,6 +93,7 @@ else
         "no_wire_sign|HT-13 (b): the judge sequence as the UI runs it turns the box both ways and back"
         "params_reset_sticky|R4.6 PARAMS_RESET is a flag until the first accepted set_params"
         "rms_keeps_dc|T-7 accel RMS: gravity and tilt drop out and a 60 Hz vibration reads A over root two"
+        "detumble_own_gain|R4.4 DETUMBLE and READY run the same controller: identical wheel reference trajectories"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"
