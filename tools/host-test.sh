@@ -28,7 +28,10 @@ mkdir -p "$build"
 cmake -S "$repo_root/firmware/test/host" -B "$build" \
     -DCMAKE_BUILD_TYPE=Debug -DDIRECSUN_HT_SELFTEST="$selftest" >"$build/configure.txt" 2>&1 ||
     { cat "$build/configure.txt" >&2; echo "host-test: configure failed" >&2; exit 1; }
-cmake --build "$build" -j >"$build/build.txt" 2>&1 ||
+# A bare -j has no job limit with Makefiles. The selftest compiles the suite once
+# per mutant, and hundreds of compilers at once exhaust a CI runner's memory (#57).
+jobs="${CMAKE_BUILD_PARALLEL_LEVEL:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)}"
+cmake --build "$build" -j "$jobs" >"$build/build.txt" 2>&1 ||
     { cat "$build/build.txt" >&2; echo "host-test: build failed" >&2; exit 1; }
 
 set +e
