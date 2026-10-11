@@ -55,6 +55,7 @@ const HW_PARTS_AT = START.hardware + HW_INTRO * 10;
 const partAt = (index: number) => HW_PARTS_AT + index * PART_STEP * 10;
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MODEL_TIMEOUT_MS = 6000;
 
 const esc = (text: string) =>
   text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -269,7 +270,10 @@ function buildTimeline(scene: CubeSatScene | null, layout: Layout): Timeline {
   utils.set(flowNodes, { opacity: 0 });
   utils.set(flowLines, { draw: '0 0' });
   tl.add(flowNodes, { opacity: [0, 1], duration: 250, delay: stagger(25), ease: 'out(2)' }, sys - 200);
+  utils.set(flowLines, { opacity: 0 });
   tl.add(flowLines, { draw: ['0 0', '0 1'], duration: 450, delay: stagger(30), ease: 'inOut(2)' }, sys + 200);
+  // The arrowheads belong to the line, so each line appears as its stroke finishes.
+  tl.add(flowLines, { opacity: [0, 1], duration: 60, delay: stagger(30, { start: 390 }), ease: 'linear' }, sys + 200);
   // One axis: the box turns a full revolution on its bearings.
   tl.add(view, { yaw: 360, distScale: layout.distScale, duration: 3600, ease: 'inOut(1.5)' }, sys - 400);
   cam(tl, sys + 400, { el: 24, az: 38 }, 1400);
@@ -366,7 +370,7 @@ function boot() {
   const go = (time: number) => window.scrollTo({ top: timeToY(time), behavior: reducedMotion ? 'auto' : 'smooth' });
   const navTime: Record<string, number> = {
     top: 0,
-    system: START.system + 300,
+    system: START.system + 1300,
     hardware: START.hardware + 400,
     control: START.control + 1200,
   };
@@ -488,7 +492,7 @@ function boot() {
       onUpdate: (self) => onProgress(self.progress),
     });
     observer.link(tl);
-    (window as unknown as { __tl: Timeline }).__tl = tl;
+    if (import.meta.env.DEV) (window as unknown as { __tl: Timeline }).__tl = tl;
     onProgress(observer.progress);
   };
 
@@ -514,7 +518,8 @@ function boot() {
     intro();
   };
   if (scene) {
-    scene.ready.then(start, () => {
+    const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('model timeout')), MODEL_TIMEOUT_MS));
+    Promise.race([scene.ready, timeout]).then(start, () => {
       scene?.dispose();
       scene = null;
       document.documentElement.dataset.webgl = 'false';

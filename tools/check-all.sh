@@ -3,8 +3,8 @@
 #
 #   tools/check-all.sh             all checks except the firmware build
 #   tools/check-all.sh --firmware  also build the firmware (needs ESP-IDF v6.0)
-#   tools/check-all.sh --frontend  also check the main UI: npm ci and build for
-#                                  frontend/, then npm ci, typecheck, unit and e2e
+#   tools/check-all.sh --frontend  also check the main UI: npm ci, build, unit and
+#                                  e2e tests for frontend/, then npm ci, typecheck, unit and e2e
 #                                  tests for frontend/ground-station (needs Node 22+ and
 #                                  Google Chrome)
 #
@@ -76,6 +76,7 @@ if [[ "$frontend" -eq 1 ]]; then
     step frontend-install         npm_in_frontend ci
     step frontend-build           npm_in_frontend run build
     step frontend-test            npm_in_frontend test
+    step frontend-e2e             npm_in_frontend run test:e2e
     step frontend-ground-station-install   npm_in_ground_station ci
     step frontend-demo-bundle     npm_in_frontend run demo:check
     step frontend-ground-station-typecheck npm_in_ground_station run typecheck

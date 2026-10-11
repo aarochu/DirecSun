@@ -18,7 +18,11 @@
   ],
   "rewrites": [
     {
-      "source": "/ground-station/:path*",
+      "source": "/ground-station",
+      "destination": "/ground-station/index.html"
+    },
+    {
+      "source": "/ground-station/([^.]*)",
       "destination": "/ground-station/index.html"
     }
   ]

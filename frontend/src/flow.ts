@@ -44,7 +44,7 @@ const nodes: readonly FlowNode[] = [
   { id: 'sun', name: 'OP550 ×2', sub: 'sun sensor', hw: 'op550', x: 0, y: 265, w: 130, h: 40,
     desc: 'Two light sensors angled apart. Comparing their readings shows which side the lamp is on.' },
   { id: 'xiao', name: 'XIAO ESP32-S3', sub: 'flight computer', hw: 'esp32s3', x: 190, y: 90, w: 160, h: 150,
-    lines: ['control loop, 500 Hz', 'heading estimate', 'wheel speed target', 'safety checks', 'telemetry, 50 Hz'],
+    lines: ['control loop, 500 Hz', 'heading estimate', 'wheel speed target', 'safety checks', 'telemetry, 50 Hz target'],
     desc: 'Runs the box. It reads every sensor, works out the heading, sets the wheel speed, and streams it all over Wi-Fi.' },
   { id: 'esc', name: 'ESC', sub: 'BLHeli_S', hw: 'esc', x: 400, y: 70, w: 130, h: 40,
     desc: 'Takes a digital throttle from the ESP32 and turns it into three-phase power for the motor.' },
@@ -89,8 +89,20 @@ const flows: Record<Kind, { label: string; desc: string }> = {
 
 const IDLE = 'Hover or tap a part to see what it does.';
 
+export const flowData = { nodes, edges };
+
 const byId = new Map(nodes.map((node) => [node.id, node]));
 const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const connections = (id: string) =>
+  edges
+    .filter((edge) => edge.from === id || edge.to === id)
+    .map((edge) => {
+      const other = byId.get(edge.from === id ? edge.to : edge.from)!;
+      const arrow = edge.both ? '↔' : edge.from === id ? '→' : '←';
+      return `${arrow} ${other.name}${edge.label ? ` (${edge.label})` : ''}`;
+    })
+    .join(' · ');
+
 const d = (path: readonly Pt[]) => path.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
 
 export function flowMarkup() {
@@ -121,6 +133,15 @@ export function flowMarkup() {
     )
     .join('');
 
+  const listMarkup = nodes
+    .map(
+      (node) => `<li class="flow__item"><button type="button" class="flow__item-button" data-node="${node.id}" aria-pressed="false">
+        <span class="flow__item-head"><b>${esc(node.name)}</b><span>${esc(node.sub)}</span></span>
+        <span class="flow__item-links">${esc(connections(node.id))}</span>
+      </button></li>`,
+    )
+    .join('');
+
   const chips = (Object.keys(flows) as Kind[])
     .map((kind) => `<button type="button" class="flow__chip flow__chip--${kind}" data-flow="${kind}" aria-pressed="false"><i></i>${flows[kind].label}</button>`)
     .join('');
@@ -140,6 +161,7 @@ export function flowMarkup() {
           ${nodeMarkup}
         </svg>
       </div>
+      <ul class="flow__list" aria-label="Parts and how they connect">${listMarkup}</ul>
       <figcaption class="flow__detail" aria-live="polite"><b data-flow-title></b><span data-flow-desc>${IDLE}</span></figcaption>
     </figure>`;
 }
@@ -154,7 +176,8 @@ export function initFlow(root: HTMLElement, onFocus: (hw: string[] | null) => vo
   const svg = root.querySelector<SVGSVGElement>('.flow__svg')!;
   const title = root.querySelector<HTMLElement>('[data-flow-title]')!;
   const desc = root.querySelector<HTMLElement>('[data-flow-desc]')!;
-  const nodeEls = [...root.querySelectorAll<SVGGElement>('[data-node]')];
+  const list = root.querySelector<HTMLElement>('.flow__list')!;
+  const nodeEls = [...root.querySelectorAll<HTMLElement>('[data-node]')];
   const edgeEls = [...root.querySelectorAll<SVGGElement>('[data-edge]')];
   const chipEls = [...root.querySelectorAll<HTMLButtonElement>('[data-flow]')];
 
@@ -178,11 +201,13 @@ export function initFlow(root: HTMLElement, onFocus: (hw: string[] | null) => vo
     if (node) onNodes.add(node.id);
 
     svg.classList.toggle('has-focus', !!key);
+    list.classList.toggle('has-focus', !!key);
     edgeEls.forEach((el, i) => el.classList.toggle('is-on', onEdges.has(i)));
     nodeEls.forEach((el) => {
       const id = el.dataset.node!;
       el.classList.toggle('is-on', onNodes.has(id));
       el.classList.toggle('is-current', id === node?.id);
+      if (el instanceof HTMLButtonElement) el.setAttribute('aria-pressed', String(id === node?.id));
     });
     chipEls.forEach((el) => el.setAttribute('aria-pressed', String(el.dataset.flow === kind)));
 
@@ -223,6 +248,7 @@ export function initFlow(root: HTMLElement, onFocus: (hw: string[] | null) => vo
     });
     el.addEventListener('click', () => pin(id));
     el.addEventListener('keydown', (event) => {
+      if (el instanceof HTMLButtonElement) return;
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         pin(id);
