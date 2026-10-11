@@ -171,6 +171,7 @@ svg.focusing [data-net].on { opacity: 1; }
       <ul>
         <li>Standing resistors: the body sits on the hole with the circle, and the lead bends over to the other hole.</li>
         <li>The solder side view is mirrored left to right, exactly as the board looks when you turn it over. Hole names stay the same.</li>
+        <li>Hole names count column 1 from the left and row A from the top, component side up, as drawn. If your board's printed numbers run the other way, go by the drawing, not the print.</li>
       </ul>
     </div>
   </div>
@@ -199,13 +200,13 @@ svg.focusing [data-net].on { opacity: 1; }
       <thead><tr><th>Cable</th><th>From</th><th>To</th><th>Wires</th><th>Route</th><th>Length</th><th>Demo</th></tr></thead>
       <tbody>
         <tr><td>Power deck link</td><td class="mono">Power deck W1 (soldered)</td><td class="mono">Carrier J3</td><td>VBAT to F16, GND to G16, 5V to H16, ESC to I16; female ends on the carrier side; twist the four together</td><td>−Y slots, through the battery deck</td><td class="mono">15 to 20 cm</td><td><span class="badge need">Needed</span></td></tr>
-        <tr><td>ESC signal</td><td>The ESC's thin signal pair</td><td class="mono">Power deck W2, W3</td><td>Signal wire into P13, its ground wire into S7</td><td>Same deck</td><td class="mono">ESC lead</td><td><span class="badge need">Needed</span></td></tr>
+        <tr><td>ESC signal</td><td>The ESC's thin signal pair</td><td class="mono">Power deck W2, W3</td><td>Signal wire into P6, its ground wire into S12</td><td>Same deck</td><td class="mono">ESC lead</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Hall</td><td class="mono">Carrier J1</td><td>A1104 on the motor deck bracket</td><td>5V, GND, OUT, twisted</td><td>−Y slots, through the battery and power decks</td><td class="mono">25 to 30 cm</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>I²C to the IMU</td><td class="mono">Carrier J4</td><td>MPU-6050, either STEMMA QT port</td><td>STEMMA QT to header cable</td><td>Same deck</td><td class="mono">as supplied</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>I²C up</td><td>MPU-6050, other port</td><td>QMC5883P on the top deck</td><td>STEMMA QT cable</td><td>Straight up</td><td class="mono">200 mm</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>I²C across</td><td>QMC5883P</td><td>BMP280</td><td>STEMMA QT cable</td><td>Top deck</td><td class="mono">short</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Motor phases</td><td>ESC</td><td>Motor</td><td>Three phase wires, twisted</td><td>+Y slot, down to the motor deck</td><td class="mono">ESC leads</td><td><span class="badge need">Needed</span></td></tr>
-        <tr><td>Battery</td><td>Battery box cap A: + from column 1 bottom, − from column 4 bottom</td><td class="mono">Power deck P1 (M2), P2 (S2)</td><td>+ through the 10 A inline fuse; twist the pair</td><td>Cap A side notches, then the +Y slot down one deck</td><td class="mono">about 10 cm</td><td><span class="badge need">Needed</span></td></tr>
+        <tr><td>Battery</td><td>Battery box cap A: + from column 1 bottom, − from column 4 bottom</td><td class="mono">Power deck P1 (M17), P2 (S17)</td><td>+ through the 10 A inline fuse; twist the pair</td><td>Cap A side notches, then the +Y slot down one deck</td><td class="mono">about 10 cm</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Bench supply</td><td>Supply + (through the fuse) and −</td><td class="mono">Power deck P1, P2</td><td>Instead of the battery, never both at once</td><td>+Y slot</td><td class="mono">as needed</td><td><span class="badge opt">Bench</span></td></tr>
         <tr><td>USB-C</td><td>Laptop</td><td>XIAO</td><td>Powers the avionics for the demo</td><td>−Y edge, with a service loop</td><td class="mono">as needed</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Sun sensors</td><td class="mono">Carrier J5, J6</td><td>OP550 block on the +X edge</td><td>A, B, 3V3</td><td>Same deck</td><td class="mono">short</td><td><span class="badge opt">Optional</span></td></tr>
@@ -238,8 +239,8 @@ svg.focusing [data-net].on { opacity: 1; }
         <path d="M620 200 L620 345 L990 345" fill="none" stroke="#9aa3ad" stroke-width="5" stroke-linecap="round"/>
         <rect x="896" y="288" width="44" height="24" rx="5" fill="#f4e4b0" stroke="#7a6320" stroke-width="1.5"/><text x="918" y="304" font-size="10" font-weight="700" fill="#4a3a0c" text-anchor="middle">10 A</text>
         <text x="740" y="221" font-size="11" fill="#c9d1d9" text-anchor="middle">3 bridges: top 1-2, bottom 2-3, top 3-4</text>
-        <text x="990" y="326" font-size="11.5" fill="var(--fg)" text-anchor="end">+ from column 1 bottom, through the fuse, to P1 PACK IN + (M2)</text>
-        <text x="990" y="367" font-size="11.5" fill="var(--fg)" text-anchor="end">− from column 4 bottom to P2 PACK IN − (S2)</text>
+        <text x="990" y="326" font-size="11.5" fill="var(--fg)" text-anchor="end">+ from column 1 bottom, through the fuse, to P1 PACK IN + (M17)</text>
+        <text x="990" y="367" font-size="11.5" fill="var(--fg)" text-anchor="end">− from column 4 bottom to P2 PACK IN − (S17)</text>
         
       </g>
     </svg></div>
@@ -247,9 +248,9 @@ svg.focusing [data-net].on { opacity: 1; }
       <li>Cap B: four bridge wires, each joining the top and bottom contact of one column.</li>
       <li>Cap A: three bridge wires: top row columns 1 to 2, bottom row columns 2 to 3, top row columns 3 to 4. Columns count from the −Y side of the box (cap A faces −X), so from outside cap A column 1 is on your right.</li>
       <li>Leads: + from cap A column 1 bottom, − from cap A column 4 bottom. Both leave through cap A's side notches and drop through the battery deck's +Y wire slot to the power deck.</li>
-      <li>Put the 10 A fuse (Bussmann AGC-10 in its inline holder, TD §5.1) on the + lead, then solder it to P1 (M2, PACK IN +) and the − lead to P2 (S2, PACK IN −). Twist the pair.</li>
+      <li>Put the 10 A fuse (Bussmann AGC-10 in its inline holder, TD §5.1) on the + lead, then solder it to P1 (M17, PACK IN +) and the − lead to P2 (S17, PACK IN −). Twist the pair.</li>
       <li>Before connecting: measure the pack at the two leads. About 10 to 11 V with charged cells. About 2.5 V low means one cell is in backwards. The firmware also refuses to arm below 9.6 V.</li>
-      <li>With the pack connected and nothing plugged into the carrier, measure 5 V between the MPM3610's 5V pin (K10) and GND (K11). Anything else: stop and tell me.</li>
+      <li>With the pack connected and nothing plugged into the carrier, measure 5 V between the MPM3610's 5V pin (K9) and GND (K8). Anything else: stop and tell me.</li>
       <li>Battery or bench supply into P1 and P2, never both at once. To charge, take off cap B (three M2 screws) and slide the cells out.</li>
     </ol>
   </section>
@@ -340,36 +341,36 @@ const BOARDS = {
     title: 'Power deck (full 5 × 7 cm)', cols: 18, rows: 24,
     edges: { top: 'POWER DECK · COMPONENT SIDE · MPM3610 BODY TOWARD ROW A', bottom: 'FREE SPACE BELOW ROW S' },
     parts: [
-      { ref: 'U2', kind: 'module', body: [5.45, 3.4, 11.55, 10.5], pads: [[7, 10, 'EN', null], [8, 10, 'VIN', 'PACK'], [9, 10, '5V', 'V5IN'], [10, 10, 'GND', 'GND']],
+      { ref: 'U2', kind: 'module', body: [5.45, 3.4, 11.55, 10.5], pads: [[7, 10, 'GND', 'GND'], [8, 10, '5V', 'V5IN'], [9, 10, 'VIN', 'PACK'], [10, 10, 'EN', null]],
         value: 'MPM3610 5 V', need: true, part: 'Adafruit MPM3610 5 V buck (already soldered)',
-        note: 'Pins K8 EN, K9 VIN, K10 5V, K11 GND. EN stays unconnected (Adafruit: tie it low to shut down). The body outline is approximate; keep everything else out of it.' },
-      { ref: 'P1', kind: 'pad', at: [1, 12, 'PACK'], label: 'PACK IN +', need: true,
+        note: 'Pins K8 GND, K9 5V, K10 VIN, K11 EN, seen from the component side with row A at the top. EN stays unconnected (Adafruit: tie it low to shut down). The body outline is approximate; keep everything else out of it.' },
+      { ref: 'P1', kind: 'pad', at: [16, 12, 'PACK'], label: 'PACK IN +', need: true,
         part: 'Wire pad', note: 'Battery box + lead through the 10 A inline fuse (or the bench supply +). Lap-solder thick leads onto the bus; they will not fit the hole.' },
-      { ref: 'P2', kind: 'pad', at: [1, 18, 'GND'], label: 'PACK IN −', need: true, part: 'Wire pad', note: 'Battery box − lead (or the bench supply −). This end of the GND bus is the star point.' },
-      { ref: 'P3', kind: 'pad', at: [4, 12, 'PACK'], label: 'ESC +', need: true, part: 'Wire pad', note: "ESC's red power lead, lap-soldered onto the bus." },
-      { ref: 'P4', kind: 'pad', at: [4, 18, 'GND'], label: 'ESC −', need: true, part: 'Wire pad', note: "ESC's black power lead, lap-soldered onto the bus." },
-      { ref: 'C1', kind: 'cap', p: [7, 12, 'PACK'], n: [7, 14, 'GND'], value: '470 µF', need: true,
-        part: '470 µF 35 V electrolytic', note: 'Across the supply right by the ESC pads (TD §5.5). Stripe (minus) in O8, + in M8.' },
-      { ref: 'R5', kind: 'res', mount: 'lay', a: [2, 12, 'PACK'], b: [2, 15, 'VBAT'], value: 'divider top', lab: [2.62, 13.55], need: true,
+      { ref: 'P2', kind: 'pad', at: [16, 18, 'GND'], label: 'PACK IN −', need: true, part: 'Wire pad', note: 'Battery box − lead (or the bench supply −). This end of the GND bus is the star point.' },
+      { ref: 'P3', kind: 'pad', at: [13, 12, 'PACK'], label: 'ESC +', need: true, part: 'Wire pad', note: "ESC's red power lead, lap-soldered onto the bus." },
+      { ref: 'P4', kind: 'pad', at: [13, 18, 'GND'], label: 'ESC −', need: true, part: 'Wire pad', note: "ESC's black power lead, lap-soldered onto the bus." },
+      { ref: 'C1', kind: 'cap', p: [10, 12, 'PACK'], n: [10, 14, 'GND'], value: '470 µF', need: true,
+        part: '470 µF 35 V electrolytic', note: 'Across the supply right by the ESC pads (TD §5.5). Stripe (minus) in O11, + in M11.' },
+      { ref: 'R5', kind: 'res', mount: 'lay', a: [15, 12, 'PACK'], b: [15, 15, 'VBAT'], value: 'divider top', lab: [14.38, 13.55], need: true,
         part: 'Divider top resistor, lying', note: 'The larger of your two breadboard divider resistors.' },
-      { ref: 'R6', kind: 'res', mount: 'lay', a: [3, 15, 'VBAT'], b: [3, 18, 'GND'], value: 'divider bottom', lab: [3.62, 16.55], need: true,
+      { ref: 'R6', kind: 'res', mount: 'lay', a: [14, 15, 'VBAT'], b: [14, 18, 'GND'], value: 'divider bottom', lab: [13.38, 16.55], need: true,
         part: 'Divider bottom resistor, lying', note: 'The smaller one. Together they give 1.761 V at 10.01 V.' },
-      { ref: 'W1', kind: 'header', solder: true, below: true, name: 'TO CARRIER J3', pins: [[4, 15, 'VBAT', 'VBAT'], [9, 15, '5V', 'V5IN'], [10, 15, 'GND', 'GND'], [11, 15, 'ESC', 'ESC']], need: true,
+      { ref: 'W1', kind: 'header', solder: true, below: true, name: 'TO CARRIER J3', pins: [[13, 15, 'VBAT', 'VBAT'], [8, 15, '5V', 'V5IN'], [7, 15, 'GND', 'GND'], [6, 15, 'ESC', 'ESC']], need: true,
         part: '4-wire cable, soldered here', note: 'Female ends plug onto carrier J3 in this order: VBAT F16, GND G16, 5V IN H16, ESC I16.' },
-      { ref: 'W2', kind: 'header', solder: true, below: true, name: 'ESC SIGNAL', pins: [[12, 15, 'SIG', 'ESC']], need: true,
+      { ref: 'W2', kind: 'header', solder: true, below: true, name: 'ESC SIGNAL', pins: [[5, 15, 'SIG', 'ESC']], need: true,
         part: "ESC's thin signal wire, soldered here", note: 'Bridged to the cable\'s ESC wire next to it.' },
-      { ref: 'W3', kind: 'header', solder: true, below: true, name: 'ESC SIG GND', pins: [[6, 18, 'GND', 'GND']], need: true,
+      { ref: 'W3', kind: 'header', solder: true, below: true, name: 'ESC SIG GND', pins: [[11, 18, 'GND', 'GND']], need: true,
         part: "ESC's thin signal ground wire, soldered here", note: 'Onto the GND bus.' },
     ],
     wires: [
-      { net: 'PACK', kind: 'bus', pts: [[1, 12], [8, 12]] },
-      { net: 'PACK', pts: [[8, 12], [8, 10]] },
-      { net: 'GND', kind: 'bus', pts: [[1, 18], [10, 18]] },
-      { net: 'GND', pts: [[10, 10], [10, 18]] },
-      { net: 'V5IN', pts: [[9, 10], [9, 15]] },
-      { net: 'GND', pts: [[7, 14], [7, 18]] },
-      { net: 'VBAT', pts: [[2, 15], [4, 15]] },
-      { net: 'ESC', kind: 'bridge', pts: [[11, 15], [12, 15]] },
+      { net: 'PACK', kind: 'bus', pts: [[16, 12], [9, 12]] },
+      { net: 'PACK', pts: [[9, 12], [9, 10]] },
+      { net: 'GND', kind: 'bus', pts: [[16, 18], [7, 18]] },
+      { net: 'GND', pts: [[7, 10], [7, 18]] },
+      { net: 'V5IN', pts: [[8, 10], [8, 15]] },
+      { net: 'GND', pts: [[10, 14], [10, 18]] },
+      { net: 'VBAT', pts: [[15, 15], [13, 15]] },
+      { net: 'ESC', kind: 'bridge', pts: [[6, 15], [5, 15]] },
     ],
   },
 };
