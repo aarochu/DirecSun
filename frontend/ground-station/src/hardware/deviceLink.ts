@@ -19,6 +19,10 @@ export interface DeviceTelemetry {
   readonly flags: readonly string[];
   readonly batteryV: number | null;
   readonly sensors: SensorReadings;
+  readonly throttle: number | null;
+  readonly tauCmdMNm: number | null;
+  readonly tlmDropped: number | null;
+  readonly droppedEvents: number | null;
 }
 
 // Per-sensor values from the tlm frame (protocol/schema-v1.json). null when the
@@ -104,7 +108,18 @@ export interface LinkState {
   readonly talking: boolean;
   readonly rttMs: number | null;
   readonly lastEvent: DeviceEvent | null;
+  readonly notices: readonly DeviceNotice[];
+  readonly tlmDropped: number;
+  readonly droppedEvents: number;
 }
+
+export interface DeviceNotice {
+  readonly name: string;
+  readonly detail: string | null;
+  readonly atMs: number;
+}
+
+export const MAX_NOTICES = 5;
 
 const finite = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -184,6 +199,10 @@ export function parseTelemetry(raw: unknown): DeviceTelemetry | null {
     flags: flagList(message.flags),
     batteryV: finite(message.vbat),
     sensors: parseSensors(message),
+    throttle: finite(message.throttle),
+    tauCmdMNm: finite(message.tau_cmd_mNm),
+    tlmDropped: finite(message.tlm_dropped),
+    droppedEvents: finite(message.dropped_events),
   };
 }
 
@@ -245,6 +264,9 @@ const IDLE_STATE: LinkState = {
   talking: false,
   rttMs: null,
   lastEvent: null,
+  notices: [],
+  tlmDropped: 0,
+  droppedEvents: 0,
 };
 
 export class DeviceLink implements DisplaySource {
@@ -427,7 +449,13 @@ export class DeviceLink implements DisplaySource {
     // Keep processing every frame for history and the raw CSV recorder, but
     // never enqueue a React render for each one. The pending render reads the
     // newest frame, packet count and mode after any intervening messages.
-    this.state = { ...this.state, packets: this.state.packets + 1, message: null };
+    this.state = {
+      ...this.state,
+      packets: this.state.packets + 1,
+      message: null,
+      tlmDropped: reading.tlmDropped ?? this.state.tlmDropped,
+      droppedEvents: reading.droppedEvents ?? this.state.droppedEvents,
+    };
     // Mode, flags, arming guards and turn readiness are safety information, not chart
     // animation. Publish threshold crossings immediately.
     if (previous === null || reading.mode !== previous.mode || reading.flags.join('|') !== previous.flags.join('|') ||
@@ -458,7 +486,11 @@ export class DeviceLink implements DisplaySource {
           name: text(message.name),
           detail: text(message.detail),
         };
-        this.setState({ lastEvent: event });
+        this.setState(
+          kind === 'notice' && event.name
+            ? { lastEvent: event, notices: [{ name: event.name, detail: event.detail, atMs: Date.now() }, ...this.state.notices].slice(0, MAX_NOTICES) }
+            : { lastEvent: event },
+        );
         for (const listener of this.eventListeners) listener(event);
         return true;
       }
@@ -640,6 +672,8 @@ export class DeviceLink implements DisplaySource {
       flags: reading?.flags ?? [],
       batteryV: reading?.batteryV ?? null,
       sensors: reading?.sensors ?? null,
+      throttle: reading?.throttle ?? null,
+      torqueMNm: reading?.tauCmdMNm ?? null,
       history: [...this.history],
       nowS: this.nowS,
     };

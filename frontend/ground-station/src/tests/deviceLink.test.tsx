@@ -47,6 +47,19 @@ describe('parseTelemetry', () => {
         pressurePa: null,
         loopUs: null,
       },
+      throttle: null,
+      tauCmdMNm: null,
+      tlmDropped: null,
+      droppedEvents: null,
+    });
+  });
+
+  it('reads the motor command, torque and the box drop counters', () => {
+    expect(parseTelemetry(tlm({ psi_deg: 0, throttle: 412, tau_cmd_mNm: 0.8, tlm_dropped: 3, dropped_events: 1 }))).toMatchObject({
+      throttle: 412,
+      tauCmdMNm: 0.8,
+      tlmDropped: 3,
+      droppedEvents: 1,
     });
   });
 
@@ -313,6 +326,30 @@ describe('DeviceLink', () => {
 });
 
 describe('ground station with a device link', () => {
+  it('shows the motor command, the box drop counters and its notices', () => {
+    vi.stubGlobal('WebSocket', FakeSocket);
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }), { target: { value: 'ws://192.168.4.1/ws' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    const socket = FakeSocket.instances[0]!;
+    act(() => {
+      socket.open();
+      socket.message(tlm({ t_ms: 0, psi_deg: 0, mode: 'MANUAL', throttle: 412, tau_cmd_mNm: 0.8, tlm_dropped: 3, dropped_events: 1 }));
+      socket.message(JSON.stringify({ v: 1, type: 'event', seq: 2, t_ms: 5, event: 'notice', name: 'HALL_BYPASS', detail: 'on' }));
+    });
+    const rail = within(screen.getByRole('region', { name: 'TELEMETRY' }));
+    expect(rail.getByText('MOTOR COMMAND')).toBeTruthy();
+    expect(rail.getByText('412')).toBeTruthy();
+    expect(rail.getByText(/TORQUE 0\.8 mN·m/)).toBeTruthy();
+    expect(screen.getByText(/3 TLM SKIPPED BY THE BOX SINCE BOOT \(ALL CLIENTS\) · 1 EVENTS LOST BY THE BOX SINCE BOOT/)).toBeTruthy();
+    expect(within(screen.getByRole('list', { name: 'Box notices' })).getByText(/NOTICE HALL BYPASS · ON/)).toBeTruthy();
+    expect(screen.getByText(/1 PACKETS(?!.*IGNORED)/)).toBeTruthy();
+  });
+
   it('switches every view to device telemetry and swaps in the box controls, still sending nothing', async () => {
     vi.stubGlobal('WebSocket', FakeSocket);
     render(
