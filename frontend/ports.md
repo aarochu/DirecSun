@@ -61,9 +61,9 @@ The page is served by the laptop. The ESP32 does not serve the frontend bundle.
 - `seq` is the sending side's unsigned 32-bit counter. An `ack` is the exception: its `seq` echoes the command being acknowledged.
 - The frontend does not reconnect automatically. The operator must reconnect and arm again after a disconnect.
 - The box is authoritative for mode. The UI changes displayed mode only from telemetry or events, never merely because a button was pressed.
-- The box allows at most three clients. Telemetry and events are broadcast. An acknowledgement goes only to the command sender.
+- The box allows at most three clients. Telemetry is broadcast. An acknowledgement goes only to the command sender. Events go to every client on `main`'s design, but the firmware on the set branches (R3.5 onward) sends them only to clients that have sent at least one message, so a watch-only page receives only `tlm` (see drift item 5).
 - The firmware's inbound message limit is 512 bytes. Oversized messages are refused with `reason: "too large"`.
-- Telemetry may be skipped for a slow client, incrementing `tlm_dropped`. Acknowledgements and events are not skipped.
+- Telemetry may be skipped for a slow client, incrementing `tlm_dropped`, a box-wide count since boot. Acknowledgements and events are not skipped for a slow socket, but an event is dropped if the control-to-comms queue is full, incrementing `dropped_events` (FD section 7.4).
 
 ## Timing and safety contract
 
@@ -89,7 +89,7 @@ Every command frame is `{"v":1,"type":"cmd","seq":N,"cmd":"..."}` plus the field
 | `manual` | Exactly one of `throttle`, `wheel_rpm`, or `rate_dps` | MANUAL, controlling client, field matches active `manual_input` | Sent every 100 ms. UI ranges are rate -90 to +90 deg/s, wheel 800 to 4000 rpm, and the telemetry-provided `throttle_band`. |
 | `respin` | Optional `wheel_rpm` | READY; box accepts its calibrated safe interval | UI accepts blank for bias or 1000 to 3800 rpm and marks the feature firmware-pending. |
 | `zero_heading` | None | SAFE or READY | Used at the start of each judge turn. |
-| `set_params` | Non-empty `params` object | SAFE only; box validates, stores to NVS, and returns `ack.applied` | Contracted but not sent by the frontend on `main`. |
+| `set_params` | Non-empty `params` object | SAFE only; box validates, stores to NVS, and returns `ack.applied` | Sent by the SAFE parameters panel (#72), which shows `ack.applied` or the exact refusal reason. |
 | `wheel_step` | `delta_rpm`, -500 to +500 | READY with `bench_mode` enabled | Bench-only contract; not sent by the main frontend. |
 
 The UI's 90-degree judge turn is a client-side sequence, not a distinct wire command:
@@ -132,7 +132,7 @@ The frontend parser is intentionally less strict than the schema so one bad opti
 
 ### `ack`
 
-Required fields are `v`, `type: "ack"`, echoed `seq`, and `ok`. A refusal also carries `reason`. A successful `set_params` acknowledgement may carry `applied`. The frontend resolves or rejects the pending command by `seq`; on `main` it does not consume `applied`.
+Required fields are `v`, `type: "ack"`, echoed `seq`, and `ok`. A refusal also carries `reason`. A successful `set_params` acknowledgement may carry `applied`. The frontend resolves or rejects the pending command by `seq`; the SAFE parameters panel displays `applied`.
 
 ### `pong`
 
@@ -173,6 +173,7 @@ Known cross-source drift on `main`:
 1. The firmware communications component is still an empty Set 1 skeleton, so the real ESP32 endpoint and message handlers are specified but not implemented on `main`.
 2. The two firmware comments named above still say port 81. They are stale; the binding endpoint is port 80 at `/ws`.
 3. FD section 17 and TD section 7.4 still describe the frontend as read-only. The current frontend sends the commands listed above and implements heartbeat, ack matching, immediate e-stop, and no automatic reconnect.
-4. `set_params` and `wheel_step` exist in the schema and design but are not emitted by the current frontend.
+4. `wheel_step` exists in the schema and design but is not emitted by the current frontend. `set_params` is, since #72.
+5. Event delivery: on the set branches (R3.5 onward) the firmware and the mock send events only to clients that have spoken, and FD there says so. `main`'s FD section 15 and mock still describe events as broadcast. The frontend already behaves correctly either way: a watch-only page relies on `tlm`, which carries the mode in every frame.
 
 When any endpoint, message, field, unit, sign, rate, or safety rule changes, update this file in the same integration PR after the binding schema and design change has been approved by the firmware owner.
