@@ -1,4 +1,5 @@
 import type { SensorReadings } from '../hardware/deviceLink';
+import type { DeviceOperator } from '../hardware/deviceOperator';
 import { PHASE_STATUS } from '../simulation/stateMachine';
 import type { HistorySample, PlantSnapshot } from '../simulation/types';
 import type { MockPlant } from '../simulation/useMockPlant';
@@ -84,6 +85,47 @@ export function simulationSource(plant: MockPlant): DisplaySource {
       if (snapshot !== telemetryFor || !telemetry) {
         telemetryFor = snapshot;
         telemetry = simulationTelemetry(snapshot);
+      }
+      return telemetry;
+    },
+  };
+}
+
+export function operatorDisplaySource(source: DisplaySource, operator: DeviceOperator): DisplaySource {
+  let frameSource: DisplayFrame | null = null;
+  let frameTarget: number | null = null;
+  let frame: DisplayFrame | null = null;
+  let telemetrySource: DisplayTelemetry | null = null;
+  let telemetryTarget: number | null = null;
+  let telemetry: DisplayTelemetry | null = null;
+  const subscribe = (baseSubscribe: (listener: () => void) => () => void) => (listener: () => void) => {
+    const stopBase = baseSubscribe(listener);
+    const stopOperator = operator.subscribe(listener);
+    return () => {
+      stopBase();
+      stopOperator();
+    };
+  };
+  return {
+    subscribeFrame: subscribe(source.subscribeFrame),
+    getFrame() {
+      const base = source.getFrame();
+      const target = operator.getState().targetDeg;
+      if (frameSource !== base || frameTarget !== target || !frame) {
+        frameSource = base;
+        frameTarget = target;
+        frame = target === null ? base : { ...base, targetDeg: target, originDeg: 0 };
+      }
+      return frame;
+    },
+    subscribeTelemetry: subscribe(source.subscribeTelemetry),
+    getTelemetry() {
+      const base = source.getTelemetry();
+      const target = operator.getState().targetDeg;
+      if (telemetrySource !== base || telemetryTarget !== target || !telemetry) {
+        telemetrySource = base;
+        telemetryTarget = target;
+        telemetry = target === null ? base : { ...base, targetDeg: target };
       }
       return telemetry;
     },

@@ -7,7 +7,7 @@ Two people, each with their own agent sessions, work in this repository. This fi
 | Path | Owner | Notes |
 | --- | --- | --- |
 | `frontend/` | **Aaron** | The main UI. Only Aaron's work edits it |
-| `firmware/` | **Julian** | Drivers, control task, supervisor, loops, comms (Wi-Fi, WebSocket, protocol encode and decode) |
+| `firmware/` | **Julian** and **Aaron** | Drivers, control task, supervisor, loops, comms (Wi-Fi, WebSocket, protocol encode and decode) |
 | `protocol/` | **Julian** | The wire contract. Aaron requests changes (see below) |
 | `tools/mock-box.py`, `tools/capture-box.py` | **Julian** | The stub box the UI is developed against |
 | `ground/link/`, `ground/console/` | **Julian** | Engineering bench tools, never shown to judges |

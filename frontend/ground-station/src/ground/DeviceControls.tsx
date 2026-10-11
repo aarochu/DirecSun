@@ -21,18 +21,29 @@ const PHASE_TEXT: Record<TurnPhase, string> = {
 const MANUAL_LABEL = { rate: 'BOX RATE SETPOINT', throttle: 'THROTTLE SETPOINT', wheel: 'WHEEL SPEED SETPOINT' } as const;
 const MANUAL_UNIT = { rate: ' °/s', throttle: '', wheel: ' RPM' } as const;
 
-function guidance(mode: string | null, controlling: boolean): string {
+function guidance(mode: string | null, controlling: boolean, wheelAvailable: boolean, hallBypass: boolean, spinupSlow: boolean): string {
   if (mode === null) return 'WAITING FOR TELEMETRY FROM THE BOX';
   if (mode === 'SAFE') return MODES.SAFE.guidance;
   if (!controlling) return 'ANOTHER CLIENT IS CONTROLLING THE BOX. E-STOP STILL WORKS FROM HERE';
+  if (mode === 'SPINUP') return spinupSlow
+    ? 'SPIN-UP IS TAKING LONGER THAN EXPECTED. THE BOX MAY NEED CHARACTERISATION. DISARM AND ASK JULIAN.'
+    : 'SPINNING UP THE WHEEL: KEEP THE LOCK PIN IN';
+  if (mode === 'READY' && !wheelAvailable) return hallBypass
+    ? 'TURNS UNAVAILABLE: THE HALL SENSOR IS BYPASSED, SO THE WHEEL LOOP IS NOT RUNNING. DISARM AND ASK JULIAN.'
+    : 'TURNS UNAVAILABLE: THE WHEEL LOOP IS NOT RUNNING. THE BOX MAY NEED CHARACTERISATION. DISARM AND ASK JULIAN.';
+  if (mode === 'READY') return MODES.READY.guidance;
   return modeSpec(mode)?.guidance ?? `${mode}: SPACE BAR SENDS E-STOP`;
 }
 
 export function DeviceControls({ link, operator }: { link: DeviceLink; operator: DeviceOperator }) {
   const state = useSyncExternalStore(operator.subscribe, operator.getState);
+  const reading = useSyncExternalStore(link.subscribeFrame, () => link.latestReading);
   const telemetry = useSyncExternalStore(link.subscribeTelemetry, link.getTelemetry);
-  const mode = telemetry.statusWord === '—' ? null : telemetry.statusWord;
+  const mode = reading?.mode ?? null;
   const armed = mode !== null && mode !== 'SAFE';
+  const wheelAvailable = (reading?.wheelRefRpm ?? 0) > 0;
+  const hallBypass = reading?.flags.includes('HALL_BYPASS') ?? false;
+  const [spinupSlow, setSpinupSlow] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [pinIn, setPinIn] = useState(false);
   const confirmId = useId();
@@ -121,8 +132,15 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
     }
   }, [mode]);
 
+  useEffect(() => {
+    setSpinupSlow(false);
+    if (mode !== 'SPINUP') return;
+    const timer = window.setTimeout(() => setSpinupSlow(true), 10_000);
+    return () => window.clearTimeout(timer);
+  }, [mode]);
+
   const turning = state.phase !== 'idle';
-  const canRotate = state.controlling && !turning && mode === 'READY';
+  const canRotate = state.controlling && !turning && mode === 'READY' && wheelAvailable;
   const canStopTurn = turning || (state.controlling && mode === 'SLEW');
   const activeStep = SEQUENCE_STEPS.findIndex((step) => step.phases.includes(state.phase));
   const status = `${mode ?? '—'} / DEVICE${turning ? ` · ${PHASE_TEXT[state.phase]}` : ''}`;
@@ -355,7 +373,9 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
       </ol>
 
       <p className="controls__note mono-label">
-        {telemetry.flags.includes('MOMENTUM_NEAR_LIMIT') && state.controlling ? NEAR_LIMIT_GUIDANCE : guidance(mode, state.controlling)}
+        {telemetry.flags.includes('MOMENTUM_NEAR_LIMIT') && state.controlling
+          ? NEAR_LIMIT_GUIDANCE
+          : guidance(mode, state.controlling, wheelAvailable, hallBypass, spinupSlow)}
       </p>
       <p
         className={`controls__result mono-label${state.result?.tone === 'error' ? ' controls__result--error' : ''}`}
