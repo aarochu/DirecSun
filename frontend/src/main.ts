@@ -234,7 +234,7 @@ function buildTimeline(scene: CubeSatScene | null, layout: Layout): Timeline {
     const subject = new Set(names);
     const carrier = new Set(carriers);
     return (part: PartState) =>
-      subject.has(part.name) ? { o: 1, hl: 1 } : carrier.has(part.name) ? { o: 1, hl: 0 } : { o: 0.14, hl: 0 };
+      subject.has(part.name) ? { o: 1, hl: 1 } : carrier.has(part.name) ? { o: 0.2, hl: 0 } : { o: 0.06, hl: 0 };
   };
   const cam = (tl: Timeline, at: number, params: Partial<typeof view>, duration = 500) =>
     tl.add(view, { ...params, duration, ease: 'inOut(2)' }, at);
@@ -294,7 +294,7 @@ function buildTimeline(scene: CubeSatScene | null, layout: Layout): Timeline {
     fadeIn(tl, el, at - 200, 400);
     if (index < hardwareParts.length - 1) fadeOut(tl, el, at + PART_STEP * 10 - 250, 300);
     if (!v) return;
-    const framing = scene?.frame(v.frame === 'stack' ? 'stack' : v.subject, v.frame === 'stack' ? 1.25 : v.zoom, true);
+    const framing = scene?.frame(v.frame === 'stack' ? 'stack' : v.focus ?? v.subject, v.frame === 'stack' ? 1.25 : v.zoom, true);
     cam(tl, at - 300, { ...(framing ?? {}), az: v.azimuthDeg, el: v.elevationDeg }, 700);
     setParts(tl, at - 250, highlight(v.subject, v.carrier), 500);
   });

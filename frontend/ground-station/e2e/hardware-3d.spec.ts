@@ -14,6 +14,15 @@ async function openRow(page: Page, id: string) {
 }
 
 test.describe('hardware CAD views', () => {
+  test('close-up and Ground Station both render the illustrative electronics', async ({ page }) => {
+    await openRow(page, 'mpu6050');
+    await expect(page.locator('#part-mpu6050-panel .part-view')).toHaveAttribute('data-detail-count', /[1-9]\d*/);
+
+    await page.goto('/');
+    await expect(page.locator('.cad-model')).toHaveAttribute('data-detail-count', /[1-9]\d*/, { timeout: 15000 });
+    await expect(page.locator('.viewport__corner--right')).toHaveText('CAD STACK + ILLUSTRATIVE ELECTRONICS');
+  });
+
   test('a row opens a 3D view that rotates by dragging and resets', async ({ page }) => {
     await openRow(page, 'mpu6050');
     const stage = page.locator('#part-mpu6050-panel .part-view__stage');
