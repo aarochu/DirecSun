@@ -29,6 +29,8 @@ npm run demo:check    # builds both and probes the served pages (what CI runs)
 
 The landing page is at `/` and the ground station at `/ground-station/`, served the same way `vercel.json` serves them (`/ground-station/*` routes go to the app; a missing file is a 404, not a page; the old `/draft` URLs redirect). The site makes no request outside the laptop, so it works with no internet.
 
+The timed pitch, preflight checklist, safety cues, and fallback paths are in [`DEMO.md`](DEMO.md).
+
 Open the ground station over plain `http`, as above, so the browser allows `ws://`. Join the box's Wi-Fi and enter `ws://192.168.4.1/ws` in Device link (or `ws://direcsun.local/ws` on a shared network). The hosted copy on Vercel is `https`, and a browser blocks `ws://` from an `https` page, so use this local copy with the real box.
 
 ## Layout
