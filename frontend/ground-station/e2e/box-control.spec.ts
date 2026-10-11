@@ -55,7 +55,11 @@ async function attachFakeBox(page: Page) {
         return;
       }
       if (frame.type !== 'cmd') return;
-      const ok = () => route?.send(JSON.stringify({ v: 1, type: 'ack', seq: frame.seq, ok: true }));
+      const ok = (extra: Frame = {}) => route?.send(JSON.stringify({ v: 1, type: 'ack', seq: frame.seq, ok: true, ...extra }));
+      if (frame.cmd === 'set_params') {
+        ok({ applied: frame.params });
+        return;
+      }
       ok();
       if (frame.cmd === 'arm') {
         setMode('SPINUP', 'arm');
@@ -94,6 +98,17 @@ test.describe('box control against a scripted box', () => {
     await connect(page);
     await page.waitForTimeout(1200);
     expect(received).toEqual([]);
+  });
+
+  test('SAFE parameters send only changed values and show the applied set', async ({ page }) => {
+    const { received } = await attachFakeBox(page);
+    await connect(page);
+    await page.getByRole('button', { name: /PARAMETERS \/ SAFE ONLY/ }).click();
+    await page.getByLabel(/Rate gain/).fill('0.02');
+    await page.getByRole('button', { name: 'Apply changed parameters' }).click();
+
+    await expect(page.getByText('Applied: k_omega = 0.02')).toBeVisible();
+    expect(commands(received).at(-1)).toMatchObject({ cmd: 'set_params', params: { k_omega: 0.02 } });
   });
 
   test('arm needs the lock-pin confirmation, then right 90 turns, holds and returns', async ({ page }) => {

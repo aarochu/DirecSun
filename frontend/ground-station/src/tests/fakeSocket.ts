@@ -42,7 +42,7 @@ export class FakeSocket {
 }
 
 export const tlm = (fields: Record<string, unknown>) => JSON.stringify({ v: 1, type: 'tlm', ...fields });
-export const ack = (seq: unknown, ok = true, reason?: string) =>
-  JSON.stringify({ v: 1, type: 'ack', seq, ok, ...(reason ? { reason } : {}) });
+export const ack = (seq: unknown, ok = true, reason?: string, fields: Record<string, unknown> = {}) =>
+  JSON.stringify({ v: 1, type: 'ack', seq, ok, ...(reason ? { reason } : {}), ...fields });
 export const modeEvent = (mode: string, cause: string) =>
   JSON.stringify({ v: 1, type: 'event', seq: 900, t_ms: 0, event: 'mode', mode, cause });

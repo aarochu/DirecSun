@@ -77,6 +77,7 @@ export interface DeviceAck {
   readonly seq: number;
   readonly ok: boolean;
   readonly reason: string | null;
+  readonly applied: Readonly<Record<string, unknown>> | null;
 }
 
 export type CommandErrorCode = 'REFUSED' | 'TIMEOUT' | 'CLOSED';
@@ -287,7 +288,7 @@ export class DeviceLink implements DisplaySource {
     return () => this.eventListeners.delete(listener);
   };
 
-  command(name: 'arm' | 'disarm' | 'mode' | 'manual' | 'respin' | 'zero_heading', fields: Record<string, unknown> = {}): Promise<DeviceAck> {
+  command(name: 'arm' | 'disarm' | 'mode' | 'manual' | 'respin' | 'zero_heading' | 'set_params', fields: Record<string, unknown> = {}): Promise<DeviceAck> {
     return this.sendCommand(name, fields);
   }
 
@@ -448,7 +449,15 @@ export class DeviceLink implements DisplaySource {
     clearTimeout(pending.timer);
     const reason = text(message.reason);
     if (message.ok === true) {
-      pending.resolve({ seq, ok: true, reason });
+      const applied = message.applied;
+      pending.resolve({
+        seq,
+        ok: true,
+        reason,
+        applied: applied && typeof applied === 'object' && !Array.isArray(applied)
+          ? (applied as Readonly<Record<string, unknown>>)
+          : null,
+      });
     } else {
       pending.reject(
         new DeviceCommandError(`${pending.command} refused: ${reason ?? 'no reason given'}`, 'REFUSED', pending.command, reason),
