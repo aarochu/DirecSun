@@ -23,7 +23,7 @@ fi
 
 cd "$repo_root"
 set +e
-DIRECSUN_LINK_CAPTURE="$capture" node --test 'ground/link/**/*.test.mjs' >"$out/node-test.txt" 2>&1
+DIRECSUN_LINK_CAPTURE="$capture" node --test --test-reporter=spec 'ground/link/**/*.test.mjs' >"$out/node-test.txt" 2>&1
 status=$?
 set -e
 cat "$out/node-test.txt"
