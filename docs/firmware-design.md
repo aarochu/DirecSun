@@ -298,7 +298,7 @@ flowchart TD
 - **DShot 0 starts first.** The ESC arms only after seeing zero throttle [V] TD §5.2, and TD §6.3 asks for about 1 s of zeros [A] A-22. Sending zeros from the first milliseconds also means that a reset caused by the watchdog stops drive quickly. The ESC itself switches drive off about 0.3 s after pulses stop [V] TD §5.2, so the reset gap is bounded either way.
 - **Boot does not wait for Wi-Fi.** The box is safe in `SAFE` without a ground connection; heartbeat rules only apply in active modes (§14.1).
 - **Missing magnetometer** is not fatal: `DETUMBLE` needs only the gyro. Modes that need heading (`HOLD`, `SLEW`, `SUN_POINT`) are refused with a reason [D].
-- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). It is not taken once at boot, because the box may be moving after a watchdog reset [D, finding V-10].
+- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). The boot window seeds it only when the window itself proves the box was still, because the box may be moving after a watchdog reset [D, findings V-10 and V-61].
 
 ---
 
@@ -311,10 +311,13 @@ flowchart TD
     T0["Task notified by timer"] --> T1["t = esp_timer_get_time()<br/>record loop start"]
     T1 --> T2["Read MPU-6050 14 bytes from 0x3B<br/>(accel, temp, gyro)"]
     T2 --> T3{"Even tick?"}
-    T3 -- yes --> T4["Read QMC5883P status; if DRDY,<br/>read 6 data bytes, add to 20 ms average"]
-    T3 -- no --> T5
-    T4 --> T5{"Every 10th tick?"}
-    T5 -- yes --> T6["Read sun A, sun B, battery ADC<br/>(spread over ticks 0, 3, 6 of each 10)"]
+    T3 -- yes --> T4["Read QMC5883P status;<br/>remember DRDY"]
+    T3 -- no --> T3b{"DRDY on the<br/>previous tick?"}
+    T3b -- yes --> T4b["Read 6 data bytes,<br/>add to 20 ms average"]
+    T3b -- no --> T5
+    T4 --> T5{"Tick 0, 2, or 4<br/>of each 10?"}
+    T4b --> T5
+    T5 -- yes --> T6["Read one ADC input:<br/>battery, sun A, sun B in turn"]
     T5 -- no --> T7
     T6 --> T7["Drain Hall ring buffer;<br/>update wheel speed estimate"]
     T7 --> T8["Estimator update:<br/>rate, heading (mag fused at 50 Hz), sun angle"]
@@ -334,12 +337,28 @@ flowchart TD
 | Step | Estimate | Label |
 | --- | --- | --- |
 | IMU burst read, 14 bytes at 400 kHz | 0.39 ms (155 bit times) | [C] |
-| Magnetometer status + 6 bytes (every 2nd tick) | about 0.25 ms | [C] |
+| Magnetometer status (even ticks) or 6 data bytes (the odd tick after DRDY), never both on one tick | about 0.25 ms | [C] |
 | One ADC read with calibration (at most one per tick) | tens of µs | [A] |
 | Estimator + controllers + interlocks (float) | < 50 µs | [A] |
 | DShot encode + RMT start | < 20 µs; the 53 µs DShot300 frame is sent by hardware | [A]; frame [V] |
 | JSON is **not** on this core | 0 | [D] |
 | **Worst tick** | **about 0.75 ms of 2 ms** | [C on A] |
+
+**Measured on the XIAO (R3.4 bench, 2026-10-10) [V].** The first build ran its worst tick at 1.4 to 1.9 ms, and its first tick at 6.9 ms with 2 missed ticks. Per-stage timing (the bench Kconfig `DIRECSUN_BENCH_STAGE_TIMING`) found three causes:
+- The ESP32-S3's default 16 KB instruction cache could not hold the tick's code (core, drivers, the I2C and RMT drivers, libc math), so it refilled from flash every tick: the estimator took 43 µs and the telemetry snapshot 99 µs. The firmware uses the 32 KB instruction cache (`CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB`) and places `direcsun_core`, `direcsun_drivers`, and the control task in IRAM through linker fragments (`linker.lf`), so the core's sources stay free of ESP-IDF attributes (§18).
+- The magnetometer status and data reads shared a tick with each other and with an ADC read. They are now on separate ticks, with the ADC reads next to the short status read (§9.1).
+- The first tick logged a line on the console, which blocks for milliseconds. The line is logged before the tick timer starts.
+
+After the fixes, per stage, mean (max) in µs: IMU 456, magnetometer 207 (282), ADC 48, estimator 6 (11), supervisor 4 (9), DShot 15, snapshot 7. Over 11.6 min the flight build's worst tick was 911 to 926 µs each second and 976 µs in the first, with no missed ticks [D, V-60].
+
+The IMU read's maximum is not stable from build to build: 463 to 473 µs in one, 655 to 694 µs in another, once in every second. A same-binary comparison on 2026-10-10 confirmed the cause [V]. With the BMP280 silent the maximum was 459 to 462 µs, and with it answering 655 to 691 µs, while the mean did not move (`testresults/2026-10-10-s3-loop-time-barometer.md`). The core-0 barometer task (§10.3) reads once a second, and its transaction holds the shared bus when the IMU read starts. With the IRAM placement below, the worst tick including this delay is 754 µs, so moving the barometer read into the idle part of the tick would add margin; the budget no longer needs it.
+
+**Measured with Wi-Fi (R3.5 bench, 2026-10-10) [V].** With the SoftAP up and no client, the R3.4 placement was not enough: the worst tick was 1369 to 1649 µs in every second over 10 min (median 1454). The Wi-Fi stack on core 0 shares the 32 KB instruction cache and evicts the tick's code that still ran from flash.
+- A disassembly of the image, following every call out of the control task (including the `l32r`/`callx` calls that are the only way IRAM code reaches flash), listed that code: the I2C master driver and HAL, the RMT transmit path and its encoders, the ADC one-shot read with its calibration and lock, picolibc's `sqrtf`, `acosf`, `remainderf` and `remainder` with their helpers, and `main/shared.cpp`.
+- `main/linker.lf` now places those objects in IRAM, together with `CONFIG_FREERTOS_IN_IRAM`, `CONFIG_I2C_ISR_IRAM_SAFE` and `CONFIG_ADC_ONESHOT_CTRL_FUNC_IN_IRAM`. What the tick still calls in flash is start-up and error paths only. Internal RAM use is 63%.
+- Result over 10 min with the SoftAP up: worst tick 753 to 756 µs in every second after the first, no missed ticks, p99 deviation at most 9 µs [D, V-62]. A client streaming telemetry has not been measured yet.
+
+**The boot second with Wi-Fi [A].** Comms start about 30 ms after the control task. In about half of boots the first second then shows one tick of about 4 ms, one or two missed ticks, and two invalid IMU reads (I2C reads that time out). None of these removed it: turning off Wi-Fi's NVS storage, turning off PHY calibration storage, or creating the I2C bus and the DShot channel on core 1. The likely cause is a flash access during Wi-Fi start-up, which stalls the other core, but it is not confirmed. It happens in SAFE, before any client can arm the box.
 
 At 100 kHz I2C the IMU read alone is 1.55 ms [C], and an IMU + magnetometer tick would exceed 2 ms, which is why TD §5.3 runs the bus at 400 kHz. Every tick reads the IMU, so there is no tick free for the magnetometer at 100 kHz. If the oscilloscope check in TD §5.3 forces 100 kHz, the control rate falls to 250 Hz (4 ms ticks: IMU 1.55 ms, plus magnetometer status and data on alternate ticks, about 0.8 ms), and the gains in §12.2 are rechecked for the longer step [D, finding V-6].
 
@@ -378,13 +397,13 @@ Axis mapping: the board sits face up, centred on the spin axis (TD §4.8), so se
 
 Driver: the vendored `duruofu/qmc5883p` 0.1.0 in `firmware/components/qmc5883p`, given the i2cdev bus through `i2cdev_get_shared_handle(I2C_NUM_0, ...)` after the first i2cdev transaction has created it [D]. The driver hard-codes a 100 kHz device clock, and its own comments flag its 8 G sensitivity value as uncertain; both are corrected by documented local patches after checking the QST datasheet [A].
 
-Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). It reads data only when data-ready is set, which yields every new 200 Hz sample once, and averages all new samples in each 20 ms window into one 50 Hz heading measurement [D].
+Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). When data-ready is set it reads the data on the next tick, so the two transactions never share a tick (§9.2, V-60); this yields every new 200 Hz sample once, and all new samples in each 20 ms window are averaged into one 50 Hz heading measurement [D].
 
 Mounting: the board hangs upside down under the flipped top deck (TD §4.8). Turning a board over is a 180° rotation about a horizontal axis, which flips **Z and one horizontal axis**, not Z alone (finding V-4). Heading uses only the horizontal components, so the horizontal flip matters and the Z flip does not. The driver applies a configurable axis map `mag_axis_map` (default: negate Y and Z, keep X), and T-9 confirms it: rotating the box counter-clockwise must make magnetic heading increase in the same direction as the integrated gyro [M].
 
 ### 10.3 BMP280 (I2C 0x77, optional)
 
-Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz on a spare tick if present, and reported in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`. Driver: esp-idf-lib `bmp280` ^1.0.7 at 400 kHz.
+Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz by a low-priority task on core 0 if present, never on a control tick, because the esp-idf-lib read path retries a failed transaction with backoff and can block for about 0.3 s [D, V-37]. The task publishes through a seqlock that the control task copies into the telemetry snapshot, and the readings appear in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`. Driver: esp-idf-lib `bmp280` ^1.0.7 at 400 kHz.
 
 ### 10.4 A1104 Hall sensor and wheel speed
 
@@ -470,7 +489,9 @@ Rules [D]:
 ```
 
 - `s_gyro` = +1 by default, confirmed in T-8 [M].
-- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of 1 g, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of the reference `a_ref`, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Stillness is relative, not 1 g** [D, V-61]. An uncalibrated MPU-6050 reads well off 1 g at rest: the bench unit reads 0.871 g, so a test against 1 g never passes and the bias never learns. `a_ref` is the boot window's own mean accel magnitude, and 1 g until a boot window qualifies.
+- **Boot seed** [D, V-61]. The MPU-6050 offset can exceed the 2 deg/s gate (the register map allows ±20 deg/s; the bench unit reads about −2.1 deg/s), so from b_z = 0 the gate might never open. The 1 s boot window (§8.1) therefore averages g_z and seeds b_z, and sets `a_ref`, only when the window proves the box was still: at least 250 samples, g_z range under 0.5 deg/s, |mean g_z| under 25 deg/s, a mean accel magnitude between 0.7 and 1.3 g (a dead accelerometer reading near 0 g is not still), and every sample's magnitude within 0.05 g of that mean. Otherwise b_z starts at 0, and the boot log names the first criterion that failed.
 - **Vibration:** the 20 Hz DLPF passes 25 to 45 % of the 40 Hz bias-speed vibration [V] TD §6.4. A software notch filter is implemented but off by default. When enabled, its centre follows `speed_safe / 60` Hz and it is switched on only if T-7/T-8 show residual vibration in ω̂ [D].
 
 ### 11.2 Wheel speed
@@ -792,11 +813,13 @@ The ESP-IDF task watchdog is configured for 100 ms on the control task [V] TD §
 | Item | Choice | Label |
 | --- | --- | --- |
 | Library | ESP-IDF `esp_http_server` with `CONFIG_HTTPD_WS_SUPPORT=y`, URI `/ws` registered as a WebSocket handler on port 80, the main UI's endpoint (finding U-2). Other paths are not served. Outbound frames go through `httpd_queue_work` and `httpd_ws_send_frame_async`, the pattern of the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3; build check BC-4 on the S3 |
-| Max clients | 3 | [D] |
-| Outbound policy | Telemetry is broadcast to all clients. If a client's send would block (buffer full), that frame is skipped for that client and `tlm_dropped` increments. Acks and events are never skipped | [D] |
-| Inbound size limit | 512 bytes per message; larger messages are dropped with `ack ok:false reason:"too large"` | [D] |
-| JSON | Encode `tlm` with `snprintf` into a fixed buffer (no heap). Parse commands with cJSON from the `espressif/cjson` registry component (ESP-IDF v6.0 no longer bundles it) | [D]; library [A] |
-| Contract check | Every message kind is described by `protocol/schema-v1.json`; host test HT-9 validates encoder output against it | [D] |
+| Max clients | 3 (`max_open_sockets`), with LRU purge off, so a fourth connection is refused rather than evicting a connected (possibly controlling) client. Client ids are never reused, so a reconnect is a new client and resumes nothing | [D] |
+| Threads | The httpd task (core 0) owns every socket and the client table: handshakes, inbound frames, pongs and parse refusals sent inline, and every outbound send. The comms task (core 0, 50 Hz, below httpd priority) drains acks and events from control, encodes the newest snapshot, and hands both over through a queue and a latest-tlm buffer | [D] R3.5 |
+| Outbound policy | `tlm` goes to every client; a client whose socket is not writable at that moment skips the frame and `tlm_dropped` increments. An `ack` goes to the client that sent the command. An `event` goes only to clients that have sent at least one message, so a read-only viewer (the main UI's device link, which counts every non-`tlm` frame as ignored) receives only `tlm`, which carries the mode in every frame. Acks and events are not skipped for a slow socket; a send that fails closes that client | [D] R3.5 (finding V-38) |
+| Inbound size limit | 512 bytes per message; 513 to 1024 bytes are read and refused with `ack ok:false reason:"too large"` and `seq` 0; anything larger closes the session, because skipping it would desynchronise the stream | [D] |
+| JSON | Encode every message with `snprintf` into fixed buffers (no heap). Parse commands with cJSON 1.7.19, vendored in `direcsun_core/third_party/cjson` so the firmware and the host tests run the same parser (the `espressif/cjson` registry dependency is gone); `CJSON_NESTING_LIMIT` = 8 | [D] R3.5 (finding V-39) |
+| Wire sign | `direcsun_core/src/protocol.cpp` is the only code that converts between the internal counter-clockwise frame and the clockwise wire frame (§2.3, U-1); host test "sign conversion" pins it, and the `no_wire_sign` mutant proves the test can fail | [D] R3.5 |
+| Contract check | Every message kind is described by `protocol/schema-v1.json`. Host test HT-9 parses every client-direction schema fixture through the real parser and writes one of every encoded message kind for `tools/check-protocol.sh`, which validates them against the schema and requires a deliberately malformed `tlm` to fail | [D] |
 
 ### 15.3 Message schema, version 1
 
@@ -813,9 +836,9 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `mode` | string | Wire mode name (§2.4) | TD |
 | `manual_input` | string or null | `throttle`, `wheel`, or `rate` in `MANUAL`; null otherwise | [D] |
 | `psi_deg` | number | Wrapped heading (−180, 180], clockwise positive (wire frame, §2.3) | TD; wrap [D]; sign [D] U-1 |
-| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE) | TD; null rule [D] |
+| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE, and MANUAL; until HOLD and SLEW exist in Set 4 it is always null) | TD; null rule [D] |
 | `rate_dps` | number | ω̂, clockwise positive (the internal ω̂ negated) | TD |
-| `mag_deg` | number or null | ψ_mag, clockwise positive (null if magnetometer missing) | TD |
+| `mag_deg` | number or null | ψ_mag, clockwise positive (null if the magnetometer is missing, and null until magnetometer heading exists in Set 5) | TD; [D] V-40 |
 | `sun_deg` | number or null | Calibrated sun angle, clockwise positive | TD |
 | `sun_valid` | bool | n/a | TD |
 | `wheel_rpm` | number | `speed_safe` | TD |
@@ -824,9 +847,10 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `tau_cmd_mNm` | number | τ_cmd, clockwise positive (the internal τ_cmd negated) | TD |
 | `vbat` | number | 1 s average battery voltage | TD |
 | `loop_us` | int | Longest tick in the last 20 ms | TD; "longest" [D] |
-| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `MAG_MISSING`, `MANUAL_STALE`, latched fault names | TD; list [D] |
+| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `IMU_MISSING`, `MAG_MISSING`, `MANUAL_STALE`, `HALL_BYPASS`, then the latched fault names | TD; list [D] |
 | `t_c`, `p_pa` | number or null | BMP280, optional | [D] |
 | `tlm_dropped`, `dropped_events` | int | Counters | [D] |
+| `gyro_raw`, `mag_raw`, `sun_a_mv`, `sun_b_mv` | int[3], int[3], int, int | Bench mode only: raw sensor counts in the sensors' own axes (not converted to the wire frame) and the sun sensor millivolts (§19.2) | [D] |
 
 Example (values illustrative, not measurements; `vbat` chosen inside the NiMH range, finding V-3):
 
@@ -860,13 +884,19 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 {"v":1,"type":"ack","seq":77,"ok":false,"reason":"wheel not at bias"}
 ```
 
-`seq` echoes the command's `seq` [V] TD §7.3. Unknown `v`, unknown `type`, unknown `cmd`, a malformed message, or a failed guard → `ok:false` with a reason [V] TD §7.3.
+`seq` echoes the command's `seq` [V] TD §7.3, or is 0 when the refused frame had no readable `seq` (too large, malformed JSON). Unknown `v`, unknown `type`, unknown `cmd`, a malformed message, or a failed guard → `ok:false` with a reason [V] TD §7.3. The reasons are fixed strings [D] (finding V-41):
+
+- parse refusals, from the comms layer: `too large`, `malformed JSON`, `missing v`, `unsupported v`, `invalid seq`, `unknown type`, `unexpected type <t>` (a box-to-client type sent by a client), `unknown cmd`, `missing field: <f>`, `unexpected field: <f>`, `invalid field: <f>`, `two setpoints`, `missing setpoint`, `unknown param: <k>`, `invalid param: <k>`, `too many params`;
+- `busy`, when the command queue is full (an `estop` is still applied through its flag and acked `ok:true`);
+- guard refusals from the supervisor (§13.1): for example `not in SAFE`, `not controlling client`, `box not still`, `battery low`, `latched fault: <NAME>`, `input not available`, `too fast`, `not implemented`.
+
+A `set_params` ack with `ok:true` carries `applied`, the parameter object as received: updates are all-or-nothing, so what was applied is exactly what was sent.
 
 > **Ambiguity resolved (finding V-14).** TD defines `seq` as "the sender's counter" for every message, but the ack example uses the command's `seq` (77). The firmware therefore puts the **echoed command seq** in `seq` for `ack` messages only. Every other box message uses the box's own counter.
 
 #### `ping` / `pong`
 
-Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] TD §7.3. Box replies `{"v":1,"type":"pong","seq":<box seq>,"ping_seq":79,"t_client_ms":512330,"t_ms":83120}` [D field names], which lets the client compute round-trip time for T-11.
+Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] TD §7.3. Box replies `{"v":1,"type":"pong","seq":<box seq>,"ping_seq":79,"t_client_ms":512330,"t_ms":83120}` [D field names], which lets the client compute round-trip time for T-11. Comms answers the pong itself and forwards every ping to the supervisor as a command, so the supervisor alone decides whose pings keep an armed box alive (V-32).
 
 #### `event`: box → all clients
 
@@ -874,7 +904,14 @@ Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] T
 {"v":1,"type":"event","seq":311,"t_ms":83500,"event":"mode","mode":"SAFE","cause":"HEARTBEAT_LOST"}
 ```
 
-Sent on every mode change and every interlock trip [V] TD §7.3. `cause` is an interlock name, a command name, or `"slew_complete"` [D].
+Sent on every mode change and every interlock trip [V] TD §7.3, to every client that has sent at least one message (§15.2). The catalogue [D] (finding V-42):
+
+| `event` | Fields | When |
+| --- | --- | --- |
+| `mode` | `mode`, `cause` | Every mode change. `cause` is an interlock name (`ESTOP`, `HEARTBEAT_LOST`, `OVERSPEED`, ...), the command that caused it (`arm`, `disarm`, `mode`, `respin`), or an automatic transition: `boot`, `spinup_complete`, `slew_complete`, `SLEW_TIMEOUT`, `sun_invalid` |
+| `notice` | `name`, optional `detail` | `PARAMS_RESET` (detail `missing`, `version`, or `invalid`): the stored parameters were not usable and the defaults loaded. `HALL_BYPASS` (detail `on` or `off`): the Hall bench bypass changed |
+
+`t_ms` of an event is the time comms encoded it, at most 20 ms after the supervisor posted it. "Too fast" for MANUAL setpoints (§13.5) is measured when the supervisor drains the command, within one 2 ms tick of its arrival.
 
 ### 15.4 Command handling sequence
 
@@ -1166,10 +1203,19 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-34 | §15.3: "a failed guard → ok:false with a reason" without the reason strings | Implementation | The UI and tests need exact strings | Fixed list in §13.1 [D] | Low (this doc) |
 | V-35 | §16: `omega_cap_rpm` "cannot be raised over the wire"; persistence of `bench_mode` unstated | Implementation | Lowering it over the wire was also unclear | The cap is not settable over the wire at all and not persisted; `bench_mode` and `hall_installed` are volatile [D] | Low (this doc) |
 | V-36 | §14.3: e-stop always ramps from throttle_0 | Implementation | A ramp from zero throttle only blocks the next `arm` for 5 s | No ramp when the last throttle was below 48 [D] | Low (this doc) |
+| V-37 | §10.3: the BMP280 "is read at 1 Hz on a spare tick" | R3.2 read the esp-idf-lib i2cdev source | A bus error makes `bmp280_read_float` retry three times with 40 to 160 ms backoff, about 0.3 s, which would stall the 2 ms control loop | Read by a low-priority core-0 task and published through a seqlock; the control task never calls it (R3.4) | Medium (this doc) |
 | U-1 | §2.3, §15.3, §17: the wire is counter-clockwise positive and the UI negates for display (V-17, V-24) | Main UI source at PR #1 622150a; owner decision 2026-10-10 | `frontend/` became the main UI, and the backend matches it. The UI draws positive heading clockwise ("rotate right" = +90°, dial at (sin ψ, -cos ψ), model `rotation.y = -ψ`) | The wire is clockwise positive for every quantity about the spin axis, including `tau_cmd_mNm`, which the spec list did not name but which is a torque about the same axis. The firmware converts only in its protocol encode and decode; the internal frame of §2.3 is unchanged. A v1 correction, not a v2 break: no backend had emitted v1, and the only consumer already assumed clockwise. Supersedes V-17 and the sign half of V-24 | High (wire contract) |
 | U-2 | §15.1, §15.2, §17, §19.3: WebSocket on port 81 at `/` (V-16 asked the UI to change its placeholder) | Main UI placeholder `ws://192.168.4.1/ws`; owner decision 2026-10-10 | The backend matches the UI | Port 80 at `/ws`: `ws://direcsun.local/ws` in station mode, `ws://192.168.4.1/ws` in SoftAP mode. `ground/link/` default, console hints, and `tools/mock-box.py` (serves only `/ws`, 404 elsewhere) follow. Supersedes V-16 | Medium (wire contract) |
 | U-3 | Header, §3, §17, §24 Q4: the demo UI is Aaron's, lives outside the repository, and talks through `ground/link/` | PR #1 merged 2026-10-10 (7136f6a) | `frontend/` is in the repository and is the main UI; it owns its operator client | §17 rewritten as the integration contract with `frontend/`, from its source. `ground/link/` and `ground/console/` are bench tools. §3 says the UI leads the wire interface | Medium |
+| V-38 | §15.2: "telemetry is broadcast to all clients" and events to all clients | R1.8 found the main UI counts every non-`tlm` frame as ignored and never sends | A read-only viewer would see its ignored count climb with every event | Events go only to clients that have sent at least one message; read-only viewers receive only `tlm`, which carries the mode (R3.5) | Low (this doc) |
+| V-39 | §15.2: cJSON from the `espressif/cjson` registry component | Host tests need the same parser | Two copies at different versions would let host tests pass against code the firmware does not run | cJSON 1.7.19 vendored in `direcsun_core/third_party/cjson`, compiled by both builds; the registry dependency is dropped (R3.5) | Low (this doc) |
+| V-40 | §15.3: `mag_deg` null only if the magnetometer is missing | No calibrated magnetometer heading exists until Set 5 | A raw atan2 of uncalibrated counts would be a misleading heading | `mag_deg` is null until Set 5 builds the calibrated heading (R3.5) | Low (this doc) |
+| V-41 | §15.3: refusals carry "a reason" without the strings | Implementation of the parser (R3.5) and supervisor (R3.6) | The UI and the tests need exact strings | Fixed list in §15.3; `seq` 0 for an unreadable frame | Low (this doc) |
+| V-42 | §15.3: `cause` limited to interlocks, commands, and `slew_complete`; no notice catalogue | R1.6 schema and R3.6 supervisor | The schema already had `boot`, `spinup_complete`, `SLEW_TIMEOUT`, `sun_invalid`, and `notice` | Event catalogue in §15.3, with `HALL_BYPASS` added as an additive v1 change (CONTEXT.md, 2026-10-10) | Low (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
+| V-60 | §9.2: worst tick "about 0.75 ms of 2 ms" | R3.4 bench, per-stage timing on the XIAO | The worst tick was 1.4 to 1.9 ms: the 16 KB instruction cache thrashed every tick, the magnetometer status and data reads and an ADC read shared ticks, and the first tick logged | 32 KB instruction cache and IRAM placement by linker fragments; magnetometer data on the tick after the status read; ADC on ticks 0, 2, 4; no log inside a tick. Measured 911 to 976 µs, no missed ticks; a once-a-second IMU read delay, probably the barometer read, is open (§9.2) | High (this doc) |
+| V-61 | §11.1: the bias gate needs the accel magnitude "within 0.05 g of 1 g"; §8.2: the bias "is not taken once at boot" | R3.4 bench: the MPU-6050 read 0.871 g at rest, and the boot seed refused a window with a 0.12 deg/s gyro range | The absolute test rejects an uncalibrated accelerometer at rest, so neither the boot seed nor the gate ever ran, and heading drifted with the 2.1 deg/s offset | Stillness relative to the boot window's own mean magnitude, with a 0.7 to 1.3 g plausibility band; the boot seed and its criteria written into §11.1; the boot log names the failed criterion | High (this doc) |
+| V-62 | §9.2: the R3.4 IRAM placement keeps the worst tick under 1 ms | R3.5 bench on the XIAO, SoftAP up | The worst tick was 1369 to 1649 µs with Wi-Fi: the Wi-Fi stack evicts the tick's remaining flash code (I2C, RMT and ADC drivers, libc math, `shared.cpp`) from the shared instruction cache | Those objects placed in IRAM by `main/linker.lf`, plus `CONFIG_FREERTOS_IN_IRAM`, `CONFIG_I2C_ISR_IRAM_SAFE` and `CONFIG_ADC_ONESHOT_CTRL_FUNC_IN_IRAM`. Measured 753 to 756 µs over 10 min, no missed ticks after the first second. The first second's intermittent 4 ms tick is open (§9.2) | High (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 

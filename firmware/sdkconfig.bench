@@ -1,0 +1,9 @@
+# Bench-build layer on top of sdkconfig.defaults. Never used for a flight build.
+#
+#   tools/idf.sh -B build-bench -D SDKCONFIG=build-bench/sdkconfig \
+#       -D DIRECSUN_EXTRA_DEFAULTS=sdkconfig.bench build
+#
+# BC-5: the control-stall watchdog test hook (main/Kconfig.projbuild).
+CONFIG_DIRECSUN_BENCH_STALL_TEST=y
+CONFIG_DIRECSUN_BENCH_STALL_AFTER_S=10
+CONFIG_DIRECSUN_BENCH_STALL_MS=200

@@ -1,0 +1,7 @@
+# Diagnostic layer on top of sdkconfig.defaults. Never used for a flight build.
+#
+#   tools/idf.sh -B build-diag -D SDKCONFIG=build-diag/sdkconfig \
+#       -D DIRECSUN_EXTRA_DEFAULTS=sdkconfig.diag build
+#
+# Per-stage control tick timing (main/Kconfig.projbuild).
+CONFIG_DIRECSUN_BENCH_STAGE_TIMING=y
