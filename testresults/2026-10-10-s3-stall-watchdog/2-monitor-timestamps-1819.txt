@@ -1,0 +1,409 @@
+Script started on 2026-10-10 18:19:06-04:00 [COMMAND="timeout 32 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/tools/idf.sh -B build-bench -D SDKCONFIG=build-bench/sdkconfig -D DIRECSUN_EXTRA_DEFAULTS=sdkconfig.bench -p /dev/ttyACM0 monitor --timestamps --timestamp-format '%H:%M:%S.%f'" <not executed on terminal>]
+Executing action: monitor
+Running idf_monitor in directory /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware
+Executing "/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python /home/jazoe/.espressif/v6.0/esp-idf/tools/idf_monitor.py -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/build-bench/direcsun.elf /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/build-bench/bootloader/bootloader.elf --timestamps --timestamp-format %H:%M:%S.%f -m '/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python' '/home/jazoe/.espressif/v6.0/esp-idf/tools/idf.py' '-B' 'build-bench' '-D' 'SDKCONFIG=build-bench/sdkconfig' '-D' 'DIRECSUN_EXTRA_DEFAULTS=sdkconfig.bench' '-p' '/dev/ttyACM0'"...
+--- esp-idf-monitor 1.9.0 on /dev/ttyACM0 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+18:19:08.704610 I (126) esp_image: segment 3: paddr=00041608 vaddr=3fc9ae58 sizeESP-ROM:esp32s3-20210327
+18:19:08.705000 Build:Mar 27 2021
+18:19:08.705053 rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+18:19:08.705088 Saved PC:0x4038280e
+18:19:08.746763 --- 0x4038280e: esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:64
+SPIWP:0xee
+18:19:08.747120 mode:DIO, clock div:1
+18:19:08.748187 load:0x3fce2820,len:0x14f0
+18:19:08.748991 load:0x403c8700,len:0xda0
+18:19:08.766532 --- 0x403c8700: _stext at ??:?
+load:0x403cb700,len:0x2f58
+18:19:08.787282 entry 0x403c8908
+18:19:08.791869 --- 0x403c8908: call_start_cpu0 at /home/jazoe/.espressif/v6.0/esp-idf/components/bootloader/subproject/main/bootloader_start.c:27
+I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+18:19:08.793023 I (24) boot: compile time Oct 10 2026 17:46:09
+18:19:08.793509 I (25) boot: Multicore bootloader
+18:19:08.793983 I (25) boot: chip revision: v0.2
+18:19:08.794298 I (27) boot: efuse block revision: v1.4
+18:19:08.794829 I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+18:19:08.795339 I (35) boot.esp32s3: SPI Mode       : DIO
+18:19:08.795877 I (39) boot.esp32s3: SPI Flash Size : 8MB
+18:19:08.796488 I (42) boot: Enabling RNG early entropy source...
+18:19:08.797004 I (47) boot: Partition Table:
+18:19:08.797606 I (49) boot: ## Label            Usage          Type ST Offset   Length
+18:19:08.798193 I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+18:19:08.798604 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+18:19:08.799245 I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+18:19:08.799576 I (75) boot: End of partition table
+18:19:08.799991 I (79) esp_image: segment 0: paddr=00010020 vaddr=3c030020 size=0fe98h ( 65176) map
+18:19:08.800349 I (98) esp_image: segment 1: paddr=0001fec0 vaddr=3fc9ad00 size=00158h (   344) load
+18:19:08.801165 I (98) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=215e0h (136672) map
+18:19:08.827199 I (126) esp_image: segment 3: paddr=00041608 vaddr=3fc9ae58 size=03d28h ( 15656) load
+18:19:08.830295 I (130) esp_image: segment 4: paddr=00045338 vaddr=40378000 size=12cb8h ( 76984) load
+18:19:08.847639 I (147) esp_image: segment 5: paddr=00057ff8 vaddr=50000004 size=00024h (    36) load
+18:19:08.855883 I (155) boot: Loaded app from partition at offset 0x10000
+18:19:08.856944 I (155) boot: Disabling RNG early entropy source...
+18:19:08.866323 I (165) cpu_start: Multicore app
+18:19:08.874357 I (174) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+18:19:08.875191 I (175) cpu_start: Pro cpu start user code
+18:19:08.876276 I (175) cpu_start: cpu freq: 240000000 Hz
+18:19:08.880267 I (176) app_init: Application information:
+18:19:08.884031 I (180) app_init: Project name:     direcsun
+18:19:08.887852 I (184) app_init: App version:      873b5e3
+18:19:08.893095 I (188) app_init: Compile time:     Oct 10 2026 17:45:55
+18:19:08.897544 I (193) app_init: ELF file SHA256:  97129af89...
+18:19:08.907230 I (197) app_init: ESP-IDF:          v6.0
+18:19:08.907741 I (201) efuse_init: Min chip rev:     v0.0
+18:19:08.908876 I (205) efuse_init: Max chip rev:     v0.99 
+18:19:08.912812 I (209) efuse_init: Chip rev:         v0.2
+18:19:08.918932 I (213) heap_init: Initializing. RAM available for dynamic allocation:
+18:19:08.923997 I (219) heap_init: At 3FCA0A20 len 00048CF0 (291 KiB): RAM
+18:19:08.929316 I (224) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+18:19:08.934687 I (229) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+18:19:08.939859 I (234) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+18:19:08.943012 I (240) spi_flash: detected chip: gd
+18:19:08.945853 I (243) spi_flash: flash io: dio
+18:19:08.952237 I (246) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+18:19:08.958735 I (252) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+18:19:08.962265 I (259) main_task: Started on CPU0
+18:19:08.965467 I (262) main_task: Calling app_main()
+18:19:08.975460 I (275) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+18:19:08.977254 I (275) direcsun: DirecSun flight firmware
+18:19:08.981462 I (277) direcsun: firmware 873b5e3, ESP-IDF v6.0
+18:19:08.987453 I (281) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+18:19:08.992110 I (287) direcsun: flash 8MB configured, 8MB detected
+18:19:09.001969 W (292) direcsun: BENCH BUILD: the stall-watchdog test hook will block the control task 10 s after it starts
+18:19:09.006148 I (301) direcsun: reset reason: USB peripheral (11)
+18:19:09.011951 I (306) direcsun: DShot150 zeros on GPIO7 from 35346 us after boot
+18:19:09.017039 W (312) direcsun: parameters reset to defaults (missing)
+18:19:09.023285 I (317) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+18:19:09.031985 I (323) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+18:19:09.039675 I (332) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea568).
+18:19:09.047618 I (339) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea568 (SDA=5, SCL=6, ref_count=0)
+18:19:09.056273 I (347) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+18:19:09.065048 I (356) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fceaadc, Speed: 400000 Hz).
+18:19:09.072392 I (367) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+18:19:09.076230 I (372) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+18:19:09.079630 I (376) QMC5883P: QMC5883P Chip ID: 0x80
+18:19:09.089962 I (389) QMC5883P: QMC5883P initialized successfully
+18:19:09.091309 I (390) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+18:19:09.096131 I (391) direcsun: magnetometer: ESP_OK (chip ID 0x80)
+18:19:09.105259 I (396) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fceaba4, Speed: 400000 Hz).
+18:19:09.114120 W (405) i2cdev: [0x77 at 0] I2C op failed (Try 0, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:09.154247 W (454) i2cdev: [0x77 at 0] Retrying operation...
+18:19:09.156181 W (454) i2cdev: [0x77 at 0] I2C op failed (Try 1, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:09.236539 W (536) i2cdev: [0x77 at 0] Retrying operation...
+18:19:09.238531 W (536) i2cdev: [0x77 at 0] I2C op failed (Try 2, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:09.398101 W (698) i2cdev: [0x77 at 0] Retrying operation...
+18:19:09.400299 W (698) i2cdev: [0x77 at 0] I2C op failed (Try 3, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:09.409900 E (700) i2cdev: [0x77 at 0] I2C operation failed after 4 retries. Last error: 264 (ESP_ERR_INVALID_RESPONSE)
+18:19:09.412528 E (710) bmp280: Sensor not found
+18:19:09.417129 E (712) baro: chip ID 0x08 at 0x77, expected 0x58
+18:19:09.423488 I (717) direcsun: barometer: ESP_ERR_INVALID_RESPONSE (chip ID 0x08)
+18:19:09.430795 I (723) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+18:19:09.438578 I (730) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+18:19:09.445690 I (738) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+18:19:09.976768 I (1275) direcsun: gyro z bias seeded at -2.085 deg/s from 265 still samples (range 0.183); accel reference 1.156 g (norm 1.150 to 1.161)
+18:19:09.985035 I (1276) direcsun: boot window done: 501 DShot frames sent, battery 11.87 V over 27 readings
+18:19:09.988915 I (1285) main_task: Returned from app_main()
+18:19:09.994682 I (1285) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+18:19:10.004909 I (1295) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+18:19:11.235482 I (2535) status: s 1 ticks 501 missed 0 (total 0) loop_us_max 764 dev_max_us 2 p99_dev_us 0 dshot sent 1018 dropped 0 imu_invalid 0
+18:19:11.246804 I (2535) status: mode SAFE throttle 0 vbat 9.93 rate -0.05 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:12.247511 I (3547) status: s 2 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 1518 dropped 0 imu_invalid 0
+18:19:12.259245 I (3547) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:13.008522 I (4308) status: s 3 ticks 500 missed 0 (total 0) loop_us_max 761 dev_max_us 1 p99_dev_us 0 dshot sent 2018 dropped 0 imu_invalid 0
+18:19:13.019666 I (4308) status: mode SAFE throttle 0 vbat 9.94 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:14.019322 I (5319) status: s 4 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 1 p99_dev_us 0 dshot sent 2518 dropped 0 imu_invalid 0
+18:19:14.030999 I (5319) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:15.030850 I (6330) status: s 5 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 1 p99_dev_us 0 dshot sent 3018 dropped 0 imu_invalid 0
+18:19:15.041767 I (6330) status: mode SAFE throttle 0 vbat 9.95 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:16.041223 I (7341) status: s 6 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 1 p99_dev_us 0 dshot sent 3518 dropped 0 imu_invalid 0
+18:19:16.052727 I (7341) status: mode SAFE throttle 0 vbat 9.92 rate 0.01 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:17.052327 I (8352) status: s 7 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 1 p99_dev_us 0 dshot sent 4018 dropped 0 imu_invalid 0
+18:19:17.063689 I (8352) status: mode SAFE throttle 0 vbat 9.91 rate -0.05 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:18.063392 I (9363) status: s 8 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 1 p99_dev_us 0 dshot sent 4518 dropped 0 imu_invalid 0
+18:19:18.074836 I (9363) status: mode SAFE throttle 0 vbat 9.91 rate 0.07 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:19.074302 I (10374) status: s 9 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 1 p99_dev_us 0 dshot sent 5018 dropped 0 imu_invalid 0
+18:19:19.085957 I (10374) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:20.010061 W (11309) control: BENCH STALL TEST: blocking the control task for 200 ms; the stall watchdog must reset the board
+18:19:20.091130 I (11386) status: s 10 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 1 p99_dev_us 0 dshot sent 5518 dropped 0 imu_invalid 0
+18:19:20.098204 I (11386) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 166.9 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:20.109192 
+18:19:20.109400 CONTROL_STALL: no control tick finished for 100 ms
+18:19:20.109596 
+18:19:20.109656 
+18:19:20.120408 Backtrace: 0x403842a5:0x3fc9d210 0x40384271:0x3fc9d230 0x403876dc:0x3fc9d250 0x40380638:0x3fc9d280 0x4037b6e5:0x3fc9d2c0 0x4038280b:0x3fca50a0 0x4201eaee:0x3fca50c0 0x4201ff90:0x3fca50e0
+18:19:20.264103 --- 0x403842a5: panic_abort at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_system/panic.c:464
+--- 0x40384271: esp_system_abort at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_system/port/esp_system_chip.c:87
+--- 0x403876dc: direcsun::app::(anonymous namespace)::on_tick_alarm(gptimer_t*, gptimer_alarm_event_data_t const*, void*) at /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/main/control_task.cpp:89
+--- (inlined by) on_tick_alarm at /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/main/control_task.cpp:84
+--- 0x40380638: gptimer_default_isr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_driver_gptimer/src/gptimer.c:476
+--- 0x4037b6e5: _xt_lowint1 at /home/jazoe/.espressif/v6.0/esp-idf/components/xtensa/xtensa_vectors.S:1240
+--- 0x4038280b: xt_utils_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/xtensa/include/xt_utils.h:82
+--- (inlined by) esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:55
+--- 0x4201eaee: esp_vApplicationIdleHook at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_system/freertos_hooks.c:58
+--- 0x4201ff90: prvIdleTask at /home/jazoe/.espressif/v6.0/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:4350
+
+18:19:20.265458 
+18:19:20.265597 
+18:19:20.265651 
+18:19:20.266276 ELF file SHA256: 97129af89
+18:19:20.282912 
+18:19:20.283003 Rebooting...
+18:19:20.283063 ESP-ROM:esp32s3-20210327
+18:19:20.283110 Build:Mar 27 2021
+18:19:20.283142 rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+18:19:20.283187 Saved PC:0x4038280e
+18:19:20.316563 --- 0x4038280e: esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:64
+SPIWP:0xee
+18:19:20.316874 mode:DIO, clock div:1
+18:19:20.316926 load:0x3fce2820,len:0x14f0
+18:19:20.317505 load:0x403c8700,len:0xda0
+18:19:20.334857 --- 0x403c8700: _stext at ??:?
+load:0x403cb700,len:0x2f58
+18:19:20.355292 entry 0x403c8908
+18:19:20.366079 --- 0x403c8908: call_start_cpu0 at /home/jazoe/.espressif/v6.0/esp-idf/components/bootloader/subproject/main/bootloader_start.c:27
+I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+18:19:20.369814 I (24) boot: compile time Oct 10 2026 17:46:09
+18:19:20.370250 I (24) boot: Multicore bootloader
+18:19:20.370823 I (24) boot: chip revision: v0.2
+18:19:20.371534 I (27) boot: efuse block revision: v1.4
+18:19:20.372525 I (30) boot.esp32s3: Boot SPI Speed : 80MHz
+18:19:20.373158 I (34) boot.esp32s3: SPI Mode       : DIO
+18:19:20.375349 I (38) boot.esp32s3: SPI Flash Size : 8MB
+18:19:20.376139 I (42) boot: Enabling RNG early entropy source...
+18:19:20.376997 I (46) boot: Partition Table:
+18:19:20.378014 I (49) boot: ## Label            Usage          Type ST Offset   Length
+18:19:20.378772 I (55) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+18:19:20.379306 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+18:19:20.380389 I (68) boot:  2 factory          factory app      00 00 00010000 00177000
+18:19:20.381148 I (75) boot: End of partition table
+18:19:20.381860 I (78) esp_image: segment 0: paddr=00010020 vaddr=3c030020 size=0fe98h ( 65176) map
+18:19:20.382466 I (97) esp_image: segment 1: paddr=0001fec0 vaddr=3fc9ad00 size=00158h (   344) load
+18:19:20.382934 I (98) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=215e0h (136672) map
+18:19:20.383434 I (126) esp_image: segment 3: paddr=00041608 vaddr=3fc9ae58 size=03d28h ( 15656) load
+18:19:20.383872 I (129) esp_image: segment 4: paddr=00045338 vaddr=40378000 size=12cb8h ( 76984) load
+18:19:20.384292 I (147) esp_image: segment 5: paddr=00057ff8 vaddr=50000004 size=00024h (    36) load
+18:19:20.384970 I (155) boot: Loaded app from partition at offset 0x10000
+18:19:20.385056 I (155) boot: Disabling RNG early entropy source...
+18:19:20.385496 I (165) cpu_start: Multicore app
+18:19:20.386004 I (174) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+18:19:20.386431 I (174) cpu_start: Pro cpu start user code
+18:19:20.386949 I (174) cpu_start: cpu freq: 240000000 Hz
+18:19:20.387465 I (176) app_init: Application information:
+18:19:20.387771 I (180) app_init: Project name:     direcsun
+18:19:20.387837 I (184) app_init: App version:      873b5e3
+18:19:20.388279 I (188) app_init: Compile time:     Oct 10 2026 17:45:55
+18:19:20.390039 I (193) app_init: ELF file SHA256:  97129af89...
+18:19:20.402287 I (197) app_init: ESP-IDF:          v6.0
+18:19:20.402893 I (201) efuse_init: Min chip rev:     v0.0
+18:19:20.403319 I (204) efuse_init: Max chip rev:     v0.99 
+18:19:20.403724 I (208) efuse_init: Chip rev:         v0.2
+18:19:20.404209 I (212) heap_init: Initializing. RAM available for dynamic allocation:
+18:19:20.404715 I (219) heap_init: At 3FCA0A20 len 00048CF0 (291 KiB): RAM
+18:19:20.405358 I (224) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+18:19:20.405875 I (229) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+18:19:20.406512 I (234) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+18:19:20.406880 I (240) spi_flash: detected chip: gd
+18:19:20.407217 I (243) spi_flash: flash io: dio
+18:19:20.407592 I (246) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+18:19:20.408039 I (252) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+18:19:20.408432 I (259) main_task: Started on CPU0
+18:19:20.408779 I (262) main_task: Calling app_main()
+18:19:20.410774 I (275) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+18:19:20.412006 I (275) direcsun: DirecSun flight firmware
+18:19:20.416390 I (277) direcsun: firmware 873b5e3, ESP-IDF v6.0
+18:19:20.422443 I (281) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+18:19:20.427362 I (287) direcsun: flash 8MB configured, 8MB detected
+18:19:20.436598 W (292) direcsun: BENCH BUILD: the stall-watchdog test hook will block the control task 10 s after it starts
+18:19:20.441024 I (301) direcsun: reset reason: panic or abort (4)
+18:19:20.449794 W (306) direcsun: previous reset: CONTROL_STALL watchdog (a control tick did not finish for 100 ms)
+18:19:20.455764 I (315) direcsun: DShot150 zeros on GPIO7 from 35366 us after boot
+18:19:20.460638 W (320) direcsun: parameters reset to defaults (missing)
+18:19:20.466352 I (325) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+18:19:20.476016 I (331) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+18:19:20.483376 I (341) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea568).
+18:19:20.491461 I (348) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea568 (SDA=5, SCL=6, ref_count=0)
+18:19:20.500007 I (356) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+18:19:20.509304 I (365) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fceaadc, Speed: 400000 Hz).
+18:19:20.516431 I (376) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+18:19:20.519928 I (380) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+18:19:20.523337 I (385) QMC5883P: QMC5883P Chip ID: 0x80
+18:19:20.533606 I (398) QMC5883P: QMC5883P initialized successfully
+18:19:20.535180 I (399) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+18:19:20.539734 I (400) direcsun: magnetometer: ESP_OK (chip ID 0x80)
+18:19:20.549134 I (404) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fceaba4, Speed: 400000 Hz).
+18:19:20.557942 W (414) i2cdev: [0x77 at 0] I2C op failed (Try 0, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:20.598285 W (462) i2cdev: [0x77 at 0] Retrying operation...
+18:19:20.602826 W (462) i2cdev: [0x77 at 0] I2C op failed (Try 1, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:20.679494 W (544) i2cdev: [0x77 at 0] Retrying operation...
+18:19:20.681479 W (544) i2cdev: [0x77 at 0] I2C op failed (Try 2, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:20.841250 W (706) i2cdev: [0x77 at 0] Retrying operation...
+18:19:20.843170 W (706) i2cdev: [0x77 at 0] I2C op failed (Try 3, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:20.852955 E (708) i2cdev: [0x77 at 0] I2C operation failed after 4 retries. Last error: 264 (ESP_ERR_INVALID_RESPONSE)
+18:19:20.855734 E (718) bmp280: Sensor not found
+18:19:20.860114 E (720) baro: chip ID 0x08 at 0x77, expected 0x58
+18:19:20.866401 I (725) direcsun: barometer: ESP_ERR_INVALID_RESPONSE (chip ID 0x08)
+18:19:20.873745 I (731) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+18:19:20.881095 I (738) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+18:19:20.888491 I (746) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+18:19:21.414597 I (1275) direcsun: gyro z bias seeded at -2.080 deg/s from 261 still samples (range 0.122); accel reference 1.156 g (norm 1.151 to 1.162)
+18:19:21.420344 I (1276) direcsun: boot window done: 501 DShot frames sent, battery 11.94 V over 27 readings
+18:19:21.426780 I (1285) main_task: Returned from app_main()
+18:19:21.431068 I (1285) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+18:19:21.455198 I (1295) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+18:19:22.670708 I (2535) status: s 1 ticks 501 missed 0 (total 0) loop_us_max 759 dev_max_us 2 p99_dev_us 0 dshot sent 1018 dropped 0 imu_invalid 0
+18:19:22.684226 I (2535) status: mode SAFE throttle 0 vbat 9.90 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:23.681401 I (3546) status: s 2 ticks 500 missed 0 (total 0) loop_us_max 764 dev_max_us 0 p99_dev_us 0 dshot sent 1518 dropped 0 imu_invalid 0
+18:19:23.692701 I (3546) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:24.692984 I (4557) status: s 3 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 2018 dropped 0 imu_invalid 0
+18:19:24.704097 I (4557) status: mode SAFE throttle 0 vbat 9.90 rate 0.01 bias -2.08 tilt 166.7 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:25.453421 I (5318) status: s 4 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 2518 dropped 0 imu_invalid 0
+18:19:25.464927 I (5318) status: mode SAFE throttle 0 vbat 9.89 rate -0.05 bias -2.08 tilt 166.8 psi 0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:26.464361 I (6329) status: s 5 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 3018 dropped 0 imu_invalid 0
+18:19:26.476144 I (6329) status: mode SAFE throttle 0 vbat 9.91 rate -0.05 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:27.476426 I (7341) status: s 6 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 3518 dropped 0 imu_invalid 0
+18:19:27.487832 I (7341) status: mode SAFE throttle 0 vbat 9.89 rate 0.01 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:28.487422 I (8352) status: s 7 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 4018 dropped 0 imu_invalid 0
+18:19:28.498826 I (8352) status: mode SAFE throttle 0 vbat 9.90 rate 0.01 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:29.498245 I (9363) status: s 8 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 4518 dropped 0 imu_invalid 0
+18:19:29.509970 I (9363) status: mode SAFE throttle 0 vbat 9.91 rate 0.01 bias -2.08 tilt 166.7 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:30.509519 I (10374) status: s 9 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 1 p99_dev_us 0 dshot sent 5018 dropped 0 imu_invalid 0
+18:19:30.520671 I (10374) status: mode SAFE throttle 0 vbat 9.89 rate 0.01 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:31.445292 W (11309) control: BENCH STALL TEST: blocking the control task for 200 ms; the stall watchdog must reset the board
+18:19:31.522081 I (11386) status: s 10 ticks 500 missed 0 (total 0) loop_us_max 760 dev_max_us 0 p99_dev_us 0 dshot sent 5518 dropped 0 imu_invalid 0
+18:19:31.533212 I (11386) status: mode SAFE throttle 0 vbat 9.89 rate 0.01 bias -2.08 tilt 166.9 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:31.544325 
+18:19:31.544494 CONTROL_STALL: no control tick finished for 100 ms
+18:19:31.544588 
+18:19:31.544662 
+18:19:31.555287 Backtrace: 0x403842a5:0x3fc9d210 0x40384271:0x3fc9d230 0x403876dc:0x3fc9d250 0x40380638:0x3fc9d280 0x4037b6e5:0x3fc9d2c0 0x4038280b:0x3fca50a0 0x4201eaee:0x3fca50c0 0x4201ff90:0x3fca50e0
+18:19:31.664570 --- 0x403842a5: panic_abort at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_system/panic.c:464
+--- 0x40384271: esp_system_abort at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_system/port/esp_system_chip.c:87
+--- 0x403876dc: direcsun::app::(anonymous namespace)::on_tick_alarm(gptimer_t*, gptimer_alarm_event_data_t const*, void*) at /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/main/control_task.cpp:89
+--- (inlined by) on_tick_alarm at /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.4/firmware/main/control_task.cpp:84
+--- 0x40380638: gptimer_default_isr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_driver_gptimer/src/gptimer.c:476
+--- 0x4037b6e5: _xt_lowint1 at /home/jazoe/.espressif/v6.0/esp-idf/components/xtensa/xtensa_vectors.S:1240
+--- 0x4038280b: xt_utils_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/xtensa/include/xt_utils.h:82
+--- (inlined by) esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:55
+--- 0x4201eaee: esp_vApplicationIdleHook at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_system/freertos_hooks.c:58
+--- 0x4201ff90: prvIdleTask at /home/jazoe/.espressif/v6.0/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:4350
+
+18:19:31.665268 
+18:19:31.665324 
+18:19:31.665358 
+18:19:31.666002 ELF file SHA256: 97129af89
+18:19:31.679571 
+18:19:31.679639 Rebooting...
+18:19:31.679671 ESP-ROM:esp32s3-20210327
+18:19:31.680144 Build:Mar 27 2021
+18:19:31.680594 rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+18:19:31.681060 Saved PC:0x4038280e
+18:19:31.717870 --- 0x4038280e: esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:64
+SPIWP:0xee
+18:19:31.718964 mode:DIO, clock div:1
+18:19:31.719404 load:0x3fce2820,len:0x14f0
+18:19:31.719906 load:0x403c8700,len:0xda0
+18:19:31.738515 --- 0x403c8700: _stext at ??:?
+load:0x403cb700,len:0x2f58
+18:19:31.758277 entry 0x403c8908
+18:19:31.763420 --- 0x403c8908: call_start_cpu0 at /home/jazoe/.espressif/v6.0/esp-idf/components/bootloader/subproject/main/bootloader_start.c:27
+I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+18:19:31.764685 I (24) boot: compile time Oct 10 2026 17:46:09
+18:19:31.765152 I (24) boot: Multicore bootloader
+18:19:31.765688 I (24) boot: chip revision: v0.2
+18:19:31.766306 I (27) boot: efuse block revision: v1.4
+18:19:31.766772 I (30) boot.esp32s3: Boot SPI Speed : 80MHz
+18:19:31.767378 I (34) boot.esp32s3: SPI Mode       : DIO
+18:19:31.767772 I (38) boot.esp32s3: SPI Flash Size : 8MB
+18:19:31.768239 I (42) boot: Enabling RNG early entropy source...
+18:19:31.768640 I (46) boot: Partition Table:
+18:19:31.769033 I (49) boot: ## Label            Usage          Type ST Offset   Length
+18:19:31.769459 I (55) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+18:19:31.769770 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+18:19:31.770098 I (68) boot:  2 factory          factory app      00 00 00010000 00177000
+18:19:31.770701 I (75) boot: End of partition table
+18:19:31.771230 I (78) esp_image: segment 0: paddr=00010020 vaddr=3c030020 size=0fe98h ( 65176) map
+18:19:31.771761 I (97) esp_image: segment 1: paddr=0001fec0 vaddr=3fc9ad00 size=00158h (   344) load
+18:19:31.772240 I (98) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=215e0h (136672) map
+18:19:31.772863 I (126) esp_image: segment 3: paddr=00041608 vaddr=3fc9ae58 size=03d28h ( 15656) load
+18:19:31.773328 I (129) esp_image: segment 4: paddr=00045338 vaddr=40378000 size=12cb8h ( 76984) load
+18:19:31.773790 I (147) esp_image: segment 5: paddr=00057ff8 vaddr=50000004 size=00024h (    36) load
+18:19:31.774244 I (155) boot: Loaded app from partition at offset 0x10000
+18:19:31.775056 I (155) boot: Disabling RNG early entropy source...
+18:19:31.775708 I (165) cpu_start: Multicore app
+18:19:31.776161 I (174) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+18:19:31.776618 I (174) cpu_start: Pro cpu start user code
+18:19:31.777026 I (174) cpu_start: cpu freq: 240000000 Hz
+18:19:31.777439 I (176) app_init: Application information:
+18:19:31.777918 I (180) app_init: Project name:     direcsun
+18:19:31.778334 I (184) app_init: App version:      873b5e3
+18:19:31.778917 I (188) app_init: Compile time:     Oct 10 2026 17:45:55
+18:19:31.779256 I (193) app_init: ELF file SHA256:  97129af89...
+18:19:31.795353 I (197) app_init: ESP-IDF:          v6.0
+18:19:31.795793 I (201) efuse_init: Min chip rev:     v0.0
+18:19:31.796183 I (204) efuse_init: Max chip rev:     v0.99 
+18:19:31.796580 I (208) efuse_init: Chip rev:         v0.2
+18:19:31.796874 I (212) heap_init: Initializing. RAM available for dynamic allocation:
+18:19:31.797213 I (219) heap_init: At 3FCA0A20 len 00048CF0 (291 KiB): RAM
+18:19:31.799578 I (224) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+18:19:31.804611 I (229) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+18:19:31.810097 I (234) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+18:19:31.813261 I (240) spi_flash: detected chip: gd
+18:19:31.815910 I (243) spi_flash: flash io: dio
+18:19:31.822221 I (246) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+18:19:31.829172 I (252) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+18:19:31.831922 I (259) main_task: Started on CPU0
+18:19:31.835458 I (262) main_task: Calling app_main()
+18:19:31.845084 I (275) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+18:19:31.846959 I (275) direcsun: DirecSun flight firmware
+18:19:31.851327 I (277) direcsun: firmware 873b5e3, ESP-IDF v6.0
+18:19:31.857342 I (281) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+18:19:31.862099 I (287) direcsun: flash 8MB configured, 8MB detected
+18:19:31.871619 W (292) direcsun: BENCH BUILD: the stall-watchdog test hook will block the control task 10 s after it starts
+18:19:31.876152 I (301) direcsun: reset reason: panic or abort (4)
+18:19:31.885155 W (306) direcsun: previous reset: CONTROL_STALL watchdog (a control tick did not finish for 100 ms)
+18:19:31.890827 I (315) direcsun: DShot150 zeros on GPIO7 from 35344 us after boot
+18:19:31.895696 W (320) direcsun: parameters reset to defaults (missing)
+18:19:31.901600 I (325) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+18:19:31.910665 I (331) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+18:19:31.918031 I (341) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea568).
+18:19:31.926915 I (348) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea568 (SDA=5, SCL=6, ref_count=0)
+18:19:31.934939 I (356) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+18:19:31.943770 I (365) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fceaadc, Speed: 400000 Hz).
+18:19:31.950784 I (376) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+18:19:31.954648 I (380) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+18:19:31.958863 I (385) QMC5883P: QMC5883P Chip ID: 0x80
+18:19:31.968804 I (398) QMC5883P: QMC5883P initialized successfully
+18:19:31.970105 I (399) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+18:19:31.975450 I (400) direcsun: magnetometer: ESP_OK (chip ID 0x80)
+18:19:31.983903 I (404) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fceaba4, Speed: 400000 Hz).
+18:19:31.993198 W (414) i2cdev: [0x77 at 0] I2C op failed (Try 0, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:32.032302 W (462) i2cdev: [0x77 at 0] Retrying operation...
+18:19:32.034742 W (462) i2cdev: [0x77 at 0] I2C op failed (Try 1, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:32.114217 W (544) i2cdev: [0x77 at 0] Retrying operation...
+18:19:32.116194 W (544) i2cdev: [0x77 at 0] I2C op failed (Try 2, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:32.276008 W (706) i2cdev: [0x77 at 0] Retrying operation...
+18:19:32.278198 W (706) i2cdev: [0x77 at 0] I2C op failed (Try 3, Handle 0x3fceaba4): 264 (ESP_ERR_INVALID_RESPONSE).
+18:19:32.288365 E (708) i2cdev: [0x77 at 0] I2C operation failed after 4 retries. Last error: 264 (ESP_ERR_INVALID_RESPONSE)
+18:19:32.290933 E (718) bmp280: Sensor not found
+18:19:32.295195 E (720) baro: chip ID 0x08 at 0x77, expected 0x58
+18:19:32.301508 I (725) direcsun: barometer: ESP_ERR_INVALID_RESPONSE (chip ID 0x08)
+18:19:32.309836 I (731) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+18:19:32.316073 I (738) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+18:19:32.324346 I (746) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+18:19:32.847293 I (1275) direcsun: gyro z bias seeded at -2.073 deg/s from 261 still samples (range 0.122); accel reference 1.156 g (norm 1.152 to 1.160)
+18:19:32.855004 I (1276) direcsun: boot window done: 501 DShot frames sent, battery 11.83 V over 27 readings
+18:19:32.859124 I (1285) main_task: Returned from app_main()
+18:19:32.864975 I (1285) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+18:19:32.875299 I (1295) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+18:19:34.105501 I (2535) status: s 1 ticks 501 missed 0 (total 0) loop_us_max 759 dev_max_us 2 p99_dev_us 0 dshot sent 1018 dropped 0 imu_invalid 0
+18:19:34.116893 I (2535) status: mode SAFE throttle 0 vbat 9.87 rate 0.00 bias -2.07 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:35.117525 I (3547) status: s 2 ticks 500 missed 0 (total 0) loop_us_max 764 dev_max_us 1 p99_dev_us 0 dshot sent 1518 dropped 0 imu_invalid 0
+18:19:35.128688 I (3547) status: mode SAFE throttle 0 vbat 9.88 rate 0.00 bias -2.08 tilt 166.9 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:35.878306 I (4308) status: s 3 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 1 p99_dev_us 0 dshot sent 2018 dropped 0 imu_invalid 0
+18:19:35.889838 I (4308) status: mode SAFE throttle 0 vbat 9.88 rate 0.06 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:36.889340 I (5319) status: s 4 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 1 p99_dev_us 0 dshot sent 2518 dropped 0 imu_invalid 0
+18:19:36.901055 I (5319) status: mode SAFE throttle 0 vbat 9.88 rate -0.06 bias -2.08 tilt 166.8 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+18:19:37.901254 I (6331) status: s 5 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 1 p99_dev_us 0 dshot sent 3018 dropped 0 imu_invalid 0
+18:19:37.912718 I (6331) status: mode SAFE throttle 0 vbat 9.88 rate 0.01 bias -2.08 tilt 166.7 psi -0.0 wheel 0 latched 0x0040 flags 0x00 baro --
+
+Script done on 2026-10-10 18:19:38-04:00 [COMMAND_EXIT_CODE="124"]

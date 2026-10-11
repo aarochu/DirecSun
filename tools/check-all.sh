@@ -3,8 +3,10 @@
 #
 #   tools/check-all.sh             all checks except the firmware build
 #   tools/check-all.sh --firmware  also build the firmware (needs ESP-IDF v6.0)
-#   tools/check-all.sh --frontend  also check the main UI: npm ci, typecheck, unit
-#                                  and e2e tests (needs Node 22+ and Google Chrome)
+#   tools/check-all.sh --frontend  also check the main UI: npm ci, build, unit and
+#                                  e2e tests for frontend/, then npm ci, typecheck, unit and e2e
+#                                  tests for frontend/ground-station (needs Node 22+ and
+#                                  Google Chrome)
 #
 # Each check with a --selftest mode runs it too: the selftest plants a fault and
 # passes only if the check catches it, so a check that silently passes
@@ -56,6 +58,7 @@ step host-tests-selftest   "$repo_root/tools/host-test.sh" --selftest
 step schema-fixtures       "$python" "$repo_root/tools/check-schema.py"
 step link-tests            "$repo_root/tools/check-link.sh"
 step mock-box-selftest     "$python" "$repo_root/tools/mock-box.py" --selftest
+step calibrate-selftest    "$python" "$repo_root/tools/calibrate.py" --selftest
 step cad-stale             "$python" "$repo_root/tools/check-cad-stale.py"
 step cad-stale-selftest    "$python" "$repo_root/tools/check-cad-stale.py" --selftest
 if [[ "$firmware" -eq 1 ]]; then
@@ -70,10 +73,16 @@ fi
 
 if [[ "$frontend" -eq 1 ]]; then
     npm_in_frontend() { (cd "$repo_root/frontend" && npm "$@"); }
-    step frontend-install   npm_in_frontend ci
-    step frontend-typecheck npm_in_frontend run typecheck
-    step frontend-unit      npm_in_frontend test
-    step frontend-e2e       npm_in_frontend run test:e2e
+    npm_in_ground_station() { (cd "$repo_root/frontend/ground-station" && npm "$@"); }
+    step frontend-install         npm_in_frontend ci
+    step frontend-build           npm_in_frontend run build
+    step frontend-test            npm_in_frontend test
+    step frontend-e2e             npm_in_frontend run test:e2e
+    step frontend-ground-station-install   npm_in_ground_station ci
+    step frontend-demo-bundle     npm_in_frontend run demo:check
+    step frontend-ground-station-typecheck npm_in_ground_station run typecheck
+    step frontend-ground-station-unit      npm_in_ground_station test
+    step frontend-ground-station-e2e       npm_in_ground_station run test:e2e
 fi
 
 echo

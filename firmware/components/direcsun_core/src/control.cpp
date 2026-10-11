@@ -76,16 +76,20 @@ uint32_t CascadeController::flags() const
 
 int CascadeController::throttle(const ControlDemand &demand, const TickInputs &in, const Params &params)
 {
-    const Mode previous_mode = last_mode_;
     last_mode_ = demand.mode;
 
     // Rung 1 whenever the closed loop cannot run: no Hall (or the bench
     // bypass), or no T-5 feed-forward table yet; and MANUAL throttle always.
     const bool manual_throttle = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Throttle;
+    // MANUAL `wheel` sets omega_ref directly; MANUAL `rate` feeds the rate loop
+    // (FD section 13.5). Both run on the closed wheel loop.
+    const bool manual_wheel = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Wheel;
+    const bool manual_rate = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Rate;
     const bool rate_mode = demand.mode == Mode::Ready || demand.mode == Mode::Detumble ||
-                           demand.mode == Mode::Hold || demand.mode == Mode::Slew;
+                           demand.mode == Mode::Hold || demand.mode == Mode::Slew ||
+                           demand.mode == Mode::SunPoint || manual_rate;
     if (!wheel_loop_available(params) || demand.spinup_open_loop || manual_throttle ||
-        (demand.mode != Mode::Spinup && !rate_mode)) {
+        (demand.mode != Mode::Spinup && !rate_mode && !manual_wheel)) {
         closed_loop_ = false;
         wheel_pi_.reset();
         stop_rate_loop();
@@ -97,18 +101,39 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
 
     if (demand.mode == Mode::Spinup) {
         stop_rate_loop();
-        if (!closed_loop_ || previous_mode != Mode::Spinup) {
+        // From SAFE the reference starts at the measured speed. A respin from
+        // READY (R5.3) is already on the closed loop: the reference and the
+        // integrator carry over, so the hand-over is bumpless.
+        if (!closed_loop_) {
             omega_ref_rpm_ = in.wheel_rpm_safe > 0.0f ? in.wheel_rpm_safe : 0.0f;
             wheel_pi_.reset();
         }
         const float target = demand.omega_target_rpm < cap ? demand.omega_target_rpm : cap;
+        // Ramp toward the start speed at the same rate either way, so a respin to
+        // a lower speed is not a step.
+        const float step = kWheelRefRampRpmPerS * dt;
         if (omega_ref_rpm_ < target) {
-            omega_ref_rpm_ += kWheelRefRampRpmPerS * dt;
-            if (omega_ref_rpm_ > target) omega_ref_rpm_ = target;
+            omega_ref_rpm_ = omega_ref_rpm_ + step > target ? target : omega_ref_rpm_ + step;
         } else {
-            omega_ref_rpm_ = target;
+            omega_ref_rpm_ = omega_ref_rpm_ - step < target ? target : omega_ref_rpm_ - step;
         }
-    } else {  // READY, DETUMBLE, HOLD, SLEW: rate loop runs with demand.omega_cmd_dps
+    } else if (manual_wheel) {
+        // omega_ref follows the operator's speed at the ramp rate, clamped to
+        // what the loop can hold (FD section 13.5); the supervisor already
+        // clamped the setpoint to [omega_low, cap].
+        stop_rate_loop();
+        if (!closed_loop_) {
+            omega_ref_rpm_ = clampf(in.wheel_rpm_safe, omega_ref_floor_rpm(params), cap);
+            wheel_pi_.reset(static_cast<float>(demand.previous_throttle) - ff_throttle(params, omega_ref_rpm_));
+        }
+        const float target = clampf(demand.manual_wheel_rpm, omega_ref_floor_rpm(params), cap);
+        const float step = kWheelRefRampRpmPerS * dt;
+        if (omega_ref_rpm_ < target) {
+            omega_ref_rpm_ = omega_ref_rpm_ + step > target ? target : omega_ref_rpm_ + step;
+        } else {
+            omega_ref_rpm_ = omega_ref_rpm_ - step < target ? target : omega_ref_rpm_ - step;
+        }
+    } else {  // READY, DETUMBLE, HOLD, SLEW, SUN_POINT, MANUAL rate: rate loop runs with demand.omega_cmd_dps
         if (!closed_loop_) {
             // Bumpless start from open-loop throttle: reference at the measured
             // speed, integrator at the last throttle minus the feed-forward.

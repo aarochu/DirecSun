@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "event",
+  "seq": 41,
+  "t_ms": 92400,
+  "event": "mode",
+  "mode": "READY",
+  "cause": "sun_invalid"
+}

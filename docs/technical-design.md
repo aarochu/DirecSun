@@ -833,6 +833,8 @@ If a phase stalls, the demo degrades in this order rather than failing: sun poin
 
 ### 11.5 Team and ownership
 
+**Superseded on 2026-10-10 by `WORKSTREAMS.md`** (logged as I-21 in §12.4). Julian owns printing, measuring, bench electronics, firmware, and the wire contract. Aaron owns the frontend (`frontend/`, the main UI) and integration testing. The table below is the original plan, kept for history.
+
 Julian owns firmware and the gates, and Aaron owns the physical build and the ground station page. Adam left the team on Oct 10; the ground station work is cut down and reassigned below. The split follows experience and keeps Julian off the critical path wherever someone else can do the work: the control law and the safety interlocks are the highest-risk work and go to the person with the most firmware experience, while the printing, soldering, and assembly that would otherwise queue behind Julian run in parallel.
 
 | Person | Owns | Work items | Tests | Why |
@@ -1029,6 +1031,7 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-18 | Hall bench bypass added: `hall_installed` false only from bench mode, never persisted; open-loop Spin-up; wheel-speed interlocks suspended; compile-time throttle ceiling 400. The Hall-silent threshold becomes the parameter `hall_expect_throttle`, and the latch release rules are stated | Owner decision 2026-10-10 (repository Set 3, R3.6); the Hall magnets cannot be mounted until Set 2; the low-limit feed-forward value does not exist before T-5 | 6.6, 6.7 |
 | I-19 | Hold and Slew no longer need the magnetometer: until Set 5 calibrates it, they use the gyro-only heading for relative moves, Slew targets are relative to the last `zero_heading`, `zero_heading` is accepted in Safe and Ready only, and every telemetry frame carries `HEADING_GYRO` | Owner decision 2026-10-10 (repository Set 4, R4.2): the main UI's judge sequence needs Hold and Slew before the magnetometer calibration (T-9) exists, and lasts only 5 to 6 s | 6.4, 6.6 |
 | I-20 | T-16 commands its slew from Ready, not from Hold | The mode machine (Section 6.6) enters Slew from Ready only, and a finished Slew returns to Ready, so "from Hold" could not be run as written (repository Set 4, R4.3) | 9.3 |
+| I-21 | Team ownership moved to `WORKSTREAMS.md`. Julian: printing, measuring, bench electronics, firmware, wire contract. Aaron: `frontend/` (the main UI) and integration testing. The original table is kept as history | Owner decision 2026-10-10, after Aaron's frontend became the main UI (PR #1) | 11.5 |
 
 **Main UI contract, 2026-10-10**
 

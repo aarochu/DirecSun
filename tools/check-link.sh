@@ -28,8 +28,10 @@ status=$?
 set -e
 cat "$out/node-test.txt"
 
-tests="$(sed -nE 's/^ℹ tests ([0-9]+)$/\1/p' "$out/node-test.txt")"
-failed="$(sed -nE 's/^ℹ fail ([0-9]+)$/\1/p' "$out/node-test.txt")"
+# Node's spec reporter prints "ℹ tests N"; its TAP reporter (the default off a
+# terminal on Node 22) prints "# tests N". Read either.
+tests="$(sed -nE 's/^(ℹ|#) tests ([0-9]+)$/\2/p' "$out/node-test.txt")"
+failed="$(sed -nE 's/^(ℹ|#) fail ([0-9]+)$/\2/p' "$out/node-test.txt")"
 if [[ -z "$tests" || -z "$failed" ]]; then
     echo "check-link: no node --test summary in $out/node-test.txt" >&2
     exit 1

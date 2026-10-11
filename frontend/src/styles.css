@@ -1,0 +1,918 @@
+@import '../shared/styles/global.css';
+
+/* Landing page. Tokens, type, buttons and section headings come from
+   shared/styles/tokens.css and shared/styles/global.css; this file adds the scroll-story
+   layout: a fixed canvas, a fixed copy overlay, and empty chapters for length. */
+
+:root {
+  --light: 0;
+  --paper: #ecebe8;
+  --overlay-col: min(520px, 42vw);
+}
+
+html {
+  background: color-mix(in srgb, var(--paper) calc(var(--light) * 100%), var(--bg));
+}
+
+body {
+  background: transparent;
+  overflow-x: clip;
+}
+
+/* Light chapter (control loop), borrowed from animejs.com's light section. */
+
+.is-light {
+  --text: #111111;
+  --text-secondary: #333333;
+  --text-muted: #5b5b5b;
+  --line: #c9c7c2;
+  --line-soft: #d6d4cf;
+  --line-strong: #8a8884;
+  --button-primary: #111111;
+  --button-primary-hover: #262626;
+}
+
+.is-light .button--primary {
+  color: #fafafa;
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 12px;
+  background: var(--surface-elevated);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Logo: drawn dark on white, so it is inverted on the dark theme. */
+
+.wordmark__logo,
+.loader__logo,
+.site-footer__logo {
+  filter: invert(calc(1 - var(--light)));
+  mix-blend-mode: screen;
+}
+
+.is-light .wordmark__logo {
+  mix-blend-mode: multiply;
+}
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 20px;
+  background: var(--bg);
+}
+
+.loader__logo {
+  width: 132px;
+  height: 132px;
+  animation: loader-pulse 1.6s var(--ease) infinite alternate;
+}
+
+@keyframes loader-pulse {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Header (as src/styles/landing.css) */
+
+.site-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  height: var(--header-height);
+  border-bottom: 1px solid transparent;
+  transition:
+    background-color 200ms var(--ease),
+    border-color 200ms var(--ease);
+}
+
+.site-header.is-solid {
+  background: color-mix(in srgb, var(--paper) calc(var(--light) * 100%), var(--bg));
+  border-bottom-color: var(--line-soft);
+}
+
+.site-header,
+.site-header .button,
+.site-header .wordmark,
+.site-header .site-nav__link {
+  font-family: var(--font-mono);
+}
+
+.site-header__inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wordmark__logo {
+  width: 30px;
+  height: 30px;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.site-nav__link {
+  display: none;
+  padding-block: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 120ms var(--ease);
+}
+
+.site-nav__link:hover {
+  color: var(--text);
+}
+
+@media (min-width: 640px) {
+  .site-nav__link {
+    display: inline;
+  }
+}
+
+.header-cta {
+  min-height: 36px;
+  padding: 0 12px;
+  gap: 6px;
+}
+
+.header-cta svg,
+.button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Stage */
+
+.stage-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+}
+
+/* Star field behind the hero (src/stars.ts); the stage canvas is transparent. */
+.stars-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+  pointer-events: none;
+}
+
+[data-webgl='false'] .stage-canvas,
+[data-webgl='false'] .stars-canvas {
+  display: none;
+}
+
+.story {
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  color: var(--text);
+}
+
+.panel {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(var(--header-height) + 5vh);
+  width: var(--overlay-col);
+  opacity: 0;
+  transition: color 300ms var(--ease);
+}
+
+@media (min-width: 1280px) {
+  .panel {
+    left: max(var(--gutter), calc((100vw - var(--content-width)) / 2));
+  }
+}
+
+/* Hero */
+
+.panel--hero {
+  top: 50%;
+  translate: 0 -55%;
+  width: min(640px, 46vw);
+}
+
+.hero__title {
+  margin-top: 16px;
+  font-size: clamp(44px, 6vw, 84px);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.hero__title .fuzzy {
+  display: block;
+  max-width: none;
+}
+
+.hero__lead {
+  margin-top: 24px;
+  max-width: 520px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.hero__actions {
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.panel--hero-foot {
+  top: auto;
+  bottom: 28px;
+  width: auto;
+  right: var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  white-space: pre-wrap;
+}
+
+.hero__scroll {
+  white-space: nowrap;
+}
+
+/* System */
+
+.panel--system .section-heading__title,
+.panel--hw-head .section-heading__title,
+.panel--control .section-heading__title,
+.panel--ground .section-heading__title {
+  font-size: clamp(30px, 3.6vw, 48px);
+}
+
+.panel--system .section-heading__intro {
+  margin-top: 16px;
+  font-size: 15px;
+}
+
+/* System flowchart (src/flow.ts). Colours: power uses the accent, sensing the
+   success green, control the text colour, so each path keeps one colour. */
+.flow {
+  --flow-power: var(--accent);
+  --flow-sense: var(--success);
+  --flow-control: var(--text);
+  margin-top: 20px;
+}
+
+.flow__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.flow__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 150ms var(--ease),
+    color 150ms var(--ease),
+    background-color 150ms var(--ease);
+}
+
+.flow__chip i {
+  display: block;
+  width: 14px;
+  height: 2px;
+  background: var(--chip);
+}
+
+.flow__chip--power {
+  --chip: var(--flow-power);
+}
+
+.flow__chip--sense {
+  --chip: var(--flow-sense);
+}
+
+.flow__chip--control {
+  --chip: var(--flow-control);
+}
+
+.flow__chip:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.flow__chip[aria-pressed='true'] {
+  color: var(--text);
+  border-color: var(--chip);
+  background: color-mix(in srgb, var(--chip) 12%, transparent);
+}
+
+.flow__chip:focus-visible,
+.flow__node:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.flow__scroll {
+  margin-top: 12px;
+}
+
+.flow__svg {
+  display: block;
+  width: 100%;
+  max-height: calc(100vh - 360px);
+  overflow: visible;
+  font-family: var(--font-mono);
+}
+
+.flow__node {
+  cursor: pointer;
+  outline: none;
+}
+
+.flow__node-body {
+  transition: opacity 200ms var(--ease);
+}
+
+.flow__node rect {
+  fill: rgb(0 0 0 / 0.72);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  transition:
+    stroke 150ms var(--ease),
+    fill 150ms var(--ease);
+}
+
+.flow__node--core rect {
+  stroke: var(--text-muted);
+}
+
+.flow__name {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.flow__sub {
+  font-size: 9.5px;
+  fill: var(--text-muted);
+}
+
+.flow__job {
+  font-size: 9.5px;
+  fill: var(--text-secondary);
+}
+
+.flow__node--core .flow__name {
+  font-size: 14px;
+}
+
+.flow__node:hover rect,
+.flow__node:focus-visible rect,
+.flow__node.is-current rect {
+  stroke: var(--text);
+  fill: rgb(30 30 30 / 0.9);
+}
+
+.flow__edge {
+  --edge: var(--text-muted);
+  color: var(--edge);
+  transition: opacity 200ms var(--ease);
+}
+
+.flow__edge--power {
+  --edge: var(--flow-power);
+}
+
+.flow__edge--sense {
+  --edge: var(--flow-sense);
+}
+
+.flow__edge--control {
+  --edge: var(--flow-control);
+}
+
+.flow__line,
+.flow__pulse {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+}
+
+.flow__edge--physical .flow__line {
+  stroke-dasharray: 2 4;
+}
+
+.flow__pulse {
+  stroke-width: 2.25;
+  stroke-dasharray: 4 10;
+  opacity: 0;
+}
+
+.flow__label {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  fill: var(--edge);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+/* Focus: everything not on the path steps back. */
+.flow__svg.has-focus .flow__edge:not(.is-on),
+.flow__svg.has-focus .flow__node:not(.is-on) .flow__node-body {
+  opacity: 0.18;
+}
+
+.flow__edge.is-on .flow__pulse {
+  opacity: 1;
+  animation: flow-run 0.9s linear infinite;
+}
+
+@keyframes flow-run {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+.flow__list {
+  display: none;
+}
+
+.flow__item {
+  list-style: none;
+}
+
+.flow__item-button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flow__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.flow__item-head b {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.flow__item-head span,
+.flow__item-links {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.flow__item-links {
+  display: block;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.flow__item-button:focus-visible,
+.flow__item-button[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+
+.flow__list.has-focus .flow__item-button:not(.is-on) {
+  opacity: 0.4;
+}
+
+.flow__detail {
+  margin-top: 12px;
+  min-height: 3em;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.flow__detail b {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Hardware */
+
+.panel--hw-head {
+  top: 50%;
+  translate: 0 -50%;
+}
+
+.panel--part {
+  width: min(440px, 36vw);
+  max-height: calc(100vh - var(--header-height) - 8vh - 72px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 20px 20px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgb(10 10 10 / 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.part__index {
+  font-size: 10px;
+}
+
+.accent {
+  color: var(--accent);
+}
+
+.part__name {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.part__media {
+  display: none;
+  margin-top: 14px;
+}
+
+[data-webgl='false'] .part__media {
+  display: block;
+}
+
+.part__bullets {
+  margin-top: 12px;
+  padding-left: 19px;
+  list-style: disc;
+  font-size: 14px;
+  line-height: 1.42;
+  color: var(--text-secondary);
+}
+
+.part__bullets li + li {
+  margin-top: 6px;
+}
+
+.part__bullets li::marker {
+  color: var(--accent);
+}
+
+/* Component rail, after animejs.com's toolbox labels */
+
+.panel--rail {
+  left: auto;
+  right: var(--gutter);
+  width: 230px;
+  text-align: right;
+}
+
+.panel--rail ol {
+  margin-top: 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.panel--rail a {
+  display: block;
+  padding: 3px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  opacity: 0.82;
+  text-shadow: 0 0 8px rgb(0 0 0 / 0.9);
+  transition:
+    opacity 200ms var(--ease),
+    color 200ms var(--ease);
+}
+
+.panel--rail a span {
+  margin-right: 8px;
+}
+
+.panel--rail a:hover,
+.panel--rail a[aria-current] {
+  opacity: 1;
+  color: var(--text);
+}
+
+.panel--rail a[aria-current] span {
+  color: var(--accent);
+}
+
+/* Control loop */
+
+.control-steps {
+  margin-top: 28px;
+  display: grid;
+  gap: 18px;
+}
+
+.control-step {
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+
+.control-step__title {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.control-step__body {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Ground station */
+
+.panel--ground .section-heading__intro {
+  margin-top: 16px;
+}
+
+.ground__cta {
+  margin-top: 28px;
+}
+
+.panel--readout {
+  top: auto;
+  left: auto;
+  right: var(--gutter);
+  bottom: 96px;
+  width: auto;
+  text-align: right;
+}
+
+.panel--readout p:first-child {
+  font-size: 10px;
+}
+
+.readout__value {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.readout__value small {
+  margin-left: 10px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+/* Chapter ticker, after animejs.com's bottom-right progress bar */
+
+.ticker {
+  position: fixed;
+  right: var(--gutter);
+  bottom: 28px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-2) calc((1 - var(--light)) * 100%), #dddbd6);
+  pointer-events: none;
+}
+
+.ticker__label {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.ticker__track {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  align-items: center;
+  height: 12px;
+}
+
+.ticker__track i {
+  display: block;
+  width: 1px;
+  height: 8px;
+  background: var(--text-muted);
+  opacity: 0.45;
+}
+
+.ticker__track i:nth-child(5n + 1) {
+  height: 12px;
+  opacity: 0.8;
+}
+
+.ticker__head {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  width: 2px;
+  height: 16px;
+  background: var(--accent);
+}
+
+/* Footer slides over the fixed stage at the end. */
+
+.site-footer {
+  position: relative;
+  z-index: 30;
+  padding-block: 48px 56px;
+  border-top: 1px solid var(--line-soft);
+  background: var(--bg);
+}
+
+.site-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.site-footer__logo {
+  width: 72px;
+  height: 72px;
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.site-footer__links a:hover {
+  color: var(--text);
+}
+
+/* Narrow screens: model in the top half, copy in a sheet below it. */
+
+@media (max-width: 899px) {
+  .panel,
+  .panel--hero,
+  .panel--part,
+  .panel--hw-head {
+    top: auto;
+    bottom: 76px;
+    left: var(--gutter);
+    right: var(--gutter);
+    width: auto;
+    translate: none;
+    max-height: 52vh;
+    overflow-y: auto;
+  }
+
+  .panel--hero {
+    bottom: 96px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .panel--system,
+  .panel--control,
+  .panel--ground {
+    padding: 16px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--paper) calc(var(--light) * 100%), rgb(0 0 0 / 0.8));
+    backdrop-filter: blur(8px);
+  }
+
+  .panel--system {
+    max-height: 62vh;
+  }
+
+  .flow__scroll {
+    display: none;
+  }
+
+  .flow__list {
+    display: grid;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .panel--hero {
+    padding: 56px 0 8px;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.82) 55%, rgb(0 0 0 / 0));
+  }
+
+  .panel--readout {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  .panel--hero-foot {
+    bottom: 64px;
+    max-height: none;
+  }
+
+  .hero__scroll,
+  .panel--rail {
+    display: none;
+  }
+
+  .panel--readout {
+    top: calc(var(--header-height) + 12px);
+    bottom: auto;
+    left: auto;
+    max-height: none;
+  }
+
+  .readout__value {
+    font-size: 30px;
+  }
+
+  .ticker {
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: 16px;
+    justify-content: space-between;
+  }
+
+  .ticker__track {
+    gap: 3px;
+  }
+
+  .ticker__track i:nth-child(n + 31) {
+    display: none;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader__logo,
+  .flow__edge.is-on .flow__pulse {
+    animation: none;
+  }
+}

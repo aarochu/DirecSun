@@ -31,6 +31,10 @@ constexpr uint32_t kManualMinIntervalMs = 50;   // at most 20 Hz
 constexpr float kManualRateLimitDps = 90.0f;
 // Open-loop SPINUP throttle ramp (R3.7 uses the same constant), DShot units/s.
 constexpr int kSpinupThrottleRampPerS = 200;
+// SUN_POINT drops to READY after the sun angle has been invalid this long (FD 11.4).
+constexpr uint32_t kSunLostMs = 500;
+// `respin` accepts a start speed within [omega_low + margin, cap - margin] (FD 13.4).
+constexpr float kRespinMarginRpm = 200.0f;
 
 // tlm flags owned by the supervisor (FD section 15.3).
 enum Flag : uint32_t {
@@ -41,6 +45,8 @@ enum Flag : uint32_t {
     kFlagWheelStep = 1u << 4,        // bench wheel_step hold: rate and attitude loops suspended (R3.8)
     kFlagMomentumSaturated = 1u << 5,  // omega_ref on a limit in the direction the loop needs (R3.9)
     kFlagHeadingGyro = 1u << 6,        // the heading is gyro-only and relative to the last zero_heading (R4.2)
+    kFlagFfTableMissing = 1u << 7,     // Hall fitted but no ff_table: the wheel loop, HOLD, SLEW, SUN_POINT and MANUAL wheel/rate are unavailable
+    kFlagRateGainReduced = 1u << 8,    // rate_gain_scale below 1: the rate loop runs at reduced gain (after a reset it is 0.2)
 };
 
 // Wire name of a single flag bit, or nullptr.
@@ -60,7 +66,10 @@ ThrottleBand manual_throttle_band(const Params &params);
 struct TickInputs {
     uint32_t tick = 0;                          // TickClock::now(): one per 2 ms alarm, missed ticks included
     float rate_dps = 0.0f;                      // box rate estimate
-    double heading_deg = 0.0;                   // continuous gyro heading from the estimator, internal frame (R4.2)
+    double heading_deg = 0.0;                   // continuous heading from the estimator, internal frame (R4.2)
+    bool heading_mag_fusing = false;            // the heading includes the compass (R5.1); false: HEADING_GYRO
+    bool sun_valid = false;                     // calibrated, bright enough, inside the table (R5.4)
+    float sun_deg = 0.0f;                       // sun angle, counter-clockwise positive, internal frame
     float wheel_rpm_safe = 0.0f;                // median wheel speed (interlocks, spin-up)
     float wheel_rpm_fast = 0.0f;                // latest-period wheel speed (controllers)
     uint32_t hall_edge_age_ms = UINT32_MAX;     // since the last valid Hall edge
@@ -131,8 +140,9 @@ struct TickOutputs {
 
 class Supervisor {
 public:
-    // `params` comes from load_params(); if that reset them, the first step()
-    // posts the PARAMS_RESET notice with `reset_detail`.
+    // `params` comes from load_params(); if that reset them, step() posts the
+    // PARAMS_RESET notice with `reset_detail` to each client the first time it
+    // speaks.
     explicit Supervisor(const Params &params, bool params_were_reset = false, const char *reset_detail = "");
 
     void step(const TickInputs &in, ThrottleController &controller, TickOutputs &out);
@@ -187,12 +197,20 @@ private:
     SlewProfile slew_;
     uint32_t slew_settled_ticks_ = 0;
 
+    // SUN_POINT (R5.4): ticks the sun angle has been invalid in a row.
+    uint32_t sun_invalid_ticks_ = 0;
+
     // zero_heading (R4.2): the estimator's continuous heading at the last zero.
     // The supervisor keeps the offset, not the estimator, so a zero and a HOLD
     // or SLEW in the same tick use the same reference.
     double heading_zero_deg_ = 0.0;
 
-    bool pending_reset_notice_ = false;
+    // PARAMS_RESET: every client that speaks hears it once (see step()).
+    static constexpr std::size_t kResetNotifiedMax = 8;
+    bool reset_notice_due(uint32_t client);
+    bool params_reset_ = false;
+    uint32_t reset_notified_[kResetNotifiedMax] = {};
+    std::size_t reset_notified_count_ = 0;
     const char *reset_detail_ = "";
 };
 

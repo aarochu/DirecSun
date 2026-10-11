@@ -1,0 +1,194 @@
+Script started on 2026-10-10 17:19:51-04:00 [COMMAND="timeout 25 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.3-hall-and-adc/tools/idf.sh -C test_apps/hall_adc -p /dev/ttyACM0 monitor" <not executed on terminal>]
+Executing action: monitor
+Running idf_monitor in directory /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.3-hall-and-adc/firmware/test_apps/hall_adc
+Executing "/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python /home/jazoe/.espressif/v6.0/esp-idf/tools/idf_monitor.py -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.3-hall-and-adc/firmware/test_apps/hall_adc/build/direcsun_hall_adc.elf /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.3-hall-and-adc/firmware/test_apps/hall_adc/build/bootloader/bootloader.elf -m '/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python' '/home/jazoe/.espressif/v6.0/esp-idf/tools/idf.py' '-C' 'test_apps/hall_adc' '-p' '/dev/ttyACM0'"...
+--- esp-idf-monitor 1.9.0 on /dev/ttyACM0 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+I (104) esp_image: segment 3: paddr=00020020 vaddr=42000020 sizeESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40378a56
+--- 0x40378a56: esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:64
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xda0
+--- 0x403c8700: _stext at ??:?
+load:0x403cb700,len:0x2f58
+entry 0x403c8908
+--- 0x403c8908: call_start_cpu0 at /home/jazoe/.espressif/v6.0/esp-idf/components/bootloader/subproject/main/bootloader_start.c:27
+I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+I (24) boot: compile time Oct 10 2026 17:17:29
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 8MB
+I (42) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (49) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+I (75) boot: End of partition table
+I (79) esp_image: segment 0: paddr=00010020 vaddr=3c020020 size=092b8h ( 37560) map
+I (93) esp_image: segment 1: paddr=000192e0 vaddr=3fc8f700 size=0306ch ( 12396) load
+I (96) esp_image: segment 2: paddr=0001c354 vaddr=40374000 size=03cc4h ( 15556) load
+I (104) esp_image: segment 3: paddr=00020020 vaddr=42000020 size=13228h ( 78376) map
+I (122) esp_image: segment 4: paddr=00033250 vaddr=40377cc4 size=07978h ( 31096) load
+I (130) esp_image: segment 5: paddr=0003abd0 vaddr=50000000 size=00024h (    36) load
+I (135) boot: Loaded app from partition at offset 0x10000
+I (135) boot: Disabling RNG early entropy source...
+I (148) cpu_start: Multicore app
+I (156) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (157) cpu_start: Pro cpu start user code
+I (157) cpu_start: cpu freq: 240000000 Hz
+I (158) app_init: Application information:
+I (162) app_init: Project name:     direcsun_hall_adc
+I (167) app_init: App version:      872f624
+I (171) app_init: Compile time:     Oct 10 2026 17:17:23
+I (176) app_init: ELF file SHA256:  7530285ed...
+I (180) app_init: ESP-IDF:          v6.0
+I (184) efuse_init: Min chip rev:     v0.0
+I (188) efuse_init: Max chip rev:     v0.99 
+I (192) efuse_init: Chip rev:         v0.2
+I (196) heap_init: Initializing. RAM available for dynamic allocation:
+I (202) heap_init: At 3FC931D0 len 00056540 (345 KiB): RAM
+I (207) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (212) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (217) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (223) spi_flash: detected chip: gd
+I (226) spi_flash: flash io: dio
+I (229) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (235) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (242) main_task: Started on CPU0
+I (245) main_task: Calling app_main()
+I (248) main_task: Returned from app_main()
+I (249) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+I (258) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+I (266) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+I (273) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+I (280) hall_adc: running on core 1: wave a magnet (south pole) past the A1104
+I (289) hall_adc: vbat 10.85 V (avg 10.85 V over 1, pin 1957 mV) | sun A 1330 mV, B 966 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (489) hall_adc: vbat 10.60 V (avg 10.51 V over 11, pin 1912 mV) | sun A 1331 mV, B 952 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (689) hall_adc: vbat 10.65 V (avg 10.51 V over 21, pin 1921 mV) | sun A 1308 mV, B 948 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (889) hall_adc: vbat 10.64 V (avg 10.49 V over 31, pin 1918 mV) | sun A 1308 mV, B 953 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (1089) hall_adc: vbat 10.65 V (avg 10.48 V over 41, pin 1921 mV) | sun A 1305 mV, B 952 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (1289) hall_adc: vbat 10.68 V (avg 10.47 V over 50, pin 1925 mV) | sun A 1305 mV, B 953 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (1489) hall_adc: vbat 10.66 V (avg 10.46 V over 50, pin 1923 mV) | sun A 1306 mV, B 969 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (1689) hall_adc: vbat 10.54 V (avg 10.44 V over 50, pin 1900 mV) | sun A 1305 mV, B 952 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (1889) hall_adc: vbat 10.60 V (avg 10.43 V over 50, pin 1911 mV) | sun A 1308 mV, B 947 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (2089) hall_adc: vbat 10.53 V (avg 10.42 V over 50, pin 1898 mV) | sun A 1336 mV, B 948 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (2289) hall_adc: vbat 10.65 V (avg 10.41 V over 50, pin 1921 mV) | sun A 1306 mV, B 943 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (2489) hall_adc: vbat 10.54 V (avg 10.40 V over 50, pin 1900 mV) | sun A 1305 mV, B 947 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (2689) hall_adc: vbat 10.58 V (avg 10.39 V over 50, pin 1907 mV) | sun A 1305 mV, B 946 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (2889) hall_adc: vbat 10.51 V (avg 10.38 V over 50, pin 1896 mV) | sun A 1303 mV, B 947 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (3089) hall_adc: vbat 10.48 V (avg 10.38 V over 50, pin 1889 mV) | sun A 1295 mV, B 943 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (3289) hall_adc: vbat 10.48 V (avg 10.37 V over 50, pin 1889 mV) | sun A 1305 mV, B 942 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (3489) hall_adc: vbat 10.50 V (avg 10.36 V over 50, pin 1894 mV) | sun A 1300 mV, B 943 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (3689) hall_adc: vbat 10.58 V (avg 10.36 V over 50, pin 1908 mV) | sun A 1300 mV, B 946 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (3889) hall_adc: vbat 10.53 V (avg 10.35 V over 50, pin 1898 mV) | sun A 1300 mV, B 942 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (4089) hall_adc: vbat 10.51 V (avg 10.34 V over 50, pin 1895 mV) | sun A 1292 mV, B 942 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (4289) hall_adc: vbat 10.49 V (avg 10.34 V over 50, pin 1891 mV) | sun A 1286 mV, B 934 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (4489) hall_adc: vbat 10.51 V (avg 10.34 V over 50, pin 1895 mV) | sun A 1290 mV, B 934 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (4689) hall_adc: vbat 10.47 V (avg 10.34 V over 50, pin 1888 mV) | sun A 1283 mV, B 955 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (4889) hall_adc: vbat 10.46 V (avg 10.34 V over 50, pin 1886 mV) | sun A 1292 mV, B 943 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (5089) hall_adc: vbat 10.45 V (avg 10.34 V over 50, pin 1884 mV) | sun A 1286 mV, B 918 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (5289) hall_adc: vbat 10.50 V (avg 10.33 V over 50, pin 1894 mV) | sun A 1279 mV, B 934 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (5489) hall_adc: vbat 10.47 V (avg 10.32 V over 50, pin 1888 mV) | sun A 1274 mV, B 934 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (5689) hall_adc: vbat 10.45 V (avg 10.32 V over 50, pin 1884 mV) | sun A 1274 mV, B 939 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (5889) hall_adc: vbat 10.54 V (avg 10.31 V over 50, pin 1900 mV) | sun A 1275 mV, B 928 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (6089) hall_adc: vbat 10.50 V (avg 10.31 V over 50, pin 1894 mV) | sun A 1268 mV, B 929 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (6289) hall_adc: vbat 10.53 V (avg 10.30 V over 50, pin 1898 mV) | sun A 1268 mV, B 919 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (6489) hall_adc: vbat 10.55 V (avg 10.31 V over 50, pin 1902 mV) | sun A 1266 mV, B 928 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (6689) hall_adc: vbat 10.45 V (avg 10.30 V over 50, pin 1884 mV) | sun A 1275 mV, B 925 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (6889) hall_adc: vbat 10.48 V (avg 10.30 V over 50, pin 1889 mV) | sun A 1261 mV, B 931 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (7089) hall_adc: vbat 10.48 V (avg 10.29 V over 50, pin 1889 mV) | sun A 1265 mV, B 928 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (7289) hall_adc: vbat 10.51 V (avg 10.29 V over 50, pin 1895 mV) | sun A 1263 mV, B 921 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (7489) hall_adc: vbat 10.44 V (avg 10.28 V over 50, pin 1882 mV) | sun A 1257 mV, B 928 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (7689) hall_adc: vbat 10.46 V (avg 10.27 V over 50, pin 1886 mV) | sun A 1253 mV, B 917 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (7889) hall_adc: vbat 10.48 V (avg 10.28 V over 50, pin 1889 mV) | sun A 1250 mV, B 928 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (8089) hall_adc: vbat 10.57 V (avg 10.28 V over 50, pin 1906 mV) | sun A 1250 mV, B 916 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (8289) hall_adc: vbat 10.45 V (avg 10.28 V over 50, pin 1884 mV) | sun A 1268 mV, B 922 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (8489) hall_adc: vbat 10.49 V (avg 10.27 V over 50, pin 1891 mV) | sun A 1248 mV, B 928 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (8689) hall_adc: vbat 10.51 V (avg 10.27 V over 50, pin 1896 mV) | sun A 1242 mV, B 916 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (8889) hall_adc: vbat 10.53 V (avg 10.27 V over 50, pin 1898 mV) | sun A 1241 mV, B 916 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (9089) hall_adc: vbat 10.51 V (avg 10.26 V over 50, pin 1896 mV) | sun A 1239 mV, B 935 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (9289) hall_adc: vbat 10.50 V (avg 10.26 V over 50, pin 1894 mV) | sun A 1239 mV, B 909 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (9489) hall_adc: vbat 10.44 V (avg 10.26 V over 50, pin 1882 mV) | sun A 1229 mV, B 916 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (9689) hall_adc: vbat 10.45 V (avg 10.26 V over 50, pin 1884 mV) | sun A 1229 mV, B 905 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (9889) hall_adc: vbat 10.45 V (avg 10.26 V over 50, pin 1884 mV) | sun A 1225 mV, B 902 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (10089) hall_adc: vbat 10.44 V (avg 10.26 V over 50, pin 1882 mV) | sun A 1217 mV, B 900 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (10289) hall_adc: vbat 10.41 V (avg 10.26 V over 50, pin 1877 mV) | sun A 1213 mV, B 898 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (10489) hall_adc: vbat 10.47 V (avg 10.25 V over 50, pin 1888 mV) | sun A 1209 mV, B 891 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (10689) hall_adc: vbat 10.40 V (avg 10.25 V over 50, pin 1875 mV) | sun A 1196 mV, B 891 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (10889) hall_adc: vbat 10.45 V (avg 10.24 V over 50, pin 1884 mV) | sun A 1188 mV, B 902 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (11089) hall_adc: vbat 10.40 V (avg 10.24 V over 50, pin 1875 mV) | sun A 1178 mV, B 878 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (11289) hall_adc: vbat 10.41 V (avg 10.23 V over 50, pin 1878 mV) | sun A 1166 mV, B 868 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (11489) hall_adc: vbat 10.40 V (avg 10.22 V over 50, pin 1875 mV) | sun A 1163 mV, B 898 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (11689) hall_adc: vbat 10.39 V (avg 10.21 V over 50, pin 1874 mV) | sun A 1148 mV, B 861 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (11889) hall_adc: vbat 10.37 V (avg 10.21 V over 50, pin 1870 mV) | sun A 1143 mV, B 872 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (12089) hall_adc: vbat 10.37 V (avg 10.21 V over 50, pin 1870 mV) | sun A 1141 mV, B 859 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (12289) hall_adc: vbat 10.39 V (avg 10.21 V over 50, pin 1874 mV) | sun A 1151 mV, B 864 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (12489) hall_adc: vbat 10.39 V (avg 10.21 V over 50, pin 1874 mV) | sun A 1122 mV, B 849 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (12689) hall_adc: vbat 10.41 V (avg 10.21 V over 50, pin 1878 mV) | sun A 1118 mV, B 858 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (12889) hall_adc: vbat 10.40 V (avg 10.21 V over 50, pin 1875 mV) | sun A 1118 mV, B 842 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (13089) hall_adc: vbat 10.41 V (avg 10.21 V over 50, pin 1878 mV) | sun A 1115 mV, B 841 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (13289) hall_adc: vbat 10.39 V (avg 10.21 V over 50, pin 1874 mV) | sun A 1096 mV, B 837 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (13489) hall_adc: vbat 10.44 V (avg 10.22 V over 50, pin 1882 mV) | sun A 1101 mV, B 835 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (13689) hall_adc: vbat 10.37 V (avg 10.22 V over 50, pin 1870 mV) | sun A 1087 mV, B 835 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (13889) hall_adc: vbat 10.40 V (avg 10.21 V over 50, pin 1875 mV) | sun A 1089 mV, B 828 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (14089) hall_adc: vbat 10.43 V (avg 10.21 V over 50, pin 1880 mV) | sun A 1059 mV, B 820 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (14289) hall_adc: vbat 10.37 V (avg 10.21 V over 50, pin 1870 mV) | sun A 1057 mV, B 827 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (14489) hall_adc: vbat 10.37 V (avg 10.20 V over 50, pin 1870 mV) | sun A 1050 mV, B 826 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (14689) hall_adc: vbat 10.41 V (avg 10.20 V over 50, pin 1878 mV) | sun A 1035 mV, B 803 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (14889) hall_adc: vbat 10.37 V (avg 10.20 V over 50, pin 1870 mV) | sun A 1022 mV, B 797 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (15089) hall_adc: vbat 10.34 V (avg 10.20 V over 50, pin 1864 mV) | sun A 1008 mV, B 790 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (15289) hall_adc: vbat 10.41 V (avg 10.21 V over 50, pin 1878 mV) | sun A 1003 mV, B 803 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (15489) hall_adc: vbat 10.44 V (avg 10.21 V over 50, pin 1882 mV) | sun A 996 mV, B 786 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (15689) hall_adc: vbat 10.39 V (avg 10.21 V over 50, pin 1874 mV) | sun A 987 mV, B 780 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (15889) hall_adc: vbat 10.15 V (avg 10.21 V over 50, pin 1831 mV) | sun A 872 mV, B 725 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (16089) hall_adc: vbat 10.28 V (avg 10.21 V over 50, pin 1854 mV) | sun A 849 mV, B 713 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (16289) hall_adc: vbat 10.16 V (avg 10.20 V over 50, pin 1833 mV) | sun A 846 mV, B 715 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (16489) hall_adc: vbat 10.27 V (avg 10.20 V over 50, pin 1852 mV) | sun A 846 mV, B 712 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (16689) hall_adc: vbat 10.16 V (avg 10.19 V over 50, pin 1833 mV) | sun A 837 mV, B 718 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (16889) hall_adc: vbat 10.27 V (avg 10.19 V over 50, pin 1852 mV) | sun A 837 mV, B 713 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (17089) hall_adc: vbat 10.17 V (avg 10.19 V over 50, pin 1834 mV) | sun A 834 mV, B 708 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (17289) hall_adc: vbat 10.23 V (avg 10.19 V over 50, pin 1844 mV) | sun A 834 mV, B 706 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (17489) hall_adc: vbat 10.16 V (avg 10.18 V over 50, pin 1833 mV) | sun A 834 mV, B 715 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (17689) hall_adc: vbat 10.27 V (avg 10.19 V over 50, pin 1852 mV) | sun A 837 mV, B 722 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (17889) hall_adc: vbat 10.19 V (avg 10.19 V over 50, pin 1838 mV) | sun A 856 mV, B 713 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (18089) hall_adc: vbat 10.19 V (avg 10.19 V over 50, pin 1837 mV) | sun A 822 mV, B 710 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (18289) hall_adc: vbat 10.17 V (avg 10.19 V over 50, pin 1834 mV) | sun A 822 mV, B 708 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (18489) hall_adc: vbat 10.26 V (avg 10.19 V over 50, pin 1850 mV) | sun A 820 mV, B 705 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (18689) hall_adc: vbat 10.19 V (avg 10.19 V over 50, pin 1838 mV) | sun A 822 mV, B 703 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (18889) hall_adc: vbat 10.15 V (avg 10.20 V over 50, pin 1830 mV) | sun A 814 mV, B 698 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (19089) hall_adc: vbat 10.14 V (avg 10.19 V over 50, pin 1829 mV) | sun A 809 mV, B 695 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (19289) hall_adc: vbat 10.16 V (avg 10.19 V over 50, pin 1833 mV) | sun A 802 mV, B 689 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (19489) hall_adc: vbat 10.19 V (avg 10.19 V over 50, pin 1838 mV) | sun A 799 mV, B 689 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (19689) hall_adc: vbat 10.19 V (avg 10.19 V over 50, pin 1838 mV) | sun A 799 mV, B 705 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (19889) hall_adc: vbat 10.10 V (avg 10.19 V over 50, pin 1822 mV) | sun A 794 mV, B 692 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (20089) hall_adc: vbat 10.19 V (avg 10.19 V over 50, pin 1837 mV) | sun A 794 mV, B 685 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (20289) hall_adc: vbat 10.15 V (avg 10.19 V over 50, pin 1831 mV) | sun A 794 mV, B 689 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (20489) hall_adc: vbat 10.23 V (avg 10.19 V over 50, pin 1845 mV) | sun A 794 mV, B 687 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (20689) hall_adc: vbat 10.16 V (avg 10.19 V over 50, pin 1833 mV) | sun A 793 mV, B 680 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (20889) hall_adc: vbat 10.15 V (avg 10.18 V over 50, pin 1831 mV) | sun A 786 mV, B 697 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (21089) hall_adc: vbat 10.09 V (avg 10.18 V over 50, pin 1819 mV) | sun A 784 mV, B 682 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (21289) hall_adc: vbat 10.11 V (avg 10.17 V over 50, pin 1824 mV) | sun A 785 mV, B 682 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (21489) hall_adc: vbat 10.09 V (avg 10.17 V over 50, pin 1820 mV) | sun A 781 mV, B 682 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (21689) hall_adc: vbat 10.14 V (avg 10.16 V over 50, pin 1828 mV) | sun A 784 mV, B 689 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (21889) hall_adc: vbat 10.16 V (avg 10.16 V over 50, pin 1833 mV) | sun A 785 mV, B 678 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (22089) hall_adc: vbat 10.19 V (avg 10.16 V over 50, pin 1837 mV) | sun A 780 mV, B 684 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (22289) hall_adc: vbat 10.19 V (avg 10.16 V over 50, pin 1837 mV) | sun A 775 mV, B 678 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (22489) hall_adc: vbat 10.09 V (avg 10.16 V over 50, pin 1819 mV) | sun A 780 mV, B 679 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (22689) hall_adc: vbat 10.11 V (avg 10.16 V over 50, pin 1823 mV) | sun A 775 mV, B 677 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (22889) hall_adc: vbat 10.15 V (avg 10.15 V over 50, pin 1831 mV) | sun A 654 mV, B 607 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (23089) hall_adc: vbat 10.18 V (avg 10.16 V over 50, pin 1835 mV) | sun A 685 mV, B 614 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (23289) hall_adc: vbat 10.11 V (avg 10.16 V over 50, pin 1824 mV) | sun A 685 mV, B 635 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (23489) hall_adc: vbat 10.08 V (avg 10.16 V over 50, pin 1818 mV) | sun A 679 mV, B 601 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (23689) hall_adc: vbat 10.07 V (avg 10.17 V over 50, pin 1816 mV) | sun A 677 mV, B 608 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (23889) hall_adc: vbat 10.09 V (avg 10.16 V over 50, pin 1819 mV) | sun A 678 mV, B 618 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+I (24089) hall_adc: vbat 10.16 V (avg 10.16 V over 50, pin 1833 mV) | sun A 746 mV, B 625 mV | hall isr 0, accepted 0, glitches 0 | speed fast 0, safe 0 rpm
+
+Script done on 2026-10-10 17:20:16-04:00 [COMMAND_EXIT_CODE="124"]

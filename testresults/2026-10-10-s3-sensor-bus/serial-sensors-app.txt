@@ -1,0 +1,518 @@
+Script started on 2026-10-10 17:17:43-04:00 [COMMAND="timeout 75 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.2-sensor-bus/tools/idf.sh -C test_apps/sensors -p /dev/ttyACM0 monitor" <not executed on terminal>]
+Executing action: monitor
+Running idf_monitor in directory /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.2-sensor-bus/firmware/test_apps/sensors
+Executing "/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python /home/jazoe/.espressif/v6.0/esp-idf/tools/idf_monitor.py -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.2-sensor-bus/firmware/test_apps/sensors/build/direcsun_sensors.elf /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/hw-R3.2-sensor-bus/firmware/test_apps/sensors/build/bootloader/bootloader.elf -m '/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python' '/home/jazoe/.espressif/v6.0/esp-idf/tools/idf.py' '-C' 'test_apps/sensors' '-p' '/dev/ttyACM0'"...
+--- esp-idf-monitor 1.9.0 on /dev/ttyACM0 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+I (102) esp_image: segment 3: paddr=00020020 vaddr=42000020 sizeESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40378bf2
+--- 0x40378bf2: esp_cpu_wait_for_intr at /home/jazoe/.espressif/v6.0/esp-idf/components/esp_hw_support/cpu.c:64
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xda0
+--- 0x403c8700: _stext at ??:?
+load:0x403cb700,len:0x2f58
+entry 0x403c8908
+--- 0x403c8908: call_start_cpu0 at /home/jazoe/.espressif/v6.0/esp-idf/components/bootloader/subproject/main/bootloader_start.c:27
+I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+I (24) boot: compile time Oct 10 2026 17:16:55
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 8MB
+I (42) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (49) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+I (75) boot: End of partition table
+I (79) esp_image: segment 0: paddr=00010020 vaddr=3c020020 size=0bbbch ( 48060) map
+I (95) esp_image: segment 1: paddr=0001bbe4 vaddr=3fc8fa00 size=02fdch ( 12252) load
+I (98) esp_image: segment 2: paddr=0001ebc8 vaddr=40374000 size=01450h (  5200) load
+I (102) esp_image: segment 3: paddr=00020020 vaddr=42000020 size=15f10h ( 89872) map
+I (124) esp_image: segment 4: paddr=00035f38 vaddr=40375450 size=0a510h ( 42256) load
+I (134) esp_image: segment 5: paddr=00040450 vaddr=50000000 size=00024h (    36) load
+I (140) boot: Loaded app from partition at offset 0x10000
+I (140) boot: Disabling RNG early entropy source...
+I (152) cpu_start: Multicore app
+I (160) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (161) cpu_start: Pro cpu start user code
+I (161) cpu_start: cpu freq: 240000000 Hz
+I (163) app_init: Application information:
+I (166) app_init: Project name:     direcsun_sensors
+I (171) app_init: App version:      fa407e5
+I (175) app_init: Compile time:     Oct 10 2026 17:16:38
+I (180) app_init: ELF file SHA256:  bcf039efd...
+I (184) app_init: ESP-IDF:          v6.0
+I (188) efuse_init: Min chip rev:     v0.0
+I (192) efuse_init: Max chip rev:     v0.99 
+I (196) efuse_init: Chip rev:         v0.2
+I (200) heap_init: Initializing. RAM available for dynamic allocation:
+I (206) heap_init: At 3FC935D0 len 00056140 (344 KiB): RAM
+I (211) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (216) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (222) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (228) spi_flash: detected chip: gd
+I (230) spi_flash: flash io: dio
+I (233) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (239) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (246) main_task: Started on CPU0
+I (249) main_task: Calling app_main()
+I (252) sensors: R3.2 sensor bring-up
+I (256) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+I (265) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fce9b14).
+I (272) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fce9b14 (SDA=5, SCL=6, ref_count=0)
+I (280) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+I (289) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fcea09c, Speed: 400000 Hz).
+I (301) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+I (305) sensors: probe: MPU-6050 WHO_AM_I 0x68 (expect 0x68): OK
+I (311) QMC5883P: QMC5883P Chip ID: 0x80
+I (324) QMC5883P: QMC5883P initialized successfully
+I (325) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+I (326) sensors: probe: QMC5883P chip ID 0x80 (expect 0x80): OK
+I (332) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fcea164, Speed: 400000 Hz).
+I (345) baro: BMP280 chip ID 0x58 at 0x77, 400000 Hz SCL
+I (345) sensors: probe: BMP280 chip ID 0x58 at 0x77 (expect 0x58): OK
+I (352) main_task: Returned from app_main()
+I (552) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.025 +0.871 | mag raw  -1301   +518  -2794 | baro ok 27.50 C 67479 Pa
+I (754) sensors: gyro dps x    -1.40 y    +0.85 z    -2.01 | accel g +0.033 -0.024 +0.871 | mag raw  -1306   +523  -2793 | baro ok 27.50 C 67479 Pa
+I (956) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.032 -0.025 +0.871 | mag raw  -1311   +526  -2804 | baro ok 27.50 C 67479 Pa
+I (1158) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.033 -0.026 +0.870 | mag raw  -1309   +523  -2794 | baro ok 27.50 C 67479 Pa
+I (1360) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.027 +0.871 | mag raw  -1305   +529  -2791 | baro ok 24.68 C 102681 Pa
+I (1362) sensors: summary t=1s | imu reads 500/s invalid 0 burst us min 452 med 453 max 997 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (1576) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.032 -0.026 +0.873 | mag raw  -1312   +535  -2792 | baro ok 24.68 C 102681 Pa
+I (1778) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.035 -0.024 +0.874 | mag raw  -1300   +520  -2797 | baro ok 24.68 C 102681 Pa
+I (1980) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.871 | mag raw  -1301   +524  -2796 | baro ok 24.68 C 102681 Pa
+I (2182) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.023 +0.870 | mag raw  -1309   +523  -2797 | baro ok 24.68 C 102681 Pa
+I (2384) sensors: gyro dps x    -1.40 y    +0.79 z    -2.01 | accel g +0.035 -0.025 +0.870 | mag raw  -1313   +527  -2802 | baro ok 24.68 C 102683 Pa
+I (2386) sensors: summary t=2s | imu reads 500/s invalid 0 burst us min 452 med 453 max 599 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (2600) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.035 -0.025 +0.870 | mag raw  -1302   +528  -2790 | baro ok 24.68 C 102683 Pa
+I (2802) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.872 | mag raw  -1305   +527  -2796 | baro ok 24.68 C 102683 Pa
+I (3004) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.872 | mag raw  -1307   +530  -2801 | baro ok 24.68 C 102683 Pa
+I (3206) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.032 -0.027 +0.868 | mag raw  -1311   +524  -2796 | baro ok 24.68 C 102683 Pa
+I (3408) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.869 | mag raw  -1309   +529  -2796 | baro ok 24.68 C 102681 Pa
+I (3410) sensors: summary t=3s | imu reads 500/s invalid 0 burst us min 452 med 453 max 609 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (3624) sensors: gyro dps x    -1.46 y    +0.73 z    -2.13 | accel g +0.032 -0.026 +0.870 | mag raw  -1304   +532  -2792 | baro ok 24.68 C 102681 Pa
+I (3826) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.869 | mag raw  -1303   +527  -2806 | baro ok 24.68 C 102681 Pa
+I (4028) sensors: gyro dps x    -1.52 y    +0.85 z    -2.07 | accel g +0.036 -0.025 +0.869 | mag raw  -1315   +525  -2804 | baro ok 24.68 C 102681 Pa
+I (4230) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1303   +526  -2786 | baro ok 24.68 C 102681 Pa
+I (4432) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1303   +522  -2797 | baro ok 24.69 C 102683 Pa
+I (4434) sensors: summary t=4s | imu reads 500/s invalid 0 burst us min 452 med 453 max 609 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (4648) sensors: gyro dps x    -1.52 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.868 | mag raw  -1298   +527  -2794 | baro ok 24.69 C 102683 Pa
+I (4850) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.032 -0.023 +0.870 | mag raw  -1310   +532  -2798 | baro ok 24.69 C 102683 Pa
+I (5052) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.035 -0.026 +0.868 | mag raw  -1308   +528  -2790 | baro ok 24.69 C 102683 Pa
+I (5254) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.024 +0.868 | mag raw  -1300   +527  -2793 | baro ok 24.69 C 102683 Pa
+I (5456) sensors: gyro dps x    -1.46 y    +0.85 z    -2.01 | accel g +0.036 -0.024 +0.871 | mag raw  -1309   +533  -2797 | baro ok 24.68 C 102683 Pa
+I (5458) sensors: summary t=5s | imu reads 500/s invalid 0 burst us min 452 med 453 max 609 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (5672) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.036 -0.024 +0.873 | mag raw  -1309   +526  -2795 | baro ok 24.68 C 102683 Pa
+I (5874) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.023 +0.871 | mag raw  -1308   +533  -2796 | baro ok 24.68 C 102683 Pa
+I (6076) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.033 -0.027 +0.871 | mag raw  -1307   +523  -2793 | baro ok 24.68 C 102683 Pa
+I (6278) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.867 | mag raw  -1300   +524  -2794 | baro ok 24.68 C 102683 Pa
+I (6480) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.032 -0.024 +0.868 | mag raw  -1307   +537  -2789 | baro ok 24.68 C 102678 Pa
+I (6482) sensors: summary t=6s | imu reads 500/s invalid 0 burst us min 452 med 453 max 616 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (6696) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.023 +0.870 | mag raw  -1301   +521  -2796 | baro ok 24.68 C 102678 Pa
+I (6898) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.026 +0.870 | mag raw  -1309   +529  -2802 | baro ok 24.68 C 102678 Pa
+I (7100) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.871 | mag raw  -1312   +521  -2794 | baro ok 24.68 C 102678 Pa
+I (7302) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.871 | mag raw  -1313   +525  -2791 | baro ok 24.68 C 102678 Pa
+I (7504) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.870 | mag raw  -1308   +523  -2795 | baro ok 24.68 C 102679 Pa
+I (7506) sensors: summary t=7s | imu reads 500/s invalid 0 burst us min 453 med 453 max 612 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (7720) sensors: gyro dps x    -1.46 y    +0.73 z    -2.13 | accel g +0.033 -0.024 +0.870 | mag raw  -1308   +524  -2805 | baro ok 24.68 C 102679 Pa
+I (7922) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1307   +527  -2808 | baro ok 24.68 C 102679 Pa
+I (8124) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.033 -0.025 +0.869 | mag raw  -1312   +523  -2799 | baro ok 24.68 C 102679 Pa
+I (8326) sensors: gyro dps x    -1.40 y    +0.79 z    -2.01 | accel g +0.033 -0.024 +0.871 | mag raw  -1304   +525  -2799 | baro ok 24.68 C 102679 Pa
+I (8528) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1306   +526  -2803 | baro ok 24.70 C 102682 Pa
+I (8530) sensors: summary t=8s | imu reads 500/s invalid 0 burst us min 453 med 453 max 613 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (8744) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.873 | mag raw  -1306   +529  -2797 | baro ok 24.70 C 102682 Pa
+I (8946) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.023 +0.870 | mag raw  -1309   +528  -2793 | baro ok 24.70 C 102682 Pa
+I (9148) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.034 -0.023 +0.874 | mag raw  -1307   +522  -2790 | baro ok 24.70 C 102682 Pa
+I (9350) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.871 | mag raw  -1309   +521  -2802 | baro ok 24.70 C 102682 Pa
+I (9552) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.868 | mag raw  -1308   +529  -2801 | baro ok 24.68 C 102680 Pa
+I (9554) sensors: summary t=9s | imu reads 500/s invalid 0 burst us min 452 med 453 max 612 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (9768) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.026 +0.870 | mag raw  -1311   +529  -2796 | baro ok 24.68 C 102680 Pa
+I (9970) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.032 -0.025 +0.866 | mag raw  -1306   +525  -2793 | baro ok 24.68 C 102680 Pa
+I (10172) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.027 +0.874 | mag raw  -1304   +525  -2789 | baro ok 24.68 C 102680 Pa
+I (10374) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.032 -0.025 +0.869 | mag raw  -1306   +525  -2800 | baro ok 24.69 C 102683 Pa
+I (10376) sensors: summary t=10s | imu reads 500/s invalid 0 burst us min 452 med 453 max 614 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (10590) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.034 -0.024 +0.869 | mag raw  -1310   +517  -2799 | baro ok 24.69 C 102683 Pa
+I (10792) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.025 +0.871 | mag raw  -1306   +527  -2800 | baro ok 24.69 C 102683 Pa
+I (10994) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.026 +0.870 | mag raw  -1305   +530  -2796 | baro ok 24.69 C 102683 Pa
+I (11196) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.032 -0.026 +0.874 | mag raw  -1310   +524  -2806 | baro ok 24.69 C 102683 Pa
+I (11398) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.869 | mag raw  -1305   +525  -2800 | baro ok 24.69 C 102684 Pa
+I (11400) sensors: summary t=11s | imu reads 500/s invalid 0 burst us min 453 med 453 max 610 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (11614) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.870 | mag raw  -1308   +526  -2792 | baro ok 24.69 C 102684 Pa
+I (11816) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.032 -0.026 +0.871 | mag raw  -1308   +530  -2808 | baro ok 24.69 C 102684 Pa
+I (12018) sensors: gyro dps x    -1.46 y    +0.85 z    -2.01 | accel g +0.033 -0.025 +0.870 | mag raw  -1310   +527  -2795 | baro ok 24.69 C 102684 Pa
+I (12220) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.021 +0.871 | mag raw  -1307   +525  -2793 | baro ok 24.69 C 102684 Pa
+I (12422) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.869 | mag raw  -1309   +524  -2796 | baro ok 24.69 C 102680 Pa
+I (12424) sensors: summary t=12s | imu reads 500/s invalid 0 burst us min 453 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (12638) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.869 | mag raw  -1307   +527  -2794 | baro ok 24.69 C 102680 Pa
+I (12840) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.872 | mag raw  -1306   +531  -2807 | baro ok 24.69 C 102680 Pa
+I (13042) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.869 | mag raw  -1295   +529  -2782 | baro ok 24.69 C 102680 Pa
+I (13244) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.024 +0.874 | mag raw  -1304   +531  -2792 | baro ok 24.69 C 102680 Pa
+I (13446) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.034 -0.024 +0.868 | mag raw  -1300   +528  -2787 | baro ok 24.70 C 102686 Pa
+I (13448) sensors: summary t=13s | imu reads 500/s invalid 0 burst us min 452 med 453 max 624 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (13662) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.031 -0.025 +0.870 | mag raw  -1298   +530  -2792 | baro ok 24.70 C 102686 Pa
+I (13864) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.870 | mag raw  -1302   +526  -2804 | baro ok 24.70 C 102686 Pa
+I (14066) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.033 -0.024 +0.870 | mag raw  -1310   +526  -2804 | baro ok 24.70 C 102686 Pa
+I (14268) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.034 -0.025 +0.870 | mag raw  -1301   +521  -2798 | baro ok 24.70 C 102686 Pa
+I (14470) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.870 | mag raw  -1301   +525  -2803 | baro ok 24.70 C 102686 Pa
+I (14472) sensors: summary t=14s | imu reads 500/s invalid 0 burst us min 453 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (14686) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.022 +0.873 | mag raw  -1305   +532  -2807 | baro ok 24.70 C 102686 Pa
+I (14888) sensors: gyro dps x    -1.34 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.871 | mag raw  -1311   +524  -2806 | baro ok 24.70 C 102686 Pa
+I (15090) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.036 -0.024 +0.870 | mag raw  -1302   +525  -2787 | baro ok 24.70 C 102686 Pa
+I (15292) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.872 | mag raw  -1305   +523  -2800 | baro ok 24.70 C 102686 Pa
+I (15494) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.034 -0.025 +0.872 | mag raw  -1302   +529  -2789 | baro ok 24.70 C 102683 Pa
+I (15496) sensors: summary t=15s | imu reads 500/s invalid 0 burst us min 453 med 453 max 624 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (15710) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.025 +0.870 | mag raw  -1303   +528  -2793 | baro ok 24.70 C 102683 Pa
+I (15912) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.032 -0.024 +0.870 | mag raw  -1306   +527  -2804 | baro ok 24.70 C 102683 Pa
+I (16114) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.866 | mag raw  -1309   +523  -2786 | baro ok 24.70 C 102683 Pa
+I (16316) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.025 +0.871 | mag raw  -1309   +524  -2794 | baro ok 24.70 C 102683 Pa
+I (16518) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.873 | mag raw  -1309   +530  -2803 | baro ok 24.70 C 102686 Pa
+I (16520) sensors: summary t=16s | imu reads 500/s invalid 0 burst us min 452 med 453 max 623 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (16734) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.025 +0.872 | mag raw  -1303   +520  -2807 | baro ok 24.70 C 102686 Pa
+I (16936) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.025 +0.869 | mag raw  -1308   +530  -2802 | baro ok 24.70 C 102686 Pa
+I (17138) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.872 | mag raw  -1311   +528  -2795 | baro ok 24.70 C 102686 Pa
+I (17340) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.026 +0.871 | mag raw  -1311   +527  -2807 | baro ok 24.70 C 102686 Pa
+I (17542) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.867 | mag raw  -1310   +526  -2802 | baro ok 24.70 C 102681 Pa
+I (17544) sensors: summary t=17s | imu reads 500/s invalid 0 burst us min 452 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (17758) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.024 +0.870 | mag raw  -1306   +525  -2807 | baro ok 24.70 C 102681 Pa
+I (17960) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.868 | mag raw  -1314   +527  -2801 | baro ok 24.70 C 102681 Pa
+I (18162) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.031 -0.026 +0.870 | mag raw  -1301   +525  -2803 | baro ok 24.70 C 102681 Pa
+I (18364) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1305   +528  -2794 | baro ok 24.70 C 102679 Pa
+I (18366) sensors: summary t=18s | imu reads 500/s invalid 0 burst us min 452 med 453 max 620 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (18580) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.869 | mag raw  -1306   +522  -2801 | baro ok 24.70 C 102679 Pa
+I (18782) sensors: gyro dps x    -1.34 y    +0.85 z    -2.07 | accel g +0.034 -0.027 +0.870 | mag raw  -1315   +518  -2799 | baro ok 24.70 C 102679 Pa
+I (18984) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.035 -0.024 +0.870 | mag raw  -1307   +528  -2800 | baro ok 24.70 C 102679 Pa
+I (19186) sensors: gyro dps x    -1.40 y    +0.85 z    -2.01 | accel g +0.032 -0.024 +0.868 | mag raw  -1313   +529  -2799 | baro ok 24.70 C 102679 Pa
+I (19388) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.871 | mag raw  -1306   +524  -2803 | baro ok 24.70 C 102683 Pa
+I (19390) sensors: summary t=19s | imu reads 500/s invalid 0 burst us min 452 med 453 max 627 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (19604) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.034 -0.026 +0.872 | mag raw  -1303   +526  -2785 | baro ok 24.70 C 102683 Pa
+I (19806) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.030 -0.023 +0.870 | mag raw  -1302   +527  -2794 | baro ok 24.70 C 102683 Pa
+I (20008) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.034 -0.025 +0.867 | mag raw  -1307   +522  -2800 | baro ok 24.70 C 102683 Pa
+I (20210) sensors: gyro dps x    -1.52 y    +0.85 z    -2.07 | accel g +0.034 -0.025 +0.870 | mag raw  -1306   +522  -2790 | baro ok 24.70 C 102683 Pa
+I (20412) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.869 | mag raw  -1312   +532  -2799 | baro ok 24.70 C 102683 Pa
+I (20414) sensors: summary t=20s | imu reads 500/s invalid 0 burst us min 452 med 453 max 626 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (20628) sensors: gyro dps x    -1.34 y    +0.85 z    -2.07 | accel g +0.032 -0.025 +0.870 | mag raw  -1307   +527  -2806 | baro ok 24.70 C 102683 Pa
+I (20830) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.025 +0.867 | mag raw  -1303   +522  -2801 | baro ok 24.70 C 102683 Pa
+I (21032) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.024 +0.871 | mag raw  -1308   +526  -2807 | baro ok 24.70 C 102683 Pa
+I (21234) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.869 | mag raw  -1311   +527  -2812 | baro ok 24.70 C 102683 Pa
+I (21436) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1303   +527  -2790 | baro ok 24.71 C 102684 Pa
+I (21438) sensors: summary t=21s | imu reads 500/s invalid 0 burst us min 452 med 453 max 628 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (21652) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.026 +0.871 | mag raw  -1302   +523  -2806 | baro ok 24.71 C 102684 Pa
+I (21854) sensors: gyro dps x    -1.34 y    +0.91 z    -2.07 | accel g +0.034 -0.026 +0.869 | mag raw  -1305   +521  -2796 | baro ok 24.71 C 102684 Pa
+I (22056) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.872 | mag raw  -1305   +521  -2790 | baro ok 24.71 C 102684 Pa
+I (22258) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.035 -0.025 +0.871 | mag raw  -1308   +528  -2790 | baro ok 24.71 C 102684 Pa
+I (22460) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.868 | mag raw  -1303   +526  -2799 | baro ok 24.71 C 102684 Pa
+I (22462) sensors: summary t=22s | imu reads 500/s invalid 0 burst us min 453 med 453 max 626 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (22676) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.032 -0.025 +0.870 | mag raw  -1308   +520  -2786 | baro ok 24.71 C 102684 Pa
+I (22878) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.031 -0.026 +0.872 | mag raw  -1302   +523  -2806 | baro ok 24.71 C 102684 Pa
+I (23080) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.025 +0.869 | mag raw  -1300   +534  -2795 | baro ok 24.71 C 102684 Pa
+I (23282) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.869 | mag raw  -1300   +527  -2802 | baro ok 24.71 C 102684 Pa
+I (23484) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.032 -0.023 +0.870 | mag raw  -1304   +526  -2809 | baro ok 24.71 C 102689 Pa
+I (23486) sensors: summary t=23s | imu reads 500/s invalid 0 burst us min 453 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (23700) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.872 | mag raw  -1306   +527  -2794 | baro ok 24.71 C 102689 Pa
+I (23902) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.023 +0.872 | mag raw  -1310   +533  -2786 | baro ok 24.71 C 102689 Pa
+I (24104) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.035 -0.025 +0.868 | mag raw  -1306   +526  -2806 | baro ok 24.71 C 102689 Pa
+I (24306) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.034 -0.024 +0.870 | mag raw  -1303   +525  -2807 | baro ok 24.71 C 102689 Pa
+I (24508) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.025 +0.869 | mag raw  -1298   +522  -2795 | baro ok 24.72 C 102687 Pa
+I (24510) sensors: summary t=24s | imu reads 500/s invalid 0 burst us min 452 med 453 max 624 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (24724) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1307   +530  -2791 | baro ok 24.72 C 102687 Pa
+I (24926) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.024 +0.869 | mag raw  -1308   +531  -2800 | baro ok 24.72 C 102687 Pa
+I (25128) sensors: gyro dps x    -1.46 y    +0.79 z    -2.01 | accel g +0.034 -0.025 +0.867 | mag raw  -1308   +526  -2798 | baro ok 24.72 C 102687 Pa
+I (25330) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.032 -0.024 +0.867 | mag raw  -1310   +522  -2799 | baro ok 24.72 C 102687 Pa
+I (25532) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.023 +0.869 | mag raw  -1303   +527  -2794 | baro ok 24.71 C 102687 Pa
+I (25534) sensors: summary t=25s | imu reads 500/s invalid 0 burst us min 452 med 453 max 629 | imu total errors 0 slow 0 bus_resets 0 | mag 195/s errors 0 ovfl 0
+I (25748) sensors: gyro dps x    -1.52 y    +0.85 z    -2.13 | accel g +0.036 -0.023 +0.870 | mag raw  -1300   +521  -2802 | baro ok 24.71 C 102687 Pa
+I (25950) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.031 -0.025 +0.871 | mag raw  -1308   +531  -2793 | baro ok 24.71 C 102687 Pa
+I (26152) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.025 +0.872 | mag raw  -1306   +528  -2803 | baro ok 24.71 C 102687 Pa
+I (26354) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.870 | mag raw  -1302   +523  -2796 | baro ok 24.71 C 102687 Pa
+I (26356) sensors: summary t=26s | imu reads 500/s invalid 0 burst us min 452 med 453 max 626 | imu total errors 0 slow 0 bus_resets 0 | mag 192/s errors 0 ovfl 0
+I (26570) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.033 -0.026 +0.868 | mag raw  -1304   +524  -2793 | baro ok 24.71 C 102685 Pa
+I (26772) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.032 -0.025 +0.874 | mag raw  -1308   +527  -2794 | baro ok 24.71 C 102685 Pa
+I (26974) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.031 -0.022 +0.870 | mag raw  -1303   +527  -2799 | baro ok 24.71 C 102685 Pa
+I (27176) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.028 +0.873 | mag raw  -1308   +520  -2801 | baro ok 24.71 C 102685 Pa
+I (27378) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.027 +0.870 | mag raw  -1308   +527  -2799 | baro ok 24.71 C 102680 Pa
+I (27380) sensors: summary t=27s | imu reads 500/s invalid 0 burst us min 453 med 453 max 613 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (27594) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.022 +0.872 | mag raw  -1306   +534  -2801 | baro ok 24.71 C 102680 Pa
+I (27796) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.871 | mag raw  -1304   +521  -2795 | baro ok 24.71 C 102680 Pa
+I (27998) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.034 -0.024 +0.869 | mag raw  -1309   +534  -2795 | baro ok 24.71 C 102680 Pa
+I (28200) sensors: gyro dps x    -1.34 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.871 | mag raw  -1304   +526  -2807 | baro ok 24.71 C 102680 Pa
+I (28402) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.023 +0.872 | mag raw  -1304   +524  -2796 | baro ok 24.72 C 102685 Pa
+I (28404) sensors: summary t=28s | imu reads 500/s invalid 0 burst us min 452 med 453 max 619 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (28618) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.872 | mag raw  -1307   +522  -2796 | baro ok 24.72 C 102685 Pa
+I (28820) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.027 +0.871 | mag raw  -1300   +521  -2790 | baro ok 24.72 C 102685 Pa
+I (29022) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.032 -0.024 +0.872 | mag raw  -1304   +524  -2803 | baro ok 24.72 C 102685 Pa
+I (29224) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.032 -0.026 +0.866 | mag raw  -1306   +526  -2796 | baro ok 24.72 C 102685 Pa
+I (29426) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.872 | mag raw  -1303   +526  -2801 | baro ok 24.72 C 102683 Pa
+I (29428) sensors: summary t=29s | imu reads 500/s invalid 0 burst us min 453 med 453 max 623 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (29642) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.026 +0.870 | mag raw  -1300   +524  -2806 | baro ok 24.72 C 102683 Pa
+I (29844) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.872 | mag raw  -1302   +530  -2799 | baro ok 24.72 C 102683 Pa
+I (30046) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.871 | mag raw  -1308   +528  -2809 | baro ok 24.72 C 102683 Pa
+I (30248) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.026 +0.870 | mag raw  -1302   +528  -2794 | baro ok 24.72 C 102683 Pa
+I (30450) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.035 -0.025 +0.869 | mag raw  -1303   +519  -2810 | baro ok 24.73 C 102684 Pa
+I (30452) sensors: summary t=30s | imu reads 500/s invalid 0 burst us min 453 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (30666) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.868 | mag raw  -1301   +524  -2804 | baro ok 24.73 C 102684 Pa
+I (30868) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.872 | mag raw  -1302   +527  -2808 | baro ok 24.73 C 102684 Pa
+I (31070) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.871 | mag raw  -1306   +530  -2805 | baro ok 24.73 C 102684 Pa
+I (31272) sensors: gyro dps x    -1.34 y    +0.85 z    -2.07 | accel g +0.034 -0.027 +0.869 | mag raw  -1296   +520  -2800 | baro ok 24.73 C 102684 Pa
+I (31474) sensors: gyro dps x    -1.40 y    +0.73 z    -2.13 | accel g +0.034 -0.024 +0.870 | mag raw  -1307   +525  -2800 | baro ok 24.72 C 102684 Pa
+I (31476) sensors: summary t=31s | imu reads 500/s invalid 0 burst us min 452 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (31690) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.868 | mag raw  -1303   +519  -2799 | baro ok 24.72 C 102684 Pa
+I (31892) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.027 +0.869 | mag raw  -1309   +531  -2806 | baro ok 24.72 C 102684 Pa
+I (32094) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.025 +0.869 | mag raw  -1311   +528  -2801 | baro ok 24.72 C 102684 Pa
+I (32296) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.026 +0.871 | mag raw  -1303   +527  -2806 | baro ok 24.72 C 102684 Pa
+I (32498) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.027 +0.871 | mag raw  -1305   +525  -2799 | baro ok 24.72 C 102685 Pa
+I (32500) sensors: summary t=32s | imu reads 500/s invalid 0 burst us min 453 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (32714) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.872 | mag raw  -1300   +531  -2796 | baro ok 24.72 C 102685 Pa
+I (32916) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.026 +0.872 | mag raw  -1306   +526  -2805 | baro ok 24.72 C 102685 Pa
+I (33118) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.027 +0.871 | mag raw  -1304   +526  -2808 | baro ok 24.72 C 102685 Pa
+I (33320) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.871 | mag raw  -1301   +525  -2798 | baro ok 24.72 C 102685 Pa
+I (33522) sensors: gyro dps x    -1.40 y    +0.85 z    -2.01 | accel g +0.033 -0.025 +0.870 | mag raw  -1301   +520  -2788 | baro ok 24.73 C 102682 Pa
+I (33524) sensors: summary t=33s | imu reads 500/s invalid 0 burst us min 453 med 453 max 623 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (33738) sensors: gyro dps x    -1.52 y    +0.79 z    -2.13 | accel g +0.034 -0.024 +0.869 | mag raw  -1304   +527  -2801 | baro ok 24.73 C 102682 Pa
+I (33940) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.032 -0.025 +0.872 | mag raw  -1303   +528  -2788 | baro ok 24.73 C 102682 Pa
+I (34142) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.872 | mag raw  -1302   +526  -2798 | baro ok 24.73 C 102682 Pa
+I (34344) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.025 +0.869 | mag raw  -1304   +519  -2798 | baro ok 24.73 C 102682 Pa
+I (34546) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.869 | mag raw  -1307   +524  -2795 | baro ok 24.72 C 102685 Pa
+I (34548) sensors: summary t=34s | imu reads 500/s invalid 0 burst us min 452 med 453 max 616 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (34762) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.025 +0.870 | mag raw  -1295   +525  -2797 | baro ok 24.72 C 102685 Pa
+I (34964) sensors: gyro dps x    -1.46 y    +0.79 z    -2.01 | accel g +0.033 -0.025 +0.868 | mag raw  -1312   +525  -2812 | baro ok 24.72 C 102685 Pa
+I (35166) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.869 | mag raw  -1304   +524  -2793 | baro ok 24.72 C 102685 Pa
+I (35368) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.025 +0.871 | mag raw  -1308   +530  -2801 | baro ok 24.72 C 102685 Pa
+I (35370) sensors: summary t=35s | imu reads 500/s invalid 0 burst us min 453 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (35584) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.027 +0.871 | mag raw  -1303   +525  -2800 | baro ok 24.72 C 102685 Pa
+I (35786) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.024 +0.870 | mag raw  -1303   +528  -2789 | baro ok 24.72 C 102685 Pa
+I (35988) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.023 +0.870 | mag raw  -1299   +526  -2786 | baro ok 24.72 C 102685 Pa
+I (36190) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.024 +0.871 | mag raw  -1306   +525  -2797 | baro ok 24.72 C 102685 Pa
+I (36392) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.024 +0.871 | mag raw  -1310   +522  -2790 | baro ok 24.73 C 102686 Pa
+I (36394) sensors: summary t=36s | imu reads 500/s invalid 0 burst us min 452 med 453 max 613 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (36608) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.036 -0.025 +0.869 | mag raw  -1314   +526  -2791 | baro ok 24.73 C 102686 Pa
+I (36810) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.025 +0.868 | mag raw  -1311   +521  -2796 | baro ok 24.73 C 102686 Pa
+I (37012) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.871 | mag raw  -1304   +527  -2796 | baro ok 24.73 C 102686 Pa
+I (37214) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.024 +0.868 | mag raw  -1301   +525  -2801 | baro ok 24.73 C 102686 Pa
+I (37416) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.032 -0.023 +0.868 | mag raw  -1298   +520  -2800 | baro ok 24.73 C 102688 Pa
+I (37418) sensors: summary t=37s | imu reads 500/s invalid 0 burst us min 452 med 453 max 628 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (37632) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.034 -0.027 +0.870 | mag raw  -1304   +523  -2807 | baro ok 24.73 C 102688 Pa
+I (37834) sensors: gyro dps x    -1.40 y    +0.73 z    -2.07 | accel g +0.031 -0.026 +0.870 | mag raw  -1309   +524  -2803 | baro ok 24.73 C 102688 Pa
+I (38036) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.871 | mag raw  -1308   +526  -2805 | baro ok 24.73 C 102688 Pa
+I (38238) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.025 +0.871 | mag raw  -1307   +527  -2789 | baro ok 24.73 C 102688 Pa
+I (38440) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.034 -0.026 +0.872 | mag raw  -1304   +530  -2803 | baro ok 24.73 C 102690 Pa
+I (38442) sensors: summary t=38s | imu reads 500/s invalid 0 burst us min 452 med 453 max 629 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (38656) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.034 -0.026 +0.868 | mag raw  -1302   +521  -2790 | baro ok 24.73 C 102690 Pa
+I (38858) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.027 +0.867 | mag raw  -1306   +527  -2793 | baro ok 24.73 C 102690 Pa
+I (39060) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.026 +0.870 | mag raw  -1306   +529  -2802 | baro ok 24.73 C 102690 Pa
+I (39262) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.031 -0.026 +0.869 | mag raw  -1314   +525  -2797 | baro ok 24.73 C 102690 Pa
+I (39464) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.024 +0.869 | mag raw  -1309   +521  -2807 | baro ok 24.73 C 102685 Pa
+I (39466) sensors: summary t=39s | imu reads 500/s invalid 0 burst us min 453 med 453 max 627 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (39680) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.871 | mag raw  -1306   +530  -2790 | baro ok 24.73 C 102685 Pa
+I (39882) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.870 | mag raw  -1300   +531  -2799 | baro ok 24.73 C 102685 Pa
+I (40084) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.031 -0.024 +0.874 | mag raw  -1299   +525  -2794 | baro ok 24.73 C 102685 Pa
+I (40286) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1311   +524  -2800 | baro ok 24.73 C 102685 Pa
+I (40488) sensors: gyro dps x    -1.46 y    +0.91 z    -2.13 | accel g +0.035 -0.025 +0.871 | mag raw  -1304   +528  -2804 | baro ok 24.74 C 102686 Pa
+I (40490) sensors: summary t=40s | imu reads 500/s invalid 0 burst us min 452 med 453 max 627 | imu total errors 0 slow 0 bus_resets 0 | mag 192/s errors 0 ovfl 0
+I (40704) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.866 | mag raw  -1301   +522  -2788 | baro ok 24.74 C 102686 Pa
+I (40906) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.031 -0.025 +0.874 | mag raw  -1310   +530  -2809 | baro ok 24.74 C 102686 Pa
+I (41108) sensors: gyro dps x    -1.52 y    +0.79 z    -2.13 | accel g +0.036 -0.024 +0.868 | mag raw  -1302   +524  -2794 | baro ok 24.74 C 102686 Pa
+I (41310) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.031 -0.025 +0.869 | mag raw  -1305   +525  -2796 | baro ok 24.74 C 102686 Pa
+I (41512) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.032 -0.026 +0.870 | mag raw  -1309   +525  -2791 | baro ok 24.74 C 102684 Pa
+I (41514) sensors: summary t=41s | imu reads 500/s invalid 0 burst us min 452 med 453 max 627 | imu total errors 0 slow 0 bus_resets 0 | mag 195/s errors 0 ovfl 0
+I (41728) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.024 +0.870 | mag raw  -1301   +524  -2812 | baro ok 24.74 C 102684 Pa
+I (41930) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.869 | mag raw  -1305   +524  -2791 | baro ok 24.74 C 102684 Pa
+I (42132) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.869 | mag raw  -1313   +521  -2804 | baro ok 24.74 C 102684 Pa
+I (42334) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.869 | mag raw  -1310   +524  -2806 | baro ok 24.74 C 102684 Pa
+I (42536) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.872 | mag raw  -1307   +522  -2787 | baro ok 24.73 C 102684 Pa
+I (42538) sensors: summary t=42s | imu reads 500/s invalid 0 burst us min 452 med 453 max 623 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (42752) sensors: gyro dps x    -1.40 y    +0.91 z    -2.13 | accel g +0.032 -0.026 +0.872 | mag raw  -1313   +520  -2797 | baro ok 24.73 C 102684 Pa
+I (42954) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.024 +0.870 | mag raw  -1310   +528  -2798 | baro ok 24.73 C 102684 Pa
+I (43156) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.033 -0.026 +0.869 | mag raw  -1303   +519  -2798 | baro ok 24.73 C 102684 Pa
+I (43358) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.027 +0.871 | mag raw  -1300   +526  -2814 | baro ok 24.73 C 102684 Pa
+I (43360) sensors: summary t=43s | imu reads 500/s invalid 0 burst us min 452 med 453 max 628 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (43574) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.035 -0.026 +0.868 | mag raw  -1295   +524  -2806 | baro ok 24.74 C 102686 Pa
+I (43776) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.032 -0.024 +0.870 | mag raw  -1296   +532  -2795 | baro ok 24.74 C 102686 Pa
+I (43978) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.035 -0.024 +0.872 | mag raw  -1297   +524  -2796 | baro ok 24.74 C 102686 Pa
+I (44180) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.025 +0.872 | mag raw  -1302   +523  -2792 | baro ok 24.74 C 102686 Pa
+I (44382) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.026 +0.873 | mag raw  -1302   +525  -2788 | baro ok 24.74 C 102686 Pa
+I (44384) sensors: summary t=44s | imu reads 500/s invalid 0 burst us min 452 med 453 max 611 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (44598) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.871 | mag raw  -1301   +519  -2800 | baro ok 24.73 C 102683 Pa
+I (44800) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.870 | mag raw  -1302   +519  -2793 | baro ok 24.73 C 102683 Pa
+I (45002) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1304   +525  -2796 | baro ok 24.73 C 102683 Pa
+I (45204) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.033 -0.026 +0.872 | mag raw  -1307   +526  -2804 | baro ok 24.73 C 102683 Pa
+I (45406) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.033 -0.025 +0.871 | mag raw  -1291   +523  -2809 | baro ok 24.74 C 102685 Pa
+I (45408) sensors: summary t=45s | imu reads 500/s invalid 0 burst us min 452 med 453 max 614 | imu total errors 0 slow 0 bus_resets 0 | mag 192/s errors 0 ovfl 0
+I (45622) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.032 -0.026 +0.871 | mag raw  -1304   +526  -2790 | baro ok 24.74 C 102685 Pa
+I (45824) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.033 -0.026 +0.872 | mag raw  -1302   +522  -2794 | baro ok 24.74 C 102685 Pa
+I (46026) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.035 -0.026 +0.870 | mag raw  -1313   +529  -2790 | baro ok 24.74 C 102685 Pa
+I (46228) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.872 | mag raw  -1302   +526  -2784 | baro ok 24.74 C 102685 Pa
+I (46430) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.873 | mag raw  -1307   +528  -2810 | baro ok 24.74 C 102679 Pa
+I (46432) sensors: summary t=46s | imu reads 500/s invalid 0 burst us min 453 med 453 max 619 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (46646) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.025 +0.871 | mag raw  -1306   +524  -2813 | baro ok 24.74 C 102679 Pa
+I (46848) sensors: gyro dps x    -1.40 y    +0.85 z    -2.01 | accel g +0.036 -0.026 +0.869 | mag raw  -1307   +531  -2799 | baro ok 24.74 C 102679 Pa
+I (47050) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.871 | mag raw  -1308   +522  -2810 | baro ok 24.74 C 102679 Pa
+I (47252) sensors: gyro dps x    -0.85 y    +1.28 z    -2.07 | accel g +0.036 -0.025 +0.871 | mag raw  -1293   +529  -2787 | baro ok 24.74 C 102679 Pa
+I (47454) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.867 | mag raw  -1291   +535  -2795 | baro ok 24.74 C 102687 Pa
+I (47456) sensors: summary t=47s | imu reads 500/s invalid 0 burst us min 452 med 453 max 623 | imu total errors 0 slow 0 bus_resets 0 | mag 192/s errors 0 ovfl 0
+I (47670) sensors: gyro dps x    -1.46 y    +0.79 z    -2.01 | accel g +0.034 -0.026 +0.868 | mag raw  -1292   +530  -2793 | baro ok 24.74 C 102687 Pa
+I (47872) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.868 | mag raw  -1290   +526  -2794 | baro ok 24.74 C 102687 Pa
+I (48074) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.872 | mag raw  -1301   +527  -2791 | baro ok 24.74 C 102687 Pa
+I (48276) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.031 -0.024 +0.870 | mag raw  -1298   +527  -2800 | baro ok 24.74 C 102687 Pa
+I (48478) sensors: gyro dps x    -1.34 y    +0.85 z    -2.07 | accel g +0.032 -0.023 +0.873 | mag raw  -1296   +530  -2789 | baro ok 24.74 C 102689 Pa
+I (48480) sensors: summary t=48s | imu reads 500/s invalid 0 burst us min 452 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (48694) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.034 -0.024 +0.868 | mag raw  -1298   +526  -2803 | baro ok 24.74 C 102689 Pa
+I (48896) sensors: gyro dps x    -1.52 y    +0.85 z    -2.13 | accel g +0.035 -0.026 +0.872 | mag raw  -1291   +527  -2809 | baro ok 24.74 C 102689 Pa
+I (49098) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.869 | mag raw  -1295   +526  -2796 | baro ok 24.74 C 102689 Pa
+I (49300) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.033 -0.026 +0.867 | mag raw  -1294   +525  -2805 | baro ok 24.74 C 102689 Pa
+I (49502) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.032 -0.026 +0.870 | mag raw  -1293   +530  -2801 | baro ok 24.74 C 102688 Pa
+I (49504) sensors: summary t=49s | imu reads 500/s invalid 0 burst us min 452 med 453 max 616 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (49718) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.035 -0.026 +0.870 | mag raw  -1297   +531  -2801 | baro ok 24.74 C 102688 Pa
+I (49920) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.870 | mag raw  -1293   +525  -2803 | baro ok 24.74 C 102688 Pa
+I (50122) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.032 -0.023 +0.870 | mag raw  -1300   +535  -2799 | baro ok 24.74 C 102688 Pa
+I (50324) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.023 +0.870 | mag raw  -1290   +529  -2797 | baro ok 24.74 C 102688 Pa
+I (50526) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.035 -0.026 +0.870 | mag raw  -1289   +535  -2800 | baro ok 24.74 C 102689 Pa
+I (50528) sensors: summary t=50s | imu reads 500/s invalid 0 burst us min 452 med 453 max 621 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (50742) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.033 -0.023 +0.871 | mag raw  -1297   +531  -2787 | baro ok 24.74 C 102689 Pa
+I (50944) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.023 +0.869 | mag raw  -1295   +534  -2792 | baro ok 24.74 C 102689 Pa
+I (51146) sensors: gyro dps x    -1.46 y    +0.85 z    -2.01 | accel g +0.032 -0.025 +0.871 | mag raw  -1299   +533  -2813 | baro ok 24.74 C 102689 Pa
+I (51348) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.031 -0.027 +0.872 | mag raw  -1294   +529  -2796 | baro ok 24.74 C 102689 Pa
+I (51550) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.031 -0.025 +0.871 | mag raw  -1294   +530  -2796 | baro ok 24.75 C 102686 Pa
+I (51552) sensors: summary t=51s | imu reads 500/s invalid 0 burst us min 453 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (51766) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.029 -0.023 +0.870 | mag raw  -1290   +525  -2794 | baro ok 24.75 C 102686 Pa
+I (51968) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.032 -0.025 +0.870 | mag raw  -1296   +523  -2793 | baro ok 24.75 C 102686 Pa
+I (52170) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.034 -0.024 +0.871 | mag raw  -1298   +532  -2790 | baro ok 24.75 C 102686 Pa
+I (52372) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.033 -0.023 +0.870 | mag raw  -1285   +520  -2804 | baro ok 24.75 C 102686 Pa
+I (52374) sensors: summary t=52s | imu reads 500/s invalid 0 burst us min 452 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (52588) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.870 | mag raw  -1291   +537  -2794 | baro ok 24.75 C 102685 Pa
+I (52790) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.033 -0.026 +0.869 | mag raw  -1292   +528  -2796 | baro ok 24.75 C 102685 Pa
+I (52992) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.032 -0.026 +0.869 | mag raw  -1301   +531  -2806 | baro ok 24.75 C 102685 Pa
+I (53194) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.026 +0.870 | mag raw  -1295   +524  -2796 | baro ok 24.75 C 102685 Pa
+I (53396) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.025 +0.870 | mag raw  -1293   +534  -2788 | baro ok 24.75 C 102685 Pa
+I (53398) sensors: summary t=53s | imu reads 500/s invalid 0 burst us min 452 med 453 max 608 | imu total errors 0 slow 0 bus_resets 0 | mag 195/s errors 0 ovfl 0
+I (53612) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.024 +0.869 | mag raw  -1295   +525  -2793 | baro ok 24.75 C 102685 Pa
+I (53814) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1289   +527  -2790 | baro ok 24.75 C 102685 Pa
+I (54016) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.035 -0.026 +0.871 | mag raw  -1288   +531  -2781 | baro ok 24.75 C 102685 Pa
+I (54218) sensors: gyro dps x    -1.34 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.872 | mag raw  -1296   +525  -2793 | baro ok 24.75 C 102685 Pa
+I (54420) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.869 | mag raw  -1291   +527  -2802 | baro ok 24.74 C 102685 Pa
+I (54422) sensors: summary t=54s | imu reads 500/s invalid 0 burst us min 452 med 453 max 600 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (54636) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.873 | mag raw  -1287   +524  -2795 | baro ok 24.74 C 102685 Pa
+I (54838) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.872 | mag raw  -1289   +521  -2794 | baro ok 24.74 C 102685 Pa
+I (55040) sensors: gyro dps x    -1.52 y    +0.85 z    -2.13 | accel g +0.036 -0.025 +0.869 | mag raw  -1294   +529  -2805 | baro ok 24.74 C 102685 Pa
+I (55242) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.872 | mag raw  -1293   +524  -2785 | baro ok 24.74 C 102685 Pa
+I (55444) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.870 | mag raw  -1290   +532  -2797 | baro ok 24.75 C 102683 Pa
+I (55446) sensors: summary t=55s | imu reads 500/s invalid 0 burst us min 452 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (55660) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.873 | mag raw  -1298   +529  -2805 | baro ok 24.75 C 102683 Pa
+I (55862) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.035 -0.026 +0.872 | mag raw  -1288   +532  -2792 | baro ok 24.75 C 102683 Pa
+I (56064) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.036 -0.024 +0.870 | mag raw  -1296   +527  -2795 | baro ok 24.75 C 102683 Pa
+I (56266) sensors: gyro dps x    -1.40 y    +0.73 z    -2.13 | accel g +0.032 -0.024 +0.870 | mag raw  -1286   +537  -2790 | baro ok 24.75 C 102683 Pa
+I (56468) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.870 | mag raw  -1292   +527  -2796 | baro ok 24.75 C 102685 Pa
+I (56470) sensors: summary t=56s | imu reads 500/s invalid 0 burst us min 452 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (56684) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.027 +0.868 | mag raw  -1296   +527  -2803 | baro ok 24.75 C 102685 Pa
+I (56886) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.025 +0.868 | mag raw  -1297   +527  -2798 | baro ok 24.75 C 102685 Pa
+I (57088) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.870 | mag raw  -1293   +525  -2794 | baro ok 24.75 C 102685 Pa
+I (57290) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1288   +528  -2798 | baro ok 24.75 C 102685 Pa
+I (57492) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.869 | mag raw  -1299   +525  -2803 | baro ok 24.75 C 102691 Pa
+I (57494) sensors: summary t=57s | imu reads 500/s invalid 0 burst us min 452 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (57708) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.870 | mag raw  -1293   +526  -2802 | baro ok 24.75 C 102691 Pa
+I (57910) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1292   +524  -2796 | baro ok 24.75 C 102691 Pa
+I (58112) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.035 -0.026 +0.869 | mag raw  -1296   +531  -2795 | baro ok 24.75 C 102691 Pa
+I (58314) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.875 | mag raw  -1295   +531  -2805 | baro ok 24.75 C 102691 Pa
+I (58516) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.024 +0.869 | mag raw  -1294   +524  -2790 | baro ok 24.75 C 102686 Pa
+I (58518) sensors: summary t=58s | imu reads 500/s invalid 0 burst us min 452 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (58732) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.035 -0.024 +0.873 | mag raw  -1295   +532  -2794 | baro ok 24.75 C 102686 Pa
+I (58934) sensors: gyro dps x    -1.52 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.868 | mag raw  -1292   +536  -2790 | baro ok 24.75 C 102686 Pa
+I (59136) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.033 -0.026 +0.869 | mag raw  -1289   +541  -2799 | baro ok 24.75 C 102686 Pa
+I (59338) sensors: gyro dps x    -1.46 y    +0.79 z    -2.01 | accel g +0.033 -0.025 +0.867 | mag raw  -1296   +533  -2799 | baro ok 24.75 C 102686 Pa
+I (59540) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1293   +535  -2793 | baro ok 24.75 C 102685 Pa
+I (59542) sensors: summary t=59s | imu reads 500/s invalid 0 burst us min 452 med 453 max 623 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (59756) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.025 +0.869 | mag raw  -1294   +529  -2788 | baro ok 24.75 C 102685 Pa
+I (59958) sensors: gyro dps x    -1.40 y    +0.85 z    -2.13 | accel g +0.034 -0.026 +0.870 | mag raw  -1290   +527  -2798 | baro ok 24.75 C 102685 Pa
+I (60160) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1287   +530  -2805 | baro ok 24.75 C 102685 Pa
+I (60362) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.027 +0.868 | mag raw  -1290   +527  -2784 | baro ok 24.75 C 102685 Pa
+I (60364) sensors: summary t=60s | imu reads 500/s invalid 0 burst us min 452 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (60578) sensors: gyro dps x    -1.52 y    +0.85 z    -2.13 | accel g +0.032 -0.027 +0.868 | mag raw  -1291   +529  -2794 | baro ok 24.75 C 102688 Pa
+I (60780) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.870 | mag raw  -1290   +533  -2797 | baro ok 24.75 C 102688 Pa
+I (60982) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.869 | mag raw  -1300   +530  -2803 | baro ok 24.75 C 102688 Pa
+I (61184) sensors: gyro dps x    -1.40 y    +0.79 z    -2.01 | accel g +0.033 -0.027 +0.867 | mag raw  -1287   +529  -2794 | baro ok 24.75 C 102688 Pa
+I (61386) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.023 +0.870 | mag raw  -1287   +524  -2795 | baro ok 24.75 C 102688 Pa
+I (61388) sensors: summary t=61s | imu reads 500/s invalid 0 burst us min 452 med 453 max 613 | imu total errors 0 slow 0 bus_resets 0 | mag 192/s errors 0 ovfl 0
+I (61602) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.026 +0.871 | mag raw  -1293   +526  -2801 | baro ok 24.75 C 102681 Pa
+I (61804) sensors: gyro dps x    -1.46 y    +0.85 z    -2.20 | accel g +0.032 -0.026 +0.869 | mag raw  -1292   +527  -2803 | baro ok 24.75 C 102681 Pa
+I (62006) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.868 | mag raw  -1283   +525  -2802 | baro ok 24.75 C 102681 Pa
+I (62208) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.031 -0.023 +0.870 | mag raw  -1295   +522  -2796 | baro ok 24.75 C 102681 Pa
+I (62410) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.031 -0.026 +0.870 | mag raw  -1292   +532  -2807 | baro ok 24.75 C 102681 Pa
+I (62412) sensors: summary t=62s | imu reads 500/s invalid 0 burst us min 452 med 453 max 599 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (62626) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.026 +0.868 | mag raw  -1293   +530  -2796 | baro ok 24.76 C 102687 Pa
+I (62828) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.031 -0.025 +0.871 | mag raw  -1288   +527  -2806 | baro ok 24.76 C 102687 Pa
+I (63030) sensors: gyro dps x    -1.52 y    +0.79 z    -2.13 | accel g +0.032 -0.025 +0.869 | mag raw  -1295   +525  -2807 | baro ok 24.76 C 102687 Pa
+I (63232) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.032 -0.025 +0.868 | mag raw  -1290   +535  -2807 | baro ok 24.76 C 102687 Pa
+I (63434) sensors: gyro dps x    -1.46 y    +0.85 z    -2.01 | accel g +0.033 -0.026 +0.869 | mag raw  -1284   +532  -2799 | baro ok 24.76 C 102687 Pa
+I (63436) sensors: summary t=63s | imu reads 500/s invalid 0 burst us min 453 med 453 max 610 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (63650) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.024 +0.870 | mag raw  -1292   +532  -2807 | baro ok 24.76 C 102687 Pa
+I (63852) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.867 | mag raw  -1296   +526  -2788 | baro ok 24.76 C 102687 Pa
+I (64054) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.026 +0.871 | mag raw  -1291   +529  -2804 | baro ok 24.76 C 102687 Pa
+I (64256) sensors: gyro dps x    -1.52 y    +0.85 z    -2.01 | accel g +0.035 -0.027 +0.872 | mag raw  -1296   +525  -2793 | baro ok 24.76 C 102687 Pa
+I (64458) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.868 | mag raw  -1290   +529  -2802 | baro ok 24.76 C 102683 Pa
+I (64460) sensors: summary t=64s | imu reads 500/s invalid 0 burst us min 452 med 453 max 622 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (64674) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.024 +0.869 | mag raw  -1288   +526  -2806 | baro ok 24.76 C 102683 Pa
+I (64876) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.870 | mag raw  -1296   +531  -2794 | baro ok 24.76 C 102683 Pa
+I (65078) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.024 +0.868 | mag raw  -1288   +532  -2801 | baro ok 24.76 C 102683 Pa
+I (65280) sensors: gyro dps x    -1.46 y    +0.91 z    -2.07 | accel g +0.035 -0.024 +0.871 | mag raw  -1293   +526  -2799 | baro ok 24.76 C 102683 Pa
+I (65482) sensors: gyro dps x    -1.46 y    +0.85 z    -2.13 | accel g +0.034 -0.025 +0.869 | mag raw  -1292   +526  -2798 | baro ok 24.76 C 102682 Pa
+I (65484) sensors: summary t=65s | imu reads 500/s invalid 0 burst us min 452 med 453 max 618 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (65698) sensors: gyro dps x    -1.46 y    +0.73 z    -2.07 | accel g +0.034 -0.025 +0.872 | mag raw  -1295   +527  -2792 | baro ok 24.76 C 102682 Pa
+I (65900) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.867 | mag raw  -1280   +527  -2804 | baro ok 24.76 C 102682 Pa
+I (66102) sensors: gyro dps x    -1.34 y    +0.79 z    -2.07 | accel g +0.035 -0.026 +0.870 | mag raw  -1286   +522  -2804 | baro ok 24.76 C 102682 Pa
+I (66304) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.873 | mag raw  -1287   +521  -2798 | baro ok 24.76 C 102682 Pa
+I (66506) sensors: gyro dps x    -1.40 y    +0.79 z    -2.13 | accel g +0.034 -0.025 +0.870 | mag raw  -1289   +522  -2791 | baro ok 24.75 C 102685 Pa
+I (66508) sensors: summary t=66s | imu reads 500/s invalid 0 burst us min 452 med 453 max 625 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (66722) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.871 | mag raw  -1294   +524  -2800 | baro ok 24.75 C 102685 Pa
+I (66924) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.869 | mag raw  -1290   +527  -2796 | baro ok 24.75 C 102685 Pa
+I (67126) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.027 +0.872 | mag raw  -1292   +533  -2801 | baro ok 24.75 C 102685 Pa
+I (67328) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.868 | mag raw  -1293   +525  -2791 | baro ok 24.75 C 102685 Pa
+I (67530) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.024 +0.871 | mag raw  -1305   +527  -2786 | baro ok 24.76 C 102687 Pa
+I (67532) sensors: summary t=67s | imu reads 500/s invalid 0 burst us min 452 med 453 max 617 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (67746) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.875 | mag raw  -1294   +528  -2798 | baro ok 24.76 C 102687 Pa
+I (67948) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.035 -0.025 +0.869 | mag raw  -1293   +523  -2787 | baro ok 24.76 C 102687 Pa
+I (68150) sensors: gyro dps x    -1.34 y    +0.79 z    -2.07 | accel g +0.032 -0.025 +0.871 | mag raw  -1292   +531  -2791 | baro ok 24.76 C 102687 Pa
+I (68352) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.869 | mag raw  -1295   +526  -2794 | baro ok 24.76 C 102687 Pa
+I (68554) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.032 -0.024 +0.873 | mag raw  -1293   +528  -2789 | baro ok 24.76 C 102683 Pa
+I (68556) sensors: summary t=68s | imu reads 500/s invalid 0 burst us min 452 med 453 max 627 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (68770) sensors: gyro dps x    -1.34 y    +0.85 z    -2.07 | accel g +0.032 -0.025 +0.869 | mag raw  -1289   +532  -2795 | baro ok 24.76 C 102683 Pa
+I (68972) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.033 -0.027 +0.872 | mag raw  -1291   +529  -2797 | baro ok 24.76 C 102683 Pa
+I (69174) sensors: gyro dps x    -1.52 y    +0.85 z    -2.07 | accel g +0.034 -0.025 +0.870 | mag raw  -1299   +532  -2796 | baro ok 24.76 C 102683 Pa
+I (69376) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.032 -0.026 +0.871 | mag raw  -1293   +537  -2795 | baro ok 24.76 C 102683 Pa
+I (69378) sensors: summary t=69s | imu reads 500/s invalid 0 burst us min 452 med 453 max 616 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (69592) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.027 +0.867 | mag raw  -1298   +534  -2795 | baro ok 24.76 C 102680 Pa
+I (69794) sensors: gyro dps x    -1.40 y    +0.73 z    -2.07 | accel g +0.032 -0.028 +0.869 | mag raw  -1304   +530  -2785 | baro ok 24.76 C 102680 Pa
+I (69996) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.035 -0.024 +0.873 | mag raw  -1301   +523  -2797 | baro ok 24.76 C 102680 Pa
+I (70198) sensors: gyro dps x    -1.52 y    +0.85 z    -2.13 | accel g +0.034 -0.024 +0.870 | mag raw  -1296   +530  -2804 | baro ok 24.76 C 102680 Pa
+I (70400) sensors: gyro dps x    -1.52 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.871 | mag raw  -1296   +535  -2792 | baro ok 24.76 C 102680 Pa
+I (70402) sensors: summary t=70s | imu reads 500/s invalid 0 burst us min 452 med 453 max 599 | imu total errors 0 slow 0 bus_resets 0 | mag 192/s errors 0 ovfl 0
+I (70616) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.034 -0.024 +0.876 | mag raw  -1300   +529  -2803 | baro ok 24.76 C 102683 Pa
+I (70818) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.027 +0.870 | mag raw  -1304   +528  -2804 | baro ok 24.76 C 102683 Pa
+I (71020) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.025 +0.871 | mag raw  -1294   +527  -2799 | baro ok 24.76 C 102683 Pa
+I (71222) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.032 -0.026 +0.873 | mag raw  -1291   +526  -2804 | baro ok 24.76 C 102683 Pa
+I (71424) sensors: gyro dps x    -1.46 y    +0.85 z    -2.01 | accel g +0.035 -0.024 +0.872 | mag raw  -1293   +527  -2807 | baro ok 24.76 C 102683 Pa
+I (71426) sensors: summary t=71s | imu reads 500/s invalid 0 burst us min 452 med 453 max 613 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (71640) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.024 +0.870 | mag raw  -1294   +535  -2796 | baro ok 24.77 C 102684 Pa
+I (71842) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.024 +0.865 | mag raw  -1304   +528  -2795 | baro ok 24.77 C 102684 Pa
+I (72044) sensors: gyro dps x    -1.46 y    +0.85 z    -2.07 | accel g +0.033 -0.026 +0.869 | mag raw  -1301   +528  -2799 | baro ok 24.77 C 102684 Pa
+I (72246) sensors: gyro dps x    -1.52 y    +0.85 z    -2.07 | accel g +0.034 -0.026 +0.873 | mag raw  -1297   +525  -2779 | baro ok 24.77 C 102684 Pa
+I (72448) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.033 -0.027 +0.870 | mag raw  -1295   +531  -2807 | baro ok 24.77 C 102680 Pa
+I (72450) sensors: summary t=72s | imu reads 500/s invalid 0 burst us min 452 med 453 max 599 | imu total errors 0 slow 0 bus_resets 0 | mag 194/s errors 0 ovfl 0
+I (72664) sensors: gyro dps x    -1.46 y    +0.79 z    -2.13 | accel g +0.034 -0.025 +0.872 | mag raw  -1300   +532  -2803 | baro ok 24.77 C 102680 Pa
+I (72866) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.035 -0.026 +0.868 | mag raw  -1291   +531  -2794 | baro ok 24.77 C 102680 Pa
+I (73068) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.026 +0.871 | mag raw  -1292   +529  -2810 | baro ok 24.77 C 102680 Pa
+I (73270) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.034 -0.023 +0.868 | mag raw  -1297   +533  -2788 | baro ok 24.77 C 102680 Pa
+I (73472) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.031 -0.024 +0.873 | mag raw  -1296   +528  -2799 | baro ok 24.77 C 102683 Pa
+I (73474) sensors: summary t=73s | imu reads 500/s invalid 0 burst us min 452 med 453 max 627 | imu total errors 0 slow 0 bus_resets 0 | mag 193/s errors 0 ovfl 0
+I (73688) sensors: gyro dps x    -1.46 y    +0.79 z    -2.07 | accel g +0.033 -0.025 +0.869 | mag raw  -1295   +527  -2798 | baro ok 24.77 C 102683 Pa
+I (73890) sensors: gyro dps x    -1.40 y    +0.85 z    -2.07 | accel g +0.033 -0.025 +0.871 | mag raw  -1290   +532  -2793 | baro ok 24.77 C 102683 Pa
+I (74092) sensors: gyro dps x    -1.40 y    +0.79 z    -2.07 | accel g +0.036 -0.023 +0.870 | mag raw  -1299   +531  -2786 | baro ok 24.77 C 102683 Pa
+I (74294) sensors: gyro dps x    -1.46 y    +0.79 z    -2.01 | accel g +0.034 -0.025 +0.873 | mag raw  -1286   +529  -2801 | baro ok 24.77 C 102683 Pa
+
+Script done on 2026-10-10 17:18:58-04:00 [COMMAND_EXIT_CODE="124"]

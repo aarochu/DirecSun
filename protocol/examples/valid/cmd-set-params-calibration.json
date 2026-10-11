@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 32,
+  "cmd": "set_params",
+  "params": {
+    "mag_axis_map": ["+x", "-y", "-z"],
+    "mag_cal": {
+      "offset": [120, -85, 40],
+      "soft_iron": [[1.02, 0.03], [0.03, 0.97]]
+    },
+    "sun_cal": [
+      {"d": -0.6, "deg": -45},
+      {"d": -0.3, "deg": -22},
+      {"d": 0, "deg": 0},
+      {"d": 0.3, "deg": 22},
+      {"d": 0.6, "deg": 45}
+    ],
+    "light_threshold": 300
+  }
+}

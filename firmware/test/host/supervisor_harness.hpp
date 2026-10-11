@@ -35,6 +35,19 @@ struct ScriptedController : ThrottleController {
     void reset() override { ++resets; }
 };
 
+// A box whose T-5 feed-forward table is set, so the closed wheel loop is
+// available: HOLD, SLEW, SUN_POINT, respin and MANUAL wheel/rate need it.
+inline Params characterised_params()
+{
+    Params p;
+    p.ff_count = static_cast<uint8_t>(kFfPoints);
+    for (std::size_t i = 0; i < kFfPoints; ++i) {
+        p.ff_rpm[i] = 500.0f * static_cast<float>(i + 1);
+        p.ff_throttle[i] = 48.0f + p.ff_rpm[i] / 2.5f;
+    }
+    return p;
+}
+
 constexpr uint32_t kOperator = 7;   // the client that arms
 constexpr uint32_t kViewer = 9;     // a second client
 

@@ -106,6 +106,12 @@ WHEEL_RPM_PER_BOX_DPS = 1.03e-3 / 6.5e-5 / 6.0   # momentum exchange, I_b / I_w 
 # A plausible T-5 table, on the mock's own throttle shape (48 + 0.17 rpm).
 DEFAULT_FF_TABLE = [{"rpm": 500 * (i + 1), "throttle": round(48 + 0.17 * 500 * (i + 1))} for i in range(8)]
 SETPOINT_KEY = {"throttle": "throttle", "wheel": "wheel_rpm", "rate": "rate_dps"}
+# R5: respin, SUN_POINT and the calibrations, as the firmware's modes.cpp and params.cpp.
+RESPIN_MARGIN_RPM = 200.0                 # kRespinMarginRpm
+ARM_MAX_RATE_DPS = 5.0                    # kArmMaxRateDps: "box not still" above this
+SUN_LOST_S = 0.5                          # kSunLostMs
+SUN_CAL_MAX_POINTS = 8                    # kSunCalMaxPoints
+AXIS_NAMES = ("x", "y", "z")
 
 
 def log(text):
@@ -162,8 +168,13 @@ class Schema:
 class Box:
     """Mode machine and telemetry of the stub. Connection objects are opaque keys."""
 
-    def __init__(self, schema, inputs, characterised=True, stuck=False, clock=time.monotonic):
+    def __init__(self, schema, inputs, characterised=True, stuck=False, clock=time.monotonic, lamp_deg=None):
         self.schema = schema
+        # A lamp fixed in the world, as a clockwise bearing on the wire; None is a dark room.
+        # The sun sensors read it only once sun_cal is set (T-10), as the firmware does.
+        self.lamp_deg = lamp_deg
+        self.mag_fusing = False           # the heading includes the compass (mag_cal set in SAFE)
+        self.sun_invalid_since = None
         self.inputs = inputs
         self.stuck = stuck                # a box that cannot turn: every SLEW times out
         self.clock = clock
@@ -191,7 +202,8 @@ class Box:
         self.params = {"bench_mode": False, "hall_installed": True,
                        "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX,
                        "spinup_throttle": SPINUP_THROTTLE, "hall_expect_throttle": HALL_EXPECT_THROTTLE,
-                       "bench_underspeed_rpm": 0, "bench_cap_rpm": 0}
+                       "bench_underspeed_rpm": 0, "bench_cap_rpm": 0,
+                       "rate_gain_scale": 0.2, "light_threshold": 0}
         if characterised:
             self.params["ff_table"] = DEFAULT_FF_TABLE
         self.wheel_hold = False           # bench wheel_step hold (R3.8)
@@ -229,6 +241,8 @@ class Box:
         if mode != "MANUAL":
             self.manual_input = None
             self.manual_value = None
+        if mode == "SUN_POINT":
+            self.sun_invalid_since = None
         if mode not in ("HOLD", "SLEW", "SUN_POINT"):
             self.psi_ref = None
             self.slew = None
@@ -308,11 +322,16 @@ class Box:
         elif cmd == "manual":
             self._manual(conn, seq, message)
         elif cmd == "respin":
+            # Guard order as the firmware (R5.3): READY, wheel loop, speed range, box still.
             if self.mode != "READY":
-                return self._ack(conn, seq, False, f"not allowed in {self.mode}")
+                return self._ack(conn, seq, False, "not in READY")
+            if not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")
             target = message.get("wheel_rpm", OMEGA_BIAS)
-            if not OMEGA_LOW + 200 <= target <= OMEGA_CAP - 200:
-                return self._ack(conn, seq, False, f"wheel_rpm outside {OMEGA_LOW + 200:.0f}..{OMEGA_CAP - 200:.0f}")
+            if not OMEGA_LOW + RESPIN_MARGIN_RPM <= target <= self._cap() - RESPIN_MARGIN_RPM:
+                return self._ack(conn, seq, False, "invalid setpoint")
+            if abs(self.rate) >= ARM_MAX_RATE_DPS:
+                return self._ack(conn, seq, False, "box not still")
             self.spinup_target = float(target)
             self._ack(conn, seq, True)
             self._set_mode("SPINUP", "respin")
@@ -339,6 +358,9 @@ class Box:
             merged = {**self.params, **update}
             if merged["hall_expect_throttle"] >= merged["spinup_throttle"]:
                 return self._ack(conn, seq, False, "invalid param: hall_expect_throttle")
+            bad = self._calibration_error(update)
+            if bad:
+                return self._ack(conn, seq, False, f"invalid param: {bad}")
             bench_after = update.get("bench_mode", self.params["bench_mode"])
             for key in ("bench_underspeed_rpm", "bench_cap_rpm"):
                 if update.get(key, 0) != 0 and not bench_after:
@@ -350,6 +372,8 @@ class Box:
                     if key not in update:
                         self.params[key] = 0
             self.params.update(update)
+            if "mag_cal" in update:
+                self.mag_fusing = True    # the compass starts the heading in SAFE (R5.1)
             self._ack(conn, seq, True, applied=update)
             if was_bypassed != (not self.params["hall_installed"]):
                 self._emit(None, {"v": 1, "type": "event", "seq": self._next_seq(), "t_ms": self._t_ms(),
@@ -397,12 +421,23 @@ class Box:
                 self.slew = (self.psi, -wrap_deg(self.psi - goal), self.clock())
                 self.slew_settled_since = None
             return
+        if target == "SUN_POINT":
+            # R5.4, the firmware's guard order: READY, wheel loop, sun.
+            if self.mode != "READY":
+                return self._ack(conn, seq, False, "not in READY")
+            if not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")
+            if not self._sun()[0]:
+                return self._ack(conn, seq, False, "sun not valid")
+            self._ack(conn, seq, True)
+            self._set_mode("SUN_POINT", "mode")
+            return
         if self.mode != "READY":
             return self._ack(conn, seq, False, f"not allowed in {self.mode}")
-        if target == "SUN_POINT":
-            return self._ack(conn, seq, False, "sun not valid")
         if target == "MANUAL":
-            if message["input"] not in self.inputs:
+            # `wheel` and `rate` run on the closed wheel loop (R5.2).
+            if message["input"] not in self.inputs or \
+                    (message["input"] != "throttle" and not self._wheel_loop_available()):
                 return self._ack(conn, seq, False, "input not available")
             self._ack(conn, seq, True)
             self._set_mode("MANUAL", "mode")
@@ -416,6 +451,40 @@ class Box:
             return
         self._ack(conn, seq, True)
         self._set_mode(target, "mode")
+
+    def _calibration_error(self, update):
+        """The first calibration key in `update` the firmware would refuse, else None."""
+        axis = update.get("mag_axis_map")
+        if axis is not None and sorted(a[1] for a in axis) != list(AXIS_NAMES):
+            return "mag_axis_map"
+        cal = update.get("mag_cal")
+        if cal is not None:
+            m = cal["soft_iron"]
+            if abs(m[0][0] * m[1][1] - m[0][1] * m[1][0]) < 1e-6:
+                return "mag_cal"
+        table = update.get("sun_cal")
+        if table is not None:
+            d = [p["d"] for p in table]
+            deg = [p["deg"] for p in table]
+            rising = deg[1] > deg[0]
+            steps = list(zip(deg, deg[1:]))
+            if len(table) > SUN_CAL_MAX_POINTS or any(b <= a for a, b in zip(d, d[1:])) \
+                    or any((b <= a) if rising else (b >= a) for a, b in steps):
+                return "sun_cal"
+        if "light_threshold" in update and not 0 <= update["light_threshold"] <= 6600:
+            return "light_threshold"
+        return None
+
+    def _sun(self):
+        """(valid, wire angle): the lamp's bearing from the box, once the sensors are calibrated."""
+        table = self.params.get("sun_cal")
+        if self.lamp_deg is None or not table:
+            return False, None
+        angle = wrap_deg(self.lamp_deg - self.psi)
+        degrees = [p["deg"] for p in table]
+        if not min(degrees) <= angle <= max(degrees):
+            return False, None
+        return True, angle
 
     def _wheel_loop_available(self):
         # The firmware's wheel_loop_available(): Hall fitted and the T-5 table set.
@@ -498,6 +567,16 @@ class Box:
             elif now - t_start >= SLEW_TIMEOUT_S - 1e-9:
                 self._set_mode("READY", "SLEW_TIMEOUT")
 
+        sun_valid, sun_angle = self._sun()
+        if self.mode == "SUN_POINT":
+            # The firmware drops to READY after 0.5 s of invalid sun (FD section 11.4).
+            if sun_valid:
+                self.sun_invalid_since = None
+            elif self.sun_invalid_since is None:
+                self.sun_invalid_since = now
+            elif now - self.sun_invalid_since >= SUN_LOST_S - 1e-9:
+                self._set_mode("READY", "sun_invalid")
+
         stale = self.mode == "MANUAL" and now - self.manual_last > MANUAL_STALE_S
         # Wheel reference.
         if self.mode == "SAFE":
@@ -538,6 +617,13 @@ class Box:
             command = 0.0 if still and abs(error) < HOLD_DEADBAND_DEG \
                 else max(-ATTITUDE_RATE_LIMIT_DPS, min(ATTITUDE_RATE_LIMIT_DPS, K_PSI * error))
             self.rate += ((0.0 if self.stuck else command) - self.rate) * min(1.0, dt / RATE_LAG_S)
+        elif self.mode == "SUN_POINT" and self._wheel_loop_available():
+            # Drive the sun angle to 0 with the attitude gain and the hold deadband;
+            # while the sun is briefly invalid the command is 0 (R5.4).
+            command = 0.0
+            if sun_valid and abs(sun_angle) >= HOLD_DEADBAND_DEG:
+                command = max(-ATTITUDE_RATE_LIMIT_DPS, min(ATTITUDE_RATE_LIMIT_DPS, K_PSI * sun_angle))
+            self.rate += ((0.0 if self.stuck else command) - self.rate) * min(1.0, dt / RATE_LAG_S)
         elif self.mode == "READY" and self._wheel_loop_available():
             self.rate += (0.0 - self.rate) * min(1.0, dt / RATE_LAG_S)   # the rate loop holds 0 (R3.9)
         else:
@@ -546,7 +632,7 @@ class Box:
             self.rate = 0.0
         self.psi += self.rate * dt
         tau_mnm = -reaction * 2.0
-        if attitude:
+        if attitude or self.mode == "SUN_POINT":
             # The wheel takes up the box's change of momentum, and the torque is
             # what that change needed. Signs are wire-frame shapes.
             tau_mnm = BOX_INERTIA * math.radians(self.rate - previous_rate) / dt * 1000.0
@@ -564,7 +650,12 @@ class Box:
             flags.append("HALL_BYPASS")
         if self.wheel_hold:
             flags.append("WHEEL_STEP")
-        flags.append("HEADING_GYRO")   # gyro-only heading, relative to zero_heading, until Set 5 (R4.2)
+        if not self.mag_fusing:
+            flags.append("HEADING_GYRO")   # gyro-only heading, relative to zero_heading (R4.2); the compass drops it (R5.1)
+        if self.params["hall_installed"] and not self._wheel_loop_available():
+            flags.append("FF_TABLE_MISSING")
+        if self.params.get("rate_gain_scale", 0.2) < 1.0:
+            flags.append("RATE_GAIN_REDUCED")
         flags.extend(self.latched)
 
         # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
@@ -572,7 +663,7 @@ class Box:
         throttle = 0
         if self.mode == "SPINUP":
             throttle = int(min(SPINUP_THROTTLE, (now - self.mode_since) * SPINUP_RAMP_PER_S))
-        elif self.mode in ("READY", "HOLD", "SLEW") and self._wheel_loop_available():
+        elif self.mode in ("READY", "HOLD", "SLEW", "SUN_POINT") and self._wheel_loop_available():
             throttle = int(round(self._ff(self.wheel_ref)))   # closed wheel loop at steady state (R3.8)
         elif self.mode != "SAFE":
             throttle = SPINUP_THROTTLE
@@ -591,13 +682,14 @@ class Box:
             "psi_ref_deg": None if self.psi_ref is None or self.mode in ("SAFE", "SPINUP", "READY", "DETUMBLE")
             else wire_angle(self.psi_ref + self.psi_offset),
             "rate_dps": round(self.rate, 2),
-            "mag_deg": None,   # as the firmware: no magnetometer heading until Set 5
-            "sun_deg": None, "sun_valid": False,
+            # As the firmware: null until the calibrations exist (T-9, T-10), never a fake number.
+            "mag_deg": wire_angle(self.psi) if self.mag_fusing else None,
+            "sun_deg": round(sun_angle, 2) if sun_valid else None, "sun_valid": sun_valid,
             "wheel_rpm": round(max(0.0, self.wheel), 1),
             # As the firmware: the wheel reference is reported only while the closed
             # wheel loop runs (SPINUP, READY, HOLD, and SLEW with the T-5 table), else 0.
             "wheel_ref_rpm": round(max(0.0, self.wheel_ref), 1)
-            if self.mode in ("SPINUP", "READY", "HOLD", "SLEW") and self._wheel_loop_available() else 0,
+            if self.mode in ("SPINUP", "READY", "HOLD", "SLEW", "SUN_POINT") and self._wheel_loop_available() else 0,
             "throttle": throttle, "throttle_band": [band_lo, band_hi], "tau_cmd_mNm": round(tau_mnm, 2),
             "vbat": round(10.1 + random.uniform(-0.03, 0.03), 2),
             "loop_us": random.randint(690, 790), "flags": flags,
@@ -616,9 +708,9 @@ def only_ws_path(connection, request):
     return None
 
 
-async def start_box(host, port, inputs, characterised=True, stuck=False):
+async def start_box(host, port, inputs, characterised=True, stuck=False, lamp_deg=None):
     """Start the mock box. Returns (server, ticker task); the server's port is in server.sockets."""
-    box = Box(Schema(), set(inputs.split(",")), characterised=characterised, stuck=stuck)
+    box = Box(Schema(), set(inputs.split(",")), characterised=characterised, stuck=stuck, lamp_deg=lamp_deg)
     clients = set()
 
     def flush():
@@ -665,7 +757,8 @@ async def start_box(host, port, inputs, characterised=True, stuck=False):
 
 
 async def run(args):
-    server, ticker = await start_box(args.host, args.port, args.inputs, not args.uncharacterised, args.stuck)
+    server, ticker = await start_box(args.host, args.port, args.inputs, not args.uncharacterised, args.stuck,
+                                     args.lamp)
     async with server:
         await ticker
 
@@ -713,6 +806,111 @@ async def selftest_endpoint():
     if not problems:
         print(f"mock-box selftest: endpoint ok, tlm on {WS_PATH}, HTTP 404 on / and /ws/extra; "
               "a read-only client gets only tlm, a client that spoke gets events")
+    return problems
+
+
+def selftest_pointing(schema):
+    """R5: the compass, respin, MANUAL wheel and rate guards, and SUN_POINT, against the firmware's reasons."""
+
+    class Clock:
+        def __init__(self):
+            self.t = 1000.0
+
+        def __call__(self):
+            return self.t
+
+    class Conn:
+        pass
+
+    problems = []
+
+    def send(box, conn, seq, **cmd):
+        box.receive(conn, json.dumps({"v": 1, "type": "cmd", "seq": seq, **cmd}))
+        return next(m for _t, m in reversed(box.outbox) if m["type"] == "ack" and m["seq"] == seq)
+
+    def run(box, clock, seconds):
+        start = len(box.outbox)
+        for _ in range(int(round(seconds / TICK_S))):
+            clock.t += TICK_S
+            box.last_heartbeat = clock.t
+            box.tick()
+        new = [m for _t, m in box.outbox[start:]]
+        return [m for m in new if m["type"] == "tlm"], [m for m in new if m["type"] == "event"]
+
+    def expect(what, ack, ok, reason=None):
+        if ack["ok"] is not ok or (not ok and ack.get("reason") != reason):
+            problems.append(f"{what}: expected ok {ok} {reason!r}, got {ack}")
+
+    sun_cal = [{"d": d, "deg": a} for d, a in ((-0.8, -40), (-0.4, -20), (0.0, 0), (0.4, 20), (0.8, 40))]
+    calibration = {"mag_cal": {"offset": [0, 0, 0], "soft_iron": [[1, 0], [0, 1]]},
+                   "sun_cal": sun_cal, "light_threshold": 300}
+
+    # An uncharacterised box: every guard that needs the wheel loop says so.
+    clock = Clock()
+    box = Box(schema, {"throttle", "wheel", "rate"}, characterised=False, clock=clock, lamp_deg=20.0)
+    conn = Conn()
+    send(box, conn, 1, cmd="arm")
+    run(box, clock, SPINUP_S + 2 * TICK_S)
+    expect("MANUAL wheel without ff_table", send(box, conn, 2, cmd="mode", mode="MANUAL", input="wheel"),
+           False, "input not available")
+    expect("MANUAL rate without ff_table", send(box, conn, 3, cmd="mode", mode="MANUAL", input="rate"),
+           False, "input not available")
+    expect("SUN_POINT without ff_table", send(box, conn, 4, cmd="mode", mode="SUN_POINT"),
+           False, "wheel loop not available")
+    expect("respin without ff_table", send(box, conn, 5, cmd="respin"), False, "wheel loop not available")
+    flags = run(box, clock, TICK_S)[0][-1]["flags"]
+    for needed in ("FF_TABLE_MISSING", "RATE_GAIN_REDUCED", "HEADING_GYRO"):
+        if needed not in flags:
+            problems.append(f"uncharacterised box: {needed} missing from {flags}")
+
+    # A characterised box, uncalibrated: the sun is not valid, and SAFE-only calibration.
+    clock = Clock()
+    box = Box(schema, {"throttle", "wheel", "rate"}, clock=clock, lamp_deg=20.0)
+    conn = Conn()
+    expect("calibration in SAFE", send(box, conn, 1, cmd="set_params", params=calibration), True)
+    for seq, params, key in ((2, {"mag_axis_map": ["+x", "+x", "-z"]}, "mag_axis_map"),
+                             (3, {"mag_cal": {"offset": [0, 0, 0], "soft_iron": [[1, 2], [0.5, 1]]}}, "mag_cal"),
+                             (4, {"sun_cal": [{"d": 0, "deg": 0}, {"d": 0.5, "deg": 10}, {"d": 0.4, "deg": 20}]},
+                              "sun_cal")):
+        expect(f"bad {key}", send(box, conn, seq, cmd="set_params", params=params), False, f"invalid param: {key}")
+    send(box, conn, 5, cmd="arm")
+    tlm, _events = run(box, clock, SPINUP_S + 2 * TICK_S)
+    if "HEADING_GYRO" in tlm[-1]["flags"] or tlm[-1]["mag_deg"] is None:
+        problems.append(f"a calibrated compass still reports a gyro-only heading: {tlm[-1]['flags']}")
+    if "FF_TABLE_MISSING" in tlm[-1]["flags"]:
+        problems.append("FF_TABLE_MISSING on a characterised box")
+
+    # Respin: the firmware's guards and range.
+    expect("respin below the range", send(box, conn, 6, cmd="respin", wheel_rpm=900), False, "invalid setpoint")
+    expect("respin above the range", send(box, conn, 7, cmd="respin", wheel_rpm=3900), False, "invalid setpoint")
+    box.rate = 8.0
+    expect("respin while turning", send(box, conn, 8, cmd="respin", wheel_rpm=3000), False, "box not still")
+    box.rate = 0.0
+    expect("respin", send(box, conn, 9, cmd="respin", wheel_rpm=3000), True)
+    run(box, clock, SPINUP_S + 2 * TICK_S)
+    if box.mode != "READY":
+        problems.append(f"respin ended in {box.mode}, not READY")
+
+    # SUN_POINT: the lamp is 20 deg clockwise; the box turns to it and holds, then loses it.
+    expect("SUN_POINT", send(box, conn, 10, cmd="mode", mode="SUN_POINT"), True)
+    tlm, _events = run(box, clock, 6.0)
+    last = tlm[-1]
+    if last["mode"] != "SUN_POINT" or not last["sun_valid"] or abs(last["sun_deg"]) > 3.0:
+        problems.append(f"SUN_POINT did not settle on the lamp: {last['mode']} sun_valid {last['sun_valid']} "
+                        f"sun_deg {last['sun_deg']}")
+    box.lamp_deg = None   # lights out
+    tlm, events = run(box, clock, SUN_LOST_S + 4 * TICK_S)
+    if box.mode != "READY" or not any(e.get("cause") == "sun_invalid" for e in events):
+        problems.append(f"SUN_POINT stayed in {box.mode} after the sun was lost ({[e.get('cause') for e in events]})")
+    expect("SUN_POINT in a dark room", send(box, conn, 11, cmd="mode", mode="SUN_POINT"), False, "sun not valid")
+    box.lamp_deg = 20.0
+    expect("MANUAL wheel", send(box, conn, 12, cmd="mode", mode="MANUAL", input="wheel"), True)
+    send(box, conn, 13, cmd="mode", mode="READY")
+    expect("SUN_POINT from MANUAL", send(box, conn, 14, cmd="mode", mode="SUN_POINT"), True)
+    expect("SUN_POINT again", send(box, conn, 15, cmd="mode", mode="SUN_POINT"), False, "not in READY")
+    if not problems:
+        print("mock-box selftest: pointing ok (compass flag, respin guards, SUN_POINT to the lamp and out, "
+              "wheel-loop refusals)")
     return problems
 
 
@@ -982,6 +1180,7 @@ def selftest():
         if got is None or got["ok"] is not ok or got.get("reason") != reason:
             problems.append(f"set_params seq {seq}: expected ok {ok} reason {reason!r}, got {got}")
     problems.extend(selftest_attitude(schema))
+    problems.extend(selftest_pointing(schema))
     problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:
         print(f"mock-box selftest: FAILED, {problem}", file=sys.stderr)
@@ -999,6 +1198,9 @@ def main():
                              "refused with 'wheel loop not available' until set_params sends one")
     parser.add_argument("--stuck", action="store_true",
                         help="a box that cannot turn, so every SLEW ends in SLEW_TIMEOUT")
+    parser.add_argument("--lamp", type=float, default=None, metavar="DEG",
+                        help="a lamp fixed at this clockwise bearing: once sun_cal is set the sun sensors see it, "
+                             "so SUN_POINT can be tried (default: a dark room, sun_valid false)")
     parser.add_argument("--selftest", action="store_true", help="validate one of each outbound kind and exit")
     args = parser.parse_args()
     if args.selftest:
