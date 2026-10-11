@@ -75,6 +75,8 @@ else
         "no_spinup_ramp|rung 1: SPINUP ramps at 200 DShot units per second through the supervisor"
         "no_hall_expect_rule|HT-10 HALL_SILENT trips in SPINUP for every parameter set the box accepts"
         "params_during_ramp|HT-7 set_params is refused during the ramp-down and nothing changes or persists while the wheel turns"
+        "ticks_not_alarms|missed ticks: HEARTBEAT_LOST trips at 1.0 s and the ramp ends at 5.0 s of wall time"
+        "durations_per_step|missed ticks: HALL_SILENT UNDERSPEED and the SPINUP dwell run on wall time"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

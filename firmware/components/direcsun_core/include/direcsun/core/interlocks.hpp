@@ -72,6 +72,7 @@ constexpr int kDshotMaxThrottle = kDshotMaxValue;
 
 // What the monitor needs each tick.
 struct FaultInputs {
+    uint32_t elapsed_ticks = 1;        // alarms since the previous evaluation (TickClock)
     bool hall_installed = true;
     bool underspeed_applies = false;   // mode is neither SAFE nor SPINUP
     float wheel_rpm_safe = 0.0f;       // median wheel speed (FD section 10.4)
@@ -84,7 +85,9 @@ struct FaultInputs {
 };
 
 // Evaluates the hard faults every tick. It keeps the two duration counters
-// (UNDERSPEED, HALL_SILENT); everything else is a threshold on its input.
+// (UNDERSPEED, HALL_SILENT), which add the alarms each evaluation stands for,
+// so a missed tick cannot stretch them; everything else is a threshold on its
+// input.
 class InterlockMonitor {
 public:
     InterlockSet evaluate(const FaultInputs &in, const Params &params);

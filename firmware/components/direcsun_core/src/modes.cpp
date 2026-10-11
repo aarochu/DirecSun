@@ -6,7 +6,7 @@
 // Mutation-test switches remove one safety mechanism so the host selftest can
 // prove the tests notice. They exist only in host selftest builds.
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_LATCH) || defined(DIRECSUN_MUTANT_NO_BYPASS_CLAMP) || \
-                              defined(DIRECSUN_MUTANT_PARAMS_DURING_RAMP))
+                              defined(DIRECSUN_MUTANT_PARAMS_DURING_RAMP) || defined(DIRECSUN_MUTANT_DURATIONS_PER_STEP))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -333,6 +333,17 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     out.events.clear();
     out.params_changed = false;
     const uint32_t t = in.tick;
+    // Alarms since the previous step: 1 when the control task kept up, more
+    // after missed ticks (TickClock). The duration counters below add this, so
+    // they follow wall time like everything timed by `t` (V-66).
+#ifdef DIRECSUN_MUTANT_DURATIONS_PER_STEP
+    const uint32_t elapsed = 1;
+#else
+    const uint32_t since_last = ticks_since(t, last_step_tick_);
+    const uint32_t elapsed = stepped_ && since_last > 0 ? since_last : 1;
+#endif
+    last_step_tick_ = t;
+    stepped_ = true;
 
     if (pending_reset_notice_) {
         Event e;
@@ -355,7 +366,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         if (params_.hall_installed) {
             const float band = kSpinupBand * spinup_target_rpm_;
             if (std::fabs(in.wheel_rpm_safe - spinup_target_rpm_) <= band) {
-                ++spinup_in_band_ticks_;
+                spinup_in_band_ticks_ += elapsed;
             } else {
                 spinup_in_band_ticks_ = 0;
             }
@@ -406,6 +417,7 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     // 4. Interlocks (FD section 14.2): hard faults first, then e-stop and
     // heartbeat loss, then the ramp.
     FaultInputs faults_in;
+    faults_in.elapsed_ticks = elapsed;
     faults_in.hall_installed = params_.hall_installed;
     faults_in.underspeed_applies = mode_ != Mode::Safe && mode_ != Mode::Spinup;
     faults_in.wheel_rpm_safe = in.wheel_rpm_safe;

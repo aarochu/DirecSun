@@ -357,6 +357,8 @@ At 100 kHz I2C the IMU read alone is 1.55 ms [C], and an IMU + magnetometer tick
 
 `loop_us` above 1500 for more than 10 consecutive ticks raises a `LOOP_OVERRUN` warning flag. A tick that is still running when the next notification arrives counts as a missed tick; 25 consecutive missed ticks (50 ms) trip `CONTROL_STALL` before the watchdog fires [D].
 
+Missed ticks do not stretch time [D, finding V-66]. The supervisor's clock (`TickClock` in `direcsun_core`) advances by every timer alarm, not by every executed tick, so the heartbeat timeout, the ramp-down, the `SPINUP` dwell, and the `UNDERSPEED` and `HALL_SILENT` durations are wall time. A duration counter counts the condition a late tick sees for the whole interval since the tick before, so a trip can come up to one tick early, never late. The sensor schedule and the telemetry snapshots still follow executed ticks.
+
 ---
 
 ## 10. Drivers
@@ -764,7 +766,7 @@ TD §6.7: ramp the wheel to zero over 5 s, then DShot 0, so the box speeds up ge
 Implementation [D]:
 
 1. Freeze the controllers. Record throttle_0 = current throttle.
-2. Each tick, throttle = throttle_0 × (1 − t / 5 s), open loop, mapped to 0 once below 48.
+2. Each tick, throttle = throttle_0 × (1 − t / 5 s), open loop, mapped to 0 once below 48. t is wall time from the alarm clock, so missed ticks do not lengthen the ramp (§9.2, V-66).
 3. At t = 5 s, or as soon as a hard fault occurs, send DShot 0.
 
 The ramp is **open-loop on throttle**, not closed-loop on Ω_ref, because closed-loop control below the 800 rpm sensorless limit is not trusted [A] A-8, and because the safety path should not depend on the Hall sensor.
@@ -1044,7 +1046,7 @@ firmware/                     ESP-IDF v6.0 project; run idf.py from here (or too
 | HT-5 | `controllers` + `plant_sim` | Closed loop on the TD §3.1 plant: detumble 1 rev/s within 5 s; 90° slew within 3 s settling to ±3°; Ω_ref never exceeds 4000 rpm |
 | HT-6 | `controllers` sign | With s_w = −1 instead of +1, HT-5's detumble diverges, so the test can see a sign error (positive control) |
 | HT-7 | `modes` | Every row of §13.1, every refused transition with its reason, FR-2 timing in ticks |
-| HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s; no path leaves `SAFE` after a fault without `arm`, with a mutant build that compiles out latching as its positive control |
+| HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s; no path leaves `SAFE` after a fault without `arm`, with a mutant build that compiles out latching as its positive control; with timer alarms missed, the heartbeat, the ramp, and every interlock duration still end on wall time (V-66; mutants that count executed ticks must fail) |
 | HT-9 | `protocol` | Parse every `cmd`; reject oversize, wrong `v`, unknown `type`; `ack` echoes `seq`; `tlm` round-trips through a JSON parser |
 | HT-10 | `interlocks` | `HALL_SILENT` trips during SPINUP with throttle high and no edges, for every parameter set the box accepts, on the tick its 500 ms ends (V-64; a mutant build without the `hall_expect_throttle` rule must fail it) |
 | HT-11 | `modes` + `protocol` | `MANUAL`: entry refused from any mode but READY and for an unbuilt input; each setpoint form clamps to its limits; a setpoint for the wrong input, from a non-controlling client, or under 50 ms after the last is refused; after 250 ms without setpoints `rate` falls to 0 and `MANUAL_STALE` is set while `throttle` and `wheel` hold; an accepted setpoint resets the heartbeat |
@@ -1213,6 +1215,7 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-63 | TD §7.4 and R3.7: the bench console's e-stop is "bound to the space bar", "from any state" | Review of R3.7 before the first spin: Playwright against `tools/mock-box.py`, frames read from the browser's own WebSocket record | With focus in the endpoint field, where connecting with Enter left it, Space typed a space into the URL and sent nothing; the box stayed in `MANUAL` | Space sends `estop` wherever focus is; a held key sends one; Space's keyup is cancelled, so it cannot press a focused button; the endpoint field loses focus once the link opens (§17) | High (bench console) |
 | V-64 | §14.1 and §16: `HALL_SILENT` arms above `hall_expect_throttle`; it and `spinup_throttle` each range over 48..2047 | Review of R3.7 before the first spin: host test with the Hall fitted but silent, both parameters at 2047 as NVS could hold them | Rung 1's `SPINUP` ramp tops out at `spinup_throttle`, and `SPINUP` is exempt from `UNDERSPEED`. With the threshold at or above the target, nothing stopped a `SPINUP` at full throttle | `hall_expect_throttle` must be below `spinup_throttle`: `set_params` refuses otherwise (`invalid param: hall_expect_throttle`), and a stored set that breaks it loads the defaults. Strictly below, because the trip condition is "above". The rule matches the intended values: FF(Ω_low) is below the throttle that drives the wheel toward the bias. With the defaults it trips 1.504 s after `arm`, at throttle 300 | High (this doc) |
 | V-65 | §13.1, §15.3, §16: `set_params` is accepted in `SAFE` | Review of R3.7 before the first spin: host test of a `set_params` sent during the 5 s ramp-down that follows an e-stop | The ramp-down is `SAFE` with the wheel still driven, so the update was accepted: a lowered cap did not apply to the running ramp, and `params_changed` asked for a flash write, which stalls both cores' caches and the tick alarm (§16, `control_task.cpp`), while the motor turned | `set_params` is refused until the ramp has ended, with the existing reason `ramp-down in progress`, the one `arm` already gives there; the refusal reasons stay a fixed list (§13.1), and the schema does not enumerate them, so this is no schema change | Medium (this doc) |
+| V-66 | §9.2, §14.1, §14.3: missed ticks are counted for `CONTROL_STALL`; the 1 s heartbeat, the 5 s ramp, and the 200 ms and 500 ms interlock durations are counted in ticks | Review of R3.7 before the first spin: read `control_task.cpp`; host test with 6 of every 14 timer alarms missed | The supervisor's tick count advanced once per executed tick, not per alarm, so missed ticks stretched every duration. At that miss rate the heartbeat expired after 1.75 s of wall time, `UNDERSPEED` after about 350 ms, and `HALL_SILENT` after about 875 ms | `TickClock` in the pure core advances by every alarm and keeps the missed-tick streak; the control task feeds it, and the supervisor's duration counters add the alarms each tick stands for (§9.2). Host tests drive the supervisor through it; mutants that count executed ticks fail them | High (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
