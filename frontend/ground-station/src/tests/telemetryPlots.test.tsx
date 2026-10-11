@@ -47,10 +47,10 @@ describe('telemetry plots in the rail', () => {
   it('draws box rate and wheel speed in simulation, and no battery plot because the simulation has no pack', () => {
     connectedApp();
     expect(screen.getByText(/Simulated box rate over the last 15 seconds/)).toBeTruthy();
-    expect(screen.getByText(/Simulated wheel speed over the last 15 seconds, with the 800 rpm low limit and 4000 rpm cap shaded/)).toBeTruthy();
+    expect(screen.getByText(/Simulated wheel speed over the last 15 seconds, with the default 800 rpm low limit and 4000 rpm cap shaded/)).toBeTruthy();
     expect(screen.queryByText(/battery voltage over the last 15 seconds/)).toBeNull();
-    expect(screen.getByText('BELOW LOW LIMIT')).toBeTruthy();
-    expect(screen.getByText('ABOVE CAP')).toBeTruthy();
+    expect(screen.getByText('BELOW LOW LIMIT (DEFAULT)')).toBeTruthy();
+    expect(screen.getByText('ABOVE CAP (DEFAULT)')).toBeTruthy();
   });
 
   it('plots device rate, wheel speed with its reference, and battery with the arm and cutoff lines', () => {
