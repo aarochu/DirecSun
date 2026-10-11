@@ -31,6 +31,8 @@ The landing page is at `/` and the ground station at `/ground-station/`, served 
 
 The timed pitch, preflight checklist, safety cues, and fallback paths are in [`DEMO.md`](DEMO.md).
 
+The complete firmware to frontend interface, including network ports, wire messages, timing, and current implementation drift, is in [`ports.md`](ports.md).
+
 Open the ground station over plain `http`, as above, so the browser allows `ws://`. Join the box's Wi-Fi and enter `ws://192.168.4.1/ws` in Device link (or `ws://direcsun.local/ws` on a shared network). The hosted copy on Vercel is `https`, and a browser blocks `ws://` from an `https` page, so use this local copy with the real box.
 
 ## Layout
