@@ -30,6 +30,8 @@ function statusText(state: LinkState): string {
       return state.packets === 0
         ? 'SOCKET OPEN — WAITING FOR TELEMETRY'
         : `RECEIVING TELEMETRY · ${state.packets} PACKETS${state.ignored ? ` · ${state.ignored} IGNORED` : ''}${
+            state.tlmDropped ? ` · ${state.tlmDropped} TLM SKIPPED BY THE BOX SINCE BOOT (ALL CLIENTS)` : ''
+          }${state.droppedEvents ? ` · ${state.droppedEvents} EVENTS LOST BY THE BOX SINCE BOOT` : ''}${
             state.talking ? ` · RTT ${state.rttMs === null ? '—' : `${Math.round(state.rttMs)} MS`}` : ''
           }`;
     case 'closed':
@@ -96,6 +98,16 @@ export function DeviceLinkPanel({ link }: { link: DeviceLink }) {
         {error ? <span className="link__error">{error}</span> : statusText(state)}
         {!error && state.message && state.status !== 'open' && <span> · {state.message}</span>}
       </p>
+      {state.notices.length > 0 && (
+        <ul className="link__notices mono-label" aria-label="Box notices">
+          {state.notices.map((notice) => (
+            <li key={`${notice.atMs}-${notice.name}`}>
+              {new Date(notice.atMs).toLocaleTimeString([], { hour12: false })} · NOTICE {notice.name.replace(/_/g, ' ')}
+              {notice.detail ? ` · ${notice.detail.toUpperCase()}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="link__record">
         {recording.recording ? (
           <button
