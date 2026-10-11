@@ -134,10 +134,14 @@ describe('DeviceLink', () => {
     const { link, socket } = setup();
     link.connect('ws://device/ws');
     socket().open();
-    socket().message(tlm({ psi_deg: 5 }));
+    socket().message(tlm({ psi_deg: 5, mode: 'READY' }));
+    expect(link.getTelemetry().statusWord).toBe('READY');
     socket().drop(1006);
     expect(link.getState().status).toBe('closed');
     expect(link.receiving).toBe(false);
+    expect(link.latestReading).toBeNull();
+    expect(link.getTelemetry().statusWord).toBe('—');
+    expect(link.getTelemetry().history).toEqual([]);
     expect(FakeSocket.instances).toHaveLength(1);
   });
 
@@ -146,11 +150,14 @@ describe('DeviceLink', () => {
     link.connect('ws://device/ws');
     const first = socket();
     first.open();
+    first.message(tlm({ psi_deg: 5, mode: 'READY' }));
     link.disconnect();
     expect(first.closedWith).toBe(1000);
     expect(link.getState().status).toBe('idle');
+    expect(link.latestReading).toBeNull();
+    expect(link.getTelemetry().statusWord).toBe('—');
     first.message(tlm({ psi_deg: 5 }));
-    expect(link.getState().packets).toBe(0);
+    expect(link.getState().packets).toBe(1);
   });
 });
 

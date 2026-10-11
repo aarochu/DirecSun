@@ -264,6 +264,7 @@ export class DeviceLink implements DisplaySource {
       if (this.socket !== socket) return;
       this.socket = null;
       this.stopTalking('The link closed before the box answered');
+      this.resetData();
       const wasError = this.state.status === 'error' || this.state.status === 'connecting';
       this.setState({
         status: wasError ? 'error' : 'closed',
@@ -280,6 +281,7 @@ export class DeviceLink implements DisplaySource {
       this.stopTalking('The link was disconnected before the box answered');
       socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
       if (socket.readyState === SOCKET_CONNECTING || socket.readyState === SOCKET_OPEN) socket.close(1000);
+      this.resetData();
       this.setState({ status: 'idle', message: null });
       this.publishTelemetry(true);
     }
