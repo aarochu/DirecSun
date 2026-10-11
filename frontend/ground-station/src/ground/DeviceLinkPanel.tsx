@@ -30,8 +30,8 @@ function statusText(state: LinkState): string {
       return state.packets === 0
         ? 'SOCKET OPEN — WAITING FOR TELEMETRY'
         : `RECEIVING TELEMETRY · ${state.packets} PACKETS${state.ignored ? ` · ${state.ignored} IGNORED` : ''}${
-            state.tlmDropped ? ` · ${state.tlmDropped} TLM DROPPED BY THE BOX` : ''
-          }${state.droppedEvents ? ` · ${state.droppedEvents} EVENTS DROPPED BY THE BOX` : ''}${
+            state.tlmDropped ? ` · ${state.tlmDropped} TLM SKIPPED BY THE BOX SINCE BOOT (ALL CLIENTS)` : ''
+          }${state.droppedEvents ? ` · ${state.droppedEvents} EVENTS LOST BY THE BOX SINCE BOOT` : ''}${
             state.talking ? ` · RTT ${state.rttMs === null ? '—' : `${Math.round(state.rttMs)} MS`}` : ''
           }`;
     case 'closed':
