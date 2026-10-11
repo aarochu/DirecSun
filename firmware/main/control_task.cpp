@@ -7,7 +7,9 @@
 //   2. Estimator update.
 //   3. Supervisor step: commands, mode machine, controller, interlocks.
 //   4. One DShot frame.
-//   5. Acks and events posted to comms; a telemetry snapshot every 10th tick.
+//   5. A telemetry snapshot every 10th tick and on every tick with an ack or
+//      event, written before the acks and events are posted to comms, so the
+//      first tlm after either is at least as new (R4.1).
 //   6. Timing: loop_us and the per-second TickStats.
 //
 // Tick source and stall watchdog: a gptimer alarm at 500 Hz notifies this task
@@ -52,7 +54,6 @@ constexpr const char *TAG = "control";
 
 constexpr uint32_t kTickPeriodUs = 1000000 / kTickHz;  // 2000
 constexpr uint32_t kStallAbortTicks = 50;              // 100 ms without a finished tick
-constexpr uint32_t kTicksPerSnapshot = 10;             // 50 Hz telemetry
 constexpr std::size_t kHallBatch = 16;
 constexpr UBaseType_t kControlPriority = configMAX_PRIORITIES - 2;
 constexpr uint32_t kControlStackBytes = 6144;
@@ -364,28 +365,16 @@ void control_task(void *)
         dshot.send(static_cast<uint16_t>(out.throttle));
         STAGE_END(stages, TickStage::Dshot);
 
-        // ---- 5. Outbound and snapshot --------------------------------------
-        for (std::size_t i = 0; i < out.acks.count; ++i) {
-            Outbound item;
-            item.kind = Outbound::Kind::Ack;
-            item.ack = out.acks.items[i];
-            shared_post_outbound(item);
-        }
-        for (std::size_t i = 0; i < out.events.count; ++i) {
-            Outbound item;
-            item.kind = Outbound::Kind::Event;
-            item.event = out.events.items[i];
-            shared_post_outbound(item);
-        }
-        if (out.params_changed) {
-            params_to_persist().write(supervisor.params());
-            if (s_persist_task != nullptr) {
-                xTaskNotifyGive(s_persist_task);
-            }
-        }
-        STAGE_END(stages, TickStage::Outbound);
-
-        if (tick % kTicksPerSnapshot == 0) {
+        // ---- 5. Snapshot and outbound --------------------------------------
+        // The snapshot comes first (FD section 7.4, R4.1): comms pops posted
+        // acks and events before it reads the snapshot, so a snapshot written
+        // before posting is at least as new as anything comms can send with it.
+        // Ticks off the 50 Hz cadence write one only when they post something;
+        // they leave the 20 ms loop_us window and mag_fresh to the cadence
+        // ticks, so no window's worst tick is lost to an extra snapshot.
+        const std::size_t outbound = out.acks.count + out.events.count;
+        if (snapshot_due(tick, outbound)) {
+            const bool cadence = tick % kTicksPerSnapshot == 0;
             snap.tick = tick;
             snap.t_us = t0;
             snap.mode = out.mode;
@@ -434,10 +423,32 @@ void control_task(void *)
             snap.hall_edges = wheel.edge_count();
             snap.hall_glitches = wheel.glitch_count();
             telemetry().write(snap);
-            loop_us_window = 0;
-            mag_fresh = false;
+            if (cadence) {
+                loop_us_window = 0;
+                mag_fresh = false;
+            }
             STAGE_END(stages, TickStage::Snapshot);
         }
+
+        for (std::size_t i = 0; i < out.acks.count; ++i) {
+            Outbound item;
+            item.kind = Outbound::Kind::Ack;
+            item.ack = out.acks.items[i];
+            shared_post_outbound(item);
+        }
+        for (std::size_t i = 0; i < out.events.count; ++i) {
+            Outbound item;
+            item.kind = Outbound::Kind::Event;
+            item.event = out.events.items[i];
+            shared_post_outbound(item);
+        }
+        if (out.params_changed) {
+            params_to_persist().write(supervisor.params());
+            if (s_persist_task != nullptr) {
+                xTaskNotifyGive(s_persist_task);
+            }
+        }
+        STAGE_END(stages, TickStage::Outbound);
 
 #if CONFIG_DIRECSUN_BENCH_STALL_TEST
         if (!stall_test_done && second >= CONFIG_DIRECSUN_BENCH_STALL_AFTER_S) {
