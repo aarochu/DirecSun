@@ -81,9 +81,9 @@ Power flows from the pack through the fuse to the ESC and the 5 V buck; sensing 
 
 **Constraints.** The build must finish in one weekend, mostly from parts already owned. Printed parts must fit a 220 mm print bed. Nothing printed may spin with the wheel. The design must survive a judge pushing or spinning the box by hand.
 
-**Hardware on hand** (owner's statement, not inspected) \[A\]: Seeed XIAO ESP32-S3 and ESP32-C3 boards (6 each), Adafruit STEMMA QT sensor boards (MPU-6050 #3886, BMP280 #2651, QMC5883P #6388, confirmed by the owner), four 2212 920KV motors, LANRC 35A/45A BLHeli\_S ESCs, an Open Mesh OM5P-AC radio, and the component bins listed in `docs/reference/Electronics_Component_Inventory_with_Robotics.pdf` (OP550 phototransistors, A1104 Hall switches, 1N5817 Schottky diodes, solder breadboards).
+**Hardware on hand** (owner's statement, not inspected) \[A\]: Seeed XIAO ESP32-S3 and ESP32-C3 boards (6 each), Adafruit STEMMA QT sensor boards (MPU-6050 #3886, BMP280 #2651, QMC5883P #6388, confirmed by the owner), four 2212 920KV motors, LANRC 35A/45A BLHeli\_S ESCs, an Open Mesh OM5P-AC radio, and the component bins listed in `docs/reference/Electronics_Component_Inventory_with_Robotics.pdf` (OP550 phototransistors, A1104 Hall switches, 1N5817 Schottky diodes, solder breadboards), and Bussmann AGC-10 fuses (Section 5.1).
 
-**To buy:** an M8 × 60 hex bolt (bought, with an M8 × 70 as a spare), four #8-32 threaded rods cut to about 245 mm with eight #8-32 nylon-insert lock nuts (Home Depot had no M3 rod), three 2.5 in fender washers, about 40 cm of 18 to 22 AWG stranded wire for the printed battery holder (Section 4.12), a 5 V buck module, a 10 A fuse with holder, two 200 mm STEMMA QT cables, and one STEMMA QT to header cable for the XIAO. Already on hand: eight Energizer Recharge NiMH AA cells, two Bones Reds 608 bearings, and a screw kit (M2 to M5 button-head screws, nuts, and washers) that covers every small fastener in the design.
+**To buy:** an M8 × 60 hex bolt (bought, with an M8 × 70 as a spare), four #8-32 threaded rods cut to about 245 mm with eight #8-32 nylon-insert lock nuts (Home Depot had no M3 rod), three 2.5 in fender washers, about 40 cm of 18 to 22 AWG stranded wire for the printed battery holder (Section 4.12), a 5 V buck module, an inline holder for the AGC-10 fuse (Section 5.1), two 200 mm STEMMA QT cables, and one STEMMA QT to header cable for the XIAO. Already on hand: eight Energizer Recharge NiMH AA cells, two Bones Reds 608 bearings, and a screw kit (M2 to M5 button-head screws, nuts, and washers) that covers every small fastener in the design.
 
 **From the EE parts closet:** the pick list with bin labels and photo numbers was a separate tab of the original document and was not imported into the repository.
 
@@ -340,7 +340,7 @@ One 8 × AA NiMH pack (Energizer Recharge cells in the printed holder of Section
 
 ```
 8 × AA NiMH pack (8.8 to 11.2 V)
-  └─ 10 A fuse at the pack
+  └─ 10 A fuse at the pack (Bussmann AGC-10, inline holder)
        ├─ 470 µF 35 V bulk capacitor ─ ESC (LANRC 35A/45A BLHeli_S) ─ 2212 motor
        ├─ 100 kΩ / 22 kΩ divider ─ ADC (battery voltage)
        └─ 5 V buck
@@ -351,6 +351,8 @@ One 8 × AA NiMH pack (Energizer Recharge cells in the printed holder of Section
 ```
 
 The diode follows Seeed's guidance for powering the XIAO through its 5V pin \[V\]; the 1N5817 and the 470 µF 35 V capacitor are in the inventory bins \[V: inventory PDF\]. The divider maps 11.2 V, a pack fresh off the charger, to 2.02 V, inside the 0 to 2.9 V range of the ESP32-S3 ADC at 12 dB attenuation \[C, V\]. Motor current at the torques in Section 3 is 1 to 3 A of phase current; the 10 A fuse is sized for wiring protection, not for the motor's limit \[A\].
+
+**Fuse.** The fuse is a Bussmann AGC-10 from stock: 10 A, fast-acting, glass cartridge, 6.3 × 32 mm (1/4 × 1-1/4 in), 250 V AC \[A: the part is the owner's statement; the ratings are from distributor listings, because Eaton's data sheet could not be retrieved\]. The pack draws 0.40 A on average in the demo and at most 2.35 A, with 3 A of motor current at the cap and a Wi-Fi peak at the 8.8 V cutoff (table below) \[C\], so the fuse never opens in normal running. A short at the pack can draw about 33 A, 11.2 V across the 0.34 Ω pack resistance that `docs/sizing.py` estimates \[C on A\], and the fuse opens on that. The 470 µF capacitor's charging pulse when the pack is connected lasts milliseconds and does not open it \[A\]. It sits in an inline holder in the pack's + lead, at the battery holder, so the lead down to the power deck is protected too. The fallback is a pair of PCB clips for the same size on the power perfboard. A fuse in clips takes about 35 × 8 × 13 mm, and the perfboard's top is 19.4 mm below the battery deck \[C: `cad/stack.py`\]. Do not solder to the fuse's end caps, because the heat can damage the element. Wire after the fuse is 20 AWG or heavier, so the fuse protects the wire as well as the parts \[A\].
 
 Battery current, baseline wheel, from `docs/sizing.py` \[C on A\]:
 
