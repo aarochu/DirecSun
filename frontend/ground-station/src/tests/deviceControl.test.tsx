@@ -43,6 +43,27 @@ describe('DeviceLink commands', () => {
     expect(socket.frames().filter((frame) => frame.type === 'ping')).toHaveLength(6);
   });
 
+  it.each(['error', 'messageerror'] as const)('falls back to 5 Hz pings when the heartbeat Worker has a %s', (eventName) => {
+    let worker!: WorkerStub;
+    class WorkerStub {
+      onmessage: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      onmessageerror: (() => void) | null = null;
+      postMessage = vi.fn();
+      terminate = vi.fn();
+      constructor() { worker = this; }
+    }
+    vi.stubGlobal('Worker', WorkerStub);
+    const { link, socket } = openLink();
+    void link.command('arm').catch(() => {});
+    expect(socket.frames().filter((frame) => frame.type === 'ping')).toHaveLength(1);
+    worker[`on${eventName}`]?.();
+    vi.advanceTimersByTime(PING_INTERVAL_MS * 5);
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(socket.frames().filter((frame) => frame.type === 'ping')).toHaveLength(7);
+    link.disconnect();
+  });
+
   it('resolves a command on the ack with its seq and ignores acks for other seqs', async () => {
     const { link, socket } = openLink();
     let settled: unknown = null;
@@ -212,6 +233,22 @@ describe('DeviceOperator', () => {
     socket.message(ack(zeroSeq));
     await turn;
     expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(0);
+    expect(operator.getState().result?.text).toBe('TURN STOPPED: HOLDING WHERE THE BOX IS.');
+  });
+
+  it('sends READY when Stop races the SLEW acknowledgement', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const { turn } = await startTurn(socket, operator, 1);
+    const slewSeq = socket.lastCommand().seq;
+    const stopping = operator.stopTurn();
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'READY' });
+    socket.message(ack(slewSeq));
+    socket.message(ack(socket.lastCommand().seq));
+    await stopping;
+    await turn;
+    expect(operator.getState().result?.text).toBe('TURN STOPPED: HOLDING WHERE THE BOX IS.');
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(1);
   });
 
   it('Stop turn cancels the sequence and sends mode READY while the box is slewing', async () => {

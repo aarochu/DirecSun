@@ -40,7 +40,7 @@ export default function GroundStationPage() {
     if (deviceLive) plant.reset();
   }, [deviceLive, plant]);
 
-  const showDeviceControls = deviceLive || operatorState.result?.text.startsWith('LINK CLOSED:') === true;
+  const showDeviceControls = deviceLive || operatorState.linkLost;
   const source = showDeviceControls ? deviceDisplay : simulation;
   return (
     <div className="gs">

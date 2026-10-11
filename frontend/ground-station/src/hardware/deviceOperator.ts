@@ -11,6 +11,7 @@ export interface OperatorResult {
 
 export interface OperatorState {
   readonly controlling: boolean;
+  readonly linkLost: boolean;
   readonly phase: TurnPhase;
   readonly direction: Direction | null;
   readonly originDeg: number | null;
@@ -28,6 +29,7 @@ type WatchVerdict = 'continue' | 'done' | string | { waitMs: number; timeoutMess
 
 const IDLE: OperatorState = {
   controlling: false,
+  linkLost: false,
   phase: 'idle',
   direction: null,
   originDeg: null,
@@ -167,10 +169,11 @@ export class DeviceOperator {
   }
 
   async stopTurn(): Promise<void> {
+    const wasTurning = this.state.phase !== 'idle';
     const shouldSendReady = this.slewIssued || this.boxMode === 'SLEW';
     this.abortTurn('Stop requested');
+    if (wasTurning) this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
     if (!shouldSendReady) return;
-    this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
     try {
       await this.link.command('mode', { mode: 'READY' });
     } catch (error) {
@@ -273,12 +276,17 @@ export class DeviceOperator {
   };
 
   private onLinkState = () => {
-    if (this.link.isOpen || (!this.state.controlling && this.state.phase === 'idle')) return;
+    if (this.link.isOpen) {
+      if (this.state.linkLost) this.set({ linkLost: false });
+      return;
+    }
+    if (!this.state.controlling && this.state.phase === 'idle') return;
     this.abortTurn('Link closed');
     this.armedSeen = false;
     this.ownEstopPending = false;
     this.set({
       controlling: false,
+      linkLost: true,
       busy: null,
       result: { tone: 'error', text: 'LINK CLOSED: AN ARMED BOX RAMPS DOWN BY ITSELF 1 S AFTER THE LAST HEARTBEAT.' },
     });

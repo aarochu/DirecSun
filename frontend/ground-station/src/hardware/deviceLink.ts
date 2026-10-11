@@ -458,9 +458,20 @@ export class DeviceLink implements DisplaySource {
     this.ping();
     if (typeof Worker !== 'undefined') {
       try {
-        this.pingWorker = new Worker(new URL('./heartbeat.worker.ts', import.meta.url), { type: 'module' });
-        this.pingWorker.onmessage = () => this.ping();
-        this.pingWorker.postMessage({ intervalMs: PING_INTERVAL_MS });
+        const worker = new Worker(new URL('./heartbeat.worker.ts', import.meta.url), { type: 'module' });
+        this.pingWorker = worker;
+        worker.onmessage = () => this.ping();
+        const fallback = () => {
+          if (this.pingWorker !== worker) return;
+          worker.terminate();
+          this.pingWorker = null;
+          if (!this.state.talking || !this.isOpen) return;
+          this.ping();
+          this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL_MS);
+        };
+        worker.onerror = fallback;
+        worker.onmessageerror = fallback;
+        worker.postMessage({ intervalMs: PING_INTERVAL_MS });
       } catch {
         this.pingWorker = null;
       }
