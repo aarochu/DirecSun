@@ -33,6 +33,19 @@ async function goTo(page: Page, name: string) {
 }
 
 test.describe('landing page', () => {
+  test('the actual content is the main landmark and the narrow ticker stays inside the viewport', async ({ page }) => {
+    await open(page, 320, 812);
+    const main = page.getByRole('main');
+    await expect(main.locator('.panel--hero h1')).toHaveText('Control the attitude.');
+    await expect(main.locator('.panel--system')).toHaveCount(1);
+    await goTo(page, 'System');
+    const ticker = await page.locator('.ticker').boundingBox();
+    const label = await page.locator('.ticker__label').boundingBox();
+    const track = await page.locator('.ticker__track').boundingBox();
+    expect(ticker).not.toBeNull();
+    expect(label!.x).toBeGreaterThanOrEqual(ticker!.x);
+    expect(track!.x + track!.width).toBeLessThanOrEqual(ticker!.x + ticker!.width + 1);
+  });
   test('loads cleanly: no console errors, the loader clears, and the model is drawn', async ({ page }) => {
     const errors = await open(page);
     expect(errors).toEqual([]);
