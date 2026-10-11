@@ -45,6 +45,17 @@ export function TelemetryReadouts({ telemetry }: { telemetry: DisplayTelemetry }
           <span className="readout__note">{telemetry.wheelNote}</span>
         </dd>
       </div>
+      {telemetry.throttle !== null && (
+        <div className="readout">
+          <dt className="mono-label">MOTOR COMMAND</dt>
+          <dd className="readout__value">
+            {Math.round(telemetry.throttle)}
+            <span className="readout__note">
+              DSHOT{telemetry.torqueMNm === null ? '' : ` · TORQUE ${telemetry.torqueMNm.toFixed(1)} MN·M`}
+            </span>
+          </dd>
+        </div>
+      )}
       {telemetry.throttleBand !== null && (
         <div className="readout">
           <dt className="mono-label">THROTTLE BAND</dt>

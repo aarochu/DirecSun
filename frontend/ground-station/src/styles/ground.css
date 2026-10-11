@@ -871,3 +871,12 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
 }
+
+.link__notices {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--accent);
+}

@@ -25,6 +25,8 @@ export interface DisplayTelemetry {
   readonly batteryV: number | null;
   // Raw sensor values from the box; null in simulation, which models motion only.
   readonly sensors: SensorReadings | null;
+  readonly throttle: number | null;
+  readonly torqueMNm: number | null;
   readonly history: readonly HistorySample[];
   readonly nowS: number;
 }
@@ -53,6 +55,8 @@ export function simulationTelemetry({ state, history }: PlantSnapshot): DisplayT
     flags: [],
     batteryV: null,
     sensors: null,
+    throttle: null,
+    torqueMNm: null,
     history,
     nowS: state.timeS,
   };
