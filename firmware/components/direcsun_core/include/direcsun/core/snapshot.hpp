@@ -139,6 +139,7 @@ struct TelemetrySnapshot {
     // Raw values for bench telemetry (FD section 19.2).
     int16_t gyro_raw[3] = {0, 0, 0};
     int16_t accel_raw[3] = {0, 0, 0};
+    float accel_rms_g = 0.0f;          // AC RMS of the acceleration over 200 ms, bench tlm only (T-7, R4.7)
     int16_t mag_raw[3] = {0, 0, 0};
     bool mag_fresh = false;            // a new magnetometer sample arrived in the last 20 ms
     int sun_a_mv = 0;

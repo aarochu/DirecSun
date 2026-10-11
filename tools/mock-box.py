@@ -90,6 +90,7 @@ HEARTBEAT_S = 1.0        # FD section 14.4
 SPINUP_RAMP_RPM_PER_S = 400.0   # kWheelRefRampRpmPerS: omega_ref slope in SPINUP (FD section 13.2)
 SPINUP_BAND = 0.05              # kSpinupBand: READY needs the wheel within 5 % of the target
 SPINUP_DWELL_S = 0.5            # kSpinupDwellMs: ... for this long
+IMBALANCE_G_PER_KRPM2 = 0.004   # accel RMS added per (1000 rpm)^2 by a washer stack off the axis (T-7)
 RAMP_S = 5.0             # e-stop and heartbeat ramp-down (FD section 14.3)
 ARM_MAX_RATE_DPS = 5.0          # kArmMaxRateDps: the box must be still to arm
 ARM_MIN_BATTERY_V = 9.6         # kArmMinBatteryV
@@ -510,6 +511,14 @@ class Box:
         if "light_threshold" in update and not 0 <= update["light_threshold"] <= 6600:
             return "light_threshold"
         return None
+    def _accel_rms_g(self):
+        # The bench vibration figure (T-7): a floor of sensor noise plus the wheel's
+        # imbalance, which grows with the square of its speed (F = m e w^2, TD 3.5).
+        # The balancing procedure compares readings at one wheel speed, so the shape
+        # matters here, not the numbers.
+        rpm = max(0.0, self.wheel)
+        return round(0.004 + IMBALANCE_G_PER_KRPM2 * (rpm / 1000.0) ** 2 + random.uniform(0.0, 0.0006), 4)
+
 
     def _sun(self):
         """(valid, wire angle): the lamp's bearing from the box, once the sensors are calibrated."""
@@ -740,7 +749,8 @@ class Box:
             "loop_us": random.randint(690, 790), "flags": flags,
             "t_c": 23.5, "p_pa": 101300.0, "tlm_dropped": 0, "dropped_events": 0,
             **({"gyro_raw": [0, 0, int(max(-32768, min(32767, -self.rate * 16.4)))], "mag_raw": [812, -1234, 300],
-                "sun_a_mv": 0, "sun_b_mv": 0} if self.params["bench_mode"] else {}),
+                "sun_a_mv": 0, "sun_b_mv": 0,
+                "accel_rms_g": self._accel_rms_g()} if self.params["bench_mode"] else {}),
         })
 
 
@@ -1187,6 +1197,20 @@ def selftest_attitude(schema):
     reason = send(box, conn, 3, cmd="mode", mode="HOLD").get("reason")
     if reason != "not in READY":
         problems.append(f"HOLD from MANUAL refused with {reason!r}, expected 'not in READY'")
+    # accel_rms_g (T-7): bench tlm only, and it grows with the wheel speed.
+    box, conn, clock = armed()
+    tlm, _events = run(box, clock, 0.1)
+    if "accel_rms_g" in tlm[-1]:
+        problems.append("accel_rms_g in a tlm outside bench mode")
+    box.params["bench_mode"] = True
+    tlm, _events = run(box, clock, 0.1)
+    spinning = tlm[-1].get("accel_rms_g")
+    box.wheel = 0.0
+    tlm, _events = run(box, clock, 0.02)
+    still = tlm[-1].get("accel_rms_g")
+    if spinning is None or still is None or not spinning > still + 0.01:
+        problems.append(f"bench accel_rms_g does not grow with the wheel speed: {spinning} at speed, {still} at rest")
+
 
     # The judge's turn: zero, SLEW to 90 (clockwise on the wire), then back to 0.
     # Zeroed twice, the second time somewhere else: each zero reads 0.

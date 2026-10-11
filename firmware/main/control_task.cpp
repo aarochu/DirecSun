@@ -186,6 +186,7 @@ void control_task(void *)
 
     static Supervisor supervisor(ctx.params, ctx.params_reset, ctx.params_reset_detail);
     static Estimator estimator;
+    static AccelRms accel_rms;  // T-7 vibration, reported in bench mode only
     static WheelSpeed wheel;
     // Rung 1 (R3.7) until the Hall and the T-5 feed-forward table exist, then
     // the closed wheel loop (R3.8). The supervisor clamps and the interlocks
@@ -346,6 +347,7 @@ void control_task(void *)
             for (int axis = 0; axis < 3; ++axis) {
                 est_in.accel_g[axis] = drv::imu_accel_g(imu.accel[axis]);
             }
+            accel_rms.add(est_in.accel_g);
             est_in.safe_mode = supervisor.mode() == Mode::Safe;
             est_in.wheel_known = params.hall_installed;
             est_in.wheel_rpm = wheel_safe;
@@ -425,6 +427,7 @@ void control_task(void *)
             snap.latched = out.latched;
             snap.controlling_client = out.controlling_client;
             snap.bench_mode = supervisor.params().bench_mode;
+            if (cadence) snap.accel_rms_g = snap.bench_mode ? accel_rms.rms_g() : 0.0f;  // 100 samples, so only at 50 Hz and only for the bench
             snap.imu_present = ctx.imu_present;
             snap.mag_present = ctx.mag_present;
             snap.baro_present = ctx.baro_present;

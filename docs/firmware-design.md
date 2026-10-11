@@ -1094,7 +1094,7 @@ These map firmware features onto TD §9:
 | --- | --- |
 | T-5 ESC arming, DShot, s_w | §8 boot zeros, §10.6, `bench_mode` + `wheel_step` |
 | T-6 Hall vs strobe | §10.4, `wheel_rpm` in telemetry |
-| T-7 imbalance | Raw accel RMS field: add `accel_rms_g` to `tlm` when `bench_mode` is true [D] |
+| T-7 imbalance | Raw accel RMS field: `accel_rms_g` in `tlm` when `bench_mode` is true [D]. Sent from R4.7: the AC RMS of the acceleration vector over the last 200 ms (each axis's mean removed, so gravity and tilt drop out), in g; broadband, so compare readings at one wheel speed |
 | T-8 gyro bias and noise | §11.1; raw gyro in bench telemetry |
 | T-9 magnetometer | Raw mag fields in bench telemetry; calibration upload via `set_params` |
 | T-10 sun sensor | Raw A, B in bench telemetry |

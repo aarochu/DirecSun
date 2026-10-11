@@ -18,6 +18,7 @@ A judge spinning the box by hand in READY sees it come to rest (DETUMBLE behavio
 - [~] R4.2 gyro-heading: heading from integrated gyro with `zero_heading` at sequence start; drift budget measured over 10 s
 - [~] R4.3 hold-and-slew: attitude loop, HOLD capture, relative SLEW trapezoid at 60 deg/s and 120 deg/s² (HT-4), completion and timeout, the return leg
 - [~] R4.4 detumble-and-safety: the DETUMBLE wire mode for hand spins; T-12 and T-13 on the real box (ESC signal loss, every interlock)
+- [~] R4.7 accel-rms: send `accel_rms_g` in bench telemetry for T-7 (issue 66, issue 80 P1.3; spec awaiting Julian)
 - [ ] R4.5 characterisation-and-acceptance: T-2 to T-4, T-7, T-8 on the assembled box, `sizing.py` re-run (G2); T-15 and T-16 trials driven from the UI
 
 ## Open questions / decisions before implementing

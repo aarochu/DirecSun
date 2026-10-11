@@ -142,6 +142,31 @@ private:
     float tilt_deg_ = 0.0f;
 };
 
+// Accelerometer vibration for the balancing procedure (T-7, TD section 4.6,
+// FD section 19.2): the RMS of the AC part of the acceleration vector over the
+// last 200 ms (100 samples at 500 Hz, twelve turns of a 3600 rpm wheel). Each
+// axis has its own window mean removed, so gravity and any tilt drop out and
+// what remains is the vibration, in g. It is a broadband figure, not the
+// amplitude at the wheel frequency: compare readings taken at the same wheel
+// speed, as the washer procedure does.
+class AccelRms {
+public:
+    static constexpr std::size_t kWindow = 100;
+
+    // One valid IMU sample, in g.
+    void add(const float accel_g[3]);
+
+    // 0 until two samples have arrived.
+    float rms_g() const;
+
+    std::size_t count() const { return count_; }
+
+private:
+    float window_[kWindow][3] = {};
+    std::size_t next_ = 0;
+    std::size_t count_ = 0;
+};
+
 // Boot-time bias seed [D]. FD 11.1 opens the bias update only while
 // |g_z - b_z| < 2 deg/s. The MPU-6050's zero-rate offset can be larger than
 // that (the register map's tolerance is +-20 deg/s), so starting from b_z = 0

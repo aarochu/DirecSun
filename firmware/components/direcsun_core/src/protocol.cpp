@@ -700,6 +700,8 @@ std::size_t encode_tlm(const TelemetrySnapshot &snap, uint32_t seq, uint32_t tlm
         w.fmt(",\"gyro_raw\":[%d,%d,%d],\"mag_raw\":[%d,%d,%d],\"sun_a_mv\":%d,\"sun_b_mv\":%d", snap.gyro_raw[0],
               snap.gyro_raw[1], snap.gyro_raw[2], snap.mag_raw[0], snap.mag_raw[1], snap.mag_raw[2],
               snap.sun_a_mv > 0 ? snap.sun_a_mv : 0, snap.sun_b_mv > 0 ? snap.sun_b_mv : 0);
+        w.raw(",\"accel_rms_g\":");
+        w.num(snap.accel_rms_g > 0.0f ? snap.accel_rms_g : 0.0f, 4);
     }
     w.raw("}");
     return w.finish();
