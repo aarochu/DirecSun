@@ -5,6 +5,7 @@ import { App } from '../App';
 import { DeviceLink, flagSeverity, parseTelemetry, validateLinkUrl } from '../hardware/deviceLink';
 import { FakeSocket, tlm } from './fakeSocket';
 
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
 afterEach(() => {
   FakeSocket.instances = [];
@@ -152,7 +153,7 @@ describe('DeviceLink', () => {
     return { link, socket: () => FakeSocket.instances.at(-1)! };
   };
 
-  it('is read-only: connects, receives, never sends', () => {
+  it('is read-only: connects, receives, never sends', async () => {
     const { link, socket } = setup();
     link.connect('ws://device/ws');
     expect(link.getState().status).toBe('connecting');
@@ -162,6 +163,7 @@ describe('DeviceLink', () => {
 
     socket().message(tlm({ t_ms: 1000, psi_deg: 45, psi_ref_deg: 90, rate_dps: 12, wheel_rpm: 2300, mode: 'SLEW' }));
     expect(link.receiving).toBe(true);
+    await nextFrame();
     expect(link.getTelemetry()).toMatchObject({
       source: 'hardware',
       statusWord: 'SLEW',
@@ -175,15 +177,89 @@ describe('DeviceLink', () => {
     expect(socket().sent).toEqual([]);
   });
 
-  it('unwraps headings across 0°/360° for the model and chart', () => {
+  it('unwraps headings across 0°/360° for the model and chart', async () => {
     const { link, socket } = setup();
     link.connect('ws://device/ws');
     socket().open();
     socket().message(tlm({ t_ms: 0, psi_deg: 358 }));
     socket().message(tlm({ t_ms: 100, psi_deg: 2 }));
     expect(link.getFrame().headingDeg).toBeCloseTo(362, 9);
+    await nextFrame();
     const { history } = link.getTelemetry();
     expect(history.map((s) => s.t)).toEqual([0, 0.1]);
+  });
+
+  it('keeps only one pending display render when rendering is slow, without dropping raw frames or acks', async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextId = 0;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.set(++nextId, callback);
+      return nextId;
+    });
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id));
+    const { link, socket } = setup();
+    let stateUpdates = 0;
+    let frameUpdates = 0;
+    let telemetryUpdates = 0;
+    let rawFrames = 0;
+    link.subscribeState(() => stateUpdates++);
+    link.subscribeFrame(() => frameUpdates++);
+    link.subscribeTelemetry(() => telemetryUpdates++);
+    link.subscribeRaw(() => rawFrames++);
+    link.connect('ws://device/ws');
+    socket().open();
+    socket().message(tlm({ seq: 0, t_ms: 0, psi_deg: 0, mode: 'HOLD' }));
+    const initialUpdates = stateUpdates;
+    const initialFrameUpdates = frameUpdates;
+    const initialTelemetryUpdates = telemetryUpdates;
+
+    // Hold the animation callback while 250 telemetry messages arrive. The
+    // browser's display may be slow, but only the newest snapshot is rendered.
+    for (let seq = 1; seq <= 250; seq++) {
+      socket().message(tlm({ seq, t_ms: seq * 20, psi_deg: seq, mode: 'HOLD' }));
+    }
+    expect(frames.size).toBe(1);
+    expect(stateUpdates).toBe(initialUpdates);
+    expect(frameUpdates).toBe(initialFrameUpdates);
+    expect(telemetryUpdates).toBe(initialTelemetryUpdates);
+    expect(rawFrames).toBe(251);
+
+    const command = link.command('zero_heading');
+    const commandSeq = socket().lastCommand().seq;
+    socket().message(JSON.stringify({ v: 1, type: 'ack', seq: commandSeq, ok: true }));
+    await expect(command).resolves.toMatchObject({ seq: commandSeq, ok: true });
+    expect(frames.size).toBe(1);
+
+    const [id, render] = [...frames][0]!;
+    frames.delete(id);
+    render(0);
+    expect(link.getState().packets).toBe(251);
+    expect(link.getTelemetry()).toMatchObject({ statusWord: 'HOLD', headingDeg: 250 });
+    expect(frameUpdates).toBe(initialFrameUpdates + 1);
+    expect(telemetryUpdates).toBe(initialTelemetryUpdates + 1);
+    expect(stateUpdates).toBe(initialUpdates + 2); // command talking + one display update
+
+    socket().message(tlm({ seq: 251, t_ms: 5020, psi_deg: 251, mode: 'SAFE' }));
+    expect(frames.size).toBe(0); // safety transition is immediate
+    expect(link.getState().packets).toBe(252);
+    expect(link.getTelemetry()).toMatchObject({ statusWord: 'SAFE', headingDeg: 251 });
+    socket().message(tlm({ seq: 252, t_ms: 5040, psi_deg: 252, mode: 'SAFE' }));
+    expect(frames.size).toBe(1);
+    link.disconnect();
+    expect(frames.size).toBe(0); // old socket cannot publish after disconnect
+  });
+
+  it('bounds chart history even if the box repeats its timestamp', async () => {
+    const { link, socket } = setup();
+    link.connect('ws://device/ws');
+    socket().open();
+    for (let seq = 0; seq < 1100; seq++) {
+      socket().message(tlm({ seq, t_ms: 0, psi_deg: seq % 360, mode: 'SAFE' }));
+    }
+    expect(link.getState().packets).toBe(1100);
+    await nextFrame();
+    expect(link.getTelemetry().history).toHaveLength(1000);
+    link.disconnect();
   });
 
   it('does not reconnect after the socket drops', () => {
@@ -211,7 +287,7 @@ describe('DeviceLink', () => {
 });
 
 describe('ground station with a device link', () => {
-  it('switches every view to device telemetry and swaps in the box controls, still sending nothing', () => {
+  it('switches every view to device telemetry and swaps in the box controls, still sending nothing', async () => {
     vi.stubGlobal('WebSocket', FakeSocket);
     render(
       <MemoryRouter initialEntries={['/']}>
@@ -227,6 +303,7 @@ describe('ground station with a device link', () => {
       socket.open();
       socket.message(tlm({ t_ms: 0, psi_deg: 47.2, psi_ref_deg: 47, rate_dps: 0.3, wheel_rpm: 2504, vbat: 10.1, mode: 'HOLD' }));
     });
+    await act(nextFrame);
     expect(screen.getByText('DEVICE CONNECTED — RECEIVING TELEMETRY')).toBeTruthy();
     expect(screen.getByText('FROM DEVICE — WEBSOCKET')).toBeTruthy();
     expect(screen.getByText('+47.2°')).toBeTruthy();
@@ -279,6 +356,7 @@ describe('ground station with a device link', () => {
         }),
       );
     });
+    await act(nextFrame);
     const flags = within(rail()).getByRole('list', { name: 'Device flags' });
     expect(within(flags).getByText('MOMENTUM OK').className).toBe('flag flag--ok');
     expect(within(flags).getByText('HALL BYPASS').className).toBe('flag flag--warning');
@@ -289,6 +367,7 @@ describe('ground station with a device link', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 60));
     act(() => socket.message(tlm({ t_ms: 100, psi_deg: 10, mode: 'READY', flags: [] })));
+    await act(nextFrame);
     expect(within(rail()).queryByRole('list', { name: 'Device flags' })).toBeNull();
     expect(within(rail()).queryByText('THROTTLE BAND')).toBeNull();
     expect(socket.sent).toEqual([]);

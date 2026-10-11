@@ -1,4 +1,5 @@
 import type { DisplayFrame, DisplaySource, DisplayTelemetry } from '../ground/displaySource';
+import { ARM_MAX_RATE_DPS, ARM_MIN_BATTERY_V } from './modes';
 import { normalizeDeg } from '../simulation/physics';
 import type { HistorySample } from '../simulation/types';
 
@@ -108,6 +109,10 @@ export interface LinkState {
 const finite = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
 
+const armBlocked = (value: DeviceTelemetry | null) =>
+  value !== null && ((value.rateDegS !== null && Math.abs(value.rateDegS) >= ARM_MAX_RATE_DPS) ||
+    (value.batteryV !== null && value.batteryV <= ARM_MIN_BATTERY_V));
+
 function band(value: unknown): readonly [number, number] | null {
   if (!Array.isArray(value) || value.length !== 2) return null;
   const [lo, hi] = value.map(finite);
@@ -209,6 +214,7 @@ function parseObject(raw: unknown): Record<string, unknown> | null {
 const text = (value: unknown): string | null => (typeof value === 'string' && value.length > 0 ? value : null);
 
 const HISTORY_WINDOW_S = 15;
+const MAX_HISTORY_SAMPLES = 1000;
 const TELEMETRY_INTERVAL_MS = 50;
 const SOCKET_CONNECTING = 0;
 const SOCKET_OPEN = 1;
@@ -253,10 +259,13 @@ export class DeviceLink implements DisplaySource {
   private unwrappedHeading = 0;
   private firstTimeS: number | null = null;
   private nowS = 0;
-  private lastTelemetryMs = -Infinity;
+  private lastRenderMs = -Infinity;
+  private renderFrame: number | null = null;
+  private renderDelay: ReturnType<typeof setTimeout> | null = null;
   private readonly stateListeners = new Set<() => void>();
   private readonly frameListeners = new Set<() => void>();
   private readonly telemetryListeners = new Set<() => void>();
+  private readonly readingListeners = new Set<() => void>();
 
   constructor(
     private readonly createSocket: SocketFactory = (url) => new WebSocket(url),
@@ -348,7 +357,8 @@ export class DeviceLink implements DisplaySource {
         status: wasError ? 'error' : 'closed',
         message: `Connection closed${event.code ? ` (code ${event.code})` : ''}. Not reconnecting automatically.`,
       });
-      this.publishTelemetry(true);
+      this.cancelRender();
+      this.publishTelemetry();
     };
   }
 
@@ -360,7 +370,8 @@ export class DeviceLink implements DisplaySource {
       socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
       if (socket.readyState === SOCKET_CONNECTING || socket.readyState === SOCKET_OPEN) socket.close(1000);
       this.setState({ status: 'idle', message: null });
-      this.publishTelemetry(true);
+      this.cancelRender();
+      this.publishTelemetry();
     }
   }
 
@@ -378,6 +389,12 @@ export class DeviceLink implements DisplaySource {
 
   getTelemetry = (): DisplayTelemetry => this.telemetry;
 
+  // Control decisions use every fresh reading, never the coalesced display.
+  subscribeReadings = (listener: () => void) => {
+    this.readingListeners.add(listener);
+    return () => this.readingListeners.delete(listener);
+  };
+
   private receive(data: unknown) {
     const reading = parseTelemetry(data);
     if (!reading) {
@@ -385,10 +402,11 @@ export class DeviceLink implements DisplaySource {
       return;
     }
 
+    const previous = this.latest;
     this.unwrappedHeading =
-      this.latest === null
+      previous === null
         ? reading.headingDeg
-        : this.unwrappedHeading + normalizeDeg(reading.headingDeg - this.latest.headingDeg);
+        : this.unwrappedHeading + normalizeDeg(reading.headingDeg - previous.headingDeg);
     this.latest = reading;
 
     const deviceTimeS = reading.tMs !== null ? reading.tMs / 1000 : this.now() / 1000;
@@ -397,14 +415,22 @@ export class DeviceLink implements DisplaySource {
     const targetDeg = this.unwrappedTarget(reading);
     this.history.push({ t: this.nowS, heading: this.unwrappedHeading, target: targetDeg });
     const oldest = this.nowS - HISTORY_WINDOW_S - 0.5;
-    while (this.history.length > 1 && this.history[0]!.t < oldest) this.history.shift();
+    while (this.history.length > 1 && (this.history[0]!.t < oldest || this.history.length > MAX_HISTORY_SAMPLES)) this.history.shift();
 
     this.frame = { headingDeg: this.unwrappedHeading, targetDeg, originDeg: null };
-    for (const listener of this.frameListeners) listener();
-
-    const wasWaiting = this.state.packets === 0;
-    this.setState({ packets: this.state.packets + 1, message: null });
-    this.publishTelemetry(wasWaiting);
+    for (const listener of this.readingListeners) listener();
+    // Keep processing every frame for history and the raw CSV recorder, but
+    // never enqueue a React render for each one. The pending render reads the
+    // newest frame, packet count and mode after any intervening messages.
+    this.state = { ...this.state, packets: this.state.packets + 1, message: null };
+    // Mode, flags and arming guards are safety information, not chart
+    // animation. Publish threshold crossings immediately.
+    if (previous === null || reading.mode !== previous.mode || reading.flags.join('|') !== previous.flags.join('|') ||
+      armBlocked(reading) !== armBlocked(previous) || reading.sensors.sunValid !== previous.sensors.sunValid) {
+      this.flushRender();
+    } else {
+      this.scheduleRender();
+    }
   }
 
   private receiveControl(message: Record<string, unknown> | null): boolean {
@@ -528,10 +554,43 @@ export class DeviceLink implements DisplaySource {
     return this.unwrappedHeading + normalizeDeg(reading.targetDeg - reading.headingDeg);
   }
 
-  private publishTelemetry(force: boolean) {
-    const nowMs = this.now();
-    if (!force && nowMs - this.lastTelemetryMs < TELEMETRY_INTERVAL_MS) return;
-    this.lastTelemetryMs = nowMs;
+  private scheduleRender() {
+    if (this.renderFrame !== null || this.renderDelay !== null) return;
+    const delayMs = Math.max(0, this.lastRenderMs + TELEMETRY_INTERVAL_MS - this.now());
+    if (delayMs > 0) {
+      this.renderDelay = setTimeout(() => {
+        this.renderDelay = null;
+        this.queueRenderFrame();
+      }, delayMs);
+    } else {
+      this.queueRenderFrame();
+    }
+  }
+
+  private queueRenderFrame() {
+    this.renderFrame = requestAnimationFrame(() => {
+      this.renderFrame = null;
+      this.flushRender();
+    });
+  }
+
+  private flushRender() {
+    this.cancelRender();
+    this.lastRenderMs = this.now();
+    this.publishTelemetry();
+    for (const listener of this.stateListeners) listener();
+    for (const listener of this.frameListeners) listener();
+  }
+
+  private cancelRender() {
+    if (this.renderDelay !== null) clearTimeout(this.renderDelay);
+    if (this.renderFrame !== null) cancelAnimationFrame(this.renderFrame);
+    this.renderDelay = null;
+    this.renderFrame = null;
+    this.lastRenderMs = -Infinity;
+  }
+
+  private publishTelemetry() {
     this.telemetry = this.buildTelemetry();
     for (const listener of this.telemetryListeners) listener();
   }
@@ -559,6 +618,7 @@ export class DeviceLink implements DisplaySource {
   }
 
   private resetData() {
+    this.cancelRender();
     this.latest = null;
     this.history = [];
     this.unwrappedHeading = 0;

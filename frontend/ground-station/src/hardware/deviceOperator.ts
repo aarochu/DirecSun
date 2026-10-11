@@ -91,7 +91,7 @@ export class DeviceOperator {
   attach(): void {
     if (this.unsubscribe.length) return;
     this.unsubscribe = [
-      this.link.subscribeFrame(this.onFrame),
+      this.link.subscribeReadings(this.onFrame),
       this.link.subscribeState(this.onLinkState),
       this.link.subscribeEvents(this.onEvent),
     ];
@@ -345,7 +345,7 @@ export class DeviceOperator {
       };
       const cancel = (reason: string) => finish(new TurnAborted(reason));
       const timer = setTimeout(() => finish(timeoutMessage ? new Error(timeoutMessage) : null), timeoutMs);
-      const stopFrames = this.link.subscribeFrame(() => evaluate(null));
+      const stopFrames = this.link.subscribeReadings(() => evaluate(null));
       const stopEvents = this.link.subscribeEvents((event) => evaluate(event));
       this.cancelWait = cancel;
     });
