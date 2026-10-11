@@ -229,7 +229,6 @@ void control_task(void *)
     bool mag_waiting = false;  // DRDY seen on the last even tick; data read on this odd tick
     bool mag_new_tick = false;  // a magnetometer sample arrived on this tick (R5.1)
     MagConfig mag_config_applied;
-    estimator.set_mag_config(mag_config_applied);
     mag_config_from_params(supervisor.params(), mag_config_applied);
     estimator.set_mag_config(mag_config_applied);
     int sun_a_mv = 0;

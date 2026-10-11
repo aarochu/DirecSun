@@ -22,6 +22,9 @@ TD §11.4 drops these in reverse order if time runs out.
 ## Open questions / decisions before implementing
 To be raised when the set is specced. Already known: a lamp at the venue (TD §12.3).
 
+## Contract note for Aaron (found on the integrated branch, 2026-10-11)
+The UI's parameter panel (`frontend/ground-station/src/hardware/parameters.ts`, test `src/tests/parameters.test.ts`) lists 11 of the schema's keys and treats `mag_axis_map`, `mag_cal`, `sun_cal` and `light_threshold` as deferred. Against the schema as integrated here, `vitest` fails one test, "offers every non-deferred, non-bench schema parameter": the Set 3 keys `rate_gain_scale`, `spinup_throttle`, `hall_expect_throttle`, `hall_installed`, `bench_cap_rpm` and `bench_underspeed_rpm` are not offered, and R5.1 and R5.4 make the four calibration keys live. No firmware or schema change is needed; the panel should add the keys it wants and shrink `DEFERRED_PARAMETER_KEYS`. Everything else in `frontend/ground-station` passes typecheck and 112 of 113 unit tests. This is a `Contract:` issue for Aaron, not an edit from here.
+
 ## DB changes in this set
 None.
 
