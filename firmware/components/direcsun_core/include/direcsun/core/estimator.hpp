@@ -86,15 +86,19 @@ private:
 };
 
 // Accelerometer vibration for the balancing procedure (T-7, TD section 4.6,
-// FD section 19.2): the RMS of the AC part of the acceleration vector over the
-// last 200 ms (100 samples at 500 Hz, twelve turns of a 3600 rpm wheel). Each
-// axis has its own window mean removed, so gravity and any tilt drop out and
-// what remains is the vibration, in g. It is a broadband figure, not the
-// amplitude at the wheel frequency: compare readings taken at the same wheel
-// speed, as the washer procedure does.
+// FD section 19.2): the RMS of the AC part of the acceleration in the x-y plane,
+// the plane a wheel imbalance shakes (the wheel spins about z), over the last
+// 200 ms (100 samples at 500 Hz, twelve turns of a 3600 rpm wheel). z is left
+// out: it carries no imbalance force, only noise. Each axis has its own window
+// mean removed, so gravity and any tilt drop out and what remains is the
+// vibration, in g. It is a broadband figure, not the amplitude at the wheel
+// frequency, and it reads the accelerometer after its 21 Hz filter (DLPF_CFG 4),
+// which passes only a fraction of a 40 Hz vibration: compare readings taken at
+// the same wheel speed, as the washer procedure does (R4.7).
 class AccelRms {
 public:
     static constexpr std::size_t kWindow = 100;
+    static constexpr int kAxes = 2;  // x and y
 
     // One valid IMU sample, in g.
     void add(const float accel_g[3]);

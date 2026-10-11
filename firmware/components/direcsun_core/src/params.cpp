@@ -354,7 +354,11 @@ ParamsLoad load_params(KvStore &store, Params &out)
         result.detail = "missing";
         return result;
     }
-    if (version != kParamVersion) {
+    // Version 2 has this version's layout. Its dshot_rate may be the old
+    // default 150, which the bench ESCs misread as throttle (V-68), so the
+    // migration sets 300 and keeps every other stored value.
+    const bool from_v2 = version == 2;
+    if (version != kParamVersion && !from_v2) {
         out = defaults;
         result.reset = true;
         result.detail = "version";
@@ -371,7 +375,13 @@ ParamsLoad load_params(KvStore &store, Params &out)
         return result;
     }
     Reader reader(buf, len);
-    if (!decode(reader, loaded) || !validate_params(loaded).ok) {
+    const bool decoded = decode(reader, loaded);
+    if (decoded && from_v2) {
+        loaded.dshot_rate = 300;
+        result.migrated_from = 2;
+    }
+    if (!decoded || !validate_params(loaded).ok) {
+        result.migrated_from = 0;
         out = defaults;
         result.reset = true;
         result.detail = "invalid";
