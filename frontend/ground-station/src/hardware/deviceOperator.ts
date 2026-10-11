@@ -144,7 +144,12 @@ export class DeviceOperator {
       if (token !== this.turnToken) throw new TurnAborted('Superseded');
       await this.slewTo(target, token);
       this.set({ phase: 'holding' });
-      await this.watch(token, HOLD_MS, (mode) => (mode === 'READY' ? 'continue' : `THE BOX LEFT READY (${mode})`));
+      // After slew_complete the box can still send one tlm from before the
+      // transition (mode SLEW). Trust events over telemetry here: only a mode
+      // event away from READY ends the hold (#32 ii).
+      await this.watch(token, HOLD_MS, (_mode, event) =>
+        event?.event === 'mode' && event.mode !== 'READY' ? `THE BOX LEFT READY (${event.mode ?? 'NO MODE'})` : 'continue',
+      );
       this.set({ phase: 'returning', targetDeg: origin });
       await this.slewTo(origin, token);
       this.finishTurn(token, { tone: 'ok', text: 'TURN COMPLETE: BACK AT THE START HEADING.' });
@@ -157,9 +162,12 @@ export class DeviceOperator {
   async stopTurn(): Promise<void> {
     const wasTurning = this.state.phase !== 'idle';
     this.abortTurn('Stop requested');
-    if (this.boxMode !== 'SLEW' && !wasTurning) return;
+    // A SLEW may be in flight before any tlm shows it (#32 i); READY is
+    // harmless if the box is already there.
+    const slewing = this.boxMode === 'SLEW' || this.slewInFlight;
+    if (!slewing && !wasTurning) return;
     this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
-    if (this.boxMode !== 'SLEW') return;
+    if (!slewing) return;
     try {
       await this.link.command('mode', { mode: 'READY' });
     } catch (error) {
@@ -167,7 +175,18 @@ export class DeviceOperator {
     }
   }
 
+  private slewInFlight = false;
+
   private async slewTo(targetDeg: number, token: number) {
+    this.slewInFlight = true;
+    try {
+      await this.slewToInner(targetDeg, token);
+    } finally {
+      this.slewInFlight = false;
+    }
+  }
+
+  private async slewToInner(targetDeg: number, token: number) {
     await this.link.command('mode', { mode: 'SLEW', psi_ref_deg: targetDeg });
     if (token !== this.turnToken) throw new TurnAborted('Superseded');
     let seenSlew = false;
