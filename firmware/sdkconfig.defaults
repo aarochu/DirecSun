@@ -31,6 +31,13 @@ CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 # Costs 16 KB of internal RAM, of which there is plenty.
 CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB=y
 
+# With Wi-Fi up, the control tick's FreeRTOS calls, I2C interrupt, and ADC reads
+# missed the shared instruction cache; these keep them in IRAM. Together with
+# main/linker.lf (R3.5 bench, Oct 10).
+CONFIG_FREERTOS_IN_IRAM=y
+CONFIG_I2C_ISR_IRAM_SAFE=y
+CONFIG_ADC_ONESHOT_CTRL_FUNC_IN_IRAM=y
+
 # The XIAO ESP32-S3 carries 8 MB of flash. The validated sensor examples ran
 # with the 2 MB default, which leaves a 1 MB app partition; Wi-Fi, httpd, and
 # mDNS together do not fit comfortably in that.
