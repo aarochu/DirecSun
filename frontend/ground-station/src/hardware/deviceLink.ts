@@ -109,6 +109,10 @@ export interface LinkState {
 const finite = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null;
 
+// The closed wheel loop runs exactly when the box reports a reference above 0,
+// and only then are turns accepted (#46).
+const wheelLoopUp = (value: DeviceTelemetry) => (value.wheelRefRpm ?? 0) > 0;
+
 const armBlocked = (value: DeviceTelemetry | null) =>
   value !== null && ((value.rateDegS !== null && Math.abs(value.rateDegS) >= ARM_MAX_RATE_DPS) ||
     (value.batteryV !== null && value.batteryV <= ARM_MIN_BATTERY_V));
@@ -424,10 +428,11 @@ export class DeviceLink implements DisplaySource {
     // never enqueue a React render for each one. The pending render reads the
     // newest frame, packet count and mode after any intervening messages.
     this.state = { ...this.state, packets: this.state.packets + 1, message: null };
-    // Mode, flags and arming guards are safety information, not chart
+    // Mode, flags, arming guards and turn readiness are safety information, not chart
     // animation. Publish threshold crossings immediately.
     if (previous === null || reading.mode !== previous.mode || reading.flags.join('|') !== previous.flags.join('|') ||
-      armBlocked(reading) !== armBlocked(previous) || reading.sensors.sunValid !== previous.sensors.sunValid) {
+      armBlocked(reading) !== armBlocked(previous) || reading.sensors.sunValid !== previous.sensors.sunValid ||
+      wheelLoopUp(reading) !== wheelLoopUp(previous)) {
       this.flushRender();
     } else {
       this.scheduleRender();
