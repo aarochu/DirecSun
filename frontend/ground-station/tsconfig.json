@@ -23,7 +23,8 @@
       "node"
     ],
     "paths": {
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["../shared/*"],
+      "three": ["./node_modules/@types/three"]
     }
   },
   "include": [
