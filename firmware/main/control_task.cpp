@@ -227,6 +227,11 @@ void control_task(void *)
     drv::MagSample mag = {};
     bool mag_fresh = false;
     bool mag_waiting = false;  // DRDY seen on the last even tick; data read on this odd tick
+    bool mag_new_tick = false;  // a magnetometer sample arrived on this tick (R5.1)
+    MagConfig mag_config_applied;
+    estimator.set_mag_config(mag_config_applied);
+    mag_config_from_params(supervisor.params(), mag_config_applied);
+    estimator.set_mag_config(mag_config_applied);
     int sun_a_mv = 0;
     int sun_b_mv = 0;
     int64_t hall_edges[kHallBatch];
@@ -284,6 +289,7 @@ void control_task(void *)
             mag_waiting = false;
             if (drv::mag_read_data(mag)) {
                 mag_fresh = true;
+                mag_new_tick = true;
             }
             STAGE_END(stages, TickStage::Mag);
         } else {
@@ -337,8 +343,11 @@ void control_task(void *)
             est_in.wheel_known = params.hall_installed;
             est_in.wheel_rpm = wheel_safe;
             est_in.s_gyro = params.s_gyro;
+            est_in.mag_new = mag_new_tick;
+            for (int axis = 0; axis < 3; ++axis) est_in.mag_raw[axis] = mag.raw[axis];
             estimator.update(est_in);
         }
+        mag_new_tick = false;
         STAGE_END(stages, TickStage::Estimator);
 
         // ---- 3. Supervisor --------------------------------------------------
@@ -357,6 +366,7 @@ void control_task(void *)
         in.command_count = shared_drain_commands(commands, kCommandQueueDepth);
         in.commands = commands;
         in.built_inputs = kAllBuiltInputs;  // MANUAL throttle, wheel and rate (R5.2)
+        in.heading_absolute = estimator.heading_absolute();   // R5.1
         in.sun_a_mv = sun_a_mv > 0 ? static_cast<float>(sun_a_mv) : 0.0f;   // R5.4; a failed read is no light
         in.sun_b_mv = sun_b_mv > 0 ? static_cast<float>(sun_b_mv) : 0.0f;
         supervisor.step(in, controller, out);
@@ -412,6 +422,8 @@ void control_task(void *)
             }
             snap.accel_rms_g = snap.bench_mode ? estimator.accel_rms_g() : 0.0f;
             snap.mag_fresh = mag_fresh;
+            snap.mag_active = estimator.heading_absolute();
+            snap.mag_deg = estimator.mag_heading_deg();
             snap.sun_valid = out.sun_valid;
             snap.sun_deg = out.sun_deg;
             snap.sun_a_mv = sun_a_mv;
@@ -448,6 +460,8 @@ void control_task(void *)
             shared_post_outbound(item);
         }
         if (out.params_changed) {
+            mag_config_from_params(supervisor.params(), mag_config_applied);
+            estimator.set_mag_config(mag_config_applied);
             params_to_persist().write(supervisor.params());
             if (s_persist_task != nullptr) {
                 xTaskNotifyGive(s_persist_task);

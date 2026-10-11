@@ -72,6 +72,7 @@ struct Gyro {
     std::deque<double> line;
     std::size_t delay_ticks = 4;
     double noise_dps = 0.05;
+    double bias_dps = 0.0;   // a residual offset the estimator's bias learning missed (R5.1 drift test)
     std::mt19937 rng{20261010u};
     std::normal_distribution<double> noise{0.0, 1.0};
 
@@ -79,7 +80,7 @@ struct Gyro {
     {
         line.push_back(true_dps);
         while (line.size() > delay_ticks + 1) line.pop_front();
-        return line.front() + noise_dps * noise(rng);
+        return line.front() + bias_dps + noise_dps * noise(rng);
     }
 };
 

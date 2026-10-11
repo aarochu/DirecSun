@@ -678,7 +678,8 @@ class Box:
             flags.append("HALL_BYPASS")
         if self.wheel_hold:
             flags.append("WHEEL_STEP")
-        flags.append("HEADING_GYRO")   # gyro-only heading, relative to zero_heading, until Set 5 (R4.2)
+        if not self.params.get("mag_cal"):
+            flags.append("HEADING_GYRO")   # gyro-only heading until the compass is calibrated (R4.2, R5.1)
         if self.params["hall_installed"] and not isinstance(self.params.get("ff_table"), list):
             flags.append("FF_TABLE_MISSING")   # R5.3
         if self.params["rate_gain_scale"] < 1.0:
@@ -709,7 +710,7 @@ class Box:
             "psi_ref_deg": None if self.psi_ref is None or self.mode in ("SAFE", "SPINUP", "READY", "DETUMBLE")
             else wire_angle(self.psi_ref + self.psi_offset),
             "rate_dps": round(self.rate, 2),
-            "mag_deg": None,   # as the firmware: no magnetometer heading until Set 5
+            "mag_deg": wire_angle(self.psi + self.psi_offset) if self.params.get("mag_cal") else None,   # R5.1: null until calibrated
             "sun_deg": (wire_angle(self._sun()[1]) if self._sun()[0] else None), "sun_valid": self._sun()[0],
             "wheel_rpm": round(max(0.0, self.wheel), 1),
             # As the firmware: the wheel reference is reported only while the closed

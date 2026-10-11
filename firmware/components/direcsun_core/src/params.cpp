@@ -47,8 +47,6 @@ bool key_is(const ParamKeyValue &kv, const char *name)
     return std::strncmp(kv.key, name, ParamKeyValue::kMaxKey) == 0;
 }
 
-// Keys of FD section 16 that later sets implement (Set 5: heading and sun).
-constexpr const char *kDeferredKeys[] = {"mag_axis_map", "mag_cal"};
 
 }  // namespace
 
@@ -81,6 +79,21 @@ ParamsResult validate_params(const Params &p)
         if (i == 1 && p.sun_cal_deg[1] == p.sun_cal_deg[0]) return invalid("sun_cal");
     }
     if (!finite_in(p.light_threshold_mv, 0.0f, 3300.0f)) return invalid("light_threshold");
+
+    // The axis map must be a permutation of the three sensor axes with signs +-1.
+    bool used[3] = {false, false, false};
+    for (int i = 0; i < 3; ++i) {
+        if (p.mag_axis[i] > 2 || used[p.mag_axis[i]]) return invalid("mag_axis_map");
+        used[p.mag_axis[i]] = true;
+        if (p.mag_sign[i] != 1 && p.mag_sign[i] != -1) return invalid("mag_axis_map");
+    }
+    for (float v : p.mag_offset) {
+        if (!finite_in(v, -1e6f, 1e6f)) return invalid("mag_cal");
+    }
+    for (float v : p.mag_soft) {
+        if (!finite_in(v, -100.0f, 100.0f)) return invalid("mag_cal");
+    }
+    if (std::fabs(p.mag_soft[0] * p.mag_soft[3] - p.mag_soft[1] * p.mag_soft[2]) < 1e-6f) return invalid("mag_cal");
 
     if (!finite_in(p.omega_cap_rpm, 0.0f, kOmegaCapMaxRpm)) return invalid("omega_cap_rpm");
     if (!finite_in(p.omega_low_rpm, 500.0f, 1500.0f)) return invalid("omega_low_rpm");
@@ -149,9 +162,6 @@ ParamsResult apply_param_update(const Params &current, const ParamUpdate &update
         const ParamKeyValue &kv = update.items[i];
         const ParamValue &v = kv.value;
 
-        for (const char *deferred : kDeferredKeys) {
-            if (key_is(kv, deferred)) return fail("not implemented", deferred);
-        }
         if (key_is(kv, "omega_cap_rpm")) return fail("not settable", "omega_cap_rpm");
 
         auto set_float = [&](const char *name, float &field) -> bool {
@@ -241,6 +251,25 @@ ParamsResult apply_param_update(const Params &current, const ParamUpdate &update
             continue;
         }
         if (set_float("light_threshold", c.light_threshold_mv)) continue;
+        if (key_is(kv, "mag_axis_map")) {
+            // Three signed 1-based sensor axes: +x is 1, -x is -1, +y is 2, and so on.
+            if (v.type != ParamValue::Type::Array || v.array_len != 3) return invalid("mag_axis_map");
+            for (int k = 0; k < 3; ++k) {
+                const int code = static_cast<int>(v.array[k]);
+                if (code == 0 || code > 3 || code < -3) return invalid("mag_axis_map");
+                c.mag_axis[k] = static_cast<uint8_t>((code < 0 ? -code : code) - 1);
+                c.mag_sign[k] = code < 0 ? -1 : 1;
+            }
+            continue;
+        }
+        if (key_is(kv, "mag_cal")) {
+            // offset[3] then the soft-iron rows a, b, c, d.
+            if (v.type != ParamValue::Type::Array || v.array_len != 7) return invalid("mag_cal");
+            for (int k = 0; k < 3; ++k) c.mag_offset[k] = v.array[k];
+            for (int k = 0; k < 4; ++k) c.mag_soft[k] = v.array[3 + k];
+            c.mag_cal_set = true;
+            continue;
+        }
         return fail("unknown param", kv.key);
     }
 
@@ -271,7 +300,7 @@ namespace {
 
 constexpr const char *kKeyVersion = "param_version";
 constexpr const char *kKeyBlob = "params";
-constexpr std::size_t kBlobSize = 6 * 4 + 1 + 2 * kFfPoints * 4 + 2 * 4 + 2 * 1 + 5 * 2 + 1 + 2 * kSunCalPoints * 4 + 4;
+constexpr std::size_t kBlobSize = 6 * 4 + 1 + 2 * kFfPoints * 4 + 2 * 4 + 2 * 1 + 5 * 2 + 1 + 2 * kSunCalPoints * 4 + 4 + 3 + 3 + 1 + 3 * 4 + 4 * 4;
 
 class Writer {
 public:
@@ -354,6 +383,11 @@ void encode(const Params &p, Writer &w)
     for (float v : p.sun_cal_d) w.f32(v);
     for (float v : p.sun_cal_deg) w.f32(v);
     w.f32(p.light_threshold_mv);
+    for (uint8_t v : p.mag_axis) w.u8(v);
+    for (int8_t v : p.mag_sign) w.u8(static_cast<uint8_t>(v));
+    w.u8(p.mag_cal_set ? 1 : 0);
+    for (float v : p.mag_offset) w.f32(v);
+    for (float v : p.mag_soft) w.f32(v);
 }
 
 bool decode(Reader &r, Params &p)
@@ -369,6 +403,17 @@ bool decode(Reader &r, Params &p)
     for (float &v : p.sun_cal_d) ok = ok && r.f32(v);
     for (float &v : p.sun_cal_deg) ok = ok && r.f32(v);
     ok = ok && r.f32(p.light_threshold_mv);
+    for (uint8_t &v : p.mag_axis) ok = ok && r.u8(v);
+    for (int8_t &v : p.mag_sign) {
+        uint8_t raw = 0;
+        ok = ok && r.u8(raw);
+        v = static_cast<int8_t>(raw);
+    }
+    uint8_t cal_set = 0;
+    ok = ok && r.u8(cal_set);
+    p.mag_cal_set = cal_set != 0;
+    for (float &v : p.mag_offset) ok = ok && r.f32(v);
+    for (float &v : p.mag_soft) ok = ok && r.f32(v);
     p.s_w = static_cast<int8_t>(sw);
     p.s_gyro = static_cast<int8_t>(sg);
     return ok && r.at_end();

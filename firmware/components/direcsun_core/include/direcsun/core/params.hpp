@@ -20,7 +20,7 @@ constexpr float kOmegaCapMaxRpm = 4000.0f;
 // Version of the persisted layout. Bump it whenever a persisted field is added,
 // removed, or reinterpreted; a stored blob with another version is discarded
 // and the defaults load (event PARAMS_RESET).
-constexpr uint32_t kParamVersion = 3;  // 2: rate_gain_scale (R3.9); 3: sun_cal and light_threshold (R5.4)
+constexpr uint32_t kParamVersion = 4;  // 2: rate_gain_scale (R3.9); 3: sun_cal and light_threshold (R5.4); 4: mag_axis_map and mag_cal (R5.1)
 
 constexpr std::size_t kFfPoints = 8;
 constexpr std::size_t kSunCalPoints = 8;
@@ -63,6 +63,18 @@ struct Params {
     float sun_cal_d[kSunCalPoints] = {};
     float sun_cal_deg[kSunCalPoints] = {};
     float light_threshold_mv = 0.0f;
+
+    // Magnetometer (FD sections 10.2 and 11.3, R5.1). Box axis i is
+    // mag_sign[i] times sensor axis mag_axis[i]; the default is the flipped top
+    // deck: box X = +sensor X, box Y = -sensor Y, box Z = -sensor Z. The
+    // calibration is the hard-iron offset (box frame, counts) and the 2 x 2
+    // soft-iron matrix {a, b, c, d} for the horizontal plane; until T-9 sets it
+    // (mag_cal_set false) the heading stays gyro-only.
+    uint8_t mag_axis[3] = {0, 1, 2};
+    int8_t mag_sign[3] = {1, -1, -1};
+    bool mag_cal_set = false;
+    float mag_offset[3] = {0.0f, 0.0f, 0.0f};
+    float mag_soft[4] = {1.0f, 0.0f, 0.0f, 1.0f};
 
     // MANUAL throttle band (FD section 13.5). Bench-safe defaults until the
     // T-5 throttle-to-speed map exists [D]: the ceiling equals kBypassThrottleMax.

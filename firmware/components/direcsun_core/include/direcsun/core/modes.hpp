@@ -74,6 +74,7 @@ struct TickInputs {
     const Command *commands = nullptr;          // drained from the command queue this tick
     std::size_t command_count = 0;
     ManualInputSet built_inputs = 0;            // MANUAL inputs whose loops exist
+    bool heading_absolute = false;              // the heading is fused with a calibrated compass (R5.1)
     float sun_a_mv = 0.0f;                      // OP550 channels, 4-sample averages (R5.4)
     float sun_b_mv = 0.0f;
 };

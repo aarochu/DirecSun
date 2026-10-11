@@ -247,6 +247,38 @@ bool valid_sun_cal(const cJSON *item)
     return true;
 }
 
+// mag_axis_map: three strings, each a sensor axis with a sign, flattened to signed
+// 1-based axis codes (+x is 1, -y is -2) for the supervisor.
+bool mag_axis_map_from_wire(const cJSON *item, ParamValue &value)
+{
+    if (!valid_mag_axis_map(item)) return false;
+    value.type = ParamValue::Type::Array;
+    value.array_len = 0;
+    for (const cJSON *axis = item->child; axis != nullptr; axis = axis->next) {
+        const char *name = axis->valuestring;
+        const float code = static_cast<float>(name[1] - 'x' + 1);
+        value.array[value.array_len++] = name[0] == '-' ? -code : code;
+    }
+    return true;
+}
+
+// mag_cal: offset[3], then the soft-iron rows, flattened to 7 numbers.
+bool mag_cal_from_wire(const cJSON *item, ParamValue &value)
+{
+    if (!valid_mag_cal(item)) return false;
+    value.type = ParamValue::Type::Array;
+    value.array_len = 0;
+    for (const cJSON *v = member(item, "offset")->child; v != nullptr; v = v->next) {
+        value.array[value.array_len++] = static_cast<float>(v->valuedouble);
+    }
+    for (const cJSON *row = member(item, "soft_iron")->child; row != nullptr; row = row->next) {
+        for (const cJSON *v = row->child; v != nullptr; v = v->next) {
+            value.array[value.array_len++] = static_cast<float>(v->valuedouble);
+        }
+    }
+    return true;
+}
+
 // The T-10 table arrives clockwise positive; the core keeps it counter-clockwise
 // positive like every angle (FD section 2.3), so the degrees are negated here.
 // The pairs are flattened (d, deg) into the ParamValue array; the box checks
@@ -283,14 +315,6 @@ bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
         }
         return false;
     };
-    // Keys the supervisor does not implement yet (Set 5) still get the full schema
-    // check here; the supervisor then answers "not implemented: <key>".
-    auto deferred = [&](bool schema_ok) {
-        if (!schema_ok) return false;
-        value.type = ParamValue::Type::Number;
-        value.number = 0.0;
-        return true;
-    };
     constexpr double kInf = HUGE_VAL;
 
     if (std::strcmp(key, "k_psi") == 0) return number(0.0, 10.0);
@@ -318,8 +342,8 @@ bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
         std::strcmp(key, "spinup_throttle") == 0 || std::strcmp(key, "hall_expect_throttle") == 0) {
         return integer(48.0, 2047.0);
     }
-    if (std::strcmp(key, "mag_axis_map") == 0) return deferred(valid_mag_axis_map(item));
-    if (std::strcmp(key, "mag_cal") == 0) return deferred(valid_mag_cal(item));
+    if (std::strcmp(key, "mag_axis_map") == 0) return mag_axis_map_from_wire(item, value);
+    if (std::strcmp(key, "mag_cal") == 0) return mag_cal_from_wire(item, value);
     if (std::strcmp(key, "sun_cal") == 0) return sun_cal_from_wire(item, value);
     if (std::strcmp(key, "light_threshold") == 0) return number(0.0, 3300.0);
     unknown = true;
@@ -639,7 +663,10 @@ std::size_t encode_tlm(const TelemetrySnapshot &snap, uint32_t seq, uint32_t tlm
     else w.raw("null");
     w.raw(",\"rate_dps\":");
     w.num(signed_to_wire(snap.rate_dps), 2);
-    w.raw(",\"mag_deg\":null,\"sun_deg\":");
+    w.raw(",\"mag_deg\":");
+    if (snap.mag_active) w.num(angle_to_wire(snap.mag_deg), 2);
+    else w.raw("null");
+    w.raw(",\"sun_deg\":");
     if (snap.sun_valid) w.num(angle_to_wire(snap.sun_deg), 2);
     else w.raw("null");
     w.raw(snap.sun_valid ? ",\"sun_valid\":true,\"wheel_rpm\":" : ",\"sun_valid\":false,\"wheel_rpm\":");

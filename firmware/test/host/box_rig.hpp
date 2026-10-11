@@ -43,6 +43,18 @@ inline Params cascade_params()
 // The real estimator, supervisor, and cascade driving the throttle-driven
 // wheel inside the two-body box, in the control task's order. The box is
 // pinned (the lock pin) until release().
+// Counts a magnetometer in the default flipped-deck mounting reads with the box at
+// `psi_deg` (counter-clockwise positive): a 400 count horizontal field, no distortion.
+inline void mag_counts_at(double psi_deg, int16_t raw[3])
+{
+    const double psi = psi_deg * plant::kTwoPi / 360.0;
+    const double box_x = 400.0 * std::cos(psi);
+    const double box_y = -400.0 * std::sin(psi);
+    raw[0] = static_cast<int16_t>(std::lround(box_x));    // box X = +sensor X
+    raw[1] = static_cast<int16_t>(std::lround(-box_y));   // box Y = -sensor Y
+    raw[2] = static_cast<int16_t>(-120);                  // box Z = -sensor Z
+}
+
 struct BoxRig {
     Supervisor sup;
     CascadeController ctl;
@@ -55,6 +67,7 @@ struct BoxRig {
     bool pinned = true;
     double peak_tau_nm = 0.0;
     bool saw_saturated_flag = false;
+    bool mag_on = false;   // feed the estimator a compass (R5.1); see enable_compass()
 
     explicit BoxRig(const Params &p) : sup(p)
     {
@@ -74,7 +87,12 @@ struct BoxRig {
         e.safe_mode = out.mode == Mode::Safe;
         e.wheel_known = true;
         e.wheel_rpm = static_cast<float>(box.wheel_rpm);
+        if (mag_on && now % 2 == 0) {
+            e.mag_new = true;
+            mag_counts_at(box.heading_deg, e.mag_raw);
+        }
         est.update(e);
+        in.heading_absolute = est.heading_absolute();
         in.rate_dps = est.rate_dps();
         in.heading_deg = est.heading_unwrapped_deg();
         in.wheel_rpm_safe = static_cast<float>(box.wheel_rpm);
@@ -103,6 +121,14 @@ struct BoxRig {
         for (int i = 0; i < 20 && out.mode != Mode::Ready; ++i) run(500);
         REQUIRE(out.mode == Mode::Ready);
         run(500);
+    }
+
+    void enable_compass()
+    {
+        MagConfig cfg;
+        cfg.calibrated = true;
+        est.set_mag_config(cfg);
+        mag_on = true;
     }
 
     void release(double rate_dps)

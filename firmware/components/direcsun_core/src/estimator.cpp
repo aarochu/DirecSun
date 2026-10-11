@@ -18,10 +18,48 @@ namespace direcsun {
 namespace {
 
 constexpr double kDegPerRad = 180.0 / 3.14159265358979323846;
+constexpr uint32_t kMagStepTicks = 10;        // 20 ms
+constexpr uint32_t kMagActiveTicks = 250;     // a step within the last 0.5 s keeps the heading absolute
+constexpr float kMagGain = 0.01f;             // 0.02 s / tau of 2 s (FD section 11.3)
 
 }  // namespace
 
 Estimator::Estimator(const EstimatorConfig &config) : config_(config) {}
+
+void mag_config_from_params(const Params &params, MagConfig &cfg)
+{
+    cfg.calibrated = params.mag_cal_set;
+    for (int i = 0; i < 3; ++i) {
+        cfg.axis[i] = params.mag_axis[i];
+        cfg.sign[i] = params.mag_sign[i];
+        cfg.offset[i] = params.mag_offset[i];
+    }
+    for (int i = 0; i < 4; ++i) cfg.soft[i] = params.mag_soft[i];
+}
+
+bool mag_heading_deg(const MagConfig &cfg, const int16_t raw[3], float &heading_deg)
+{
+    float box[3];
+    for (int i = 0; i < 3; ++i) box[i] = static_cast<float>(cfg.sign[i]) * static_cast<float>(raw[cfg.axis[i]]) - cfg.offset[i];
+    const float hx = cfg.soft[0] * box[0] + cfg.soft[1] * box[1];
+    const float hy = cfg.soft[2] * box[0] + cfg.soft[3] * box[1];
+    if (!(hx * hx + hy * hy > 1.0f)) return false;   // no horizontal field to read
+    // The field is fixed in the world, so as the box turns counter-clockwise by psi it
+    // rotates the other way in the box frame: north is (cos psi, -sin psi).
+    heading_deg = static_cast<float>(std::atan2(-hy, hx) * kDegPerRad);
+    return true;
+}
+
+void Estimator::set_mag_config(const MagConfig &cfg)
+{
+    mag_ = cfg;
+    mag_samples_ = 0;
+    for (float &v : mag_sum_) v = 0.0f;
+    if (!cfg.calibrated) {
+        mag_active_ticks_ = 0;
+        mag_initialised_ = false;
+    }
+}
 
 void Estimator::seed_bias(float bias_dps)
 {
@@ -97,6 +135,36 @@ void Estimator::update(const EstimatorInputs &in)
 #else
     heading_deg_ += static_cast<double>(rate_dps_) * config_.dt_s;
 #endif
+
+    // Complementary filter (FD section 11.3): the gyro integrates every tick; every 20 ms the
+    // averaged magnetometer samples pull the heading toward the compass with k = 0.02 s / 2 s.
+    if (mag_.calibrated) {
+        if (in.mag_new) {
+            for (int i = 0; i < 3; ++i) mag_sum_[i] += static_cast<float>(in.mag_raw[i]);
+            ++mag_samples_;
+        }
+        if (++mag_tick_ >= kMagStepTicks) {
+            mag_tick_ = 0;
+            if (mag_samples_ > 0) {
+                int16_t avg[3];
+                for (int i = 0; i < 3; ++i) avg[i] = static_cast<int16_t>(std::lround(mag_sum_[i] / static_cast<float>(mag_samples_)));
+                float psi_mag = 0.0f;
+                if (direcsun::mag_heading_deg(mag_, avg, psi_mag)) {
+                    mag_heading_deg_ = psi_mag;
+                    if (!mag_initialised_) {
+                        heading_deg_ = psi_mag;   // the first fix sets the absolute heading
+                        mag_initialised_ = true;
+                    } else {
+                        heading_deg_ += static_cast<double>(kMagGain) * static_cast<double>(wrap_deg180(psi_mag - heading_deg_));
+                    }
+                    mag_active_ticks_ = kMagActiveTicks;
+                }
+            }
+            mag_samples_ = 0;
+            for (float &v : mag_sum_) v = 0.0f;
+        }
+        if (mag_active_ticks_ > 0) --mag_active_ticks_;
+    }
 }
 
 float Estimator::accel_rms_g() const

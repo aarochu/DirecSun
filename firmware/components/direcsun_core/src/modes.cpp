@@ -627,7 +627,8 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
 
     // 6. Flags and outputs.
     // The heading is gyro-only until Set 5 adds the magnetometer (R4.2).
-    uint32_t flags = kFlagHeadingGyro;
+    // The heading is gyro-only until the compass is calibrated and fused (R4.2, R5.1).
+    uint32_t flags = in.heading_absolute ? 0u : static_cast<uint32_t>(kFlagHeadingGyro);
     // Demo preconditions the UI cannot otherwise see (R4.1 open question 2, R5.3): a box with
     // the Hall but no T-5 table refuses SLEW, and a reduced rate gain slews slowly.
     if (params_.hall_installed && params_.ff_count == 0) flags |= kFlagFfTableMissing;

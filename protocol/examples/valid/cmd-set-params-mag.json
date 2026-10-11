@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 9,
+  "cmd": "set_params",
+  "params": {
+    "mag_axis_map": ["+x", "-y", "-z"],
+    "mag_cal": {
+      "offset": [61.5, -34.0, 0],
+      "soft_iron": [[0.0025, 0.0003], [-0.0001, 0.0021]]
+    }
+  }
+}

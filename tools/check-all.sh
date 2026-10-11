@@ -59,6 +59,7 @@ step schema-fixtures       "$python" "$repo_root/tools/check-schema.py"
 step link-tests            "$repo_root/tools/check-link.sh"
 step mock-box-selftest     "$python" "$repo_root/tools/mock-box.py" --selftest
 step check-trials-selftest  "$python" "$repo_root/tools/check-trials.py" --selftest
+step fit-mag-cal-selftest   "$python" "$repo_root/tools/fit-mag-cal.py" --selftest
 step cad-stale             "$python" "$repo_root/tools/check-cad-stale.py"
 step cad-stale-selftest    "$python" "$repo_root/tools/check-cad-stale.py" --selftest
 if [[ "$firmware" -eq 1 ]]; then

@@ -14,7 +14,7 @@ TD §11.4 drops these in reverse order if time runs out.
 
 ## Status
 <!-- markers: [ ] not started · [~] in progress · [t] tests passing, awaiting merge · [x] merged -->
-- [ ] R5.1 heading: magnetometer axis map and hard- and soft-iron calibration (T-9 at three wheel speeds); complementary heading filter (FD §11.3); absolute HOLD (T-17)
+- [t] R5.1 heading (host-tested, hardware pending): magnetometer axis map and hard- and soft-iron calibration (T-9 at three wheel speeds); complementary heading filter (FD §11.3); absolute HOLD (T-17)
 - [t] R5.2 teleop-extras (host-tested, hardware pending): MANUAL `wheel` and `rate` inputs (FD §13.5), wired to whatever teleop controls the UI provides
 - [t] R5.3 respin (host-tested, hardware pending): lock-pin desaturation and alternate wheel start speeds (FD §13.4), with the UI's prompt flow
 - [t] R5.4 sun-point (host-tested, hardware pending): OP550 calibration (T-10), sun angle, SUN_POINT and its invalid-sun exit
@@ -29,3 +29,4 @@ None.
 - 2026-10-10: Outline created during Set 3 planning, then replanned the same day after the main UI decision.
 - 2026-10-11: R5.2 and R5.3 specced and built on the host (integrated branch claude/fervent-hypatia-gwbokr). Hardware items stay open for Julian's go.
 - 2026-10-11: R5.4 specced and built on the host.
+- 2026-10-11: R5.1 specced and built on the host. Every Set 5 feature is now built and host-tested; every hardware item is open for Julian's go.

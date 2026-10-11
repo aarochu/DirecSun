@@ -12,6 +12,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "direcsun/core/params.hpp"
+
 namespace direcsun {
 
 struct EstimatorConfig {
@@ -30,7 +32,30 @@ struct EstimatorInputs {
     bool wheel_known = false;          // false when no Hall speed is available
     float wheel_rpm = 0.0f;
     int8_t s_gyro = 1;                 // +1 or -1
+    // One new QMC5883P sample this tick (R5.1), raw counts in the sensor's own axes.
+    bool mag_new = false;
+    int16_t mag_raw[3] = {0, 0, 0};
 };
+
+// Magnetometer axis map and calibration (FD sections 10.2 and 11.3). Box axis i is
+// sign[i] times sensor axis axis[i]; the offset is in the box frame, in counts, and
+// `soft` is the horizontal soft-iron matrix {a, b, c, d}. Heading fusion is off
+// until `calibrated` is true.
+struct MagConfig {
+    bool calibrated = false;
+    uint8_t axis[3] = {0, 1, 2};
+    int8_t sign[3] = {1, -1, -1};
+    float offset[3] = {0.0f, 0.0f, 0.0f};
+    float soft[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+};
+
+// The magnetic heading of the box's +X axis, counter-clockwise positive, from one raw
+// sample; false if the horizontal field is too small to trust. Pure, so T-9's fit and
+// the host tests use the same arithmetic as the filter.
+// Builds the estimator's magnetometer configuration from the persisted parameters.
+void mag_config_from_params(const Params &params, MagConfig &cfg);
+
+bool mag_heading_deg(const MagConfig &cfg, const int16_t raw[3], float &heading_deg);
 
 class Estimator {
 public:
@@ -60,6 +85,14 @@ public:
     bool bias_updating() const { return bias_updating_; }  // the gate was open on the last update
     float tilt_deg() const { return tilt_deg_; }      // from vertical, 0..180
     float accel_norm_g() const { return accel_norm_g_; }
+
+    // Magnetometer fusion (FD section 11.3, R5.1). Takes effect from the next sample.
+    void set_mag_config(const MagConfig &cfg);
+    // True while the heading is fused with a calibrated compass (a magnetometer step
+    // happened in the last 0.5 s); until then the heading is gyro-only.
+    bool heading_absolute() const { return mag_active_ticks_ > 0; }
+    // The last magnetometer heading, counter-clockwise positive, wrapped. Valid when heading_absolute().
+    float mag_heading_deg() const { return mag_heading_deg_; }
 
     // Imbalance vibration for T-7 (R4.5): RMS of the horizontal accelerometer
     // axes over the last 1 s (500 samples), each axis with its own mean removed,
@@ -91,6 +124,14 @@ private:
     std::size_t accel_count_ = 0;
     float accel_norm_g_ = 0.0f;
     float tilt_deg_ = 0.0f;
+
+    MagConfig mag_;
+    float mag_sum_[3] = {0.0f, 0.0f, 0.0f};
+    uint32_t mag_samples_ = 0;
+    uint32_t mag_tick_ = 0;
+    uint32_t mag_active_ticks_ = 0;    // counts down from 250 (0.5 s) after each step
+    bool mag_initialised_ = false;
+    float mag_heading_deg_ = 0.0f;
 
     float vib_x_[kVibrationWindow] = {};
     float vib_y_[kVibrationWindow] = {};
