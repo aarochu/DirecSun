@@ -7,8 +7,10 @@
 Connects to the box (or tools/mock-box.py), sends a ping at 5 Hz unless --silent,
 and writes every received frame to a JSON-lines file, one message per line. At the
 end it prints the counts by message type, the telemetry rate, the telemetry lost
-(from gaps in the box's t_ms, since tlm, event, and pong share the box's seq
-counter), and round-trip percentiles from the pongs.
+(the frames the box's t_ms span should hold, minus the distinct t_ms received;
+tlm, event, and pong share the box's seq counter, so seq cannot say), and
+round-trip percentiles from the pongs. A capture that ends early, because the box
+closed the connection or went silent, fails.
 
     tools/check-schema.py capture.jsonl     # every captured frame against the schema
 
@@ -59,6 +61,7 @@ async def capture(args):
     received = []
     sent_at = {}
     rtts_ms = []
+    closed = None
     started = time.monotonic()
     async with connect(args.url, open_timeout=10) as ws:
         async def pinger():
@@ -87,11 +90,12 @@ async def capture(args):
                 if message.get("type") == "pong" and message.get("ping_seq") in sent_at:
                     rtts_ms.append(arrived_ms - sent_at.pop(message["ping_seq"]))
         except ConnectionClosed as exc:
+            closed = str(exc)
             print(f"capture-box: the box closed the connection: {exc}", file=sys.stderr)
         finally:
             if ping_task:
                 ping_task.cancel()
-    return received, rtts_ms, time.monotonic() - started
+    return received, rtts_ms, time.monotonic() - started, closed
 
 
 def main():
@@ -103,7 +107,7 @@ def main():
     parser.add_argument("--t11", action="store_true", help="apply the T-11 pass criteria")
     args = parser.parse_args()
 
-    received, rtts_ms, elapsed = asyncio.run(capture(args))
+    received, rtts_ms, elapsed, closed = asyncio.run(capture(args))
     pathlib.Path(args.out).write_text("".join(line + "\n" for line in received))
 
     kinds = {}
@@ -119,7 +123,6 @@ def main():
         if kind == "tlm" and isinstance(message.get("t_ms"), int):
             tlm_times.append(message["t_ms"])
 
-    lost = 0
     max_gap_ms = 0
     backwards = 0
     for previous, current in zip(tlm_times, tlm_times[1:]):
@@ -128,9 +131,13 @@ def main():
             backwards += 1
             continue
         max_gap_ms = max(max_gap_ms, gap)
-        lost += max(0, round(gap / TLM_PERIOD_MS) - 1)
     tlm_count = len(tlm_times)
-    expected = tlm_count + lost
+    # Loss over the box's own clock: the frames its t_ms span should hold, minus
+    # the distinct frames received. Summing round(gap / period) - 1 per gap would
+    # count jitter (a 30 ms gap, then a 10 ms one) as a lost frame.
+    distinct = len(set(tlm_times))
+    expected = round((max(tlm_times) - min(tlm_times)) / TLM_PERIOD_MS) + 1 if tlm_times else 0
+    lost = max(0, expected - distinct)
     loss = lost / expected if expected else 1.0
     span_s = (tlm_times[-1] - tlm_times[0]) / 1000.0 if tlm_count > 1 else 0.0
     rate = (tlm_count - 1) / span_s if span_s > 0 else 0.0
@@ -147,6 +154,9 @@ def main():
     problems = []
     if tlm_count == 0:
         problems.append("no tlm received")
+    if closed is not None or elapsed < 0.98 * args.seconds:
+        problems.append(f"the capture ended after {elapsed:.1f} s of {args.seconds:.0f} s"
+                        + (f" (the box closed the connection: {closed})" if closed is not None else ""))
     if backwards:
         problems.append("t_ms went backwards")
     if args.silent and set(kinds) - {"tlm"}:
