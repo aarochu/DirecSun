@@ -133,6 +133,40 @@ describe('DeviceOperator', () => {
     return { turn };
   }
 
+  it('sends the chosen mode with its manual input, and reports the box answer', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+
+    const hold = operator.setMode('HOLD');
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'HOLD' });
+    expect(socket.lastCommand()).not.toHaveProperty('input');
+    socket.message(ack(socket.lastCommand().seq));
+    await hold;
+    expect(operator.getState().result).toEqual({ tone: 'ok', text: 'MODE HOLD ACCEPTED.' });
+
+    const manual = operator.setMode('MANUAL', 'rate');
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'MANUAL', input: 'rate' });
+    socket.message(ack(socket.lastCommand().seq));
+    await manual;
+
+    const sun = operator.setMode('SUN_POINT');
+    socket.message(ack(socket.lastCommand().seq, false, 'not implemented'));
+    await sun;
+    expect(operator.getState().result).toEqual({ tone: 'error', text: 'MODE REFUSED: not implemented' });
+    expect(operator.getState().busy).toBeNull();
+  });
+
+  it('does not change mode unless it controls the box in a mode that allows it', async () => {
+    const { socket, operator } = armed();
+    await operator.setMode('HOLD');
+    expect(socket.commands()).toEqual([]);
+
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'SPINUP' }));
+    await operator.setMode('HOLD');
+    expect(socket.commands().filter((frame) => frame.cmd === 'mode')).toEqual([]);
+  });
+
   it('cannot rotate before it controls an armed box in READY', async () => {
     const { socket, operator } = armed();
     socket.message(tlm({ psi_deg: 10, mode: 'READY' }));
@@ -351,6 +385,45 @@ describe('ground station box controls', () => {
       await flush();
     });
     expect(screen.getByText(/ARM ACCEPTED/)).toBeTruthy();
+  });
+
+  it('the mode menu sends the chosen mode, and stays disabled until the box is armed', async () => {
+    const socket = connect();
+    const trigger = () => screen.getByRole('button', { name: 'Set the box mode' });
+    expect(trigger().hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm now' }));
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    expect(trigger().hasAttribute('disabled')).toBe(false);
+
+    fireEvent.click(trigger());
+    expect(trigger().getAttribute('aria-expanded')).toBe('true');
+    const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
+    expect(items).toEqual(['Ready', 'Hold heading', 'Manual: rate', 'Manual: throttle', 'Manual: wheel speed', 'Detumble', 'Sun point']);
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Manual: throttle' }));
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'MANUAL', input: 'throttle' });
+    expect(trigger().getAttribute('aria-expanded')).toBe('false');
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    expect(screen.getByText('MODE MANUAL (THROTTLE) ACCEPTED.')).toBeTruthy();
+
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 200, psi_deg: 0, mode: 'MANUAL' })));
+    fireEvent.click(trigger());
+    const enabled = screen.getAllByRole('menuitem').filter((item) => !(item as HTMLButtonElement).disabled).map((item) => item.textContent);
+    expect(enabled).toEqual(['Ready', 'Detumble', 'Sun point']);
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    expect(trigger().getAttribute('aria-expanded')).toBe('false');
   });
 
   it('the E-stop button sends estop; the space bar does too, only while the box is armed', async () => {

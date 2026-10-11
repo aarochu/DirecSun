@@ -15,9 +15,14 @@ export interface OperatorState {
   readonly direction: Direction | null;
   readonly originDeg: number | null;
   readonly targetDeg: number | null;
-  readonly busy: 'arm' | 'disarm' | 'estop' | null;
+  readonly busy: 'arm' | 'disarm' | 'estop' | 'mode' | null;
   readonly result: OperatorResult | null;
 }
+
+export type CommandableMode = 'READY' | 'HOLD' | 'MANUAL' | 'DETUMBLE' | 'SUN_POINT';
+export type ManualInput = 'rate' | 'throttle' | 'wheel';
+
+const MODE_CHANGE_FROM = ['READY', 'HOLD', 'SLEW', 'MANUAL', 'DETUMBLE', 'SUN_POINT'];
 
 export const TURN_STEP_DEG = 90;
 export const HOLD_MS = 1000;
@@ -91,6 +96,22 @@ export class DeviceOperator {
 
   get canRotate(): boolean {
     return this.state.controlling && this.state.phase === 'idle' && this.boxMode === 'READY';
+  }
+
+  get canChangeMode(): boolean {
+    return this.state.controlling && this.state.phase === 'idle' && this.state.busy === null && MODE_CHANGE_FROM.includes(this.boxMode ?? '');
+  }
+
+  async setMode(mode: CommandableMode, input?: ManualInput): Promise<void> {
+    if (!this.canChangeMode) return;
+    const label = input ? `${mode} (${input.toUpperCase()})` : mode.replace('_', ' ');
+    this.set({ busy: 'mode', result: null });
+    try {
+      await this.link.command('mode', input ? { mode, input } : { mode });
+      this.set({ busy: null, result: { tone: 'ok', text: `MODE ${label} ACCEPTED.` } });
+    } catch (error) {
+      this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+    }
   }
 
   async arm(): Promise<void> {
