@@ -408,6 +408,7 @@ void control_task(void *)
                 snap.accel_raw[axis] = imu.accel[axis];
                 snap.mag_raw[axis] = mag.raw[axis];
             }
+            snap.accel_rms_g = snap.bench_mode ? estimator.accel_rms_g() : 0.0f;
             snap.mag_fresh = mag_fresh;
             snap.sun_a_mv = sun_a_mv;
             snap.sun_b_mv = sun_b_mv;

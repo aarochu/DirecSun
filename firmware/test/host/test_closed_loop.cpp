@@ -431,11 +431,13 @@ void track_ref(BoxRig &rig, AttitudeRun &r)
 // A SLEW to `target_deg` from rest, run for `seconds`. The error is the true
 // heading's, measured from where the zero was taken; `band_deg` sets settle_s.
 AttitudeRun slew_run(double friction_nm, unsigned seed, double target_deg, double seconds, double band_deg,
-                     double deadline_s)
+                     double deadline_s, double ib_scale = 1.0, double iw_scale = 1.0)
 {
     Params p = cascade_params();
     p.rate_gain_scale = 1.0f;
     BoxRig rig(p);
+    rig.box.i_b *= ib_scale;   // the plant differs from the controller's constants (R4.5 robustness)
+    rig.box.i_w *= iw_scale;
     ready_and_zeroed(rig, friction_nm, seed);
     const double zero_true = rig.box.heading_deg;
     Command c = harness::mode_cmd(Mode::Slew);
@@ -650,4 +652,39 @@ TEST_CASE("R4.4 DETUMBLE and READY run the same controller: identical wheel refe
     double worst = 0.0;
     for (std::size_t i = 0; i < a.size(); ++i) worst = std::fmax(worst, std::fabs(a[i] - b[i]));
     CHECK(worst == doctest::Approx(0.0).epsilon(1e-6));
+}
+
+TEST_CASE("R4.5 robustness: the controller built on the TD inertias still meets PR-1 and PR-2 on a plant 30 % off")
+{
+    // T-3 passes within 30 % of 1.03e-3, so the gains must tolerate that band
+    // (and a wheel 20 % off) without retuning. Friction at both ends of the planning range.
+    for (double ib : {0.7, 1.3}) {
+        for (double iw : {0.8, 1.2}) {
+            for (double friction : {0.0, 3e-3}) {
+                CAPTURE(ib);
+                CAPTURE(iw);
+                CAPTURE(friction);
+                for (unsigned seed = 1; seed <= 3; ++seed) {
+                    const AttitudeRun r = slew_run(friction, seed, 90.0, 5.0, 3.0, 3.0, ib, iw);
+                    CHECK(r.settle_s < 3.0);
+                    CHECK(r.timeout_s < 0.0);
+                    CHECK(std::fabs(r.end_error_deg) < 3.0);
+                }
+                Params p = cascade_params();
+                p.rate_gain_scale = 1.0f;
+                BoxRig rig(p);
+                rig.box.i_b *= ib;
+                rig.box.i_w *= iw;
+                rig.box.friction_nm = friction;
+                rig.arm_to_ready();
+                rig.release(kOneRevPerSecondDps);
+                double after = 0.0;
+                for (int i = 0; i < static_cast<int>(8.0 / kDt); ++i) {
+                    rig.run(1);
+                    if ((i + 1) * kDt >= 5.0) after = std::fmax(after, std::fabs(rig.box.rate_dps()));
+                }
+                CHECK(after < 5.0);
+            }
+        }
+    }
 }

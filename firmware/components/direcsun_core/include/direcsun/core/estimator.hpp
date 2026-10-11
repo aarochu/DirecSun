@@ -61,6 +61,14 @@ public:
     float tilt_deg() const { return tilt_deg_; }      // from vertical, 0..180
     float accel_norm_g() const { return accel_norm_g_; }
 
+    // Imbalance vibration for T-7 (R4.5): RMS of the horizontal accelerometer
+    // axes over the last 1 s (500 samples), each axis with its own mean removed,
+    // so gravity and mount tilt drop out: sqrt(var_x + var_y), in g. A wheel
+    // imbalance is a vector rotating in the x-y plane, so a circular 0.1 g
+    // reads 0.1 g. It is measured through the sensor's 20 Hz filter.
+    static constexpr std::size_t kVibrationWindow = 500;
+    float accel_rms_g() const;
+
     // Gyro-only heading (R4.2, FD section 11.3): the bias-corrected box rate
     // integrated every tick, counter-clockwise positive, kept continuous
     // (unwrapped) as double. Set 5 adds the magnetometer. It is never reset:
@@ -83,6 +91,11 @@ private:
     std::size_t accel_count_ = 0;
     float accel_norm_g_ = 0.0f;
     float tilt_deg_ = 0.0f;
+
+    float vib_x_[kVibrationWindow] = {};
+    float vib_y_[kVibrationWindow] = {};
+    std::size_t vib_next_ = 0;
+    std::size_t vib_count_ = 0;
 };
 
 // Boot-time bias seed [D]. FD 11.1 opens the bias update only while

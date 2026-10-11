@@ -292,6 +292,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     manual.gyro_raw[0] = -32768;
     manual.gyro_raw[2] = 32767;
     manual.mag_raw[1] = -1234;
+    manual.accel_rms_g = 0.0312f;
     manual.sun_a_mv = 812;
     manual.baro_valid = true;
     manual.baro_t_c = 23.51f;
@@ -445,4 +446,19 @@ TEST_CASE("R4.3 tlm carries psi_ref clockwise positive in HOLD and SLEW, null ot
     REQUIRE(encode_tlm(s, 3, 0, buf, sizeof buf) > 0);
     Json doc(buf);
     CHECK(doc.number("psi_ref_deg") == doctest::Approx(180.0));
+}
+
+TEST_CASE("R4.5 accel_rms_g is in tlm only when bench_mode is on")
+{
+    char buf[2048];
+    TelemetrySnapshot snap = ready_snapshot();
+    snap.accel_rms_g = 0.0312f;
+    snap.bench_mode = false;
+    REQUIRE(encode_tlm(snap, 1, 0, buf, sizeof buf) > 0);
+    CHECK(std::string(buf).find("accel_rms_g") == std::string::npos);
+    snap.bench_mode = true;
+    REQUIRE(encode_tlm(snap, 1, 0, buf, sizeof buf) > 0);
+    const std::string on = buf;
+    CHECK(on.find("\"accel_rms_g\":0.0312") != std::string::npos);
+    CHECK(on.find("\"gyro_raw\"") != std::string::npos);
 }

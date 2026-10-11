@@ -297,3 +297,34 @@ TEST_CASE("HT-3 the bias gate uses the seed's accel reference, not 1 g")
     run(unreferenced, at_rest, static_cast<int>(5 * kTau * kTicksPerS));
     CHECK(unreferenced.bias_dps() == -2.1f);
 }
+
+TEST_CASE("R4.5 accel_rms_g: a circular imbalance with a DC offset reads its amplitude")
+{
+    // A wheel imbalance is a vector rotating in the x-y plane at the wheel
+    // frequency (40 Hz at bias). Gravity and mount tilt are the mean and must drop out.
+    Estimator est;
+    CHECK(est.accel_rms_g() == doctest::Approx(0.0f));
+    for (int i = 0; i < 1500; ++i) {
+        const float phase = 2.0f * 3.14159265f * 40.0f * static_cast<float>(i) / 500.0f;
+        EstimatorInputs in;
+        in.accel_g[0] = 0.5f + 0.1f * std::cos(phase);
+        in.accel_g[1] = -0.2f + 0.1f * std::sin(phase);
+        in.accel_g[2] = 0.8f;
+        est.update(in);
+    }
+    CHECK(est.accel_rms_g() == doctest::Approx(0.1f).epsilon(0.02));
+}
+
+TEST_CASE("R4.5 accel_rms_g: a still deck reads zero, and a tap raises it")
+{
+    Estimator est;
+    EstimatorInputs in;
+    in.accel_g[2] = 1.0f;
+    for (int i = 0; i < 600; ++i) est.update(in);
+    CHECK(est.accel_rms_g() == doctest::Approx(0.0f).epsilon(1e-6));
+    in.accel_g[0] = 0.4f;   // one tap sample
+    est.update(in);
+    in.accel_g[0] = 0.0f;
+    est.update(in);
+    CHECK(est.accel_rms_g() > 0.01f);
+}

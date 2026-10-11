@@ -90,6 +90,7 @@ else
         "no_hold_deadband|HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s"
         "slew_settle_per_step|missed ticks: the SLEW settle dwell and timeout run on wall time"
         "snapshot_cadence_only|HT-13 (c): the first tlm after every ack and mode event is at least as new at every comms phase"
+        "no_vib_mean|R4.5 accel_rms_g: a circular imbalance with a DC offset reads its amplitude"
         "detumble_own_gain|R4.4 DETUMBLE and READY run the same controller: identical wheel reference trajectories"
         "no_wire_sign|HT-13 (b): the judge sequence as the UI runs it turns the box both ways and back"
     )

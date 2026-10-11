@@ -54,6 +54,14 @@ PACK_R = 8 * 0.030 + 0.10     # [A] ohm: 30 mOhm per NiMH cell plus holder conta
 MU_DGBB = 0.0015              # [V] SKF constant-coefficient value for deep groove ball bearings
 BORE = 0.008                  # m
 FRICTION_PLAN = (1e-3, 3e-3)  # [A] N*m planning range (doc Section 3.6): grease, shields, and a printed fit raise it well above the SKF figure
+# Measurements from the assembled box (R4.5, TD section 9: T-3 and T-4). Empty until measured;
+# when set they replace the calculated value and the printed line is labelled [M].
+MEASURED = {
+    "box_inertia_kgm2": None,      # T-3: box Iz excluding the wheel
+    "running_friction_nm": None,   # T-4
+}
+if MEASURED["running_friction_nm"] is not None:
+    FRICTION_PLAN = (MEASURED["running_friction_nm"],) * 2
 ROD_D, ROD_L = 0.0038, 0.245  # #8-32 threaded rod, modelled as a 3.8 mm solid rod (between root and major diameter)
 ROD_R = 0.04575 * math.sqrt(2)  # corner column centre, from the axis
 
@@ -112,6 +120,9 @@ def main():
         i_wheel = i_w + BELL_MASS * BELL_R ** 2
         m_box = m_print + m_hw + 4 * m_rod + m_w + BELL_MASS
         i_box = i_print + i_hw + i_rod                    # wheel excluded: it is the actuator
+        if MEASURED["box_inertia_kgm2"] is not None:
+            print(f"  box Iz: calculated {i_box:.2e}, measured {MEASURED['box_inertia_kgm2']:.2e} kg*m2 [M]; using the measurement")
+            i_box = MEASURED["box_inertia_kgm2"]
         print(f"\n=== Flywheel: {wname}, bias {BIAS_RPM:.0f} rpm, cap {CAP_RPM:.0f} rpm ===")
         print(f"  washer mass {m_w*1000:.0f} g, wheel Iz (washers+bell) {i_wheel:.2e} kg*m2, rim speed at cap "
               f"{rpm2rad(CAP_RPM)*od/2000:.1f} m/s")

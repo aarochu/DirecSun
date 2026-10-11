@@ -1,3 +1,7 @@
+// Mutation-test switch (host selftest builds only): NO_VIB_MEAN leaves the accelerometer mean in accel_rms_g.
+#if defined(ESP_PLATFORM) && defined(DIRECSUN_MUTANT_NO_VIB_MEAN)
+#error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
+#endif
 #include "direcsun/core/estimator.hpp"
 
 #include <cmath>
@@ -26,6 +30,11 @@ void Estimator::seed_bias(float bias_dps)
 
 void Estimator::update(const EstimatorInputs &in)
 {
+    vib_x_[vib_next_] = in.accel_g[0];
+    vib_y_[vib_next_] = in.accel_g[1];
+    vib_next_ = (vib_next_ + 1) % kVibrationWindow;
+    if (vib_count_ < kVibrationWindow) ++vib_count_;
+
     // 20 ms moving average of the accelerometer (FD 11.5).
     for (int axis = 0; axis < 3; ++axis) {
         accel_window_[accel_next_][axis] = in.accel_g[axis];
@@ -88,6 +97,25 @@ void Estimator::update(const EstimatorInputs &in)
 #else
     heading_deg_ += static_cast<double>(rate_dps_) * config_.dt_s;
 #endif
+}
+
+float Estimator::accel_rms_g() const
+{
+    if (vib_count_ < 2) return 0.0f;
+    double sx = 0.0, sy = 0.0, qx = 0.0, qy = 0.0;
+    for (std::size_t i = 0; i < vib_count_; ++i) {
+        sx += vib_x_[i];
+        sy += vib_y_[i];
+        qx += static_cast<double>(vib_x_[i]) * vib_x_[i];
+        qy += static_cast<double>(vib_y_[i]) * vib_y_[i];
+    }
+    const double n = static_cast<double>(vib_count_);
+#ifdef DIRECSUN_MUTANT_NO_VIB_MEAN
+    const double var = qx / n + qy / n;   // gravity and mount tilt left in
+#else
+    const double var = (qx - sx * sx / n) / n + (qy - sy * sy / n) / n;
+#endif
+    return var > 0.0 ? static_cast<float>(std::sqrt(var)) : 0.0f;
 }
 
 float Estimator::heading_deg() const

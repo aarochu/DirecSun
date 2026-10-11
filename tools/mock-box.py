@@ -664,7 +664,9 @@ class Box:
             "loop_us": random.randint(690, 790), "flags": flags,
             "t_c": 23.5, "p_pa": 101300.0, "tlm_dropped": 0, "dropped_events": 0,
             **({"gyro_raw": [0, 0, int(max(-32768, min(32767, -self.rate * 16.4)))], "mag_raw": [812, -1234, 300],
-                "sun_a_mv": 0, "sun_b_mv": 0} if self.params["bench_mode"] else {}),
+                "sun_a_mv": 0, "sun_b_mv": 0,
+                "accel_rms_g": round(0.004 + 0.00002 * max(0.0, self.wheel) + random.uniform(0.0, 0.002), 4)}
+               if self.params["bench_mode"] else {}),
         })
 
 
