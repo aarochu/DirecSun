@@ -408,8 +408,8 @@ function boot() {
 
   // The hero title, drawn fuzzy (src/fuzzy.ts).
   const fuzzy = createFuzzyText($('.hero__title'), {
-    baseIntensity: 0.2,
-    hoverIntensity: 0.5,
+    baseIntensity: 0.12,
+    hoverIntensity: 0.3,
     enableHover: true,
     reducedMotion,
   });
