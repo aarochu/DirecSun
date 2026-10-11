@@ -76,14 +76,14 @@ export function TelemetryPlots({ telemetry }: { telemetry: DisplayTelemetry }) {
         domain={WHEEL_DOMAIN}
         ticks={[0, WHEEL_MIN_RPM, 2400, WHEEL_MAX_RPM]}
         bands={[
-          { from: WHEEL_DOMAIN[0], to: WHEEL_MIN_RPM, label: 'BELOW LOW LIMIT' },
-          { from: WHEEL_MAX_RPM, to: WHEEL_DOMAIN[1], label: 'ABOVE CAP' },
+          { from: WHEEL_DOMAIN[0], to: WHEEL_MIN_RPM, label: 'BELOW LOW LIMIT (DEFAULT)' },
+          { from: WHEEL_MAX_RPM, to: WHEEL_DOMAIN[1], label: 'ABOVE CAP (DEFAULT)' },
         ]}
         markers={[
-          { value: WHEEL_MIN_RPM + MOMENTUM_WARN_RPM, label: 'NEAR LOW LIMIT' },
-          { value: WHEEL_MAX_RPM - MOMENTUM_WARN_RPM, label: 'NEAR CAP' },
+          { value: WHEEL_MIN_RPM + MOMENTUM_WARN_RPM, label: 'NEAR LOW LIMIT (DEFAULT)' },
+          { value: WHEEL_MAX_RPM - MOMENTUM_WARN_RPM, label: 'NEAR CAP (DEFAULT)' },
         ]}
-        describe={`${source} wheel speed over the last 15 seconds, with the ${WHEEL_MIN_RPM} rpm low limit and ${WHEEL_MAX_RPM} rpm cap shaded.`}
+        describe={`${source} wheel speed over the last 15 seconds, with the default ${WHEEL_MIN_RPM} rpm low limit and ${WHEEL_MAX_RPM} rpm cap shaded. The box's own limits can differ: they are parameters.`}
       />
       {battery.length > 0 ? (
         <SeriesChart
