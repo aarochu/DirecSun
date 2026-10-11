@@ -1,0 +1,32 @@
+Script started on 2026-10-11 01:59:51-04:00 [COMMAND="timeout 12 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/tools/idf.sh -B build-flight -D SDKCONFIG=build-flight/sdkconfig -p /dev/ttyACM0 monitor --no-reset" <not executed on terminal>]
+Executing action: monitor
+Running idf_monitor in directory /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/firmware
+Executing "/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python /home/jazoe/.espressif/v6.0/esp-idf/tools/idf_monitor.py -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/firmware/build-flight/direcsun.elf /tmp/claude-1000/-home-jazoe-projects-DirecSun/1be52b11-7750-47ce-bd9a-3561643d28b1/scratchpad/wt/prop-R3.7/firmware/build-flight/bootloader/bootloader.elf --no-reset -m '/home/jazoe/.espressif/tools/python/v6.0/venv/bin/python' '/home/jazoe/.espressif/v6.0/esp-idf/tools/idf.py' '-B' 'build-flight' '-D' 'SDKCONFIG=build-flight/sdkconfig' '-p' '/dev/ttyACM0'"...
+--- esp-idf-monitor 1.9.0 on /dev/ttyACM0 115200
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+W (1413) direcsun: gyro z bias not seeded: too few samples (0 saI (30551) status: s 29 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 3 p99_dev_us 0 dshot sent 15017 dropped 0 imu_invalid 500
+I (30553) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (31563) status: s 30 ticks 500 missed 0 (total 1) loop_us_max 339 dev_max_us 1 p99_dev_us 0 dshot sent 15517 dropped 0 imu_invalid 500
+I (31564) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (32575) status: s 31 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 5 p99_dev_us 0 dshot sent 16017 dropped 0 imu_invalid 500
+I (32576) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (33587) status: s 32 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 5 p99_dev_us 0 dshot sent 16517 dropped 0 imu_invalid 500
+I (33588) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (34599) status: s 33 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 2 p99_dev_us 0 dshot sent 17017 dropped 0 imu_invalid 500
+I (34600) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (35611) status: s 34 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 2 p99_dev_us 0 dshot sent 17517 dropped 0 imu_invalid 500
+I (35613) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (36623) status: s 35 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 1 p99_dev_us 0 dshot sent 18017 dropped 0 imu_invalid 500
+I (36624) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (37635) status: s 36 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 0 p99_dev_us 0 dshot sent 18517 dropped 0 imu_invalid 500
+I (37636) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (38647) status: s 37 ticks 500 missed 0 (total 1) loop_us_max 337 dev_max_us 0 p99_dev_us 0 dshot sent 19017 dropped 0 imu_invalid 500
+I (38648) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (39659) status: s 38 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 1 p99_dev_us 0 dshot sent 19517 dropped 0 imu_invalid 500
+I (39660) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (40671) status: s 39 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 4 p99_dev_us 0 dshot sent 20017 dropped 0 imu_invalid 500
+I (40673) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+I (41683) status: s 40 ticks 500 missed 0 (total 1) loop_us_max 348 dev_max_us 0 p99_dev_us 0 dshot sent 20517 dropped 0 imu_invalid 500
+I (41684) status: mode SAFE throttle 0 vbat 17.53 rate 0.00 bias 0.00 tilt 0.0 psi 0.0 wheel 0 latched 0x0020 flags 0x00 baro ok
+
+Script done on 2026-10-11 02:00:03-04:00 [COMMAND_EXIT_CODE="124"]

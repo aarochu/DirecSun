@@ -1,0 +1,151 @@
+39637.954704 EP-ROM:esp32s3-20210327
+39637.954794 Build:Mar 27 2021
+39637.955623 rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+39637.955946 Saved PC:0x40389922
+39637.957339 SPIWP:0xee
+39637.957693 mode:DIO, clock div:1
+39637.959780 load:0x3fce2820,len:0x14f0
+39637.963098 load:0x403c8700,len:0xda0
+39637.965491 load:0x403cb700,len:0x2f58
+39637.973255 entry 0x403c8908
+39637.978276 I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+39637.978276 I (24) boot: compile time Oct 10 2026 21:35:19
+39637.978531 I (25) boot: Multicore bootloader
+39637.981174 I (25) boot: chip revision: v0.2
+39637.984772 I (27) boot: efuse block revision: v1.4
+39637.988528 I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+39637.992224 I (35) boot.esp32s3: SPI Mode       : DIO
+39637.995974 I (39) boot.esp32s3: SPI Flash Size : 8MB
+39638.000408 I (42) boot: Enabling RNG early entropy source...
+39638.003387 I (47) boot: Partition Table:
+39638.009526 I (49) boot: ## Label            Usage          Type ST Offset   Length
+39638.016135 I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+39638.022486 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+39638.029070 I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+39638.032232 I (75) boot: End of partition table
+39638.039671 I (79) esp_image: segment 0: paddr=00010020 vaddr=3c0a0020 size=22890h (141456) map
+39638.065654 I (111) esp_image: segment 1: paddr=000328b8 vaddr=3fca9600 size=087cch ( 34764) load
+39638.073128 I (119) esp_image: segment 2: paddr=0003b08c vaddr=40378000 size=04f8ch ( 20364) load
+39638.078030 I (124) esp_image: segment 3: paddr=00040020 vaddr=42000020 size=9e878h (649336) map
+39638.194877 I (241) esp_image: segment 4: paddr=000de8a0 vaddr=4037cf8c size=1c5f4h (116212) load
+39638.220763 I (267) esp_image: segment 5: paddr=000fae9c vaddr=50000004 size=00024h (    36) load
+39638.235289 I (281) boot: Loaded app from partition at offset 0x10000
+39638.235341 I (281) boot: Disabling RNG early entropy source...
+39638.245580 I (292) cpu_start: Multicore app
+39638.254201 I (300) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+39638.254636 I (301) cpu_start: Pro cpu start user code
+39638.256114 I (301) cpu_start: cpu freq: 240000000 Hz
+39638.260133 I (302) app_init: Application information:
+39638.264046 I (306) app_init: Project name:     direcsun
+39638.267835 I (310) app_init: App version:      3799644
+39638.272991 I (314) app_init: Compile time:     Oct 10 2026 23:07:08
+39638.277234 I (319) app_init: ELF file SHA256:  57f8302a2...
+39638.280829 I (323) app_init: ESP-IDF:          v6.0
+39638.284672 I (327) efuse_init: Min chip rev:     v0.0
+39638.288635 I (331) efuse_init: Max chip rev:     v0.99
+39638.292545 I (335) efuse_init: Chip rev:         v0.2
+39638.298680 I (339) heap_init: Initializing. RAM available for dynamic allocation:
+39638.304038 I (345) heap_init: At 3FCBD8C0 len 0002BE50 (175 KiB): RAM
+39638.309167 I (350) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+39638.314466 I (355) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+39638.319823 I (360) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+39638.322893 I (366) spi_flash: detected chip: gd
+39638.325807 I (369) spi_flash: flash io: dio
+39638.332263 I (373) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+39638.338618 I (378) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+39638.341929 I (385) main_task: Started on CPU0
+39638.345447 I (388) main_task: Calling app_main()
+39638.364500 I (410) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+39638.364576 I (410) direcsun: DirecSun flight firmware
+39638.369039 I (411) direcsun: firmware 3799644, ESP-IDF v6.0
+39638.374932 I (415) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+39638.379728 I (421) direcsun: flash 8MB configured, 8MB detected
+39638.384286 I (426) direcsun: reset reason: USB peripheral (11)
+39638.390200 I (430) direcsun: DShot150 zeros on GPIO7 from 44809 us after boot
+39638.395284 W (436) direcsun: parameters reset to defaults (missing)
+39638.400979 I (441) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+39638.410260 I (447) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+39638.417476 I (456) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea778).
+39638.425912 I (464) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea778 (SDA=5, SCL=6, ref_count=0)
+39638.434377 I (472) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+39638.443381 I (480) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fcead00, Speed: 400000 Hz).
+39638.450229 I (492) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+39638.454111 I (496) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+39638.457740  (500) QMC5883P: QMC5883P Chip ID: 0x80
+39638.469376 Iccessfully
+39638.469437 I (515) mag: QMC5883P chip ID 0x80; 8 G,normal mode, ODR 200 Hz, 400000 Hz SCL
+39638.474205 chip ID 0x80)
+39638.483265 : [0x77 at 0] Device added successfully (Device Handle: 0x3fceadc8, Speed: 400000 Hz).
+39638.492120 LID_RESPONSE).
+39638.775712   (578) i2cdev: [0x77 at 0] I2C op f  (660) i2cdev: [0x77 at 0] I2C op failed (Try 2, W(822) i2cdev: [0x77 at 0] Retrying operation...
+39638.787563  (824) i2cdev: [0x77 at 0] I2C operation failed after 4 retries. Last error: 264 (ESP_ERR_INVALID_RESPONSE)
+39638.801023 Eter: ESP_ERR_INVALID_RESPONSE (chip ID 0x08)
+39638.808329 el 0, 12 dB, curve-fitting calibration
+39638.815766 Ichannel 1, 12 dB, curve-fitting calibration
+39638.823275 I(862) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+39639.374760 .to 0.875)
+39639.374940 I (1412) direcsun: boot window done: 501 DShot frames sent, battery 0.04 V over 28 readings
+39639.380693 I (1421) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+39639.383969 I (1422) pp: pp rom version: e7ae62f
+39639.393911 I (1427) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+39639.398044 I (1430) net80211: net80211 rom version: e7ae62f
+39639.404324 I (1445) wifi:wifi driver task: 3fcc7104, prio:23, stack:6656, core=0
+39639.414111 I (1460) wifi:wifi firmware version: 44738b4
+39639.414111 I (1460) wifi:wifi certification version: v7.0
+39639.415851 I (1460) wifi:config NVS flash: enabled
+39639.420052 I (1462) wifi:config nano formatting: disabled
+39639.425076 I (1466) wifi:Init data frame dynamic rx buffer num: 32
+39639.429229 I (1471) wifi:Init static rx mgmt buffer num: 5
+39639.434050 I (1475) wifi:Init management short buffer num: 32
+39639.437752 I (1480) wifi:Init dynamic tx buffer num: 32
+39639.441890 I (1484) wifi:Init static tx FG buffer num: 2
+39639.446309 I (1488) wifi:Init static rx buffer size: 1600
+39639.450163 I (1492) wifi:Init static rx buffer num: 10
+39639.453927 I (1496) wifi:Init dynamic rx buffer num: 32
+39639.456813 I (1500) wifi_init: rx ba win: 6
+39639.459988 I (1503) wifi_init: accept mbox: 6
+39639.463100 I (1506) wifi_init: tcpip mbox: 32
+39639.465889 I (1509) wifi_init: udp mbox: 6
+39639.468716 I (1512) wifi_init: tcp mbox: 6
+39639.472064 I (1515) wifi_init: tcp tx win: 5760
+39639.475320 I (1518) wifi_init: tcp rx win: 5760
+39639.478322 I (1521) wifi_init: tcp mss: 1440
+39639.482359 I (1524) wifi_init: WiFi IRAM OP enabled
+39639.486105 I (1528) wifi_init: WiFi RX IRAM OP enabled
+39639.495227 W (1532) wifi:Password length matches WPA2 standards, authmode threshold changes from OPEN to WPA2
+39639.500682 I (1541) phy_init: phy_version 711,97bcf0a2,Aug 25 2025,19:04:10
+39639.535543 I (1581) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(0)
+39639.595438 I (1641) wifi:mode : sta (e0:72:a1:fc:49:5c)
+39639.595438 I (1641) wifi:enable tsf
+39639.596145 I (1642) wifi:Set ps type: 0, coexist: 0
+39639.596145 
+39639.598157 I (1642) wifi: joining "<bench-network>"
+39639.601915 I (1646) wifi: mDNS hostname direcsun.local
+39639.609335 I (1649) ws: WebSocket server on port 80 at /ws (up to 3 clients)
+39639.615091 I (1655) wifi:new:<8,0>, old:<1,0>, ap:<255,255>, sta:<8,0>, prof:6, snd_ch_cfg:0x0
+39639.618754 I (1661) wifi:state: init -> auth (0xb0)
+39639.622685 I (1665) main_task: Returned from app_main()
+39639.690780 I (1736) wifi:state: auth -> assoc (0x0)
+39639.720255 I (1766) wifi:state: assoc -> run (0x10)
+39639.879107 I(1924) wifi:connected with <bench-network>, aid = 4, channel 8, BW20, bssid = <bssid>
+39639.892231 II (1929) wifi:pm start, type: 0
+39639.892231 
+39639.892352 I (1930) wifi:dp: , bi: 102400, li: 3, scale listen interval from 307200 us to 307200 us
+39639.900613 I (1938) wifi:set rx beacon pti, rx_bcn_pti: 0, bcn_timeout: 25000, mt_pti: 0, mt_time: 10000
+39639.906079 I (1947) wifi:AP's beacon interval = 102400 us, DTIM period = 1
+39639.926308 I (1972) wifi:<ba-add>idx:0 (ifx:0, <bssid>), tid:7, ssn:2, winSize:64
+39639.929367 I (1973) wifi:<ba-add>idx:1 (ifx:0, <bssid>), tid:0, ssn:2, winSize:64
+39640.626655  nvalid 0
+39640.638087 I (2673) status: mode SAFE throttle 0 vbat 0.07 rate -0.04 bias -2.09 tilt 2.9 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro --
+39640.917352 I (2963) esp_netif_handlers: sta ip: 192.168.8.224, mask: 255.255.255.0, gw: 192.168.8.1
+39640.918123 I (2963) wifi: connected, address 192.168.8.224
+39640.924846 I (2964) wifi: WebSocket: ws://direcsun.local/ws  or  ws://192.168.8.224/ws
+39641.638256  (3684) status: s 2 ticks 500 missed 0 (total 2) loop_us_max 759 dev_max_us 2 p99_dev_us 1 dshot sent 1494 dropped 0 imu_invalid 0
+39641.649824 I (3684) status: mode SAFE throttle 0 vbat 0.07 rate 0.02 bias -2.09 tilt 2.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro --
+39642.400538 I(4446) status: s 3 ticks 500 missed 0 (total 2) loop_us_max 758 dev_max_us 5 p99_dev_us 0 dshot sent 1994 dropped 0 imu_invalid 0
+39642.411867 I(4446) status: mode SAFE throttle 0 vbat 0.07 rate 0.08 bias -2.09 tilt 2.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro --
+39643.412382 I(5458) status: s 4 ticks 500 missed 0 (total 2) loop_us_max 758 dev_max_us 3 p99_dev_us 3 dshot sent 2494 dropped 0 imu_invalid 0
+39643.423658  (5458) status: mode SAFE throttle 0 vbat 0.07 rate -0.04 bias -2.09 tilt 2.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro --
+39644.425562 I (6470) status: s 5 ticks 500 missed 0 (total 2) loop_us_max 757 dev_max_us 1 p99_dev_us 1 dshot sent 2994 dropped 0 imu_invalid 0
+39645.436229  (7482) status: s 6 ticks 500 missed 0 (total 2) loop_us_max 760 dev_max_us 3 p99_dev_us 1 dshot sent 3494 dropped 0 imu_invalid 0
+39645.447952 I (7482) status: mode SAFE throttle 0 vbat 0.07 rate 0.02 bias -2.09 tilt 2.8 psi -0.0 wheel 0 latched 0x0010 flags 0x00 baro --

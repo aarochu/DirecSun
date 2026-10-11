@@ -1,0 +1,17 @@
+
+> direcsun-ground-station@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.3 /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/m82/frontend/ground-station
+
+
+ Test Files  10 passed (10)
+      Tests  127 passed (127)
+   Start at  04:32:21
+   Duration  11.36s (environment 50%, tests 24%, transform 11%, setup 8%, import 7%, worker 1%)
+
+Environment  jsdom was created 10 times · 27.82s total, 50% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+

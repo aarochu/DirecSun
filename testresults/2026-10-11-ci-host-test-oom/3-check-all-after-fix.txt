@@ -1,0 +1,11 @@
+core-purity                  PASS
+core-purity-selftest         PASS
+host-tests                   PASS
+host-tests-selftest          PASS
+schema-fixtures              PASS
+link-tests                   PASS
+mock-box-selftest            PASS
+cad-stale                    PASS
+cad-stale-selftest           PASS
+
+check-all: 9 passed, 0 failed

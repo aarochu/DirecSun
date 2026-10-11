@@ -1,0 +1,10 @@
+check-ui-capture: FAILED
+  operator: the box dropped to SAFE with HEARTBEAT_LOST at 32552 ms
+  operator: 33 of 86 ping gaps outside 200 +/- 60 ms (max 1016 ms)
+operator: 1 cmds, ack p50 21 ms, max 21 ms
+operator: 3 mode events checked against the next tlm, 0 stale
+operator: 0 SLEWs accepted
+operator: 87 pings, gap median 200 ms, max 1016 ms, 33 outside 200 +/- 60
+comms phase: tlm.t_ms mod 20 is 1 in 1379 of 2099 tlm frames
+operator page hidden for 30.0 s (1 hidden events)
+checker exit 1

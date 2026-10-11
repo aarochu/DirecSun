@@ -1,0 +1,195 @@
+22811.718758 I (111) esp_image: segment 1: paddr=000328b8 vaddr=3fca9600 sizeESP-ROM:esp32s3-20210327
+22811.718801 Build:Mar 27 2021
+22811.719955 rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+22811.719955 Saved PC:0x40048c29
+22811.721565 SPIWP:0xee
+22811.721693 mode:DIO, clock div:1
+22811.723837 load:0x3fce2820,len:0x14f0
+22811.727133 load:0x403c8700,len:0xda0
+22811.729481 load:0x403cb700,len:0x2f58
+22811.737120 entry 0x403c8908
+22811.742277 I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+22811.742313 I (24) boot: compile time Oct 10 2026 21:35:19
+22811.742540 I (25) boot: Multicore bootloader
+22811.745183 I (25) boot: chip revision: v0.2
+22811.748730 I (27) boot: efuse block revision: v1.4
+22811.752700 I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+22811.756347 I (35) boot.esp32s3: SPI Mode       : DIO
+22811.760074 I (39) boot.esp32s3: SPI Flash Size : 8MB
+22811.764712 I (42) boot: Enabling RNG early entropy source...
+22811.767220 I (47) boot: Partition Table:
+22811.773642 I (49) boot: ## Label            Usage          Type ST Offset   Length
+22811.780350 I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+22811.786647 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+22811.793248 I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+22811.796436 I (75) boot: End of partition table
+22811.803883 I (79) esp_image: segment 0: paddr=00010020 vaddr=3c0a0020 size=22890h (141456) map
+22811.829816 I (111) esp_image: segment 1: paddr=000328b8 vaddr=3fca9600 size=087cch ( 34764) load
+22811.837302 I (119) esp_image: segment 2: paddr=0003b08c vaddr=40378000 size=04f8ch ( 20364) load
+22811.842256 I (124) esp_image: segment 3: paddr=00040020 vaddr=42000020 size=9e878h (649336) map
+22811.958907 I (241) esp_image: segment 4: paddr=000de8a0 vaddr=4037cf8c size=1c5f4h (116212) load
+22811.984756 I (267) esp_image: segment 5: paddr=000fae9c vaddr=50000004 size=00024h (    36) load
+22811.999401 I (281) boot: Loaded app from partition at offset 0x10000
+22811.999401 I (281) boot: Disabling RNG early entropy source...
+22812.009856 I (292) cpu_start: Multicore app
+22812.018069 I (300) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+22812.018628 I (301) cpu_start: Pro cpu start user code
+22812.020018 I (301) cpu_start: cpu freq: 240000000 Hz
+22812.023919 I (302) app_init: Application information:
+22812.027872 I (306) app_init: Project name:     direcsun
+22812.031810 I (310) app_init: App version:      3799644
+22812.036843 I (314) app_init: Compile time:     Oct 10 2026 23:07:08
+22812.041222 I (319) app_init: ELF file SHA256:  57f8302a2...
+22812.044878 I (323) app_init: ESP-IDF:          v6.0
+22812.048695 I (327) efuse_init: Min chip rev:     v0.0
+22812.052616 I (331) efuse_init: Max chip rev:     v0.99
+22812.056669 I (335) efuse_init: Chip rev:         v0.2
+22812.062631 I (339) heap_init: Initializing. RAM available for dynamic allocation:
+22812.067924 I (345) heap_init: At 3FCBD8C0 len 0002BE50 (175 KiB): RAM
+22812.073259 I (350) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+22812.078284 I (355) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+22812.083606 I (360) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+22812.086831 I (366) spi_flash: detected chip: gd
+22812.089786 I (369) spi_flash: flash io: dio
+22812.095965 I (373) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+22812.102587 I (378) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+22812.105933 I (385) main_task: Started on CPU0
+22812.109411 I (388) main_task: Calling app_main()
+22812.129827 I (411) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+22812.129887 I (412) direcsun: DirecSun flight firmware
+22812.134483 I (412) direcsun: firmware 3799644, ESP-IDF v6.0
+22812.141967 I (416) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+22812.144935 I (422) direcsun: flash 8MB configured, 8MB detected
+22812.149501 I (427) direcsun: reset reason: USB peripheral (11)
+22812.155461 I (431) direcsun: DShot150 zeros on GPIO7 from 46120 us after boot
+22812.160449 W (437) direcsun: parameters reset to defaults (missing)
+22812.166284 I (442) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+22812.175505 I (448) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+22812.182970 I (458) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea778).
+22812.191028 I (465) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea778 (SDA=5, SCL=6, ref_count=0)
+22812.200061 I (473) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+22812.208682 I (482) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fcead00, Speed: 400000 Hz).
+22812.215790 I (493) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+22812.219838 I (497) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+22812.223373 I (502) QMC5883P: QMC5883P Chip ID: 0x80
+22812.233592 I (515) QMC5883P: QMC5883P initialized successfully
+22812.234971 I (516) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+22812.239762 I (517) direcsun: magnetometer: ESP_OK (chip ID 0x80)
+22812.248734 I (521) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fceadc8, Speed: 400000 Hz).
+22812.253757 I (534) baro: BMP280 chip ID 0x58 at 0x77, 400000 Hz SCL
+22812.258197 I (535) direcsun: barometer: ESP_OK (chip ID 0x58)
+22812.265634 I (540) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+22812.272981 I (547) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+22812.280352 I (555) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+22813.131419 I (1412) direcsun: gyro z bias seeded at -2.057 deg/s from 425 still samples (range 0.183); accel reference 0.872 g (norm 0.868 to 0.877)
+22813.139779 I (1413) direcsun: boot window done: 501 DShot frames sent, battery 9.45 V over 43 readings
+22813.145739 I (1422) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+22813.148998 I (1423) pp: pp rom version: e7ae62f
+22813.158949 I (1428) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+22813.163053 I (1431) net80211: net80211 rom version: e7ae62f
+22813.169195 I (1446) wifi:wifi driver task: 3fcc7d7c, prio:23, stack:6656, core=0
+22813.178889 I (1461) wifi:wifi firmware version: 44738b4
+22813.178889 I (1461) wifi:wifi certification version: v7.0
+22813.180839 I (1461) wifi:config NVS flash: enabled
+22813.184920 I (1463) wifi:config nano formatting: disabled
+22813.189981 I (1467) wifi:Init data frame dynamic rx buffer num: 32
+22813.194240 I (1472) wifi:Init static rx mgmt buffer num: 5
+22813.198750 I (1476) wifi:Init management short buffer num: 32
+22813.202786 I (1481) wifi:Init dynamic tx buffer num: 32
+22813.206718 I (1485) wifi:Init static tx FG buffer num: 2
+22813.210892 I (1489) wifi:Init static rx buffer size: 1600
+22813.214803 I (1493) wifi:Init static rx buffer num: 10
+22813.218785 I (1497) wifi:Init dynamic rx buffer num: 32
+22813.221742 I (1501) wifi_init: rx ba win: 6
+22813.224906 I (1504) wifi_init: accept mbox: 6
+22813.227903 I (1507) wifi_init: tcpip mbox: 32
+22813.230812 I (1510) wifi_init: udp mbox: 6
+22813.233687 I (1513) wifi_init: tcp mbox: 6
+22813.237384 I (1516) wifi_init: tcp tx win: 5760
+22813.240444 I (1519) wifi_init: tcp rx win: 5760
+22813.243306 I (1522) wifi_init: tcp mss: 1440
+22813.246950 I (1525) wifi_init: WiFi IRAM OP enabled
+22813.250882 I (1529) wifi_init: WiFi RX IRAM OP enabled
+22813.259914 W (1533) wifi:Password length matches WPA2 standards, authmode threshold changes from OPEN to WPA2
+22813.269640 I (1551) phy_init: phy_version 711,97bcf0a2,Aug 25 2025,19:04:10
+22813.314573 I (1596) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(0)
+22813.324116 I (1606) wifi:mode : sta (e0:72:a1:fc:49:5c)
+22813.324116 I (1606) wifi:enable tsf
+22813.324966 I (1607) wifi:Set ps type: 0, coexist: 0
+22813.324966 
+22813.326837 I (1607) wifi: joining "<bench-network>"
+22813.330676 I (1610) wifi: mDNS hostname direcsun.local
+22813.336648 I (1614) ws: WebSocket server on port 80 at /ws (up to 3 clients)
+22813.340675 I (1619) main_task: Returned from app_main()
+22814.245902 I (2527) wifi:new:<8,0>, old:<1,0>, ap:<255,255>, sta:<8,0>, prof:6, snd_ch_cfg:0x0
+22814.246594 I (2528) wifi:state: init -> auth (0xb0)
+22814.280436 I (2559) wifi:state: auth -> assoc (0x0)
+22814.306506 I (2588) wifi:state: assoc -> run (0x10)
+22814.390493 I (2672) status: s 1 ticks 502 missed 0 (total 0) loop_us_max 3008 dev_max_us 1010 p99_dev_us 77 dshot sent 1018 dropped 0 imu_invalid 0
+22814.401986 I (2673) status: mode SAFE throttle 0 vbat 10.34 rate -0.02 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22814.442999 I (2724) wifi:connected with <bench-network>, aid = 4, channel 8, BW20, bssid = <bssid>
+22814.445130 I (2725) wifi:security: WPA2-PSK, phy: bgn, rssi: -40
+22814.450059 I (2732) wifi:pm start, type: 0
+22814.450059 
+22814.456276 I (2732) wifi:dp: 1, bi: 102400, li: 3, scale listen interval from 307200 us to 307200 us
+22814.464492 I (2738) wifi:set rx beacon pti, rx_bcn_pti: 0, bcn_timeout: 25000, mt_pti: 0, mt_time: 10000
+22814.493753 I (2775) wifi:AP's beacon interval = 102400 us, DTIM period = 1
+22815.402400 I (3684) status: s 2 ticks 500 missed 0 (total 0) loop_us_max 1811 dev_max_us 645 p99_dev_us 5 dshot sent 1518 dropped 0 imu_invalid 0
+22815.414033 I (3684) status: mode SAFE throttle 0 vbat 10.34 rate 0.04 bias -2.06 tilt 3.6 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22816.414143 I (4696) status: s 3 ticks 500 missed 0 (total 0) loop_us_max 850 dev_max_us 2 p99_dev_us 1 dshot sent 2018 dropped 0 imu_invalid 0
+22816.427384 I (4696) status: mode SAFE throttle 0 vbat 10.34 rate -0.02 bias -2.06 tilt 3.3 psi 0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22817.176259 I (5458) status: s 4 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 3 p99_dev_us 1 dshot sent 2518 dropped 0 imu_invalid 0
+22817.187776 I (5458) status: mode SAFE throttle 0 vbat 10.33 rate -0.02 bias -2.06 tilt 3.6 psi 0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22817.490288 I (5772) wifi:<ba-add>idx:0 (ifx:0, <bssid>), tid:7, ssn:4, winSize:64
+22817.493809 I (5773) wifi:<ba-add>idx:1 (ifx:0, <bssid>), tid:0, ssn:3, winSize:64
+22818.188456 I (6470) status: s 5 ticks 500 missed 0 (total 0) loop_us_max 1216 dev_max_us 5 p99_dev_us 2 dshot sent 3018 dropped 0 imu_invalid 0
+22818.199877 I (6470) status: mode SAFE throttle 0 vbat 10.33 rate -0.02 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22818.484436 I (6766) esp_netif_handlers: sta ip: 192.168.8.224, mask: 255.255.255.0, gw: 192.168.8.1
+22818.485200 I (6766) wifi: connected, address 192.168.8.224
+22818.491834 I (6767) wifi: WebSocket: ws://direcsun.local/ws  or  ws://192.168.8.224/ws
+22819.200381 I (7482) status: s 6 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 5 p99_dev_us 4 dshot sent 3518 dropped 0 imu_invalid 0
+22819.211664 I (7482) status: mode SAFE throttle 0 vbat 10.32 rate -0.01 bias -2.06 tilt 3.6 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22820.212344 I (8494) status: s 7 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 1 p99_dev_us 1 dshot sent 4018 dropped 0 imu_invalid 0
+22820.224061 I (8494) status: mode SAFE throttle 0 vbat 10.33 rate -0.02 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22821.224036 I (9506) status: s 8 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 4 p99_dev_us 2 dshot sent 4518 dropped 0 imu_invalid 0
+22821.235550 I (9506) status: mode SAFE throttle 0 vbat 10.31 rate -0.01 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22822.236094 I (10518) status: s 9 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 5 p99_dev_us 3 dshot sent 5018 dropped 0 imu_invalid 0
+22822.247667 I (10518) status: mode SAFE throttle 0 vbat 10.32 rate 0.05 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22823.248246 I (11530) status: s 10 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 4 p99_dev_us 2 dshot sent 5518 dropped 0 imu_invalid 0
+22823.259742 I (11530) status: mode SAFE throttle 0 vbat 10.30 rate -0.02 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22824.260161 I (12542) status: s 11 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 4 p99_dev_us 1 dshot sent 6018 dropped 0 imu_invalid 0
+22824.271751 I (12542) status: mode SAFE throttle 0 vbat 10.31 rate 0.04 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22825.272257 I (13554) status: s 12 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 1 p99_dev_us 1 dshot sent 6518 dropped 0 imu_invalid 0
+22825.283702 I (13554) status: mode SAFE throttle 0 vbat 10.31 rate -0.02 bias -2.06 tilt 3.5 psi 0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22826.284472 I (14566) status: s 13 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 2 p99_dev_us 1 dshot sent 7018 dropped 0 imu_invalid 0
+22826.295739 I (14566) status: mode SAFE throttle 0 vbat 10.31 rate -0.02 bias -2.06 tilt 3.5 psi 0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22827.296098 I (15578) status: s 14 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 4 p99_dev_us 1 dshot sent 7518 dropped 0 imu_invalid 0
+22827.307640 I (15578) status: mode SAFE throttle 0 vbat 10.30 rate -0.02 bias -2.06 tilt 3.5 psi 0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22828.308131 I (16590) status: s 15 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 4 p99_dev_us 4 dshot sent 8018 dropped 0 imu_invalid 0
+22828.319666 I (16590) status: mode SAFE throttle 0 vbat 10.30 rate -0.02 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22829.320080 I (17602) status: s 16 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 2 p99_dev_us 1 dshot sent 8518 dropped 0 imu_invalid 0
+22829.331759 I (17602) status: mode SAFE throttle 0 vbat 10.29 rate 0.05 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22830.332163 I (18614) status: s 17 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 4 p99_dev_us 1 dshot sent 9018 dropped 0 imu_invalid 0
+22830.343705 I (18614) status: mode SAFE throttle 0 vbat 10.30 rate -0.01 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22831.344023 I (19626) status: s 18 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 4 p99_dev_us 3 dshot sent 9518 dropped 0 imu_invalid 0
+22831.355645 I (19626) status: mode SAFE throttle 0 vbat 10.31 rate -0.07 bias -2.06 tilt 3.4 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22832.356366 I (20638) status: s 19 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 4 p99_dev_us 2 dshot sent 10018 dropped 0 imu_invalid 0
+22832.367818 I (20638) status: mode SAFE throttle 0 vbat 10.32 rate -0.01 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22833.368258 I (21650) status: s 20 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 1 p99_dev_us 1 dshot sent 10518 dropped 0 imu_invalid 0
+22833.379598 I (21650) status: mode SAFE throttle 0 vbat 10.31 rate -0.01 bias -2.06 tilt 3.6 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22834.380102 I (22662) status: s 21 ticks 500 missed 0 (total 0) loop_us_max 757 dev_max_us 5 p99_dev_us 1 dshot sent 11018 dropped 0 imu_invalid 0
+22834.391585 I (22662) status: mode SAFE throttle 0 vbat 10.30 rate -0.01 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22835.392222 I (23674) status: s 22 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 5 p99_dev_us 4 dshot sent 11518 dropped 0 imu_invalid 0
+22835.403898 I (23674) status: mode SAFE throttle 0 vbat 10.29 rate 0.05 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22836.404062 I (24686) status: s 23 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 1 p99_dev_us 1 dshot sent 12018 dropped 0 imu_invalid 0
+22836.415595 I (24686) status: mode SAFE throttle 0 vbat 10.30 rate 0.05 bias -2.06 tilt 3.6 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22837.166027 I (25448) status: s 24 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 2 p99_dev_us 1 dshot sent 12518 dropped 0 imu_invalid 0
+22837.177899 I (25448) status: mode SAFE throttle 0 vbat 10.30 rate -0.01 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22838.178385 I (26460) status: s 25 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 2 p99_dev_us 1 dshot sent 13018 dropped 0 imu_invalid 0
+22838.189727 I (26461) status: mode SAFE throttle 0 vbat 10.30 rate -0.01 bias -2.06 tilt 3.4 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22839.189994 I (27472) status: s 26 ticks 500 missed 0 (total 0) loop_us_max 755 dev_max_us 4 p99_dev_us 1 dshot sent 13518 dropped 0 imu_invalid 0
+22839.201630 I (27472) status: mode SAFE throttle 0 vbat 10.31 rate -0.01 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22840.202041 I (28484) status: s 27 ticks 500 missed 0 (total 0) loop_us_max 758 dev_max_us 3 p99_dev_us 1 dshot sent 14018 dropped 0 imu_invalid 0
+22840.213630 I (28484) status: mode SAFE throttle 0 vbat 10.31 rate -0.01 bias -2.06 tilt 3.5 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok
+22841.214152 I (29496) status: s 28 ticks 500 missed 0 (total 0) loop_us_max 754 dev_max_us 5 p99_dev_us 4 dshot sent 14518 dropped 0 imu_invalid 0
+22841.225738 I (29496) status: mode SAFE throttle 0 vbat 10.31 rate -0.01 bias -2.06 tilt 3.4 psi -0.0 wheel 0 latched 0x0000 flags 0x00 baro ok

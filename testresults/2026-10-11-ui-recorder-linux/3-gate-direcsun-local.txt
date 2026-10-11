@@ -1,0 +1,2 @@
+refusing: ws://direcsun.local/ws is not a loopback address, and this scenario arms the motor.
+Run it against tools/mock-box.py, or get Julian's explicit go and pass --confirm-arm julian-go.

@@ -1,0 +1,8 @@
+operator: 3 cmds, ack p50 26 ms, max 27 ms, refused [('arm', 'ramp-down in progress')]
+operator: 3 mode events checked against the next tlm, 0 stale
+operator: 0 SLEWs accepted
+operator: 46 pings, gap median 200 ms, max 258 ms, 0 outside 200 +/- 60
+comms phase: tlm.t_ms mod 20 is 1 in 305 of 488 tlm frames
+operator page hidden for 0.0 s (0 hidden events)
+check-ui-capture: ok
+checker exit 0

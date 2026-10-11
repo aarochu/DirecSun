@@ -1,0 +1,9 @@
+check-ui-capture: FAILED
+  operator: 1 of 37 ping gaps outside 200 +/- 60 ms (max 260 ms)
+operator: 4 cmds, ack p50 12 ms, max 27 ms
+operator: 4 mode events checked against the next tlm, 0 stale
+operator: 1 SLEWs accepted
+operator: 38 pings, gap median 200 ms, max 260 ms, 1 outside 200 +/- 60
+comms phase: tlm.t_ms mod 20 is 1 in 256 of 407 tlm frames
+operator page hidden for 0.0 s (0 hidden events)
+checker exit 1

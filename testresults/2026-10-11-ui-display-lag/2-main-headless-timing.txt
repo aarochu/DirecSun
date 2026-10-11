@@ -1,0 +1,9 @@
+   823 ms role Connect count (before connect): 261 ms -> 1
+   856 ms role Arm count (before connect): 33 ms -> 0
+  1839 ms evaluate 0: 6 ms -> 1375
+  1845 ms evaluate 1: 6 ms -> 1380
+  2265 ms evaluate 2: 420 ms -> 1799
+  2273 ms css [aria-label="Arm the box"] count: 8 ms -> 1
+  5439 ms role Arm count (after connect): 3166 ms -> 1
+  5796 ms role Disconnect count (after connect): 357 ms -> 1
+ 22677 ms DOM element count: 16880 ms -> 280

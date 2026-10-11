@@ -1,0 +1,26 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 e2e/telemetry-backpressure.spec.ts:3:1 › slow rendering displays recent telemetry instead of building a frame backlog (5.1s)
+
+
+  1) e2e/telemetry-backpressure.spec.ts:3:1 › slow rendering displays recent telemetry instead of building a frame backlog 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 10
+    Received:    12
+
+      37 |     const packets = Number(displayed?.match(/(\d+) PACKETS/)?.[1]);
+      38 |     expect(packets).toBeGreaterThan(0);
+    > 39 |     expect(sent - packets).toBeLessThanOrEqual(10);
+         |                            ^
+      40 |     expect(readMs).toBeLessThan(200);
+      41 |   }
+      42 | });
+        at /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/c82/frontend/ground-station/e2e/telemetry-backpressure.spec.ts:39:28
+
+    Error Context: test-results/telemetry-backpressure-slo-84631-of-building-a-frame-backlog/error-context.md
+
+  1 failed
+    e2e/telemetry-backpressure.spec.ts:3:1 › slow rendering displays recent telemetry instead of building a frame backlog 

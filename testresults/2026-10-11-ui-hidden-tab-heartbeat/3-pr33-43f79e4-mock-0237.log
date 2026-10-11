@@ -1,0 +1,6 @@
+[mock-box 1791700587.381] listening on ws://127.0.0.1:8183/ws (inputs: throttle,wheel,rate)
+[mock-box 1791700592.684] client 3760 connected from ('127.0.0.1', 58268)
+[mock-box 1791700593.352] mode SPINUP (cause arm)
+[mock-box 1791700595.362] mode READY (cause spinup_complete)
+[mock-box 1791700628.940] client 3760 disconnected
+[mock-box 1791700629.761] mode SAFE (cause HEARTBEAT_LOST)
