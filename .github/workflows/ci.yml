@@ -105,20 +105,20 @@ jobs:
       - name: Demo server tests
         run: npm test
 
-      - name: npm ci (draft)
-        run: npm ci --prefix draft
+      - name: npm ci (ground station)
+        run: npm ci --prefix ground-station
 
       # Builds both apps the way vercel.json does and probes the served result:
-      # the landing page, /draft, the ground station route, the GLB, and 404s.
+      # the landing page, /ground-station, its overview route, the GLB, and 404s.
       - name: Demo bundle
         run: npm run demo:check
 
-  frontend-draft:
-    name: frontend/draft (typecheck, unit, e2e in Chrome)
+  frontend-ground-station:
+    name: frontend/ground-station (typecheck, unit, e2e in Chrome)
     runs-on: ubuntu-24.04
     defaults:
       run:
-        working-directory: frontend/draft
+        working-directory: frontend/ground-station
     steps:
       - uses: actions/checkout@v7
         with:
@@ -128,7 +128,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: frontend/draft/package-lock.json
+          cache-dependency-path: frontend/ground-station/package-lock.json
 
       # The Playwright config uses the installed Google Chrome (channel: chrome).
       # Fail loudly if the runner image ever stops shipping it, rather than
@@ -152,5 +152,5 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: frontend-draft-test-results
-          path: frontend/draft/test-results/
+          name: frontend-ground-station-test-results
+          path: frontend/ground-station/test-results/

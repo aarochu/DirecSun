@@ -5,7 +5,7 @@
 #   tools/check-all.sh --firmware  also build the firmware (needs ESP-IDF v6.0)
 #   tools/check-all.sh --frontend  also check the main UI: npm ci and build for
 #                                  frontend/, then npm ci, typecheck, unit and e2e
-#                                  tests for frontend/draft (needs Node 22+ and
+#                                  tests for frontend/ground-station (needs Node 22+ and
 #                                  Google Chrome)
 #
 # Each check with a --selftest mode runs it too: the selftest plants a fault and
@@ -72,15 +72,15 @@ fi
 
 if [[ "$frontend" -eq 1 ]]; then
     npm_in_frontend() { (cd "$repo_root/frontend" && npm "$@"); }
-    npm_in_draft() { (cd "$repo_root/frontend/draft" && npm "$@"); }
+    npm_in_ground_station() { (cd "$repo_root/frontend/ground-station" && npm "$@"); }
     step frontend-install         npm_in_frontend ci
     step frontend-build           npm_in_frontend run build
     step frontend-test            npm_in_frontend test
-    step frontend-draft-install   npm_in_draft ci
+    step frontend-ground-station-install   npm_in_ground_station ci
     step frontend-demo-bundle     npm_in_frontend run demo:check
-    step frontend-draft-typecheck npm_in_draft run typecheck
-    step frontend-draft-unit      npm_in_draft test
-    step frontend-draft-e2e       npm_in_draft run test:e2e
+    step frontend-ground-station-typecheck npm_in_ground_station run typecheck
+    step frontend-ground-station-unit      npm_in_ground_station test
+    step frontend-ground-station-e2e       npm_in_ground_station run test:e2e
 fi
 
 echo

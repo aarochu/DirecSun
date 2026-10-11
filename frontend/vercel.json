@@ -1,13 +1,25 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "npm ci && npm ci --prefix draft",
-  "buildCommand": "npm run build && npm run build:deploy --prefix draft",
+  "installCommand": "npm ci && npm ci --prefix ground-station",
+  "buildCommand": "npm run build && npm run build:deploy --prefix ground-station",
   "outputDirectory": "dist",
-  "rewrites": [
+  "redirects": [
+    {
+      "source": "/draft/ground-station",
+      "destination": "/ground-station/",
+      "permanent": false
+    },
     {
       "source": "/draft/:path*",
-      "destination": "/draft/index.html"
+      "destination": "/ground-station/overview",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/ground-station/:path*",
+      "destination": "/ground-station/index.html"
     }
   ]
 }

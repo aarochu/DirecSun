@@ -1,5 +1,5 @@
 // The hero's star field, ported from orbit-space 1.1.0 (MIT, Roman Vinnick),
-// the background of the previous landing page (draft/src/landing/OrbitBackdrop.tsx).
+// the background of the previous landing page (ground-station/src/landing/OrbitBackdrop.tsx).
 // Same texture, count, spread, size and camera behaviour, minus React and gsap:
 // 260 points in a 10-unit cube, a 3 s dolly in from z 20 to z 5, and the camera
 // easing toward the mouse.

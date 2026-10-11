@@ -1,6 +1,6 @@
 # DirecSun frontend
 
-The landing page: one fixed three.js view of the CAD model, driven by scroll through an anime.js timeline (vanilla TypeScript, Vite). The previous React app, which also holds the ground station, lives in [`draft/`](draft/README.md).
+The landing page: one fixed three.js view of the CAD model, driven by scroll through an anime.js timeline (vanilla TypeScript, Vite). The ground station (the operator client) is a separate React app in [`ground-station/`](ground-station/README.md); hardware data and styles both apps use live in `shared/`.
 
 ## Commands
 
@@ -13,7 +13,7 @@ npm run typecheck    # type-check only
 npm test             # the demo server tests
 ```
 
-For the ground station in development, also run `npm run dev` in `draft/` (port 5174); the landing page's ground station links point there.
+For the ground station in development, also run `npm run dev` in `ground-station/` (port 5174); the landing page's ground station links point there.
 
 ## Run the demo offline
 
@@ -26,7 +26,7 @@ npm run demo:serve -- --host 0.0.0.0 --port 8080   # also reachable from other d
 npm run demo:check    # builds both and probes the served pages (what CI runs)
 ```
 
-The landing page is at `/` and the ground station at `/draft/ground-station`, served the same way `vercel.json` serves them (`/draft/*` routes go to the app; a missing file is a 404, not a page). The site makes no request outside the laptop, so it works with no internet.
+The landing page is at `/` and the ground station at `/ground-station/`, served the same way `vercel.json` serves them (`/ground-station/*` routes go to the app; a missing file is a 404, not a page; the old `/draft` URLs redirect). The site makes no request outside the laptop, so it works with no internet.
 
 Open the ground station over plain `http`, as above, so the browser allows `ws://`. Join the box's Wi-Fi and enter `ws://192.168.4.1/ws` in Device link (or `ws://direcsun.local/ws` on a shared network). The hosted copy on Vercel is `https`, and a browser blocks `ws://` from an `https` page, so use this local copy with the real box.
 
@@ -37,9 +37,9 @@ Open the ground station over plain `http`, as above, so the browser allows `ws:/
 - `src/flow.ts`: the interactive electronics flowchart in the System section (wiring from `docs/technical-design.md` Sections 2 and 5).
 - `src/stars.ts`: the hero's star field, ported from the previous site's `orbit-space` background.
 - `src/content.ts`: all page copy.
-- `src/data/`: hardware parts, CAD part mapping and asset paths (copied from the previous app).
-- `public/`: the CAD GLB and part renders, shared with `draft/`.
+- `shared/`: hardware parts, CAD part mapping, asset paths, tokens and base styles, used by this app and by `ground-station/` as `@shared/...`.
+- `public/`: the CAD GLB and part renders, shared with `ground-station/`.
 
 ## Deploying (Vercel)
 
-`vercel.json` at the repository root (and a copy here, for a project whose Root Directory is `frontend`) installs both apps and builds the landing page to `dist/` and the previous app to `dist/draft/`. No framework preset is used.
+`vercel.json` at the repository root (and a copy here, for a project whose Root Directory is `frontend`) installs both apps and builds the landing page to `dist/` and the ground station to `dist/ground-station/`. No framework preset is used.
