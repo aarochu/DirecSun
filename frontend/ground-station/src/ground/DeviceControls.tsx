@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, OctagonX, Power, PowerOff, Square } from 'lucide
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { DeviceLink } from '../hardware/deviceLink';
 import type { DeviceOperator, TurnPhase } from '../hardware/deviceOperator';
+import { ARMED_MODES, MODES, modeSpec } from '../hardware/modes';
 import { ModeMenu } from './ModeMenu';
 
 const SEQUENCE_STEPS: readonly { label: string; phases: readonly TurnPhase[] }[] = [
@@ -22,11 +23,9 @@ const MANUAL_UNIT = { rate: ' °/s', throttle: '', wheel: ' RPM' } as const;
 
 function guidance(mode: string | null, controlling: boolean): string {
   if (mode === null) return 'WAITING FOR TELEMETRY FROM THE BOX';
-  if (mode === 'SAFE') return 'INSERT THE LOCK PIN, THEN ARM. WHILE ARMED, THE SPACE BAR SENDS E-STOP';
+  if (mode === 'SAFE') return MODES.SAFE.guidance;
   if (!controlling) return 'ANOTHER CLIENT IS CONTROLLING THE BOX. E-STOP STILL WORKS FROM HERE';
-  if (mode === 'SPINUP') return 'SPINNING UP THE WHEEL: KEEP THE LOCK PIN IN';
-  if (mode === 'READY') return 'READY: PULL THE LOCK PIN, THEN ROTATE. SPACE BAR SENDS E-STOP';
-  return `${mode}: SPACE BAR SENDS E-STOP`;
+  return modeSpec(mode)?.guidance ?? `${mode}: SPACE BAR SENDS E-STOP`;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -107,7 +106,7 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
           </button>
           <ModeMenu
             mode={mode}
-            disabled={!state.controlling || turning || state.busy !== null || !['READY', 'HOLD', 'SLEW', 'MANUAL', 'DETUMBLE', 'SUN_POINT'].includes(mode ?? '')}
+            disabled={!state.controlling || turning || state.busy !== null || !(ARMED_MODES as readonly string[]).includes(mode ?? '')}
             onSelect={(next, input) => void operator.setMode(next, input)}
           />
         </div>
