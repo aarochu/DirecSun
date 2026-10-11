@@ -72,8 +72,8 @@ The main UI's Device link panel connects to the same stub at `ws://127.0.0.1:808
 ```bash
 (cd frontend/ground-station && npm run build && npx vite preview --port 4173)   # the UI
 tools/mock-box.py --port 8765                                                    # the box
-node tools/ui-turn-recorder.mjs --scenario turn --url ws://127.0.0.1:8765/ws --base http://localhost:4173 --out build/ui-capture/turn
-tools/check-ui-capture.py build/ui-capture/turn/frames.jsonl
+node tools/ui-turn-recorder.mjs --ui http://localhost:4173 --box ws://127.0.0.1:8765/ws --scenario turn --out build/ui-capture/turn
+tools/check-ui-capture.py build/ui-capture/turn
 tools/check-ui-capture.py --selftest        # plants a stale tlm and a missing ack; both must fail
 ```
 
@@ -81,9 +81,9 @@ Scenarios (`--scenario`): `turn` (N turns, `--turns 4`, alternating right and le
 
 The checker passes only if every cmd is acked once within 1000 ms (it prints p50 and max), the first tlm after each mode event has that event's mode, every SLEW ends in `slew_complete` before 6 s (unless the operator interrupted it), pings go out every 200 +/- 60 ms and each gets a pong, a watch-only page receives only tlm until it sends, and no `HEARTBEAT_LOST` occurs. It prints the comms phase (`tlm.t_ms mod 20`).
 
-`hidden` needs plain Chrome, because pages that Playwright drives stay "visible" behind other tabs. The recorder starts `google-chrome` (or `--chrome <path>`) with a debugging port, detaches Playwright before it hides the tab, and reattaches afterwards. Check it with `tools/check-ui-capture.py --expect-hidden --min-hidden-s 30 frames.jsonl`: the run counts only if the page recorded at least 30 seconds hidden, and its ping gaps must still meet 200 +/- 60 ms. Against a ground station whose heartbeat is a page `setInterval` the box trips `HEARTBEAT_LOST` and the check fails (the positive control); a Worker heartbeat (#33) passes. It uses your Chrome window for the 30 s, so leave the machine alone while it runs.
+`hidden` needs `--headed`: headless Chrome never hides a page, so the scenario fails a headless run on purpose. Against a ground station whose heartbeat is a page `setInterval` the box trips `HEARTBEAT_LOST`; the Worker heartbeat (#33) passes. It uses your Chrome window for the 30 s, so leave the machine alone while it runs.
 
-**Before a run against the real box,** this arms the motor. The recorder refuses to send `arm` to anything but a loopback address unless given `--confirm-arm julian-go`, and it prints what it will do first. Julian must confirm, every time: the firmware is flashed and the box is on the turntable; the lock pin is in; `wheel_ref_rpm` is above 0 in READY and `rate_gain_scale` 1 has been sent; and that he is at the box with a hand on the power. Never pass the flag on your own.
+**Before a run against the real box,** this arms the motor. The recorder refuses to arm anything but a loopback address unless given `--real-box-go`, and Julian must give his go for that run, every time: the firmware is flashed and the box is on the turntable; the lock pin is in; `wheel_ref_rpm` is above 0 in READY; and he is at the box with a hand on the power. Never pass the flag on your own.
 
 ### Firmware
 

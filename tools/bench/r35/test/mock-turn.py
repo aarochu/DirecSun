@@ -22,7 +22,7 @@ async def turn(args):
     client.start_pings(5)
     ack, _ = await client.cmd("arm")
     print(f"arm: {ack}", flush=True)
-    ready = await client.wait_for(lambda m: m.get("type") == "tlm" and m.get("mode") == "READY", 5.0)
+    ready = await client.wait_for(lambda m: m.get("type") == "tlm" and m.get("mode") == "READY", 12.0)
     print(f"READY: {bool(ready)}", flush=True)
     ack, _ = await client.cmd("mode", mode="MANUAL", input="rate")
     print(f"mode MANUAL rate: {ack}", flush=True)

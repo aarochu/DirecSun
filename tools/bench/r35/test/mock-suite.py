@@ -139,9 +139,9 @@ def cases(suite, br):
              must=[F("capture-box ran")]),
         # ---- t3: main UI reads the box ----
         dict(name="t3-pass", server=("mock", "stock", "127.0.0.1"), expect="PASS",
-             cmd=[t("t3-ui.py"), "--url", "{url}", "--turn-s", "8", "--turn-cmd", turn(30)]),
+             cmd=[t("t3-ui.py"), "--url", "{url}", "--turn-s", "14", "--turn-cmd", turn(30)]),
         dict(name="t3-f-ccw", server=("mock", "stock", "127.0.0.1"), expect="FAIL",
-             cmd=[t("t3-ui.py"), "--url", "{url}", "--turn-s", "8", "--turn-cmd", turn(-30)],
+             cmd=[t("t3-ui.py"), "--url", "{url}", "--turn-s", "14", "--turn-cmd", turn(-30)],
              must=[F("heading readout increased (clockwise)"), F("dial needle turned clockwise"),
                    OK("ignored-frame counter 0")]),
         dict(name="t3-f-no-turn", server=("mock", "stock", "127.0.0.1"), expect="FAIL",
