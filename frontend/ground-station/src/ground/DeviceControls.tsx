@@ -28,10 +28,6 @@ function guidance(mode: string | null, controlling: boolean): string {
   return modeSpec(mode)?.guidance ?? `${mode}: SPACE BAR SENDS E-STOP`;
 }
 
-function isTypingTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'radio' && target.type !== 'range';
-}
-
 export function DeviceControls({ link, operator }: { link: DeviceLink; operator: DeviceOperator }) {
   const state = useSyncExternalStore(operator.subscribe, operator.getState);
   const telemetry = useSyncExternalStore(link.subscribeTelemetry, link.getTelemetry);
@@ -47,12 +43,12 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.code !== 'Space' || event.repeat || !armedRef.current || isTypingTarget(event.target)) return;
+      if (event.code !== 'Space' || event.repeat || !armedRef.current) return;
       event.preventDefault();
       operator.estop();
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.code !== 'Space' || !armedRef.current || isTypingTarget(event.target)) return;
+      if (event.code !== 'Space' || !armedRef.current) return;
       event.preventDefault();
     };
     window.addEventListener('keydown', onKey, { capture: true });

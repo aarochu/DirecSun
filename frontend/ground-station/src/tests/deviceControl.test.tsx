@@ -533,4 +533,23 @@ describe('ground station box controls', () => {
     expect(socket.commands()).toHaveLength(before + 1);
     expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
   });
+
+  it('while armed, the space bar sends e-stop even from a focused text field, checkbox or slider (FD 17, V-63)', async () => {
+    const socket = connect();
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    const url = screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }) as HTMLInputElement;
+    for (const target of [url, document.createElement('input')]) {
+      if (target !== url) {
+        target.type = 'range';
+        document.body.append(target);
+      }
+      target.focus();
+      const before = socket.commands().length;
+      const event = fireEvent.keyDown(target, { code: 'Space', key: ' ' });
+      expect(event).toBe(false);
+      expect(socket.commands()).toHaveLength(before + 1);
+      expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+    }
+  });
 });
