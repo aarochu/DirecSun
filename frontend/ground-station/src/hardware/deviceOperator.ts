@@ -81,6 +81,9 @@ export class DeviceOperator {
   private unsubscribe: (() => void)[] = [];
   private manualTimer: ReturnType<typeof setInterval> | null = null;
   private lastManualError = '';
+  // Set by e-stop and disarm: the box keeps reporting MANUAL until its mode
+  // event lands, and those frames must not restart the stream.
+  private manualHeld = false;
 
   constructor(private readonly link: DeviceLink) {}
 
@@ -146,7 +149,8 @@ export class DeviceOperator {
 
   private syncManual(): void {
     const reading = this.link.latestReading;
-    const input = this.state.controlling && reading?.mode === 'MANUAL' ? reading.manualInput : null;
+    if (reading?.mode !== 'MANUAL') this.manualHeld = false;
+    const input = this.state.controlling && !this.manualHeld && reading?.mode === 'MANUAL' ? reading.manualInput : null;
     if (input === null) return this.stopManual();
     if (this.state.manual?.input !== input) {
       const range = this.manualRange(input);
@@ -166,6 +170,11 @@ export class DeviceOperator {
       this.lastManualError = text;
       this.set({ result: { tone: 'error', text } });
     });
+  }
+
+  private holdManual(): void {
+    this.manualHeld = true;
+    this.stopManual();
   }
 
   private stopManual(): void {
@@ -189,7 +198,7 @@ export class DeviceOperator {
 
   async disarm(): Promise<void> {
     if (this.state.busy) return;
-    this.stopManual();
+    this.holdManual();
     this.abortTurn('Disarm requested');
     this.set({ busy: 'disarm', result: null });
     try {
@@ -201,7 +210,7 @@ export class DeviceOperator {
   }
 
   estop(): void {
-    this.stopManual();
+    this.holdManual();
     this.abortTurn('E-stop sent');
     let sent: Promise<unknown>;
     try {
