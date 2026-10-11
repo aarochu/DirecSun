@@ -153,7 +153,7 @@ svg.focusing [data-net].on { opacity: 1; }
     <div class="note">
       <h3>Which wire, and how to lay a bus</h3>
       <ul>
-        <li>The two power buses (power deck rows M and S): your 18 AWG stranded, stripped bare, strands twisted tight and tinned along the whole length so it turns into a stiff bar. Everything else: the 22 AWG solid, bare for straight runs, with its insulation left on wherever it runs near another wire.</li>
+        <li>The two power buses (power deck rows M and S): your 18 AWG stranded, stripped bare, strands twisted tight and tinned along the whole length so it turns into a stiff bar. Jumpers: the 22 AWG solid with its insulation on, cut and stripped as the Jumpers table says. Everything else is solder traces.</li>
         <li>Solder the parts first and clip their leads to about 2 mm on the solder side.</li>
         <li>Put a little solder on every pad that has a dot on the bus. Lay the tinned bar flat along the row, against the clipped leads, and hold it with tape or a clip.</li>
         <li>Reflow the two end dots first, then each dot in between, feeding a little solder until it wraps the bar, the pad, and the lead together.</li>
@@ -163,13 +163,13 @@ svg.focusing [data-net].on { opacity: 1; }
     <div class="note">
       <h3>How to read the drawing</h3>
       <div class="key">
-        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><line x1="14" y1="13" x2="62" y2="13" stroke="#05100a" stroke-width="9.5" stroke-linecap="round"/><line x1="14" y1="13" x2="62" y2="13" stroke="#8b5cf6" stroke-width="6" stroke-linecap="round"/><circle cx="14" cy="13" r="6.5" fill="#8b5cf6" stroke="#fff" stroke-width="2"/><circle cx="62" cy="13" r="6.5" fill="#8b5cf6" stroke="#fff" stroke-width="2"/></svg><span><b>Wire.</b> Solder only where there is a white-ringed dot. It passes over every other hole without touching it.</span></div>
-        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><circle cx="24" cy="13" r="8" fill="#c9cdd3"/><circle cx="52" cy="13" r="8" fill="#c9cdd3"/><rect x="13" y="4" width="50" height="18" rx="9" fill="#e4e7ea" stroke="#8b5cf6" stroke-width="3"/><text x="38" y="17" text-anchor="middle" font-size="10" font-weight="700" fill="#2b3036" font-family="IBM Plex Mono, monospace">B</text></svg><span><b>Solder bridge.</b> One blob joining exactly the two pads inside the outline, no wire. Marked B.</span></div>
-        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><line x1="10" y1="13" x2="66" y2="13" stroke="#05100a" stroke-width="13" stroke-linecap="round"/><line x1="10" y1="13" x2="66" y2="13" stroke="#d946ef" stroke-width="10" stroke-linecap="round"/><circle cx="10" cy="13" r="6.5" fill="#d946ef" stroke="#fff" stroke-width="2"/><circle cx="38" cy="13" r="6.5" fill="#d946ef" stroke="#fff" stroke-width="2"/><circle cx="66" cy="13" r="6.5" fill="#d946ef" stroke="#fff" stroke-width="2"/></svg><span><b>Bus.</b> Bare 18 AWG laid along the row, soldered at each dot.</span></div>
-        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><line x1="14" y1="13" x2="62" y2="13" stroke="#f472b6" stroke-width="6" stroke-dasharray="7 5"/><circle cx="14" cy="13" r="6.5" fill="#f472b6" stroke="#fff" stroke-width="2"/><circle cx="62" cy="13" r="6.5" fill="#f472b6" stroke="#fff" stroke-width="2"/></svg><span><b>Insulated wire.</b> Crosses another wire; solder only at its two end dots.</span></div>
+        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><line x1="14" y1="13" x2="62" y2="13" stroke="#0b130e" stroke-width="10"/><line x1="14" y1="13" x2="62" y2="13" stroke="#f5a524" stroke-width="6.5"/><rect x="5" y="4" width="18" height="18" fill="#f5a524" stroke="#fff" stroke-width="2"/><rect x="53" y="4" width="18" height="18" fill="#f5a524" stroke="#fff" stroke-width="2"/><circle cx="38" cy="13" r="8" fill="#fff8d6" stroke="#5c4a00"/><text x="38" y="17" text-anchor="middle" font-size="10" font-weight="700" fill="#3b2f00" font-family="IBM Plex Mono, monospace">d</text></svg><span><b>Jumper</b> (component side). Insulated 22 AWG solid lying on top. Its two stripped ends go down through the square holes; the Jumpers table gives the route and the cut length.</span></div>
+        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><rect x="5" y="4" width="66" height="18" rx="9" fill="#e4e7ea" stroke="#8b5cf6" stroke-width="3"/><circle cx="14" cy="13" r="3" fill="#9aa1a8"/><circle cx="29" cy="13" r="3" fill="#9aa1a8"/><circle cx="45" cy="13" r="3" fill="#9aa1a8"/><circle cx="61" cy="13" r="3" fill="#9aa1a8"/></svg><span><b>Solder trace</b> (solder side). Join every pad inside the silver outline with solder, one pad to the next, and touch nothing outside it. A trace of two pads is a single bridge.</span></div>
+        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><line x1="10" y1="13" x2="66" y2="13" stroke="#05100a" stroke-width="13"/><line x1="10" y1="13" x2="66" y2="13" stroke="#d946ef" stroke-width="10"/><circle cx="10" cy="13" r="6.5" fill="#d946ef" stroke="#fff" stroke-width="2"/><circle cx="38" cy="13" r="6.5" fill="#d946ef" stroke="#fff" stroke-width="2"/><circle cx="66" cy="13" r="6.5" fill="#d946ef" stroke="#fff" stroke-width="2"/></svg><span><b>Bus</b> (solder side, power deck only). Bare tinned 18 AWG laid along the holes, soldered at each dot.</span></div>
+        <div><svg viewBox="0 0 76 26"><rect width="76" height="26" rx="4" fill="#1d5a42"/><circle cx="24" cy="18" r="7" fill="#c9cdd3"/><path d="M24 18 q 10 -14 26 -15" fill="none" stroke="#0b130e" stroke-width="7" stroke-linecap="round"/><path d="M24 18 q 10 -14 26 -15" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/></svg><span><b>Wire leaving the board.</b> Goes into that hole from the component side and is soldered there. The Wires leaving the board table says where it goes and how long to cut it.</span></div>
       </div>
       <ul>
-        <li>Standing resistors: the body sits on the hole with the circle, and the lead bends over to the other hole.</li>
+<li>Standing resistors: the body sits on the hole with the circle, and the lead bends over to the other hole.</li>
         <li>The solder side view is mirrored left to right, exactly as the board looks when you turn it over. Hole names stay the same.</li>
         <li>Hole names count column 1 from the left and row A from the top, component side up, as drawn. If your board's printed numbers run the other way, go by the drawing, not the print.</li>
       </ul>
@@ -188,8 +188,26 @@ svg.focusing [data-net].on { opacity: 1; }
     <h2 id="nets-h">Connections</h2>
     <p class="mono" style="color:var(--muted)">After soldering, beep every row with the meter: each listed hole must beep to the others in its row, and to nothing in another row.</p>
     <div class="tablewrap"><table>
-      <thead><tr><th>Net</th><th>Joins</th><th>Wires</th></tr></thead>
+      <thead><tr><th>Net</th><th>Joins</th><th>Solder traces, buses, jumpers</th></tr></thead>
       <tbody id="nets"></tbody>
+    </table></div>
+  </section>
+
+  <section class="section">
+    <h2 id="jumpers-h">Jumpers</h2>
+    <p>22 AWG solid with its insulation on, lying flat on the component side. Bend each end down through the hole named here, solder it on the solder side, and let the solder trace drawn there join it to its neighbour. Cut length is the run plus 10 mm; strip 5 mm at each end.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Jumper</th><th>Net</th><th>Route (component side)</th><th>Run</th><th>Cut</th><th>Notes</th></tr></thead>
+      <tbody id="jumpers"></tbody>
+    </table></div>
+  </section>
+
+  <section class="section">
+    <h2 id="leaving-h">Wires leaving the board</h2>
+    <p>Each of these wires goes into the named hole from the component side and is soldered there; the solder trace or bus drawn at that hole joins it to its net.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Hole</th><th>Net</th><th>Goes to</th><th>Cut</th><th>Demo</th></tr></thead>
+      <tbody id="leaving"></tbody>
     </table></div>
   </section>
 
@@ -200,13 +218,13 @@ svg.focusing [data-net].on { opacity: 1; }
       <thead><tr><th>Cable</th><th>From</th><th>To</th><th>Wires</th><th>Route</th><th>Length</th><th>Demo</th></tr></thead>
       <tbody>
         <tr><td>Power deck link</td><td class="mono">Power deck W1 (soldered)</td><td class="mono">Carrier J3</td><td>VBAT to F16, GND to G16, 5V to H16, ESC to I16; female ends on the carrier side; twist the four together</td><td>−Y slots, through the battery deck</td><td class="mono">15 to 20 cm</td><td><span class="badge need">Needed</span></td></tr>
-        <tr><td>ESC signal</td><td>The ESC's thin signal pair</td><td class="mono">Power deck W2, W3</td><td>Signal wire into P6, its ground wire into S12</td><td>Same deck</td><td class="mono">ESC lead</td><td><span class="badge need">Needed</span></td></tr>
+        <tr><td>ESC signal</td><td>The ESC's thin signal pair</td><td class="mono">Power deck W2, W3</td><td>Signal wire into N4, its ground wire into O9</td><td>Same deck</td><td class="mono">ESC lead</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Hall</td><td class="mono">Carrier J1</td><td>A1104 on the motor deck bracket</td><td>5V, GND, OUT, twisted</td><td>−Y slots, through the battery and power decks</td><td class="mono">25 to 30 cm</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>I²C to the IMU</td><td class="mono">Carrier J4</td><td>MPU-6050, either STEMMA QT port</td><td>STEMMA QT to header cable</td><td>Same deck</td><td class="mono">as supplied</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>I²C up</td><td>MPU-6050, other port</td><td>QMC5883P on the top deck</td><td>STEMMA QT cable</td><td>Straight up</td><td class="mono">200 mm</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>I²C across</td><td>QMC5883P</td><td>BMP280</td><td>STEMMA QT cable</td><td>Top deck</td><td class="mono">short</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Motor phases</td><td>ESC</td><td>Motor</td><td>Three phase wires, twisted</td><td>+Y slot, down to the motor deck</td><td class="mono">ESC leads</td><td><span class="badge need">Needed</span></td></tr>
-        <tr><td>Battery</td><td>Battery box cap A: + from column 1 bottom, − from column 4 bottom</td><td class="mono">Power deck P1 (M17), P2 (S17)</td><td>+ through the 10 A inline fuse; twist the pair</td><td>Cap A side notches, then the +Y slot down one deck</td><td class="mono">about 10 cm</td><td><span class="badge need">Needed</span></td></tr>
+        <tr><td>Battery</td><td>Battery box cap A: + from column 1 bottom, − from column 4 bottom</td><td class="mono">Power deck P1 (M17), P2 (O17)</td><td>+ through the 10 A inline fuse; twist the pair</td><td>Cap A side notches, then the +Y slot down one deck</td><td class="mono">about 10 cm</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Bench supply</td><td>Supply + (through the fuse) and −</td><td class="mono">Power deck P1, P2</td><td>Instead of the battery, never both at once</td><td>+Y slot</td><td class="mono">as needed</td><td><span class="badge opt">Bench</span></td></tr>
         <tr><td>USB-C</td><td>Laptop</td><td>XIAO</td><td>Powers the avionics for the demo</td><td>−Y edge, with a service loop</td><td class="mono">as needed</td><td><span class="badge need">Needed</span></td></tr>
         <tr><td>Sun sensors</td><td class="mono">Carrier J5, J6</td><td>OP550 block on the +X edge</td><td>A, B, 3V3</td><td>Same deck</td><td class="mono">short</td><td><span class="badge opt">Optional</span></td></tr>
@@ -240,7 +258,7 @@ svg.focusing [data-net].on { opacity: 1; }
         <rect x="896" y="288" width="44" height="24" rx="5" fill="#f4e4b0" stroke="#7a6320" stroke-width="1.5"/><text x="918" y="304" font-size="10" font-weight="700" fill="#4a3a0c" text-anchor="middle">10 A</text>
         <text x="740" y="221" font-size="11" fill="#c9d1d9" text-anchor="middle">3 bridges: top 1-2, bottom 2-3, top 3-4</text>
         <text x="990" y="326" font-size="11.5" fill="var(--fg)" text-anchor="end">+ from column 1 bottom, through the fuse, to P1 PACK IN + (M17)</text>
-        <text x="990" y="367" font-size="11.5" fill="var(--fg)" text-anchor="end">− from column 4 bottom to P2 PACK IN − (S17)</text>
+        <text x="990" y="367" font-size="11.5" fill="var(--fg)" text-anchor="end">− from column 4 bottom to P2 PACK IN − (O17)</text>
         
       </g>
     </svg></div>
@@ -248,7 +266,7 @@ svg.focusing [data-net].on { opacity: 1; }
       <li>Cap B: four bridge wires, each joining the top and bottom contact of one column.</li>
       <li>Cap A: three bridge wires: top row columns 1 to 2, bottom row columns 2 to 3, top row columns 3 to 4. Columns count from the −Y side of the box (cap A faces −X), so from outside cap A column 1 is on your right.</li>
       <li>Leads: + from cap A column 1 bottom, − from cap A column 4 bottom. Both leave through cap A's side notches and drop through the battery deck's +Y wire slot to the power deck.</li>
-      <li>Put the 10 A fuse (Bussmann AGC-10 in its inline holder, TD §5.1) on the + lead, then solder it to P1 (M17, PACK IN +) and the − lead to P2 (S17, PACK IN −). Twist the pair.</li>
+      <li>Put the 10 A fuse (Bussmann AGC-10 in its inline holder, TD §5.1) on the + lead, then solder it to P1 (M17, PACK IN +) and the − lead to P2 (O17, PACK IN −). Twist the pair.</li>
       <li>Before connecting: measure the pack at the two leads. About 10 to 11 V with charged cells. About 2.5 V low means one cell is in backwards. The firmware also refuses to arm below 9.6 V.</li>
       <li>With the pack connected and nothing plugged into the carrier, measure 5 V between the MPM3610's 5V pin (K9) and GND (K8). Anything else: stop and tell me.</li>
       <li>Battery or bench supply into P1 and P2, never both at once. To charge, take off cap B (three M2 screws) and slide the cells out.</li>
@@ -261,7 +279,8 @@ svg.focusing [data-net].on { opacity: 1; }
       <li>The drawing shows the XIAO from above with USB-C at the top edge, so 5V, GND and 3V3 are the top three pins on the right: holes B12, C12 and D12. Before soldering, confirm those three pins on the XIAO you have been using on the breadboard.</li>
       <li>Diode D1: the stripe (cathode) goes in B15, at the top, toward the 5 V row. Capacitor C1: the stripe (minus) goes on the GND bus.</li>
       <li>With nothing plugged in, beep 5V to GND, 3V3 to GND, and PACK + to GND. None of them may beep. Then beep each row of the Connections table.</li>
-      <li>Watch the tight spots: D14 and E14 (R1's two holes, 3V3 and Hall OUT), and the two bridges G16 to G17 (GND) and H15 to H16 (5V IN), one row apart. A solder blob there joins two nets.</li>
+      <li>Pads that must stay clean, because they sit between two different nets: D15 (3V3 trace and Hall OUT), G15 (D8 trace and J3 GND), and the gaps between the parallel traces in rows B to G on the right of the XIAO. On the power deck, L8 on the GND bus sits next to the 5V wire in L9. Look along every trace with a light behind the board before power.</li>
+      <li>Build order: jumper a first (it runs under the XIAO), then the XIAO and the low parts, then the other jumpers, then the solder traces, then the wires leaving the board.</li>
       <li>The GND wire between the boards is required even without the buck. Without it the battery reading floats, like the 0.756 V we chased earlier.</li>
       <li>First power: USB only, no bench supply. Then tell me, and I'll reboot the box and check every sensor in its log before anything spins.</li>
     </ol>
@@ -297,83 +316,106 @@ const BOARDS = {
     title: 'XIAO carrier (50 × 35 mm)', cols: 18, rows: 12,
     edges: { top: 'ORIGINAL BOARD EDGE · USB-C · AT THE GUIDE OPENING (−Y)', bottom: 'CUT HERE: SCORE BETWEEN ROWS L AND M (35 mm) · TOWARD THE MPU-6050' },
     parts: [
-      { ref: 'U1', kind: 'xiao', lx: 5, rx: 11, y0: 1, need: true, part: 'Seeed XIAO ESP32-S3 on two 7-pin female headers',
-        note: 'USB-C at the top edge. Socketing it keeps it removable for flashing and swaps.' },
+      { ref: 'U1', kind: 'xiao', lx: 5, rx: 11, y0: 1, need: true, part: 'Seeed XIAO ESP32-S3, soldered in on its own pins',
+        note: 'USB-C at the top edge. Lay jumper a first: it runs under the XIAO.' },
       { ref: 'J1', kind: 'header', name: 'HALL', pins: [[15, 1, '5V', 'V5'], [15, 2, 'GND', 'GND'], [15, 3, 'OUT', 'HALL']], need: true,
-        part: '3-pin male header (3 of your 7 pins)', note: 'To the A1104: pin 1 VCC, pin 2 GND, pin 3 OUT, same order as the sensor. If the Hall wires end in male pins, solder them straight into B16, C16, D16 instead.' },
+        part: '3-pin male header (3 of your 7 pins)', note: 'The Hall cable plugs on: pin 1 VCC to 5V, pin 2 GND, pin 3 OUT.' },
       { ref: 'R1', kind: 'res', mount: 'stand', body: 'b', a: [13, 3, 'V33'], b: [13, 4, 'HALL'], value: '12 kΩ', lab: [13.75, 4.55], need: true,
-        part: '12 kΩ resistor, standing', note: 'Hall pull-up to 3V3 (TD §5.3). The firmware also turns on the internal pull-up; this one is stiffer against ESC noise.' },
+        part: '12 kΩ resistor, standing', note: 'Hall pull-up to 3V3 (TD §5.3).' },
       { ref: 'J3', kind: 'header', name: 'POWER DECK', pins: [[15, 5, 'VBAT', 'VBAT'], [15, 6, 'GND', 'GND'], [15, 7, '5V IN', 'V5IN'], [15, 8, 'ESC', 'ESC']], need: true,
-        part: '4-pin male header (4 of your 7 pins)', note: 'The one cable to the power deck: battery tap, ground, buck 5 V, and the ESC signal. The ESC signal wire joins this cable on the power deck, so the ESC needs no header here.' },
+        part: '4-pin male header (4 of your 7 pins)', note: 'The 4-wire cable from the power deck plugs on here.' },
       { ref: 'D1', kind: 'diode', k: [14, 1, 'V5'], a: [14, 7, 'V5IN'], value: '1N5817', lab: [14.62, 4.3], need: true,
-        part: '1N5817 Schottky, lying along column 15', note: 'Needed now that the buck is fitted. Stripe at B15. Lets the buck feed the XIAO 5V pin without back-feeding USB (Seeed guidance, TD §5.1). Slide the body toward the top.' },
+        part: '1N5817 Schottky, lying along column 15', note: 'Stripe in B15. Lets the buck feed the XIAO 5V pin without back-feeding USB.' },
       { ref: 'R2', kind: 'res', mount: 'stand', body: 'a', a: [13, 6, 'D8'], b: [13, 7, 'ESC'], value: '100 to 330 Ω', lab: [13.75, 6.25], need: true,
-        part: 'Series resistor, standing', note: 'Same value as the one on your breadboard; it damped the ringing on the ESC line.' },
-      { ref: 'J4', kind: 'header', solder: true, name: 'I²C CABLE', pins: [[2, 5, 'SDA', 'SDA'], [2, 6, 'SCL', 'SCL'], [2, 7, 'GND', 'GND'], [2, 8, '3V3', 'V33']], need: true,
-        part: 'STEMMA QT to header cable, pins soldered straight in', note: 'No header: blue SDA into F3, yellow SCL into G3, black GND into H3, red 3V3 into I3. The cable still unplugs at the MPU-6050 end.' },
-      { ref: 'J5', kind: 'header', solder: true, name: 'SUN', pins: [[2, 1, 'A', 'SUNA'], [2, 2, 'B', 'SUNB']], need: false,
-        part: 'Two wires soldered in', note: 'OP550 emitters. Skip for the demo.' },
-      { ref: 'J6', kind: 'header', solder: true, name: 'SUN 3V3', pins: [[2, 9, '3V3', 'V33']], need: false,
-        part: 'One wire soldered in', note: 'OP550 collectors. Skip for the demo.' },
-      { ref: 'R3', kind: 'res', mount: 'lay', a: [1, 1, 'SUNA'], b: [1, 4, 'GND'], value: '12 kΩ', lab: [0.05, 2.55], need: false,
-        part: '12 kΩ resistor, lying', note: 'Sun A load (TD §5.3, tune in T-10). Skip for the demo.' },
+        part: 'Series resistor, standing', note: 'Same value as the one on your breadboard.' },
+      { ref: 'J4', kind: 'header', solder: true, name: 'I²C CABLE', pins: [
+          [2, 5, 'SDA', 'SDA', 'MPU-6050 STEMMA QT port (blue wire)', 'as supplied'], [2, 6, 'SCL', 'SCL', 'MPU-6050 (yellow wire)', 'as supplied'],
+          [2, 7, 'GND', 'GND', 'MPU-6050 (black wire)', 'as supplied'], [2, 8, '3V3', 'V33', 'MPU-6050 (red wire)', 'as supplied']], need: true,
+        part: 'STEMMA QT to header cable, its 4 pins soldered in', note: 'No header needed. The cable unplugs at the MPU-6050 end.' },
+      { ref: 'J5', kind: 'header', solder: true, name: 'SUN', pins: [[2, 1, 'A', 'SUNA', 'OP550 A emitter', 'about 5 cm'], [2, 2, 'B', 'SUNB', 'OP550 B emitter', 'about 5 cm']], need: false,
+        part: 'Two wires soldered in', note: 'Skip for the demo.' },
+      { ref: 'J6', kind: 'header', solder: true, name: 'SUN 3V3', pins: [[2, 9, '3V3', 'V33', 'both OP550 collectors', 'about 5 cm']], need: false,
+        part: 'One wire soldered in', note: 'Skip for the demo.' },
+      { ref: 'R3', kind: 'res', mount: 'lay', a: [1, 1, 'SUNA'], b: [1, 4, 'GND'], value: '12 kΩ', lab: [1.75, 2.6], need: false,
+        part: '12 kΩ resistor, lying', note: 'Sun A load. Skip for the demo.' },
       { ref: 'R4', kind: 'res', mount: 'stand', body: 'a', a: [3, 2, 'SUNB'], b: [3, 3, 'GND'], value: '12 kΩ', lab: [3.75, 3.6], need: false,
         part: '12 kΩ resistor, standing', note: 'Sun B load. Skip for the demo.' },
     ],
-    wires: [
+    traces: [
       { net: 'V5', pts: [[11, 1], [15, 1]] },
-      { net: 'GND', pts: [[11, 2], [16, 2], [16, 11], [1, 11], [1, 3], [3, 3]] },
-      { net: 'GND', kind: 'bridge', pts: [[2, 7], [1, 7]] },
-      { net: 'GND', kind: 'bridge', pts: [[15, 6], [16, 6]] },
-      { net: 'V33', pts: [[13, 3], [10, 3], [10, 10], [2, 10], [2, 8]] },
-      { net: 'HALL', pts: [[11, 4], [15, 4], [15, 3]] },
+      { net: 'GND', pts: [[10, 2], [16, 2]] },
+      { net: 'GND', pts: [[15, 6], [16, 6]] },
+      { net: 'GND', pts: [[0, 7], [2, 7]] },
+      { net: 'GND', pts: [[1, 3], [3, 3]], opt: true },
+      { net: 'GND', pts: [[1, 3], [1, 4]], opt: true },
+      { net: 'GND', pts: [[0, 4], [1, 4]], opt: true },
+      { net: 'V33', pts: [[11, 3], [13, 3]] },
+      { net: 'V33', pts: [[2, 8], [2, 9]] },
+      { net: 'V33', pts: [[2, 9], [3, 9]] },
+      { net: 'HALL', pts: [[11, 4], [15, 4]] },
+      { net: 'HALL', pts: [[15, 3], [15, 4]] },
       { net: 'VBAT', pts: [[11, 5], [15, 5]] },
       { net: 'D8', pts: [[11, 6], [13, 6]] },
-      { net: 'ESC', pts: [[13, 7], [13, 8], [15, 8]] },
-      { net: 'V5IN', kind: 'bridge', pts: [[14, 7], [15, 7]] },
-      { net: 'SDA', pts: [[5, 5], [2, 5]] },
-      { net: 'SCL', pts: [[5, 6], [2, 6]] },
-      { net: 'SUNA', pts: [[5, 1], [1, 1]], opt: true },
-      { net: 'SUNB', pts: [[5, 2], [2, 2]], opt: true },
+      { net: 'ESC', pts: [[13, 7], [13, 8]] },
+      { net: 'ESC', pts: [[13, 8], [15, 8]] },
+      { net: 'V5IN', pts: [[14, 7], [15, 7]] },
+      { net: 'SDA', pts: [[2, 5], [5, 5]] },
+      { net: 'SCL', pts: [[2, 6], [5, 6]] },
+      { net: 'SUNA', pts: [[1, 1], [5, 1]], opt: true },
+      { net: 'SUNB', pts: [[2, 2], [5, 2]], opt: true },
+    ],
+    buses: [],
+    jumpers: [
+      { id: 'a', net: 'GND', pts: [[10, 2], [10, 10], [1, 10], [1, 7]], note: 'Lay it first: it runs under the XIAO, between its two pin rows. Crosses jumper d.' },
+      { id: 'b', net: 'GND', pts: [[16, 2], [16, 6]] },
+      { id: 'c', net: 'GND', pts: [[0, 4], [0, 7]], opt: true, note: 'Only with the sun sensor parts.' },
+      { id: 'd', net: 'V33', pts: [[12, 3], [12, 9], [3, 9]], note: 'Runs down the gap between the XIAO and R1, R2.' },
     ],
   },
   power: {
     title: 'Power deck (full 5 × 7 cm)', cols: 18, rows: 24,
-    edges: { top: 'POWER DECK · COMPONENT SIDE · MPM3610 BODY TOWARD ROW A', bottom: 'FREE SPACE BELOW ROW S' },
+    edges: { top: 'POWER DECK · COMPONENT SIDE · MPM3610 BODY TOWARD ROW A', bottom: 'FREE SPACE BELOW ROW P' },
     parts: [
       { ref: 'U2', kind: 'module', body: [5.45, 3.4, 11.55, 10.5], pads: [[7, 10, 'GND', 'GND'], [8, 10, '5V', 'V5IN'], [9, 10, 'VIN', 'PACK'], [10, 10, 'EN', null]],
         value: 'MPM3610 5 V', need: true, part: 'Adafruit MPM3610 5 V buck (already soldered)',
-        note: 'Pins K8 GND, K9 5V, K10 VIN, K11 EN, seen from the component side with row A at the top. EN stays unconnected (Adafruit: tie it low to shut down). The body outline is approximate; keep everything else out of it.' },
-      { ref: 'P1', kind: 'pad', at: [16, 12, 'PACK'], label: 'PACK IN +', need: true,
-        part: 'Wire pad', note: 'Battery box + lead through the 10 A inline fuse (or the bench supply +). Lap-solder thick leads onto the bus; they will not fit the hole.' },
-      { ref: 'P2', kind: 'pad', at: [16, 18, 'GND'], label: 'PACK IN −', need: true, part: 'Wire pad', note: 'Battery box − lead (or the bench supply −). This end of the GND bus is the star point.' },
-      { ref: 'P3', kind: 'pad', at: [13, 12, 'PACK'], label: 'ESC +', need: true, part: 'Wire pad', note: "ESC's red power lead, lap-soldered onto the bus." },
-      { ref: 'P4', kind: 'pad', at: [13, 18, 'GND'], label: 'ESC −', need: true, part: 'Wire pad', note: "ESC's black power lead, lap-soldered onto the bus." },
+        note: 'K8 GND, K9 5V, K10 VIN, K11 EN, component side up, row A at the top. EN stays unconnected. The body outline is approximate.' },
+      { ref: 'P1', kind: 'pad', at: [16, 12, 'PACK'], label: 'PACK IN +', to: 'battery box + through the fuse (or bench supply +)', cut: '12 to 15 cm, 18 AWG', need: true,
+        part: 'Wire pad', note: 'Lap the tinned lead onto the bus at M17.' },
+      { ref: 'P2', kind: 'pad', at: [16, 14, 'GND'], label: 'PACK IN −', to: 'battery box − (or bench supply −)', cut: '12 to 15 cm, 18 AWG', need: true,
+        part: 'Wire pad', note: 'Lap the tinned lead onto the bus at O17.' },
+      { ref: 'P3', kind: 'pad', at: [13, 12, 'PACK'], label: 'ESC +', to: "the ESC's red power lead", cut: 'trim the ESC lead to reach', need: true, part: 'Wire pad', note: 'Lap onto the bus at M14.' },
+      { ref: 'P4', kind: 'pad', at: [13, 14, 'GND'], label: 'ESC −', to: "the ESC's black power lead", cut: 'trim the ESC lead to reach', need: true, part: 'Wire pad', note: 'Lap onto the bus at O14.' },
       { ref: 'C1', kind: 'cap', p: [10, 12, 'PACK'], n: [10, 14, 'GND'], value: '470 µF', need: true,
-        part: '470 µF 35 V electrolytic', note: 'Across the supply right by the ESC pads (TD §5.5). Stripe (minus) in O11, + in M11.' },
-      { ref: 'R5', kind: 'res', mount: 'lay', a: [15, 12, 'PACK'], b: [15, 15, 'VBAT'], value: 'divider top', lab: [14.38, 13.55], need: true,
-        part: 'Divider top resistor, lying', note: 'The larger of your two breadboard divider resistors.' },
-      { ref: 'R6', kind: 'res', mount: 'lay', a: [14, 15, 'VBAT'], b: [14, 18, 'GND'], value: 'divider bottom', lab: [13.38, 16.55], need: true,
-        part: 'Divider bottom resistor, lying', note: 'The smaller one. Together they give 1.761 V at 10.01 V.' },
-      { ref: 'W1', kind: 'header', solder: true, below: true, name: 'TO CARRIER J3', pins: [[13, 15, 'VBAT', 'VBAT'], [8, 15, '5V', 'V5IN'], [7, 15, 'GND', 'GND'], [6, 15, 'ESC', 'ESC']], need: true,
-        part: '4-wire cable, soldered here', note: 'Female ends plug onto carrier J3 in this order: VBAT F16, GND G16, 5V IN H16, ESC I16.' },
-      { ref: 'W2', kind: 'header', solder: true, below: true, name: 'ESC SIGNAL', pins: [[5, 15, 'SIG', 'ESC']], need: true,
-        part: "ESC's thin signal wire, soldered here", note: 'Bridged to the cable\'s ESC wire next to it.' },
-      { ref: 'W3', kind: 'header', solder: true, below: true, name: 'ESC SIG GND', pins: [[11, 18, 'GND', 'GND']], need: true,
-        part: "ESC's thin signal ground wire, soldered here", note: 'Onto the GND bus.' },
+        part: '470 µF 35 V electrolytic', note: '+ in M11 on the power bus, stripe (minus) in O11 on the GND bus.' },
+      { ref: 'R5', kind: 'res', mount: 'lay', a: [15, 12, 'PACK'], b: [15, 15, 'VBAT'], value: 'divider top', lab: [15.62, 13.55], need: true,
+        part: 'Divider top resistor, lying', note: 'The larger of your two breadboard divider resistors. Its body lies over the GND bus; only its leads touch the board.' },
+      { ref: 'R6', kind: 'res', mount: 'stand', body: 'a', a: [14, 15, 'VBAT'], b: [14, 14, 'GND'], value: 'divider bottom', lab: [14.0, 16.0], need: true,
+        part: 'Divider bottom resistor, standing', note: 'The smaller one, body on P15, lead bent into O15 on the GND bus.' },
+      { ref: 'W1', kind: 'header', solder: true, below: true, name: 'CABLE TO CARRIER J3', pins: [
+          [13, 15, 'VBAT', 'VBAT', 'carrier J3 F16 (VBAT)', '20 cm'], [8, 11, '5V', 'V5IN', 'carrier J3 H16 (5V IN)', '20 cm'],
+          [7, 13, 'GND', 'GND', 'carrier J3 G16 (GND)', '20 cm'], [4, 13, 'ESC', 'ESC', 'carrier J3 I16 (ESC)', '20 cm']], need: true,
+        part: '4 wires, one end soldered here', note: 'Easiest: four 20 cm female-female jumpers. Cut one end off each, strip 5 mm, solder it in here; the female ends plug onto J3.' },
+      { ref: 'W2', kind: 'header', solder: true, below: true, name: 'FROM ESC', pins: [[3, 13, 'SIG', 'ESC', "the ESC's thin signal wire (white or yellow)", 'ESC lead, trim to reach']], need: true,
+        part: "ESC's signal wire, soldered here", note: 'The solder trace N4 + N5 joins it to the cable wire that runs up to J3.' },
+      { ref: 'W3', kind: 'header', solder: true, below: true, name: 'FROM ESC', pins: [[8, 14, 'SGND', 'GND', "the ESC's thin signal ground (black)", 'ESC lead, trim to reach']], need: true,
+        part: "ESC's signal ground wire, soldered here", note: 'Onto the GND bus at O9.' },
     ],
-    wires: [
-      { net: 'PACK', kind: 'bus', pts: [[16, 12], [9, 12]] },
-      { net: 'PACK', pts: [[9, 12], [9, 10]] },
-      { net: 'GND', kind: 'bus', pts: [[16, 18], [7, 18]] },
-      { net: 'GND', pts: [[7, 10], [7, 18]] },
-      { net: 'V5IN', pts: [[8, 10], [8, 15]] },
-      { net: 'GND', pts: [[10, 14], [10, 18]] },
-      { net: 'VBAT', pts: [[15, 15], [13, 15]] },
-      { net: 'ESC', kind: 'bridge', pts: [[6, 15], [5, 15]] },
+    traces: [
+      { net: 'PACK', pts: [[9, 10], [9, 12]] },
+      { net: 'V5IN', pts: [[8, 10], [8, 11]] },
+      { net: 'VBAT', pts: [[13, 15], [15, 15]] },
+      { net: 'ESC', pts: [[3, 13], [4, 13]] },
     ],
+    buses: [
+      { net: 'PACK', pts: [[9, 12], [16, 12]] },
+      { net: 'GND', pts: [[7, 10], [7, 14], [16, 14]] },
+    ],
+    jumpers: [],
   },
 };
+
+const PITCH_MM = 2.54;
+const runMm = (pts) => pts.slice(1).reduce((a, [x, y], i) => a + (Math.abs(x - pts[i][0]) + Math.abs(y - pts[i][1])) * PITCH_MM, 0);
 
 const P = 30, EDGE = 26, LM = 132, RM = 150, TM = 30, BM = 30;
 const BOARD_FILL = '#1d5a42', BOARD_LINE = '#123b2b', PAD = '#c9cdd3', HOLE = '#0a1611', SILK = '#eef3ee';
@@ -387,14 +429,21 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 function pinsOf(p) {
   switch (p.kind) {
     case 'xiao': return XIAO_PINS.map(([side, i, name, net]) => ({ x: side === 'L' ? p.lx : p.rx, y: p.y0 + i, net, what: 'U1 ' + name, label: name }));
-    case 'header': return p.pins.map(([x, y, lab, net]) => ({ x, y, net, what: p.ref + ' ' + lab, label: lab }));
+    case 'header': return p.pins.map(([x, y, lab, net, to, cut]) => ({ x, y, net, what: p.ref + ' ' + lab + (to ? ' (wire to ' + to + ')' : ''), label: lab, to, cut }));
     case 'res': return [{ x: p.a[0], y: p.a[1], net: p.a[2], what: p.ref + ' lead' }, { x: p.b[0], y: p.b[1], net: p.b[2], what: p.ref + ' lead' }];
     case 'diode': return [{ x: p.k[0], y: p.k[1], net: p.k[2], what: p.ref + ' cathode (stripe)' }, { x: p.a[0], y: p.a[1], net: p.a[2], what: p.ref + ' anode' }];
     case 'cap': return [{ x: p.p[0], y: p.p[1], net: p.p[2], what: p.ref + ' +' }, { x: p.n[0], y: p.n[1], net: p.n[2], what: p.ref + ' − (stripe)' }];
-    case 'pad': return [{ x: p.at[0], y: p.at[1], net: p.at[2], what: p.label }];
+    case 'pad': return [{ x: p.at[0], y: p.at[1], net: p.at[2], what: p.label, label: p.label, to: p.to, cut: p.cut }];
     case 'module': return p.pads.map(([x, y, lab, net]) => ({ x, y, net, what: p.ref + ' ' + lab, label: lab }));
   }
   return [];
+}
+
+function itemsOf(b) {
+  const out = [];
+  b.parts.forEach((p) => pinsOf(p).forEach((q) => out.push({ ...q, part: p })));
+  b.jumpers.forEach((j) => [j.pts[0], j.pts[j.pts.length - 1]].forEach(([x, y]) => out.push({ x, y, net: j.net, what: 'jumper ' + j.id + ' end', jumper: j })));
+  return out;
 }
 
 function pathHoles(pts) {
@@ -408,46 +457,50 @@ function pathHoles(pts) {
   return out;
 }
 
-// Every wire end lands on its own net, no bare wire touches another net, and each net is one piece.
+// One item per hole; traces and buses only touch their own net; no jumper passes over
+// a lead; every net is one connected piece and no two nets touch.
 function checkBoard(b) {
   const problems = [];
-  const pinAt = new Map();
-  for (const p of b.parts) for (const q of pinsOf(p)) {
+  const at = new Map();
+  for (const q of itemsOf(b)) {
     const k = key(q.x, q.y);
-    if (pinAt.has(k)) problems.push('two parts in hole ' + holeName(q.x, q.y));
-    pinAt.set(k, q);
+    if (at.has(k)) problems.push('two things in hole ' + holeName(q.x, q.y) + ': ' + at.get(k).what + ' and ' + q.what);
+    at.set(k, q);
   }
   const parent = new Map();
-  const add = (k) => { if (!parent.has(k)) parent.set(k, k); };
-  const find = (k) => { add(k); while (parent.get(k) !== k) k = parent.get(k); return k; };
+  const find = (k) => { if (!parent.has(k)) parent.set(k, k); while (parent.get(k) !== k) k = parent.get(k); return k; };
   const union = (a, c) => { const ra = find(a), rc = find(c); if (ra !== rc) parent.set(ra, rc); };
-  const bareNets = new Map();
-  for (const w of b.wires) {
-    const holes = pathHoles(w.pts);
-    const conn = w.kind === 'insulated' ? [holes[0], holes[holes.length - 1]] : holes;
-    conn.forEach((k) => union(conn[0], k));
-    holes.forEach((k, i) => {
-      const pin = pinAt.get(k);
-      const end = i === 0 || i === holes.length - 1;
-      if (pin && (w.kind !== 'insulated' || end) && pin.net !== w.net) {
-        const [x, y] = k.split(',').map(Number);
-        problems.push(NETS[w.net].name + ' wire touches ' + holeName(x, y) + ' (' + pin.what + ')');
-      }
+  const bare = new Map();
+  const solderRun = (kind, r) => {
+    const holes = pathHoles(r.pts);
+    if (kind === 'trace' && r.pts.length !== 2) problems.push('trace ' + r.pts.map(([x, y]) => holeName(x, y)).join('-') + ' is not straight');
+    holes.forEach((k) => {
+      union(holes[0], k);
+      const q = at.get(k);
+      if (q && q.net !== r.net) problems.push(NETS[r.net].name + ' ' + kind + ' touches ' + nameOf(k) + ' (' + q.what + ')');
+      (bare.get(k) || bare.set(k, new Set()).get(k)).add(r.net);
     });
-    if (w.kind !== 'insulated') conn.forEach((k) => { const s = bareNets.get(k) || new Set(); s.add(w.net); bareNets.set(k, s); });
+  };
+  b.traces.forEach((t) => solderRun('trace', t));
+  b.buses.forEach((t) => solderRun('bus', t));
+  for (const [k, nets] of bare) if (nets.size > 1) problems.push('solder of ' + [...nets].join(' and ') + ' meets in ' + nameOf(k));
+  for (const j of b.jumpers) {
+    const holes = pathHoles(j.pts);
+    union(holes[0], holes[holes.length - 1]);
+    holes.slice(1, -1).forEach((k) => { const q = at.get(k); if (q) problems.push('jumper ' + j.id + ' passes over ' + nameOf(k) + ' (' + q.what + ')'); });
   }
-  for (const [k, s] of bareNets) if (s.size > 1) { const [x, y] = k.split(',').map(Number); problems.push('wires of ' + [...s].join(' and ') + ' meet in ' + holeName(x, y)); }
   const rootsByNet = new Map(), netsByRoot = new Map();
-  for (const [k, pin] of pinAt) {
-    if (!pin.net) continue;
+  for (const [k, q] of at) {
+    if (!q.net) continue;
     const r = find(k);
-    (rootsByNet.get(pin.net) || rootsByNet.set(pin.net, new Set()).get(pin.net)).add(r);
-    (netsByRoot.get(r) || netsByRoot.set(r, new Set()).get(r)).add(pin.net);
+    (rootsByNet.get(q.net) || rootsByNet.set(q.net, new Set()).get(q.net)).add(r);
+    (netsByRoot.get(r) || netsByRoot.set(r, new Set()).get(r)).add(q.net);
   }
   for (const [net, roots] of rootsByNet) if (roots.size > 1) problems.push(NETS[net].name + ' is split into ' + roots.size + ' unconnected pieces');
   for (const [, nets] of netsByRoot) if (nets.size > 1) problems.push('nets ' + [...nets].join(' and ') + ' are joined');
   return problems;
 }
+const nameOf = (k) => { const [x, y] = k.split(',').map(Number); return holeName(x, y); };
 
 function geom(b) {
   const bw = EDGE * 2 + (b.cols - 1) * P, bh = EDGE * 2 + (b.rows - 1) * P;
@@ -467,6 +520,7 @@ function svgFor(b) {
   const top = !flipped();
   const pinAt = new Map();
   b.parts.forEach((p) => pinsOf(p).forEach((q) => pinAt.set(key(q.x, q.y), { ...q, part: p })));
+  const itemAt = new Map(itemsOf(b).map((q) => [key(q.x, q.y), q]));
   let s = '';
   s += `<rect x="${g.bx}" y="${g.by}" width="${g.bw}" height="${g.bh}" rx="7" fill="${BOARD_FILL}" stroke="${BOARD_LINE}" stroke-width="2"/>`;
   s += `<text class="edgelab" x="${g.bx + g.bw / 2}" y="${g.by - 10}" text-anchor="middle">${b.edges.top}</text>`;
@@ -478,14 +532,19 @@ function svgFor(b) {
   }
   for (let y = 0; y < b.rows; y++) for (let x = 0; x < b.cols; x++) {
     const pin = pinAt.get(key(x, y));
-    const info = pin ? partPinsInfo(pin.part, pin, b) : holeName(x, y) + ' · empty';
+    const it = itemAt.get(key(x, y));
+    const info = pin ? partPinsInfo(pin.part, pin, b) : it ? holeName(x, y) + ' · ' + it.what + ' · net ' + NETS[it.net].name : holeName(x, y) + ' · empty';
     s += `<g data-info="${esc(info)}"><circle cx="${X(b, x)}" cy="${Y(b, y)}" r="${P * 0.3}" fill="${PAD}"/><circle cx="${X(b, x)}" cy="${Y(b, y)}" r="${P * 0.12}" fill="${HOLE}"/></g>`;
   }
-  const wiresSvg = b.wires.map((w) => wireSvg(b, w, top, pinAt)).join('');
-  const partsSvg = b.parts.map((p) => partSvg(b, p, top, g)).join('');
-  if (top) s += `<g opacity=".5">${wiresSvg}</g>` + partsSvg;
+  const under = b.buses.map((r) => busSvg(b, r, itemAt)).join('') + b.traces.map((t) => traceSvg(b, t)).join('');
+  const jumpers = b.jumpers.map((j) => jumperSvg(b, j, top)).join('');
+  const partsSvg = b.parts.map((p) => partSvg(b, p, top, g)).join('') + leadsSvg(b, g);
+  if (top) s += `<g opacity=".38">${under}</g>` + partsSvg + jumpers;
   else {
-    s += `<g opacity=".28">${partsSvg}</g>` + wiresSvg;
+    s += `<g opacity=".28">${partsSvg}</g>` + `<g opacity=".45">${jumpers}</g>` + under;
+    b.jumpers.forEach((j) => [j.pts[0], j.pts[j.pts.length - 1]].forEach(([x, y]) => {
+      s += `<circle data-net="${j.net}" data-info="${esc(holeName(x, y) + ' · jumper ' + j.id + ' end · solder it here')}" cx="${X(b, x)}" cy="${Y(b, y)}" r="${P * 0.2}" fill="#dfe3e7" stroke="${NETS[j.net].light ? '#15181a' : NETS[j.net].color}" stroke-width="2.5"/>`;
+    }));
     for (const [k, pin] of pinAt) {
       const [x, y] = k.split(',').map(Number);
       s += `<circle data-net="${pin.net || ''}" data-info="${esc(partPinsInfo(pin.part, pin, b))}" cx="${X(b, x)}" cy="${Y(b, y)}" r="${P * 0.16}" fill="#dfe3e7" stroke="#8b939b" stroke-width="1"/>`;
@@ -495,48 +554,67 @@ function svgFor(b) {
   return { svg: s, w: g.w, h: g.h };
 }
 
-// Where a wire is soldered: its two ends, every part lead on its path, and every
-// other wire of the same net that ends on its path. It passes over every other hole.
-function solderPoints(b, w, pinAt) {
-  const holes = pathHoles(w.pts);
-  const first = holes[0], last = holes[holes.length - 1];
-  if (w.kind === 'insulated') return [first, last];
-  const ends = new Set();
-  b.wires.forEach((o) => { if (o !== w && o.net === w.net) { const h = pathHoles(o.pts); ends.add(h[0]); ends.add(h[h.length - 1]); } });
-  return holes.filter((k) => k === first || k === last || (pinAt.get(k) && pinAt.get(k).net === w.net) || ends.has(k));
+function traceSvg(b, t) {
+  const net = NETS[t.net];
+  const [[x1, y1], [x2, y2]] = t.pts;
+  const ax = X(b, x1), ay = Y(b, y1), bx = X(b, x2), by = Y(b, y2);
+  const r = 0.38 * P, horiz = ay === by;
+  const rx = Math.min(ax, bx) - r, ry = Math.min(ay, by) - r;
+  const rw = horiz ? Math.abs(bx - ax) + 2 * r : 2 * r, rh = horiz ? 2 * r : Math.abs(by - ay) + 2 * r;
+  const holes = pathHoles(t.pts);
+  const info = net.name + ' · solder trace on the solder side: join ' + holes.map(nameOf).join(', ') + ' with solder, and nothing else' + (t.opt ? ' · optional' : '');
+  return `<g data-net="${t.net}" data-info="${esc(info)}"${t.opt ? ' opacity=".75"' : ''}>`
+    + `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="${r}" fill="#e4e7ea" stroke="${net.light ? '#15181a' : net.color}" stroke-width="3.2"/>`
+    + holes.map((k) => { const [x, y] = k.split(',').map(Number); return `<circle cx="${X(b, x)}" cy="${Y(b, y)}" r="${0.1 * P}" fill="#9aa1a8"/>`; }).join('')
+    + `</g>`;
 }
-const nameOf = (k) => { const [x, y] = k.split(',').map(Number); return holeName(x, y); };
 
-function wireSvg(b, w, top, pinAt) {
-  const net = NETS[w.net];
-  const pts = w.pts.map(([x, y]) => X(b, x) + ',' + Y(b, y)).join(' ');
-  const solder = solderPoints(b, w, pinAt);
-  const ends = w.pts.map(([x, y]) => holeName(x, y)).join(' → ');
-  const opt = w.opt ? ' · optional' : '';
-  if (w.kind === 'bridge') {
-    const [[x1, y1], [x2, y2]] = w.pts;
-    const ax = X(b, x1), ay = Y(b, y1), bx = X(b, x2), by = Y(b, y2);
-    const horiz = ay === by, r = 0.38 * P;
-    const rx = Math.min(ax, bx) - r, ry = Math.min(ay, by) - r;
-    const rw = horiz ? Math.abs(bx - ax) + 2 * r : 2 * r, rh = horiz ? 2 * r : Math.abs(by - ay) + 2 * r;
-    const info = net.name + ' · solder bridge: one blob joining ' + holeName(x1, y1) + ' and ' + holeName(x2, y2) + ', nothing else' + opt;
-    return `<g data-net="${w.net}" data-info="${esc(info)}">`
-      + `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="${r}" fill="#e4e7ea" stroke="${net.light ? '#15181a' : net.color}" stroke-width="3.2"/>`
-      + `<text x="${(ax + bx) / 2}" y="${(ay + by) / 2 + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="#2b3036">B</text></g>`;
-  }
-  const width = w.kind === 'bus' ? P * 0.34 : P * 0.2;
-  const under = net.light ? '#dfe3e8' : 'rgba(5,12,8,.85)';
-  const dash = w.kind === 'insulated' ? ' stroke-dasharray="7 5"' : '';
-  const kind = w.kind === 'bus' ? 'bare 18 AWG bus' : w.kind === 'insulated' ? 'insulated wire, crosses another wire' : 'wire';
-  const info = net.name + ' · ' + kind + ' · ' + ends + ' · solder at ' + solder.map(nameOf).join(', ') + ' only' + opt;
-  let g = `<g data-net="${w.net}" data-info="${esc(info)}"${w.opt ? ' opacity=".8"' : ''}>`;
-  if (!dash) g += `<polyline points="${pts}" fill="none" stroke="${under}" stroke-width="${width + 3.5}" stroke-linecap="butt" stroke-linejoin="round"/>`;
-  g += `<polyline points="${pts}" fill="none" stroke="${net.color}" stroke-width="${width}" stroke-linecap="butt" stroke-linejoin="round"${dash}/>`;
-  for (const k of solder) {
-    const [x, y] = k.split(',').map(Number);
-    g += `<circle cx="${X(b, x)}" cy="${Y(b, y)}" r="${0.24 * P}" fill="${net.color}" stroke="${net.light ? '#dfe3e8' : '#ffffff'}" stroke-width="2.2"/>`;
-  }
+function busSvg(b, r, itemAt) {
+  const net = NETS[r.net];
+  const pts = r.pts.map(([x, y]) => X(b, x) + ',' + Y(b, y)).join(' ');
+  const holes = pathHoles(r.pts);
+  const dots = holes.filter((k, i) => i === 0 || i === holes.length - 1 || itemAt.get(k) || b.traces.some((t) => pathHoles(t.pts).includes(k)));
+  const info = net.name + ' · bare 18 AWG bus on the solder side, ' + r.pts.map(([x, y]) => holeName(x, y)).join(' → ') + ' · solder at ' + dots.map(nameOf).join(', ');
+  let g = `<g data-net="${r.net}" data-info="${esc(info)}">`;
+  g += `<polyline points="${pts}" fill="none" stroke="${net.light ? '#dfe3e8' : 'rgba(5,12,8,.85)'}" stroke-width="${P * 0.36 + 3.5}" stroke-linejoin="round"/>`;
+  g += `<polyline points="${pts}" fill="none" stroke="${net.color}" stroke-width="${P * 0.36}" stroke-linejoin="round"/>`;
+  dots.forEach((k) => { const [x, y] = k.split(',').map(Number); g += `<circle cx="${X(b, x)}" cy="${Y(b, y)}" r="${0.24 * P}" fill="${net.color}" stroke="${net.light ? '#dfe3e8' : '#fff'}" stroke-width="2.2"/>`; });
   return g + '</g>';
+}
+
+function jumperSvg(b, j, top) {
+  const net = NETS[j.net];
+  const pts = j.pts.map(([x, y]) => X(b, x) + ',' + Y(b, y)).join(' ');
+  const run = runMm(j.pts);
+  const info = 'Jumper ' + j.id + ' · ' + net.name + ' · solid core on the component side, ' + j.pts.map(([x, y]) => holeName(x, y)).join(' → ')
+    + ' · run ' + run.toFixed(0) + ' mm, cut ' + (run + 10).toFixed(0) + ' mm, strip 5 mm each end' + (j.note ? ' · ' + j.note : '');
+  const mi = Math.floor((j.pts.length - 1) / 2);
+  const mx = (X(b, j.pts[mi][0]) + X(b, j.pts[mi + 1][0])) / 2, my = (Y(b, j.pts[mi][1]) + Y(b, j.pts[mi + 1][1])) / 2;
+  const dash = top ? '' : ' stroke-dasharray="6 5"';
+  let g = `<g data-net="${j.net}" data-info="${esc(info)}"${j.opt ? ' opacity=".75"' : ''}>`;
+  g += `<polyline points="${pts}" fill="none" stroke="${net.light ? '#e8ebee' : '#0b130e'}" stroke-width="${P * 0.22 + 4}" stroke-linejoin="round" stroke-linecap="square"${dash}/>`;
+  g += `<polyline points="${pts}" fill="none" stroke="${net.color}" stroke-width="${P * 0.22}" stroke-linejoin="round" stroke-linecap="square"${dash}/>`;
+  if (top) [j.pts[0], j.pts[j.pts.length - 1]].forEach(([x, y]) => { g += `<rect x="${X(b, x) - 0.3 * P}" y="${Y(b, y) - 0.3 * P}" width="${0.6 * P}" height="${0.6 * P}" fill="${net.color}" stroke="${net.light ? '#e8ebee' : '#fff'}" stroke-width="2"/>`; });
+  g += `<circle cx="${mx}" cy="${my}" r="10" fill="#fff8d6" stroke="#5c4a00" stroke-width="1.5"/><text x="${mx}" y="${my + 4}" text-anchor="middle" font-size="12" font-weight="700" fill="#3b2f00">${j.id}</text>`;
+  return g + '</g>';
+}
+
+// A short lead out of every hole where a wire leaves the board, so the exit is visible.
+function leadsSvg(b, g) {
+  let s = '';
+  for (const p of b.parts) {
+    if (!(p.kind === 'header' && p.solder) && p.kind !== 'pad') continue;
+    for (const q of pinsOf(p)) {
+      const px = X(b, q.x), py = Y(b, q.y);
+      const dx = (px > g.bx + g.bw / 2 ? 1 : -1) * 0.75 * P;
+      const c = NETS[q.net];
+      const d = `M${px} ${py} q ${dx * 0.4} ${-0.9 * P} ${dx} ${-0.95 * P}`;
+      s += `<g data-net="${q.net}" data-info="${esc(holeName(q.x, q.y) + ' · wire leaves the board here to ' + (q.to || p.label) + (q.cut ? ' · cut ' + q.cut : ''))}">`
+        + `<path d="${d}" fill="none" stroke="${c.light ? '#e8ebee' : '#0b130e'}" stroke-width="7" stroke-linecap="round"/>`
+        + `<path d="${d}" fill="none" stroke="${c.color}" stroke-width="4" stroke-linecap="round"/></g>`;
+    }
+  }
+  return s;
 }
 
 function tag(b, p, inner, info) {
@@ -701,19 +779,30 @@ function renderTables(b) {
     <td>${p.need === false ? '<span class="badge opt">Optional</span>' : '<span class="badge need">Needed</span>'}</td></tr>`).join('');
   const order = Object.keys(NETS);
   const pinsByNet = new Map();
-  b.parts.forEach((p) => pinsOf(p).forEach((q) => { if (q.net) (pinsByNet.get(q.net) || pinsByNet.set(q.net, []).get(q.net)).push(q); }));
+  itemsOf(b).forEach((q) => { if (q.net) (pinsByNet.get(q.net) || pinsByNet.set(q.net, []).get(q.net)).push(q); });
   const rows = order.filter((n) => pinsByNet.has(n)).map((n) => {
     const joins = pinsByNet.get(n).map((q) => `<span class="mono">${holeName(q.x, q.y)}</span> ${esc(q.what)}`).join('<br>');
-    const pinAt = new Map();
-    b.parts.forEach((p) => pinsOf(p).forEach((q) => pinAt.set(key(q.x, q.y), q)));
-    const wires = b.wires.filter((w) => w.net === n).map((w) => {
-      if (w.kind === 'bridge') return `<span class="mono">bridge ${w.pts.map(([x, y]) => holeName(x, y)).join(' + ')} (one blob)</span>`;
-      const kind = w.kind === 'bus' ? 'bus ' : w.kind === 'insulated' ? 'insulated ' : 'wire ';
-      return `<span class="mono">${kind}${w.pts.map(([x, y]) => holeName(x, y)).join(' → ')}; solder at ${solderPoints(b, w, pinAt).map(nameOf).join(', ')}</span>`;
-    }).join('<br>');
+    const wires = [
+      ...b.traces.filter((t) => t.net === n).map((t) => `<span class="mono">solder trace ${pathHoles(t.pts).map(nameOf).join(' + ')}</span>`),
+      ...b.buses.filter((t) => t.net === n).map((t) => `<span class="mono">bus ${t.pts.map(([x, y]) => holeName(x, y)).join(' → ')}</span>`),
+      ...b.jumpers.filter((j) => j.net === n).map((j) => `<span class="mono">jumper ${j.id}: ${holeName(...j.pts[0])} to ${holeName(...j.pts[j.pts.length - 1])}</span>`),
+    ].join('<br>');
     return `<tr class="netrow" tabindex="0" data-netrow="${n}"><td><span class="netname"><span class="sw" style="background:${NETS[n].color}"></span>${esc(NETS[n].name)}</span></td><td>${joins}</td><td>${wires || '<span style="color:var(--muted)">none</span>'}</td></tr>`;
   });
   document.getElementById('nets').innerHTML = rows.join('');
+  document.getElementById('jumpers-h').textContent = 'Jumpers · ' + b.title;
+  document.getElementById('jumpers').innerHTML = b.jumpers.length ? b.jumpers.map((j) => {
+    const run = runMm(j.pts);
+    return `<tr><td class="ref">${j.id}</td><td><span class="netname"><span class="sw" style="background:${NETS[j.net].color}"></span>${esc(NETS[j.net].name)}</span></td>
+      <td class="mono">${j.pts.map(([x, y]) => holeName(x, y)).join(' → ')}</td><td class="mono">${run.toFixed(0)} mm</td><td class="mono"><b>${(run + 10).toFixed(0)} mm</b></td>
+      <td>${esc(j.note || '')}${j.opt ? ' Optional.' : ''}</td></tr>`;
+  }).join('') : '<tr><td colspan="6">No jumpers on this board.</td></tr>';
+  document.getElementById('leaving-h').textContent = 'Wires leaving the board · ' + b.title;
+  const leaving = [];
+  b.parts.forEach((p) => { if ((p.kind === 'header' && p.solder) || p.kind === 'pad') pinsOf(p).forEach((q) => leaving.push({ p, q })); });
+  document.getElementById('leaving').innerHTML = leaving.map(({ p, q }) => `<tr><td class="mono"><b>${holeName(q.x, q.y)}</b></td>
+    <td><span class="netname"><span class="sw" style="background:${NETS[q.net].color}"></span>${esc(NETS[q.net].name)}</span></td>
+    <td>${esc(q.to || '')}</td><td class="mono">${esc(q.cut || '')}</td><td>${p.need === false ? '<span class="badge opt">Optional</span>' : '<span class="badge need">Needed</span>'}</td></tr>`).join('');
   document.querySelectorAll('[data-netrow]').forEach((tr) => {
     const go = () => { setFocus(tr.dataset.netrow); document.getElementById('board').scrollIntoView({ block: 'center', behavior: 'smooth' }); };
     tr.addEventListener('click', go);
