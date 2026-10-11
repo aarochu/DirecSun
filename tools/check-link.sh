@@ -28,8 +28,8 @@ status=$?
 set -e
 cat "$out/node-test.txt"
 
-tests="$(sed -nE 's/^ℹ tests ([0-9]+)$/\1/p' "$out/node-test.txt")"
-failed="$(sed -nE 's/^ℹ fail ([0-9]+)$/\1/p' "$out/node-test.txt")"
+tests="$(sed -nE 's/^(ℹ|#) tests ([0-9]+)$/\2/p' "$out/node-test.txt")"
+failed="$(sed -nE 's/^(ℹ|#) fail ([0-9]+)$/\2/p' "$out/node-test.txt")"
 if [[ -z "$tests" || -z "$failed" ]]; then
     echo "check-link: no node --test summary in $out/node-test.txt" >&2
     exit 1
