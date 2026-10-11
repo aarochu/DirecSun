@@ -17,8 +17,13 @@ One person may fill more than one role, but the hardware approval stays with Jul
 3. On the laptop, from `frontend/`, run `npm run demo` while dependencies are available. Keep `npm run demo:serve` as the offline restart command.
 4. Open `http://localhost:8080/` and `http://localhost:8080/ground-station/`. Confirm both load with the network disconnected.
 5. If demonstrating the real box, join its Wi-Fi and enter `ws://192.168.4.1/ws`, or use `ws://direcsun.local/ws` on the shared network. Confirm live telemetry before the presentation.
-6. Rehearse e-stop once under Julian's bench procedure. Do not count rehearsal as presentation evidence.
-7. Decide the fallback level before the judges enter:
+6. Check the box's turn readiness:
+   - In READY, `wheel_ref_rpm` must be above 0 before attempting a turn.
+   - Spin-up normally takes about 6 s. If it remains in SPINUP beyond 10 s, disarm and ask Julian whether the box is characterised.
+   - After any parameter reset, Julian must set `rate_gain_scale` to 1 from the bench console before a judge turn.
+   - Allow about 5 s after an e-stop before trying to re-arm.
+7. Rehearse e-stop once under Julian's bench procedure. Do not count rehearsal as presentation evidence.
+8. Decide the fallback level before the judges enter:
    - **A:** real judge sequence;
    - **B:** live telemetry, simulated judge sequence;
    - **C:** fully local simulated sequence;

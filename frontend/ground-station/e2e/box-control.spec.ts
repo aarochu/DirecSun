@@ -2,12 +2,12 @@ import { expect, test, type Page, type WebSocketRoute } from '@playwright/test';
 
 type Frame = Record<string, unknown>;
 
-async function attachFakeBox(page: Page) {
+async function attachFakeBox(page: Page, options: { wheelRefRpm?: number; flags?: string[] } = {}) {
   const received: Frame[] = [];
   let mode = 'SAFE';
   let heading = 0;
   let target: number | null = null;
-  const flags: string[] = ['MOMENTUM_OK'];
+  const flags: string[] = options.flags ?? ['MOMENTUM_OK'];
   let route: WebSocketRoute | null = null;
   let seq = 0;
   let sockets = 0;
@@ -34,7 +34,7 @@ async function attachFakeBox(page: Page) {
         sun_deg: null,
         sun_valid: false,
         wheel_rpm: mode === 'SAFE' ? 0 : 2400,
-        wheel_ref_rpm: mode === 'SAFE' ? 0 : 2400,
+        wheel_ref_rpm: mode === 'SAFE' ? 0 : (options.wheelRefRpm ?? 2400),
         throttle: 0,
         tau_cmd_mNm: 0,
         vbat: 10.1,
@@ -55,7 +55,11 @@ async function attachFakeBox(page: Page) {
         return;
       }
       if (frame.type !== 'cmd') return;
-      const ok = () => route?.send(JSON.stringify({ v: 1, type: 'ack', seq: frame.seq, ok: true }));
+      const ok = (extra: Frame = {}) => route?.send(JSON.stringify({ v: 1, type: 'ack', seq: frame.seq, ok: true, ...extra }));
+      if (frame.cmd === 'set_params') {
+        ok({ applied: frame.params });
+        return;
+      }
       ok();
       if (frame.cmd === 'arm') {
         setMode('SPINUP', 'arm');
@@ -71,6 +75,9 @@ async function attachFakeBox(page: Page) {
         setTimeout(() => {
           heading = target!;
           setMode('READY', 'slew_complete');
+          // The real firmware can flush one pre-transition frame after the
+          // completion event. Keep this ordering in the browser gate.
+          send({ type: 'tlm', t_ms: Date.now() % 1e6, mode: 'SLEW', psi_deg: heading, psi_ref_deg: target });
         }, 400);
       }
     });
@@ -89,11 +96,37 @@ const commands = (received: Frame[]) => received.filter((frame) => frame.type ==
 const status = (page: Page) => page.locator('.controls__status');
 
 test.describe('box control against a scripted box', () => {
+  test('READY with Hall bypass refuses turns in the UI without sending a command', async ({ page }) => {
+    const { received } = await attachFakeBox(page, { wheelRefRpm: 0, flags: ['HALL_BYPASS'] });
+    await connect(page);
+    await page.getByRole('button', { name: 'Arm the box' }).click();
+    await page.getByRole('checkbox').check();
+    await page.getByRole('button', { name: 'Arm now' }).click();
+    await expect(status(page)).toHaveText('READY / DEVICE', { timeout: 4000 });
+
+    const rotate = page.getByRole('button', { name: 'Rotate right ninety degrees and return' });
+    await expect(rotate).toBeDisabled();
+    await expect(page.getByText(/HALL SENSOR IS BYPASSED/)).toBeVisible();
+    await rotate.evaluate((button: HTMLButtonElement) => button.click());
+    expect(commands(received).map((frame) => frame.cmd)).toEqual(['arm']);
+  });
+
   test('connecting and watching sends nothing', async ({ page }) => {
     const { received } = await attachFakeBox(page);
     await connect(page);
     await page.waitForTimeout(1200);
     expect(received).toEqual([]);
+  });
+
+  test('SAFE parameters send only changed values and show the applied set', async ({ page }) => {
+    const { received } = await attachFakeBox(page);
+    await connect(page);
+    await page.getByRole('button', { name: /PARAMETERS \/ SAFE ONLY/ }).click();
+    await page.getByLabel(/Rate gain/).fill('0.02');
+    await page.getByRole('button', { name: 'Apply changed parameters' }).click();
+
+    await expect(page.getByText('Applied: k_omega = 0.02')).toBeVisible();
+    expect(commands(received).at(-1)).toMatchObject({ cmd: 'set_params', params: { k_omega: 0.02 } });
   });
 
   test('arm needs the lock-pin confirmation, then right 90 turns, holds and returns', async ({ page }) => {
@@ -111,6 +144,7 @@ test.describe('box control against a scripted box', () => {
     await page.getByRole('button', { name: 'Rotate right ninety degrees and return' }).click();
     await expect(status(page)).toContainText('TURNING');
     await expect(status(page)).toContainText('HOLDING TARGET', { timeout: 4000 });
+    await expect(page.locator('.readout--target .readout__value')).toHaveText('+90.0°');
     await expect(status(page)).toContainText('RETURNING', { timeout: 4000 });
     await expect(status(page)).toHaveText('READY / DEVICE', { timeout: 4000 });
     await expect(page.locator('.controls__result')).toHaveText('TURN COMPLETE: BACK AT THE START HEADING.');
@@ -139,6 +173,8 @@ test.describe('box control against a scripted box', () => {
     await page.getByRole('button', { name: 'Disconnect' }).focus();
     await page.keyboard.press('Space');
     await expect(status(page)).toHaveText('SAFE / DEVICE');
+    await expect(page.locator('.controls__result')).toHaveText('E-STOP ACCEPTED: THE WHEEL RAMPS DOWN.');
+    await expect(page.getByText(/ANOTHER CLIENT IS CONTROLLING/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Disconnect' })).toBeVisible();
     await expect(page.getByRole('list', { name: 'Device flags' })).toContainText('LATCHED ESTOP');
     expect(commands(received).at(-1)).toMatchObject({ cmd: 'estop' });

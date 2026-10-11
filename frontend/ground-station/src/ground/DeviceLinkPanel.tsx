@@ -1,5 +1,6 @@
-import { Plug, Unplug } from 'lucide-react';
-import { useId, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { Circle, Plug, Square, Unplug } from 'lucide-react';
+import { useEffect, useId, useMemo, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { downloadRecording, TelemetryRecorder } from '../hardware/telemetryLog';
 import { validateLinkUrl, type DeviceLink, type LinkState } from '../hardware/deviceLink';
 
 const STORAGE_KEY = 'direcsun.deviceLinkUrl';
@@ -29,6 +30,8 @@ function statusText(state: LinkState): string {
       return state.packets === 0
         ? 'SOCKET OPEN — WAITING FOR TELEMETRY'
         : `RECEIVING TELEMETRY · ${state.packets} PACKETS${state.ignored ? ` · ${state.ignored} IGNORED` : ''}${
+            state.tlmDropped ? ` · ${state.tlmDropped} TLM DROPPED BY THE BOX` : ''
+          }${state.droppedEvents ? ` · ${state.droppedEvents} EVENTS DROPPED BY THE BOX` : ''}${
             state.talking ? ` · RTT ${state.rttMs === null ? '—' : `${Math.round(state.rttMs)} MS`}` : ''
           }`;
     case 'closed':
@@ -45,6 +48,10 @@ export function DeviceLinkPanel({ link }: { link: DeviceLink }) {
   const inputId = useId();
   const messageId = useId();
   const active = state.status === 'connecting' || state.status === 'open';
+  const recorder = useMemo(() => new TelemetryRecorder(link), [link]);
+  const recording = useSyncExternalStore(recorder.subscribe, recorder.getState);
+  useEffect(() => () => void recorder.stop(), [recorder]);
+  const elapsedS = recording.startedAtMs === null ? 0 : Math.max(0, Math.round((Date.now() - recording.startedAtMs) / 1000));
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -91,6 +98,41 @@ export function DeviceLinkPanel({ link }: { link: DeviceLink }) {
         {error ? <span className="link__error">{error}</span> : statusText(state)}
         {!error && state.message && state.status !== 'open' && <span> · {state.message}</span>}
       </p>
+      {state.notices.length > 0 && (
+        <ul className="link__notices mono-label" aria-label="Box notices">
+          {state.notices.map((notice) => (
+            <li key={`${notice.atMs}-${notice.name}`}>
+              {new Date(notice.atMs).toLocaleTimeString([], { hour12: false })} · NOTICE {notice.name.replace(/_/g, ' ')}
+              {notice.detail ? ` · ${notice.detail.toUpperCase()}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="link__record">
+        {recording.recording ? (
+          <button
+            type="button"
+            className="button button--secondary link__record-button"
+            onClick={() => {
+              const files = recorder.stop();
+              if (files) downloadRecording(files);
+            }}
+          >
+            <Square strokeWidth={1.75} aria-hidden />
+            Stop and save CSV
+          </button>
+        ) : (
+          <button type="button" className="button button--quiet link__record-button" disabled={state.status !== 'open'} onClick={() => recorder.start()}>
+            <Circle strokeWidth={1.75} aria-hidden />
+            Record CSV
+          </button>
+        )}
+        <span className="link__record-status mono-label" role="status">
+          {recording.recording
+            ? `RECORDING · ${recording.tlmRows} TLM · ${recording.messageRows} OTHER · ${Math.floor(elapsedS / 60)}:${String(elapsedS % 60).padStart(2, '0')}`
+            : 'EVERY TLM FRAME TO CSV, FOR THE SECTION 9 TESTS'}
+        </span>
+      </div>
       <p className="link__note">
         Displays v1 telemetry (<code>{'{"type":"tlm",…}'}</code>) from your backend. Watching sends nothing;
         commands go out only when you arm or e-stop from the controls. It never reconnects automatically.

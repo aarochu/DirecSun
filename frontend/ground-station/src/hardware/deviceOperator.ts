@@ -12,6 +12,7 @@ export interface OperatorResult {
 
 export interface OperatorState {
   readonly controlling: boolean;
+  readonly linkLost: boolean;
   readonly phase: TurnPhase;
   readonly direction: Direction | null;
   readonly originDeg: number | null;
@@ -44,6 +45,7 @@ type WatchVerdict = 'continue' | 'done' | string | { waitMs: number; timeoutMess
 
 const IDLE: OperatorState = {
   controlling: false,
+  linkLost: false,
   phase: 'idle',
   direction: null,
   originDeg: null,
@@ -77,6 +79,8 @@ export class DeviceOperator {
   private state: OperatorState = IDLE;
   private readonly listeners = new Set<() => void>();
   private armedSeen = false;
+  private ownEstopPending = false;
+  private slewIssued = false;
   private turnToken = 0;
   private cancelWait: ((reason: string) => void) | null = null;
   private unsubscribe: (() => void)[] = [];
@@ -91,7 +95,7 @@ export class DeviceOperator {
   attach(): void {
     if (this.unsubscribe.length) return;
     this.unsubscribe = [
-      this.link.subscribeFrame(this.onFrame),
+      this.link.subscribeReadings(this.onFrame),
       this.link.subscribeState(this.onLinkState),
       this.link.subscribeEvents(this.onEvent),
     ];
@@ -116,7 +120,8 @@ export class DeviceOperator {
   }
 
   get canRotate(): boolean {
-    return this.state.controlling && this.state.phase === 'idle' && this.boxMode === 'READY';
+    return this.state.controlling && this.state.phase === 'idle' && this.boxMode === 'READY' &&
+      (this.link.latestReading?.wheelRefRpm ?? 0) > 0;
   }
 
   get canChangeMode(): boolean {
@@ -225,6 +230,7 @@ export class DeviceOperator {
     this.set({ busy: 'arm', result: null });
     try {
       await this.link.command('arm');
+      this.ownEstopPending = false;
       this.armedSeen = false;
       this.set({ busy: null, controlling: true, result: { tone: 'ok', text: 'ARM ACCEPTED: SPINNING UP. KEEP THE LOCK PIN IN.' } });
     } catch (error) {
@@ -248,23 +254,29 @@ export class DeviceOperator {
   estop(): void {
     this.holdManual();
     this.abortTurn('E-stop sent');
+    this.ownEstopPending = true;
     let sent: Promise<unknown>;
     try {
       sent = this.link.estop();
     } catch (error) {
+      this.ownEstopPending = false;
       this.set({ result: { tone: 'error', text: describe(error) } });
       return;
     }
     this.set({ busy: 'estop', result: { tone: 'ok', text: 'E-STOP SENT.' } });
     sent.then(
       () => this.set({ busy: null, result: { tone: 'ok', text: 'E-STOP ACCEPTED: THE WHEEL RAMPS DOWN.' } }),
-      (error: unknown) => this.set({ busy: null, result: { tone: 'error', text: describe(error) } }),
+      (error: unknown) => {
+        this.ownEstopPending = false;
+        this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+      },
     );
   }
 
   async rotate(direction: Direction): Promise<void> {
     if (!this.canRotate) return;
     const token = ++this.turnToken;
+    this.slewIssued = false;
     const origin = 0;
     const target = wireAngle(direction * TURN_STEP_DEG);
     this.set({ phase: 'rotating', direction, originDeg: origin, targetDeg: target, result: null });
@@ -273,7 +285,10 @@ export class DeviceOperator {
       if (token !== this.turnToken) throw new TurnAborted('Superseded');
       await this.slewTo(target, token);
       this.set({ phase: 'holding' });
-      await this.watch(token, HOLD_MS, (mode) => (mode === 'READY' ? 'continue' : `THE BOX LEFT READY (${mode})`));
+      await this.watch(token, HOLD_MS, (_mode, event) => {
+        if (event?.event !== 'mode' || event.mode === 'READY') return 'continue';
+        return `THE BOX LEFT READY (${event.mode ?? 'NO MODE'})`;
+      });
       this.set({ phase: 'returning', targetDeg: origin });
       await this.slewTo(origin, token);
       this.finishTurn(token, { tone: 'ok', text: 'TURN COMPLETE: BACK AT THE START HEADING.' });
@@ -285,10 +300,10 @@ export class DeviceOperator {
 
   async stopTurn(): Promise<void> {
     const wasTurning = this.state.phase !== 'idle';
+    const shouldSendReady = this.slewIssued || this.boxMode === 'SLEW';
     this.abortTurn('Stop requested');
-    if (this.boxMode !== 'SLEW' && !wasTurning) return;
-    this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
-    if (this.boxMode !== 'SLEW') return;
+    if (wasTurning) this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
+    if (!shouldSendReady) return;
     try {
       await this.link.command('mode', { mode: 'READY' });
     } catch (error) {
@@ -297,6 +312,7 @@ export class DeviceOperator {
   }
 
   private async slewTo(targetDeg: number, token: number) {
+    this.slewIssued = true;
     await this.link.command('mode', { mode: 'SLEW', psi_ref_deg: targetDeg });
     if (token !== this.turnToken) throw new TurnAborted('Superseded');
     let seenSlew = false;
@@ -345,7 +361,7 @@ export class DeviceOperator {
       };
       const cancel = (reason: string) => finish(new TurnAborted(reason));
       const timer = setTimeout(() => finish(timeoutMessage ? new Error(timeoutMessage) : null), timeoutMs);
-      const stopFrames = this.link.subscribeFrame(() => evaluate(null));
+      const stopFrames = this.link.subscribeReadings(() => evaluate(null));
       const stopEvents = this.link.subscribeEvents((event) => evaluate(event));
       this.cancelWait = cancel;
     });
@@ -354,6 +370,7 @@ export class DeviceOperator {
   private abortTurn(reason: string) {
     if (this.state.phase === 'idle' && !this.cancelWait) return;
     this.turnToken += 1;
+    this.slewIssued = false;
     const cancel = this.cancelWait;
     this.cancelWait = null;
     cancel?.(reason);
@@ -362,6 +379,7 @@ export class DeviceOperator {
 
   private finishTurn(token: number, result: OperatorResult) {
     if (token !== this.turnToken) return;
+    this.slewIssued = false;
     this.set({ phase: 'idle', direction: null, originDeg: null, targetDeg: null, result });
   }
 
@@ -381,17 +399,28 @@ export class DeviceOperator {
     const exit = event.event === 'mode' && event.cause ? AUTO_EXITS[event.cause] : undefined;
     if (exit && this.state.controlling && this.state.phase === 'idle') this.set({ result: exit });
     if (event.event === 'mode' && event.mode === 'SAFE' && this.state.controlling && event.cause && event.cause !== 'disarm') {
-      this.set({ result: { tone: 'error', text: `THE BOX WENT SAFE: ${event.cause.replace(/_/g, ' ')}` } });
+      if (this.ownEstopPending && event.cause === 'ESTOP') {
+        this.ownEstopPending = false;
+        this.set({ result: { tone: 'ok', text: 'E-STOP ACCEPTED: THE WHEEL RAMPS DOWN.' } });
+      } else {
+        this.set({ result: { tone: 'error', text: `THE BOX WENT SAFE: ${event.cause.replace(/_/g, ' ')}` } });
+      }
     }
   };
 
   private onLinkState = () => {
     if (!this.link.isOpen) this.stopManual();
-    if (this.link.isOpen || (!this.state.controlling && this.state.phase === 'idle')) return;
+    if (this.link.isOpen) {
+      if (this.state.linkLost) this.set({ linkLost: false });
+      return;
+    }
+    if (!this.state.controlling && this.state.phase === 'idle') return;
     this.abortTurn('Link closed');
     this.armedSeen = false;
+    this.ownEstopPending = false;
     this.set({
       controlling: false,
+      linkLost: true,
       busy: null,
       result: { tone: 'error', text: 'LINK CLOSED: AN ARMED BOX RAMPS DOWN BY ITSELF 1 S AFTER THE LAST HEARTBEAT.' },
     });
