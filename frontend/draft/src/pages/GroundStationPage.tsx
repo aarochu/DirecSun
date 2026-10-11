@@ -5,6 +5,7 @@ import { simulationSource } from '../ground/displaySource';
 import { GroundHeader } from '../ground/GroundHeader';
 import { JudgeControls } from '../ground/JudgeControls';
 import { ModelViewport } from '../ground/ModelViewport';
+import { SensorPanel } from '../ground/SensorPanel';
 import { TelemetryRail } from '../ground/TelemetryRail';
 import { DeviceLink } from '../hardware/deviceLink';
 import { DeviceOperator } from '../hardware/deviceOperator';
@@ -50,6 +51,7 @@ export default function GroundStationPage() {
         <div className="gs-side">
           <DeviceLinkPanel link={link} />
           <TelemetryRail source={source} />
+          <SensorPanel source={source} />
         </div>
       </main>
     </div>

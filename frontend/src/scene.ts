@@ -2,8 +2,10 @@ import {
   Box3,
   Color,
   DirectionalLight,
+  EdgesGeometry,
   Group,
   HemisphereLight,
+  InstancedMesh,
   LineBasicMaterial,
   LineSegments,
   Mesh,
@@ -17,6 +19,7 @@ import {
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { cubesatModel, hardwareStack } from './content';
+import { detailFor, TONES, type Tone } from './detail';
 
 const DEG = Math.PI / 180;
 export const FOV_DEG = 30;
@@ -61,6 +64,8 @@ interface PartNode {
   readonly edge: LineBasicMaterial;
   readonly box: Box3;
   readonly offset: Vector3;
+  // Website-only detail (src/detail.ts): one material per colour.
+  readonly detail: { material: MeshStandardMaterial; base: Color }[];
 }
 
 const SURFACE_BASE = new Color('#9c9c9c');
@@ -135,7 +140,9 @@ export function createScene(canvas: HTMLCanvasElement, reducedMotion: boolean): 
         const box = mesh.geometry.boundingBox!.clone().applyMatrix4(mesh.matrixWorld);
         stackBox.union(box);
         (cubesatModel.fixedNodePattern.test(name) ? fixed : body).add(group);
-        const node: PartNode = { state: { name, o: 1, hl: 0 }, group, material, edge, box, offset: new Vector3() };
+        const detail = addDetail(name, box, group, edge);
+        if (detail.replace) for (const child of [...group.children]) if (!child.userData.detail) child.visible = false;
+        const node: PartNode = { state: { name, o: 1, hl: 0 }, group, material, edge, box, offset: new Vector3(), detail: detail.materials };
         nodes.push(node);
         byName.set(name, node);
         parts.push(node.state);
@@ -155,6 +162,54 @@ export function createScene(canvas: HTMLCanvasElement, reducedMotion: boolean): 
     });
 
   const parts: PartState[] = [];
+
+  // Builds a part's detail meshes into its group, in world space like the CAD
+  // meshes. Outlines share the part's edge material so they fade and
+  // highlight with it.
+  const edgeCache = new Map<object, EdgesGeometry>();
+  const detailDisposables: { dispose(): void }[] = [];
+  const addDetail = (name: string, box: Box3, group: Group, edge: LineBasicMaterial) => {
+    const detail = detailFor(name, box);
+    const materials = new Map<Tone, MeshStandardMaterial>();
+    if (!detail) return { replace: false, materials: [] };
+    for (const item of detail.items) {
+      let material = materials.get(item.tone);
+      if (!material) {
+        material = new MeshStandardMaterial({ color: TONES[item.tone], roughness: 0.55, metalness: 0, transparent: true });
+        materials.set(item.tone, material);
+        detailDisposables.push(material);
+      }
+      if (item.matrices.length > 1) {
+        const mesh = new InstancedMesh(item.geometry, material, item.matrices.length);
+        item.matrices.forEach((matrix, i) => mesh.setMatrixAt(i, matrix));
+        mesh.userData.detail = true;
+        group.add(mesh);
+        continue;
+      }
+      const mesh = new Mesh(item.geometry, material);
+      mesh.matrixAutoUpdate = false;
+      mesh.matrix.copy(item.matrices[0]!);
+      mesh.userData.detail = true;
+      group.add(mesh);
+      if (item.edges) {
+        let edges = edgeCache.get(item.geometry);
+        if (!edges) {
+          edges = new EdgesGeometry(item.geometry, 30);
+          edgeCache.set(item.geometry, edges);
+          detailDisposables.push(edges, item.geometry);
+        }
+        const line = new LineSegments(edges, edge);
+        line.matrixAutoUpdate = false;
+        line.matrix.copy(item.matrices[0]!);
+        line.userData.detail = true;
+        group.add(line);
+      }
+    }
+    return {
+      replace: detail.replace,
+      materials: [...materials.values()].map((material) => ({ material, base: material.color.clone() })),
+    };
+  };
 
   // Camera framing, as in src/components/PartModel.tsx: fit the bounding sphere
   // of the subject (or the whole stack) in the 30 degree field of view.
@@ -216,6 +271,11 @@ export function createScene(canvas: HTMLCanvasElement, reducedMotion: boolean): 
       edgeColor.copy(EDGE_BASE).lerp(EDGE_HL, hl);
       node.edge.color.copy(edgeColor);
       node.edge.opacity = (0.55 + 0.35 * hl) * o;
+      for (const { material, base } of node.detail) {
+        material.color.copy(base).lerp(SURFACE_HL, hl * 0.6);
+        material.opacity = o;
+        material.depthWrite = o > 0.98;
+      }
     }
 
     const az = view.az * DEG;
@@ -248,6 +308,7 @@ export function createScene(canvas: HTMLCanvasElement, reducedMotion: boolean): 
         node.material.dispose();
         node.edge.dispose();
       }
+      for (const item of detailDisposables) item.dispose();
       renderer.dispose();
     },
   };

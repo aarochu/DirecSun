@@ -1,3 +1,4 @@
+import type { SensorReadings } from '../hardware/deviceLink';
 import { PHASE_STATUS } from '../simulation/stateMachine';
 import type { HistorySample, PlantSnapshot } from '../simulation/types';
 import type { MockPlant } from '../simulation/useMockPlant';
@@ -22,6 +23,8 @@ export interface DisplayTelemetry {
   readonly throttleBand: readonly [number, number] | null;
   readonly flags: readonly string[];
   readonly batteryV: number | null;
+  // Raw sensor values from the box; null in simulation, which models motion only.
+  readonly sensors: SensorReadings | null;
   readonly history: readonly HistorySample[];
   readonly nowS: number;
 }
@@ -49,6 +52,7 @@ export function simulationTelemetry({ state, history }: PlantSnapshot): DisplayT
     throttleBand: null,
     flags: [],
     batteryV: null,
+    sensors: null,
     history,
     nowS: state.timeS,
   };

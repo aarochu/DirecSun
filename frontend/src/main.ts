@@ -3,7 +3,7 @@ import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import './styles/tokens.css';
 import './styles.css';
-import { animate, createTimeline, onScroll, splitText, stagger, svg, utils, type Timeline } from 'animejs';
+import { animate, createTimeline, onScroll, stagger, svg, utils, type Timeline } from 'animejs';
 import logoUrl from './assets/logo.webp';
 import {
   blurbs,
@@ -20,6 +20,7 @@ import {
   system,
 } from './content';
 import { flowMarkup, initFlow } from './flow';
+import { createFuzzyText } from './fuzzy';
 import { createScene, view, type CubeSatScene, type PartState } from './scene';
 import { createStars, type Stars } from './stars';
 
@@ -405,6 +406,14 @@ function boot() {
     }
   }
 
+  // The hero title, drawn fuzzy (src/fuzzy.ts).
+  const fuzzy = createFuzzyText($('.hero__title'), {
+    baseIntensity: 0.2,
+    hoverIntensity: 0.5,
+    enableHover: true,
+    reducedMotion,
+  });
+
   // The previous site's star field, behind the hero only.
   let stars: Stars | null = null;
   if (hasWebGL && !reducedMotion) {
@@ -456,6 +465,7 @@ function boot() {
     for (const chapter of CHAPTERS) if (time >= START[chapter.id]! - 300) current = chapter;
     tickerLabel.textContent = current.label;
     stars?.setVisibility(Math.max(0, Math.min(1, 1 - time / 1400)));
+    fuzzy.setActive(time < 1400);
     if (current.id !== 'system' && flow.active) flow.clear();
     tickerHead.style.left = `${(progress * 100).toFixed(2)}%`;
     header.classList.toggle('is-solid', window.scrollY > 72);
@@ -488,9 +498,8 @@ function boot() {
       loader.remove();
       return;
     }
-    const { chars } = splitText('.hero__title', { chars: true });
     animate(loader, { opacity: 0, duration: 600, delay: 150, ease: 'out(2)', onComplete: () => loader.remove() });
-    animate(chars, { y: ['110%', '0%'], opacity: [0, 1], delay: stagger(22, { start: 250 }), duration: 750, ease: 'out(4)' });
+    animate(fuzzy.canvas, { y: [28, 0], opacity: [0, 1], delay: 250, duration: 750, ease: 'out(4)' });
     animate('.hero__lead, .hero__actions, .panel--hero-foot > *', {
       opacity: [0, 1],
       y: [16, 0],

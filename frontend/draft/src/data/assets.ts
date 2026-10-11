@@ -40,6 +40,17 @@ export const hardwareStack = {
   src: '/assets/hardware-stack.glb',
 } as const;
 
+// The ground station's 3D view: the CAD stack (decks, boards, motor, battery)
+// from cad/assembly.py, the same file the landing page shows. It turns with the
+// heading; the base hub and bolt stay fixed.
+export const groundStationModel: ModelAsset = {
+  src: hardwareStack.src,
+  available: hardwareStack.available,
+  sourceFile: CAD_SOURCE,
+  fixedNodePattern: /^(base|fixed|hub|bolt|stand)/i,
+  yawOffsetDeg: 0,
+};
+
 export const imageAssets = {
   assemblyRender: cadView(
     'cad-assembly',

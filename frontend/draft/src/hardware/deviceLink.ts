@@ -16,6 +16,33 @@ export interface DeviceTelemetry {
   readonly throttleBand: readonly [number, number] | null;
   readonly flags: readonly string[];
   readonly batteryV: number | null;
+  readonly sensors: SensorReadings;
+}
+
+// Per-sensor values from the tlm frame (protocol/schema-v1.json). null when the
+// box leaves a field out: no BMP280, no magnetometer, or not in bench mode.
+export interface SensorReadings {
+  // MPU-6050
+  readonly rateDps: number | null;
+  readonly gyroRaw: readonly [number, number, number] | null;
+  readonly accelRmsG: number | null;
+  // QMC5883P
+  readonly magDeg: number | null;
+  readonly magRaw: readonly [number, number, number] | null;
+  // OP550 x 2
+  readonly sunDeg: number | null;
+  readonly sunValid: boolean | null;
+  readonly sunAmV: number | null;
+  readonly sunBmV: number | null;
+  // A1104 Hall
+  readonly wheelRpm: number | null;
+  // 100k / 22k divider
+  readonly batteryV: number | null;
+  // BMP280
+  readonly tempC: number | null;
+  readonly pressurePa: number | null;
+  // Control task
+  readonly loopUs: number | null;
 }
 
 export type FlagSeverity = 'ok' | 'warning' | 'fault';
@@ -85,6 +112,31 @@ function band(value: unknown): readonly [number, number] | null {
   return lo === null || hi === null || lo === undefined || hi === undefined ? null : [lo, hi];
 }
 
+function triple(value: unknown): readonly [number, number, number] | null {
+  if (!Array.isArray(value) || value.length !== 3) return null;
+  const [x, y, z] = value.map(finite);
+  return x == null || y == null || z == null ? null : [x, y, z];
+}
+
+export function parseSensors(message: Record<string, unknown>): SensorReadings {
+  return {
+    rateDps: finite(message.rate_dps),
+    gyroRaw: triple(message.gyro_raw),
+    accelRmsG: finite(message.accel_rms_g),
+    magDeg: finite(message.mag_deg),
+    magRaw: triple(message.mag_raw),
+    sunDeg: finite(message.sun_deg),
+    sunValid: typeof message.sun_valid === 'boolean' ? message.sun_valid : null,
+    sunAmV: finite(message.sun_a_mv),
+    sunBmV: finite(message.sun_b_mv),
+    wheelRpm: finite(message.wheel_rpm),
+    batteryV: finite(message.vbat),
+    tempC: finite(message.t_c),
+    pressurePa: finite(message.p_pa),
+    loopUs: finite(message.loop_us),
+  };
+}
+
 function flagList(value: unknown): readonly string[] {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.filter((flag): flag is string => typeof flag === 'string' && flag.length > 0))];
@@ -116,6 +168,7 @@ export function parseTelemetry(raw: unknown): DeviceTelemetry | null {
     throttleBand: band(message.throttle_band),
     flags: flagList(message.flags),
     batteryV: finite(message.vbat),
+    sensors: parseSensors(message),
   };
 }
 
@@ -463,6 +516,7 @@ export class DeviceLink implements DisplaySource {
       throttleBand: reading?.throttleBand ?? null,
       flags: reading?.flags ?? [],
       batteryV: reading?.batteryV ?? null,
+      sensors: reading?.sensors ?? null,
       history: [...this.history],
       nowS: this.nowS,
     };

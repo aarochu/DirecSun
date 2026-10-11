@@ -1,10 +1,14 @@
 import { useEffect, useRef } from 'react';
 import {
   Box3,
+  Color,
   DirectionalLight,
   Group,
   HemisphereLight,
+  LineBasicMaterial,
+  LineSegments,
   Mesh,
+  MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
   Texture,
@@ -13,6 +17,7 @@ import {
   type Material,
   type Object3D,
 } from 'three';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ModelAsset } from '../data/assets';
 import { VIEW_CAMERA_BEARING_DEG, VIEW_ELEVATION_DEG } from './CubeSatSchematic';
@@ -79,13 +84,14 @@ export default function RealCubeSatModel({ asset, headingDeg, onLoad, onError }:
       render();
     };
 
-    new GLTFLoader().load(
+    new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(
       asset.src,
       (gltf) => {
         if (disposed) {
           disposeObject(gltf.scene);
           return;
         }
+        applyCadLook(gltf.scene);
         for (const child of [...gltf.scene.children]) {
           (asset.fixedNodePattern.test(child.name) ? fixedGroup : bodyGroup).add(child);
         }
@@ -116,6 +122,21 @@ export default function RealCubeSatModel({ asset, headingDeg, onLoad, onError }:
   }, [headingDeg]);
 
   return <div ref={hostRef} className="cad-model" />;
+}
+
+// The landing page's CAD look: flat grey solids with dark outlines. The lock
+// pin is only in place during spin-up, so it is hidden.
+const SURFACE = new Color('#9c9c9c');
+const EDGE = new Color('#1a1a1a');
+
+function applyCadLook(root: Object3D) {
+  const surface = new MeshStandardMaterial({ color: SURFACE, roughness: 0.6, metalness: 0 });
+  const edge = new LineBasicMaterial({ color: EDGE, transparent: true, opacity: 0.55 });
+  root.traverse((object) => {
+    if (/^lock_pin/.test(object.name)) object.visible = false;
+    if (object instanceof LineSegments) object.material = edge;
+    else if (object instanceof Mesh) object.material = surface;
+  });
 }
 
 function frameCamera(camera: PerspectiveCamera, scene: Scene) {

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useSyncExternalStore } from 'react';
-import { cubesatModel } from '../data/assets';
+import { groundStationModel } from '../data/assets';
 import { formatHeading } from '../lib/format';
 import { isWebGLAvailable } from '../lib/environment';
 import type { DisplaySource } from './displaySource';
@@ -13,14 +13,14 @@ type ModelStatus = 'schematic' | 'loading' | 'cad' | 'failed';
 const MODEL_LABEL: Record<ModelStatus, string> = {
   schematic: 'SCHEMATIC MODEL — CAD NOT LOADED',
   loading: 'LOADING CAD MODEL',
-  cad: 'CAD MODEL',
+  cad: 'CAD STACK — CAD/ASSEMBLY.PY',
   failed: 'SCHEMATIC MODEL — CAD NOT LOADED',
 };
 
 export function ModelViewport({ source }: { source: DisplaySource }) {
   const state = useSyncExternalStore(source.subscribeFrame, source.getFrame);
   const [status, setStatus] = useState<ModelStatus>(() =>
-    cubesatModel.available && isWebGLAvailable() ? 'loading' : 'schematic',
+    groundStationModel.available && isWebGLAvailable() ? 'loading' : 'schematic',
   );
   const tryCad = status === 'loading' || status === 'cad';
 
@@ -30,7 +30,7 @@ export function ModelViewport({ source }: { source: DisplaySource }) {
         {tryCad ? (
           <Suspense fallback={null}>
             <RealCubeSatModel
-              asset={cubesatModel}
+              asset={groundStationModel}
               headingDeg={state.headingDeg}
               onLoad={() => setStatus('cad')}
               onError={() => setStatus('failed')}

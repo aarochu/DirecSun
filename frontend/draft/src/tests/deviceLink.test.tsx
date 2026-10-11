@@ -29,6 +29,22 @@ describe('parseTelemetry', () => {
       throttleBand: null,
       flags: [],
       batteryV: 10.1,
+      sensors: {
+        rateDps: 0.3,
+        gyroRaw: null,
+        accelRmsG: null,
+        magDeg: null,
+        magRaw: null,
+        sunDeg: null,
+        sunValid: null,
+        sunAmV: null,
+        sunBmV: null,
+        wheelRpm: 2504,
+        batteryV: 10.1,
+        tempC: null,
+        pressurePa: null,
+        loopUs: null,
+      },
     });
   });
 
@@ -40,6 +56,45 @@ describe('parseTelemetry', () => {
       throttleBand: null,
       flags: [],
       batteryV: null,
+    });
+  });
+
+  it('reads every sensor field, including the bench-mode raw values', () => {
+    expect(
+      parseTelemetry(
+        tlm({
+          psi_deg: 12,
+          rate_dps: -1.5,
+          mag_deg: 13.2,
+          sun_deg: -4.1,
+          sun_valid: true,
+          wheel_rpm: 2400,
+          vbat: 10.4,
+          t_c: 23.5,
+          p_pa: 101325,
+          loop_us: 812,
+          gyro_raw: [12, -3, 410],
+          mag_raw: [1500, -220, 3100],
+          sun_a_mv: 812,
+          sun_b_mv: 790,
+          accel_rms_g: 0.04,
+        }),
+      )?.sensors,
+    ).toEqual({
+      rateDps: -1.5,
+      gyroRaw: [12, -3, 410],
+      accelRmsG: 0.04,
+      magDeg: 13.2,
+      magRaw: [1500, -220, 3100],
+      sunDeg: -4.1,
+      sunValid: true,
+      sunAmV: 812,
+      sunBmV: 790,
+      wheelRpm: 2400,
+      batteryV: 10.4,
+      tempC: 23.5,
+      pressurePa: 101325,
+      loopUs: 812,
     });
   });
 
@@ -174,7 +229,11 @@ describe('ground station with a device link', () => {
     expect(screen.getByText('DEVICE CONNECTED — RECEIVING TELEMETRY')).toBeTruthy();
     expect(screen.getByText('FROM DEVICE — WEBSOCKET')).toBeTruthy();
     expect(screen.getByText('+47.2°')).toBeTruthy();
-    expect(screen.getByText(/10\.10 V/)).toBeTruthy();
+    const rail = within(screen.getByRole('region', { name: 'TELEMETRY' }));
+    expect(rail.getByText(/10\.10 V/)).toBeTruthy();
+    const sensors = within(screen.getByRole('region', { name: 'SENSOR READINGS' }));
+    expect(sensors.getByText('FROM DEVICE')).toBeTruthy();
+    expect(sensors.getByText('10.10 V')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Rotate right ninety/ }).hasAttribute('disabled')).toBe(true);
     expect(screen.queryByRole('button', { name: /Reset the simulation/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Emergency stop the box' }).hasAttribute('disabled')).toBe(false);
