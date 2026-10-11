@@ -76,6 +76,29 @@ const place = <T extends Mesh | LineSegments>(object: T, matrix: Matrix4): T => 
   return object;
 };
 
+let sharedRenderer: WebGLRenderer | null = null;
+const lostListeners = new Set<() => void>();
+
+function acquireRenderer(): WebGLRenderer | null {
+  if (sharedRenderer) return sharedRenderer;
+  let created: WebGLRenderer;
+  try {
+    created = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  } catch {
+    return null;
+  }
+  created.setPixelRatio(1);
+  created.debug.checkShaderErrors = import.meta.env.DEV;
+  created.domElement.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault();
+    if (sharedRenderer === created) sharedRenderer = null;
+    created.dispose();
+    for (const listener of [...lostListeners]) listener();
+  });
+  sharedRenderer = created;
+  return created;
+}
+
 type Role = 'subject' | 'carrier' | 'context';
 
 const SURFACE: Record<Role, { color: string; roughness: number; opacity: number }> = {
@@ -111,21 +134,21 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    let renderer: WebGLRenderer;
-    try {
-      renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    } catch {
+    const canvas = document.createElement('canvas');
+    const surface = canvas.getContext('2d');
+    if (!surface || !acquireRenderer()) {
       callbacksRef.current.onError();
       return;
     }
     let disposed = false;
     const sharpRatio = Math.min(window.devicePixelRatio, 2);
+    let ratio = sharpRatio;
     let frame = 0;
     let settleTimer = 0;
-    renderer.setPixelRatio(sharpRatio);
-    const canvas = renderer.domElement;
     canvas.setAttribute('aria-hidden', 'true');
     host.appendChild(canvas);
+    const onLost = () => callbacksRef.current.onError();
+    lostListeners.add(onLost);
 
     const scene = new Scene();
     const camera = new PerspectiveCamera(FOV_DEG, 1, 0.001, 10);
@@ -146,7 +169,18 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
 
     const draw = () => {
       frame = 0;
-      if (!disposed) renderer.render(scene, camera);
+      const gl = sharedRenderer;
+      if (disposed || !gl) return;
+      const width = Math.max(1, Math.round(host.clientWidth * ratio));
+      const height = Math.max(1, Math.round(host.clientHeight * ratio));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      if (gl.domElement.width !== width || gl.domElement.height !== height) gl.setSize(width, height, false);
+      gl.render(scene, camera);
+      surface.clearRect(0, 0, width, height);
+      surface.drawImage(gl.domElement, 0, 0);
     };
     const render = () => {
       if (!frame && !disposed) frame = requestAnimationFrame(draw);
@@ -167,7 +201,6 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
     const resize = () => {
       const { clientWidth: width, clientHeight: height } = host;
       if (!width || !height) return;
-      renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       render();
@@ -186,13 +219,13 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
     });
     controls.addEventListener('start', () => {
       window.clearTimeout(settleTimer);
-      if (renderer.getPixelRatio() !== 1) renderer.setPixelRatio(1);
+      ratio = 1;
     });
     controls.addEventListener('end', () => {
       window.clearTimeout(settleTimer);
       settleTimer = window.setTimeout(() => {
         if (disposed) return;
-        renderer.setPixelRatio(sharpRatio);
+        ratio = sharpRatio;
         render();
       }, SETTLE_MS);
     });
@@ -303,12 +336,6 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
       },
     );
 
-    const onContextLost = (event: Event) => {
-      event.preventDefault();
-      callbacksRef.current.onError();
-    };
-    canvas.addEventListener('webglcontextlost', onContextLost);
-
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
@@ -316,14 +343,12 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
       renderRef.current = () => {};
       resetRef.current = () => {};
       contextRef.current = null;
-      canvas.removeEventListener('webglcontextlost', onContextLost);
+      lostListeners.delete(onLost);
       host.removeEventListener('wheel', onWheel, { capture: true });
       host.removeEventListener('keydown', onKey);
       observer.disconnect();
       controls.dispose();
       for (const material of materials) material.dispose();
-      renderer.dispose();
-      renderer.forceContextLoss();
       canvas.remove();
     };
   }, [view]);

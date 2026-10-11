@@ -24,17 +24,13 @@ const PRINTED_FRAME = [
   'avionics_deck',
   'top_deck',
   'lock_pin',
-  'rod_0',
-  'rod_1',
-  'rod_2',
-  'rod_3',
 ];
 
 export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   frame: {
     subject: PRINTED_FRAME,
     carrier: [],
-    shows: 'HIGHLIGHTED: THE PRINTED 2U FRAME. MOTOR, BOARDS AND CELLS ARE STAND-IN SHAPES',
+    shows: 'HIGHLIGHTED: THE PRINTED PARTS OF THE 2U FRAME. THREADED RODS, MOTOR, BOARDS AND CELLS ARE STAND-IN SHAPES',
     azimuthDeg: 38,
     elevationDeg: 20,
     frame: 'stack',
@@ -70,7 +66,7 @@ export const hardwareViews: Readonly<Record<string, HardwareView>> = {
   op550: {
     subject: ['avionics_deck'],
     carrier: [],
-    shows: 'HIGHLIGHTED: THE AVIONICS DECK, WHICH CARRIES THE OP550 SUN-SENSOR BLOCK ON ITS +X FACE',
+    shows: 'HIGHLIGHTED: THE AVIONICS DECK, WHICH CARRIES THE OP550 SUN-SENSOR BLOCK ON ITS +X FACE. THE SENSORS THEMSELVES ARE NOT MODELLED',
     azimuthDeg: 90,
     elevationDeg: 24,
     frame: 'subject',

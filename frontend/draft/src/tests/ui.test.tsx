@@ -93,7 +93,7 @@ describe('landing page', () => {
       expect(image.getAttribute('src')).toMatch(/^\/assets\/hardware\/[a-z0-9-]+\.webp$/);
       expect(figure.querySelector('figcaption')!.textContent).toMatch(/^CAD (ASSEMBLY PREVIEW|COMPONENT VIEW) \/ DESIGN MODEL.*HIGHLIGHTED: /);
     }
-    expect(media[0]!.querySelector('figcaption')!.textContent).toContain('NOT BUILT');
+    expect(media[0]!.querySelector('figcaption')!.textContent).toContain('CAD ASSEMBLY PREVIEW / DESIGN MODEL');
     expect(screen.queryByText(/NOT PROVIDED/)).toBeNull();
     expect(document.querySelectorAll('canvas')).toHaveLength(0);
   });

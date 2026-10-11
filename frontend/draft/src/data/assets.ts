@@ -38,8 +38,6 @@ const cadView = (kind: AssetKind, src: string, partName: string, alt: string): I
 
 export const hardwareStack = {
   src: '/assets/hardware-stack.glb',
-  available: true,
-  sourceFile: CAD_SOURCE,
 } as const;
 
 export const imageAssets = {
@@ -110,7 +108,7 @@ export type ImageAssetId = keyof typeof imageAssets;
 export function captionFor(asset: ImageAsset): string {
   switch (asset.kind) {
     case 'cad-assembly':
-      return 'CAD ASSEMBLY PREVIEW / DESIGN MODEL — NOT BUILT';
+      return 'CAD ASSEMBLY PREVIEW / DESIGN MODEL';
     case 'cad-component':
       return 'CAD COMPONENT VIEW / DESIGN MODEL';
     case 'component-photo':
