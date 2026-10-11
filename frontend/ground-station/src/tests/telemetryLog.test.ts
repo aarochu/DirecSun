@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import schemaJson from '../../../../protocol/schema-v1.json';
 import { DeviceLink } from '../hardware/deviceLink';
 import { csvCell, FIELDS_AHEAD_OF_SCHEMA, MESSAGE_COLUMNS, TelemetryRecorder, TLM_COLUMNS, TLM_FIELDS, tlmRow } from '../hardware/telemetryLog';
@@ -85,6 +85,21 @@ describe('telemetry CSV columns', () => {
 });
 
 describe('TelemetryRecorder', () => {
+  it('a raw listener that throws does not stop the link from handling the frame', async () => {
+    const link = new DeviceLink((url) => new FakeSocket(url) as unknown as WebSocket, () => 0);
+    link.connect('ws://box/ws');
+    const socket = FakeSocket.instances.at(-1)!;
+    socket.open();
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    link.subscribeRaw(() => {
+      throw new Error('recorder bug');
+    });
+    const sent = link.command('arm');
+    socket.message(JSON.stringify({ v: 1, type: 'ack', seq: socket.lastCommand().seq, ok: true }));
+    await expect(sent).resolves.toMatchObject({ ok: true });
+    quiet.mockRestore();
+  });
+
   it('records 60 s of 50 Hz telemetry and every other message in both directions, then stops', async () => {
     let now = 0;
     const link = new DeviceLink((url) => new FakeSocket(url) as unknown as WebSocket, () => now);

@@ -288,6 +288,18 @@ export class DeviceLink implements DisplaySource {
     return () => this.rawListeners.delete(listener);
   };
 
+  // A raw listener (the CSV recorder) must never stop the link from handling
+  // a frame: a throw here would skip acks, events and the heartbeat's pongs.
+  private emitRaw(dir: 'rx' | 'tx', raw: string) {
+    for (const listener of this.rawListeners) {
+      try {
+        listener(dir, raw);
+      } catch (error) {
+        console.error('raw frame listener failed', error);
+      }
+    }
+  }
+
   subscribeEvents = (listener: (event: DeviceEvent) => void) => {
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
@@ -320,7 +332,7 @@ export class DeviceLink implements DisplaySource {
     };
     socket.onmessage = (event: MessageEvent) => {
       if (this.socket !== socket) return;
-      if (this.rawListeners.size) for (const listener of this.rawListeners) listener('rx', String(event.data));
+      if (this.rawListeners.size) this.emitRaw('rx', String(event.data));
       this.receive(event.data);
     };
     socket.onerror = () => {
@@ -430,7 +442,7 @@ export class DeviceLink implements DisplaySource {
   private send(message: Record<string, unknown>) {
     const raw = JSON.stringify(message);
     this.socket!.send(raw);
-    for (const listener of this.rawListeners) listener('tx', raw);
+    this.emitRaw('tx', raw);
   }
 
   private sendCommand(name: string, fields: Record<string, unknown>): Promise<DeviceAck> {
