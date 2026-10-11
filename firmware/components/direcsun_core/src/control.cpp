@@ -28,7 +28,8 @@ int OpenLoopThrottleController::throttle(const ControlDemand &demand, const Tick
 {
     switch (demand.mode) {
     case Mode::Spinup: return spinup_ramp_throttle(demand.ticks_in_mode, params.spinup_throttle);
-    case Mode::Ready: return params.spinup_throttle;
+    case Mode::Ready:
+    case Mode::Detumble: return params.spinup_throttle;
     case Mode::Manual:
         // Only the throttle input is built at rung 1; the supervisor refuses the
         // others. Hold the last throttle if one is ever demanded anyway.
@@ -81,7 +82,8 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
     // Rung 1 whenever the closed loop cannot run: no Hall (or the bench
     // bypass), or no T-5 feed-forward table yet; and MANUAL throttle always.
     const bool manual_throttle = demand.mode == Mode::Manual && demand.manual_input == ManualInput::Throttle;
-    const bool rate_mode = demand.mode == Mode::Ready || demand.mode == Mode::Hold || demand.mode == Mode::Slew;
+    const bool rate_mode = demand.mode == Mode::Ready || demand.mode == Mode::Detumble ||
+                           demand.mode == Mode::Hold || demand.mode == Mode::Slew;
     if (!wheel_loop_available(params) || demand.spinup_open_loop || manual_throttle ||
         (demand.mode != Mode::Spinup && !rate_mode)) {
         closed_loop_ = false;
@@ -106,7 +108,7 @@ int CascadeController::throttle(const ControlDemand &demand, const TickInputs &i
         } else {
             omega_ref_rpm_ = target;
         }
-    } else {  // READY, HOLD, SLEW: the rate loop runs with demand.omega_cmd_dps
+    } else {  // READY, DETUMBLE, HOLD, SLEW: rate loop runs with demand.omega_cmd_dps
         if (!closed_loop_) {
             // Bumpless start from open-loop throttle: reference at the measured
             // speed, integrator at the last throttle minus the feed-forward.
