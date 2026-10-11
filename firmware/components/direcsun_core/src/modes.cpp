@@ -9,7 +9,8 @@
 // Mutation-test switches remove one safety mechanism so the host selftest can
 // prove the tests notice. They exist only in host selftest builds.
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_LATCH) || defined(DIRECSUN_MUTANT_NO_BYPASS_CLAMP) || \
-                              defined(DIRECSUN_MUTANT_PARAMS_DURING_RAMP) || defined(DIRECSUN_MUTANT_DURATIONS_PER_STEP))
+                              defined(DIRECSUN_MUTANT_PARAMS_DURING_RAMP) || defined(DIRECSUN_MUTANT_DURATIONS_PER_STEP) || \
+                              defined(DIRECSUN_MUTANT_SLEW_SETTLE_PER_STEP))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -457,7 +458,13 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         reference_still = slew_.finished(t_s);
         const bool settled = reference_still && std::fabs(slew_.target_deg() - psi) < kSlewSettleDeg &&
                              std::fabs(in.rate_dps) < kSlewSettleRateDps;
+        // A duration counter like the others: it adds the alarms this tick
+        // stands for, so missed ticks cannot lengthen the dwell (V-66).
+#ifdef DIRECSUN_MUTANT_SLEW_SETTLE_PER_STEP
         slew_settled_ticks_ = settled ? slew_settled_ticks_ + 1 : 0;
+#else
+        slew_settled_ticks_ = settled ? slew_settled_ticks_ + elapsed : 0;
+#endif
         if (slew_settled_ticks_ >= ticks_from_ms(kSlewSettleMs)) {
             enter(Mode::Ready, t);
             post_mode_event(out, "slew_complete");

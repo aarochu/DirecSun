@@ -85,6 +85,7 @@ else
         "raw_rate_heading|R4.2 heading: a seeded 0.5 deg/s bias is removed before integration"
         "flip_kpsi|HT-5 sim: a 90 deg SLEW settles within 3 deg in under 3 s (PR-2)"
         "no_hold_deadband|HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s"
+        "slew_settle_per_step|missed ticks: the SLEW settle dwell and timeout run on wall time"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

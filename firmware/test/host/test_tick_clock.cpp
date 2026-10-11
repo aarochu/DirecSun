@@ -7,9 +7,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <vector>
 
 #include "direcsun/core/control.hpp"
+#include "direcsun/core/controllers.hpp"
 #include "direcsun/core/dshot.hpp"
 #include "doctest.h"
 #include "supervisor_harness.hpp"
@@ -213,5 +215,83 @@ TEST_CASE("missed ticks: HALL_SILENT UNDERSPEED and the SPINUP dwell run on wall
         const uint32_t need = ticks_from_ms(kSpinupDwellMs);
         CHECK(r.wall - before_band >= need);
         CHECK(r.prev_wall - before_band < need);
+    }
+}
+
+namespace {
+
+// A box whose T-5 feed-forward table is set, so HOLD and SLEW are available.
+Params characterised()
+{
+    Params p;
+    p.ff_count = static_cast<uint8_t>(kFfPoints);
+    for (std::size_t i = 0; i < kFfPoints; ++i) {
+        p.ff_rpm[i] = 500.0f * static_cast<float>(i + 1);
+        p.ff_throttle[i] = 48.0f + p.ff_rpm[i] / 2.5f;
+    }
+    return p;
+}
+
+bool mode_event(const TickOutputs &out, const char *cause)
+{
+    for (std::size_t i = 0; i < out.events.count; ++i) {
+        if (out.events.items[i].kind == Event::Kind::Mode && std::strcmp(out.events.items[i].cause, cause) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Arms a characterised box to READY through the clock, then sends `mode SLEW`
+// to 90 deg. Returns the wall time of the tick that entered SLEW.
+uint32_t enter_slew(ClockRig &r)
+{
+    r.tick({cmd(CommandKind::Arm)});
+    r.in.wheel_rpm_safe = r.sup.params().omega_bias_rpm;
+    r.run_until([](const ClockRig &x) { return x.out.mode == Mode::Ready; }, 2000);
+    Command slew = mode_cmd(Mode::Slew);
+    slew.psi_ref_deg = 90.0f;
+    r.tick({slew});
+    REQUIRE(r.out.mode == Mode::Slew);
+    return r.wall;
+}
+
+}  // namespace
+
+// R4.3's SLEW is timed like the rest of the supervisor: the 0.5 s settle dwell
+// is a duration counter that adds the alarms each tick stands for, and the 6 s
+// timeout and the reference profile run on the clock.
+TEST_CASE("missed ticks: the SLEW settle dwell and timeout run on wall time")
+{
+    SUBCASE("slew_complete after 500 ms of alarms on target")
+    {
+        harness::ScriptedController ctl;
+        ctl.throttle_value = 300;
+        ClockRig r(ctl, characterised());
+        enter_slew(r);
+        // The box stays off target until the reference stands at 90 deg, then
+        // is on target from the next tick on.
+        r.run_until([](const ClockRig &x) { return x.out.psi_ref_deg >= 90.0 - 1e-9; }, 2000);
+        REQUIRE(r.out.mode == Mode::Slew);
+        const uint32_t before_on = r.wall;  // the last tick off target
+        r.in.heading_deg = 90.0;
+        r.run_until([](const ClockRig &x) { return x.out.mode != Mode::Slew; }, 2000);
+        CHECK(mode_event(r.out, "slew_complete"));
+        CHECK(r.out.mode == Mode::Ready);
+        const uint32_t need = ticks_from_ms(kSlewSettleMs);
+        CHECK(r.wall - before_on >= need);
+        CHECK(r.prev_wall - before_on < need);
+    }
+    SUBCASE("SLEW_TIMEOUT 6.0 s of alarms after entry")
+    {
+        harness::ScriptedController ctl;
+        ctl.throttle_value = 300;
+        ClockRig r(ctl, characterised());
+        const uint32_t entry = enter_slew(r);  // the box never turns
+        r.run_until([](const ClockRig &x) { return x.out.mode != Mode::Slew; }, 4000);
+        CHECK(mode_event(r.out, "SLEW_TIMEOUT"));
+        const uint32_t need = ticks_from_ms(kSlewTimeoutMs);
+        CHECK(r.wall - entry >= need);
+        CHECK(r.prev_wall - entry < need);
     }
 }
