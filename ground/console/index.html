@@ -111,6 +111,11 @@ input:focus{border-color:#709bb7}
 .bandscale{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--muted);margin-top:-6px;padding:0 66px}
 .keys{display:grid;gap:6px;font:10px/1.9 var(--mono);color:#748390;letter-spacing:.06em}
 .keys kbd{border:1px solid var(--line);padding:1px 5px;color:var(--text);font:10px var(--mono)}
+.benchsetup{border-top:1px solid var(--line);margin-top:16px;padding-top:14px;display:grid;gap:10px}
+.bshead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.bsacks{margin:0;padding:0;list-style:none;display:grid;gap:2px;font:11px/1.5 var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.bsacks:empty{display:none}
+.bsacks .ok{color:var(--green)}.bsacks .bad{color:var(--red)}
 @media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lower,.teleop{grid-template-columns:1fr}}
 @media(max-width:900px){.shell{padding:0 20px 28px}}
 @media(max-width:600px){.shell{padding:0 16px 24px}.topmeta{display:none}.connection{grid-template-columns:1fr;gap:5px}.state{padding:3px 2px}.pagehead{flex-direction:column;align-items:flex-start;gap:12px}.pagehead h1{font-size:22px}.urlrow{flex-wrap:wrap}.urlrow input{flex:1 1 100%}.urlrow .btn{flex:1}.event{grid-template-columns:56px 40px 1fr;gap:7px;font-size:10px}.metric{padding:13px;min-height:118px}.metricfoot{white-space:normal}.hint{margin-top:2px}.confirm span{flex:1 1 100%}.confirm .btn{flex:1}.value{font-size:24px}.cmdrow .btn{flex:1 1 40%}.readouts{grid-template-columns:1fr 1fr 1fr}.readout b{font-size:13px}.bandscale{padding:0 62px}.sliderrow{gap:6px}.sliderrow .btn{min-width:52px}}
@@ -174,6 +179,17 @@ input:focus{border-color:#709bb7}
         <div class="tpidle" id="tp-idle">
           <p id="tp-idlemsg">Arm and wait for READY, then enter MANUAL throttle. The wheel then follows the throttle you set, open loop.</p>
           <div class="cmdrow" style="margin-top:12px"><button class="btn" id="tp-enter" disabled>Enter MANUAL throttle</button></div>
+          <div class="benchsetup" id="bs">
+            <div class="bshead"><span class="field-label" style="margin:0">Bench setup · Hall bypass</span><span class="panelmeta" id="bs-state">SAFE AT THROTTLE 0 ONLY</span></div>
+            <p>For a rig without the Hall sensor: stores the bench throttle parameters (band 150 to 400, spin-up 300, Hall expect 200), then turns on bench mode, then the Hall bypass. It never arms. The bypass lasts until the box reboots.</p>
+            <div class="cmdrow"><button class="btn secondary" id="bs-start" disabled>Bench setup</button></div>
+            <div class="confirm" id="bs-confirm" hidden>
+              <span>Send 3 set_params? The parameters are written to the box's flash. With the bypass on, the wheel-speed interlocks are off and 400 is the only throttle ceiling.</span>
+              <button class="btn" id="bs-yes">Confirm setup</button>
+              <button class="btn secondary" id="bs-no">Cancel</button>
+            </div>
+            <ul class="bsacks" id="bs-acks" aria-live="polite"></ul>
+          </div>
         </div>
         <div class="tplive" id="tp-live" hidden>
           <div class="setpoint">
@@ -265,6 +281,22 @@ let manualActive = false; // tlm says MANUAL with input throttle
 let setpoint = null;
 let boxMode = null;
 
+// Bench setup (R3.7 rung 1): the parameters and the Hall bench bypass a rig
+// without the Hall sensor needs, in the order the box requires. First the
+// throttle parameters, at the FD section 16 defaults, so a stale stored set
+// cannot raise them; then bench mode; then the bypass, which the box accepts
+// only once bench mode is already on. It sends set_params and nothing else, so
+// it cannot arm. The box refuses set_params outside SAFE and during a
+// ramp-down; the console offers it only in SAFE at throttle 0, because a
+// ramp-down reports SAFE with the throttle still above 0.
+const BENCH_STEPS = [
+  { label: "throttle parameters", params: { manual_throttle_min: 150, manual_throttle_max: 400, spinup_throttle: 300, hall_expect_throttle: 200 } },
+  { label: "bench_mode on", params: { bench_mode: true } },
+  { label: "Hall bypass on (hall_installed false)", params: { hall_installed: false } },
+];
+let lastTlm = null;
+let benchBusy = false;
+
 function readEndpoint() {
   try {
     return localStorage.getItem(STORAGE_KEY) || DEFAULT_URL;
@@ -327,6 +359,7 @@ function setLinkState(kind, label) {
   document.querySelector(".grid").classList.toggle("stale", stale);
   $("stalenote").classList.toggle("show", stale);
   if (kind !== "online") {
+    lastTlm = null;
     $("tp-enter").disabled = true;
     for (const id of ["tp-slider", "tp-up", "tp-down", "tp-exit"]) $(id).disabled = true;
     manualActive = false;
@@ -338,6 +371,7 @@ function setLinkState(kind, label) {
     $("badge-mode").textContent = "NO LINK";
     $("modebadge").className = "modebadge";
   }
+  updateBenchSetup();
 }
 
 // Smallest vertical span per signal, in its own unit: noise below this stays flat.
@@ -400,6 +434,8 @@ function onTlm(t) {
   plot("vbat", t.vbat, "chart-vbat");
   recordTlm(t);
   updateTeleop(t);
+  lastTlm = t;
+  updateBenchSetup();
 }
 
 function scheduleDraw() {
@@ -515,6 +551,73 @@ function updateTeleop(t) {
   const usable = manualActive && band !== null;
   for (const id of ["tp-slider", "tp-up", "tp-down", "tp-exit"]) $(id).disabled = !usable && id !== "tp-exit";
   $("tp-exit").disabled = !manualActive;
+}
+
+const benchReady = () => link?.state === "open" && lastTlm?.mode === "SAFE" && lastTlm.throttle === 0;
+
+function benchLine(text, ok) {
+  const li = document.createElement("li");
+  li.className = ok === true ? "ok" : ok === false ? "bad" : "";
+  li.textContent = text;
+  $("bs-acks").append(li);
+}
+
+function updateBenchSetup() {
+  const ready = benchReady();
+  $("bs-start").disabled = !ready || benchBusy;
+  $("bs-state").textContent = benchBusy ? "SENDING" : ready ? "READY TO SEND" : "SAFE AT THROTTLE 0 ONLY";
+  if (!ready && !$("bs-confirm").hidden) {
+    $("bs-confirm").hidden = true;
+    benchLine("Cancelled, nothing sent: the box left SAFE at throttle 0.", false);
+  }
+}
+
+function waitForTlm(match, ms) {
+  return new Promise((resolve) => {
+    const stop = link.on("tlm", (t) => {
+      if (match(t)) { clearTimeout(timer); stop(); resolve(t); }
+    });
+    const timer = setTimeout(() => { stop(); resolve(null); }, ms);
+  });
+}
+
+async function runBenchSetup() {
+  $("bs-confirm").hidden = true;
+  $("bs-acks").replaceChildren();
+  if (!benchReady()) {
+    benchLine("Not sent: the box is not SAFE at throttle 0.", false);
+    return;
+  }
+  benchBusy = true;
+  updateBenchSetup();
+  try {
+    for (const [i, { label, params }] of BENCH_STEPS.entries()) {
+      // The frames log shows each set_params in full; this list names the steps.
+      const text = `${i + 1}/${BENCH_STEPS.length} set_params, ${label}`;
+      // Each step re-checks: the box may have been armed from elsewhere.
+      if (!benchReady()) {
+        benchLine(`${text}: not sent, the box left SAFE at throttle 0`, false);
+        return;
+      }
+      try {
+        const ack = await link.command("set_params", { params });
+        benchLine(`${text}: ack ok (seq ${ack.seq})`, true);
+      } catch (error) {
+        benchLine(`${text}: ${error.code === "REFUSED" ? `refused, ${error.ack?.reason ?? ""}` : error.message}`, false);
+        return;
+      }
+    }
+    const t = await waitForTlm((x) => x.flags.includes("HALL_BYPASS"), 2000);
+    const band = t && Array.isArray(t.throttle_band) ? t.throttle_band.join(" to ") : "unknown";
+    if (t && t.mode === "SAFE" && t.throttle === 0 && band === "150 to 400") {
+      benchLine(`Box now: SAFE, HALL_BYPASS, clamp ${band}. Arm only with Julian's go.`, true);
+    } else {
+      benchLine(t ? `Unexpected box state: ${t.mode}, throttle ${t.throttle}, clamp ${band}.` : "No tlm with HALL_BYPASS within 2 s.", false);
+    }
+  } finally {
+    benchBusy = false;
+    updateBenchSetup();
+  }
 }
 
 function sendSetpoint(value) {
@@ -642,6 +745,13 @@ $("tp-exit").onclick = () => send("mode", { mode: "READY" });
 $("tp-up").onclick = () => nudge(STEP);
 $("tp-down").onclick = () => nudge(-STEP);
 $("tp-slider").addEventListener("input", (e) => sendSetpoint(Number(e.target.value)));
+$("bs-start").onclick = () => {
+  if (!benchReady()) return;
+  $("bs-confirm").hidden = false;
+  $("bs-yes").focus();
+};
+$("bs-no").onclick = () => { $("bs-confirm").hidden = true; };
+$("bs-yes").onclick = runBenchSetup;
 document.addEventListener("keydown", (e) => {
   // Space is the e-stop wherever focus is, the endpoint field included: an
   // endpoint URL never contains a space, so nothing useful is lost there.
