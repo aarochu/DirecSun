@@ -10,7 +10,8 @@ npm run dev          # http://localhost:5173
 npm run build        # type-check + production build to dist/
 npm run preview      # serve dist/ at http://localhost:4173
 npm run typecheck    # type-check only
-npm test             # the demo server tests
+npm test             # unit tests: the demo server, vercel.json, and the flowchart data
+npm run test:e2e     # builds, serves, and runs Playwright in the installed Google Chrome
 ```
 
 For the ground station in development, also run `npm run dev` in `ground-station/` (port 5174); the landing page's ground station links point there.

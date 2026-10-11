@@ -79,7 +79,7 @@ jobs:
             firmware/build/size.txt
 
   frontend:
-    name: frontend (typecheck, build, demo bundle)
+    name: frontend (typecheck, build, unit, e2e in Chrome, demo bundle)
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -102,8 +102,21 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Demo server tests
+      - name: Unit tests
         run: npm test
+
+      - name: Google Chrome present
+        run: google-chrome --version
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Playwright results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-results
+          path: frontend/test-results/
 
       - name: npm ci (ground station)
         run: npm ci --prefix ground-station

@@ -55,6 +55,7 @@ const HW_PARTS_AT = START.hardware + HW_INTRO * 10;
 const partAt = (index: number) => HW_PARTS_AT + index * PART_STEP * 10;
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MODEL_TIMEOUT_MS = 6000;
 
 const esc = (text: string) =>
   text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -269,7 +270,10 @@ function buildTimeline(scene: CubeSatScene | null, layout: Layout): Timeline {
   utils.set(flowNodes, { opacity: 0 });
   utils.set(flowLines, { draw: '0 0' });
   tl.add(flowNodes, { opacity: [0, 1], duration: 250, delay: stagger(25), ease: 'out(2)' }, sys - 200);
+  utils.set(flowLines, { opacity: 0 });
   tl.add(flowLines, { draw: ['0 0', '0 1'], duration: 450, delay: stagger(30), ease: 'inOut(2)' }, sys + 200);
+  // The arrowheads belong to the line, so each line appears as its stroke finishes.
+  tl.add(flowLines, { opacity: [0, 1], duration: 60, delay: stagger(30, { start: 390 }), ease: 'linear' }, sys + 200);
   // One axis: the box turns a full revolution on its bearings.
   tl.add(view, { yaw: 360, distScale: layout.distScale, duration: 3600, ease: 'inOut(1.5)' }, sys - 400);
   cam(tl, sys + 400, { el: 24, az: 38 }, 1400);
@@ -366,7 +370,7 @@ function boot() {
   const go = (time: number) => window.scrollTo({ top: timeToY(time), behavior: reducedMotion ? 'auto' : 'smooth' });
   const navTime: Record<string, number> = {
     top: 0,
-    system: START.system + 300,
+    system: START.system + 1300,
     hardware: START.hardware + 400,
     control: START.control + 1200,
   };
@@ -384,7 +388,7 @@ function boot() {
     if (name.startsWith('part-')) return partAt(Number(name.slice(5))) + 150;
     if (name === 'rail') return HW_PARTS_AT + 150;
     if (name.startsWith('hero')) return 0;
-    if (name === 'system') return START.system + 300;
+    if (name === 'system') return START.system + 1300;
     if (name === 'hw-head') return START.hardware + 400;
     if (name === 'control') return START.control + 2000;
     return START.ground + 400;
@@ -447,9 +451,19 @@ function boot() {
     }
   });
 
+  let interactionFrame = 0;
+  const syncPanelInteractions = () => {
+    for (const el of allPanels) {
+      const opacity = Number(el.style.opacity || getComputedStyle(el).opacity);
+      el.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+    }
+  };
+
   const onRender = () => {
-    // Hidden panels must not take clicks.
-    for (const el of allPanels) el.style.pointerEvents = Number(el.style.opacity) > 0.5 ? 'auto' : 'none';
+    // Anime invokes the callback before the new opacity is painted. Sync on
+    // the next frame so visible panels receive clicks and hidden ones do not.
+    window.cancelAnimationFrame(interactionFrame);
+    interactionFrame = window.requestAnimationFrame(syncPanelInteractions);
     document.documentElement.style.setProperty('--light', view.light.toFixed(3));
     document.documentElement.classList.toggle('is-light', view.light > 0.5);
     const yaw = Math.round(view.yaw - 360);
@@ -488,7 +502,8 @@ function boot() {
       onUpdate: (self) => onProgress(self.progress),
     });
     observer.link(tl);
-    (window as unknown as { __tl: Timeline }).__tl = tl;
+    syncPanelInteractions();
+    if (import.meta.env.DEV) (window as unknown as { __tl: Timeline }).__tl = tl;
     onProgress(observer.progress);
   };
 
@@ -514,7 +529,8 @@ function boot() {
     intro();
   };
   if (scene) {
-    scene.ready.then(start, () => {
+    const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('model timeout')), MODEL_TIMEOUT_MS));
+    Promise.race([scene.ready, timeout]).then(start, () => {
       scene?.dispose();
       scene = null;
       document.documentElement.dataset.webgl = 'false';
