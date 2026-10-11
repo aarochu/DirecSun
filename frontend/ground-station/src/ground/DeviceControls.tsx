@@ -17,6 +17,9 @@ const PHASE_TEXT: Record<TurnPhase, string> = {
   returning: 'RETURNING',
 };
 
+const MANUAL_LABEL = { rate: 'BOX RATE SETPOINT', throttle: 'THROTTLE SETPOINT', wheel: 'WHEEL SPEED SETPOINT' } as const;
+const MANUAL_UNIT = { rate: ' °/s', throttle: '', wheel: ' RPM' } as const;
+
 function guidance(mode: string | null, controlling: boolean): string {
   if (mode === null) return 'WAITING FOR TELEMETRY FROM THE BOX';
   if (mode === 'SAFE') return 'INSERT THE LOCK PIN, THEN ARM. WHILE ARMED, THE SPACE BAR SENDS E-STOP';
@@ -27,7 +30,7 @@ function guidance(mode: string | null, controlling: boolean): string {
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'radio';
+  return target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'radio' && target.type !== 'range';
 }
 
 export function DeviceControls({ link, operator }: { link: DeviceLink; operator: DeviceOperator }) {
@@ -38,6 +41,8 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
   const [confirming, setConfirming] = useState(false);
   const [pinIn, setPinIn] = useState(false);
   const confirmId = useId();
+  const manualId = useId();
+  const manual = state.manual;
   const armedRef = useRef(armed);
   armedRef.current = armed;
 
@@ -181,6 +186,33 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
           </button>
         </div>
       </div>
+
+      {manual ? (
+        <div className="controls__manual" role="group" aria-label="Manual setpoint">
+          <label className="controls__manual-label mono-label" htmlFor={manualId}>
+            {MANUAL_LABEL[manual.input]}
+          </label>
+          <input
+            id={manualId}
+            type="range"
+            min={manual.min}
+            max={manual.max}
+            step={manual.input === 'rate' ? 0.5 : 1}
+            value={manual.value}
+            aria-label={`Manual ${manual.input} setpoint`}
+            onChange={(event) => operator.setManual(Number(event.target.value))}
+          />
+          <output className="controls__manual-value" htmlFor={manualId}>
+            {manual.value}
+            {MANUAL_UNIT[manual.input]}
+          </output>
+          {manual.input === 'rate' ? (
+            <button type="button" className="button button--quiet" onClick={() => operator.setManual(0)}>
+              Zero
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <ol className="controls__sequence mono-label" aria-label="Command sequence">
         {SEQUENCE_STEPS.map((step, index) => (

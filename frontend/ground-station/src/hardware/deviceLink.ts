@@ -8,6 +8,7 @@ export interface DeviceTelemetry {
   readonly seq: number | null;
   readonly tMs: number | null;
   readonly mode: string | null;
+  readonly manualInput: 'rate' | 'throttle' | 'wheel' | null;
   readonly headingDeg: number;
   readonly targetDeg: number | null;
   readonly rateDegS: number | null;
@@ -160,6 +161,10 @@ export function parseTelemetry(raw: unknown): DeviceTelemetry | null {
     seq: finite(message.seq),
     tMs: finite(message.t_ms),
     mode: typeof message.mode === 'string' ? message.mode : null,
+    manualInput:
+      message.manual_input === 'rate' || message.manual_input === 'throttle' || message.manual_input === 'wheel'
+        ? message.manual_input
+        : null,
     headingDeg,
     targetDeg: finite(message.psi_ref_deg),
     rateDegS: finite(message.rate_dps),
@@ -282,7 +287,7 @@ export class DeviceLink implements DisplaySource {
     return () => this.eventListeners.delete(listener);
   };
 
-  command(name: 'arm' | 'disarm' | 'mode' | 'respin' | 'zero_heading', fields: Record<string, unknown> = {}): Promise<DeviceAck> {
+  command(name: 'arm' | 'disarm' | 'mode' | 'manual' | 'respin' | 'zero_heading', fields: Record<string, unknown> = {}): Promise<DeviceAck> {
     return this.sendCommand(name, fields);
   }
 
