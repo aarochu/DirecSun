@@ -12,6 +12,9 @@
 # scripts keep writing next to themselves and this script moves the files into
 # cad/out/ (STEP too, where it is gitignored). cad/out/manifest.json records the
 # source hashes that tools/check-cad-stale.py compares against.
+#
+# After the assembly check, cad/export_ui_model.py writes the main UI's CAD
+# model, frontend/public/assets/direcsun.glb, which the manifest tracks too.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,6 +24,7 @@ PREVIEW="$ROOT/.agents/skills/cad-skill/preview.py"
 CAD="$ROOT/cad"
 OUT="$CAD/out"
 STALE="$ROOT/tools/check-cad-stale.py"
+UI_MODEL="frontend/public/assets/direcsun.glb"   # repo-relative, as recorded in the manifest
 
 die() { echo "build-cad: $*" >&2; exit 1; }
 
@@ -76,7 +80,7 @@ run_assembly=0
 if [ $# -eq 0 ]; then
   for f in "$CAD"/*.py; do
     b="$(basename "$f" .py)"
-    case "$b" in stack|assembly) continue ;; esac
+    case "$b" in stack|assembly|export_ui_model) continue ;; esac
     parts+=("$b")
   done
   run_assembly=1
@@ -92,6 +96,7 @@ else
     p="${p%.py}"
     case "$p" in
       stack) die "stack.py is the shared module; it produces no part" ;;
+      export_ui_model) die "export_ui_model runs with the assembly check; pass \"assembly\"" ;;
       assembly) run_assembly=1 ;;
       *) [ -f "$CAD/$p.py" ] || die "no such part script: cad/$p.py"; parts+=("$p") ;;
     esac
@@ -154,6 +159,13 @@ if [ "$run_assembly" -eq 1 ]; then
   # shellcheck disable=SC2086
   "$PY" "$STALE" --write assembly.py $asm_outputs
   echo "build-cad: assembly check passed, $n_det/$n_ctrl positive controls detected"
+  # the main UI's CAD model, from the same placed parts (only after a clean assembly check)
+  ui_log="$CAD/.ui_model.log"
+  "$PY" "$CAD/export_ui_model.py" "$ROOT/$UI_MODEL" > "$ui_log" 2>&1 || { cat "$ui_log"; die "UI model export failed"; }
+  cat "$ui_log"
+  ui_bytes="$(wc -c < "$ROOT/$UI_MODEL")"
+  [ "$ui_bytes" -lt 5000000 ] || die "$UI_MODEL is $ui_bytes bytes; the UI budget is under 5 MB"
+  "$PY" "$STALE" --write export_ui_model.py "$UI_MODEL"
 fi
 
 "$PY" "$STALE"

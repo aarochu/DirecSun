@@ -23,8 +23,9 @@ tools/check-cad-stale.py           # fails if a script changed since cad/out was
 
 `build-cad.sh` runs each part through the cad-skill runner
 (`.agents/skills/cad-skill/run_cadquery_model.py --preview --strict`), then
-`cad/assembly.py` (collision check with its six positive controls), and stops
-at the first failure.
+`cad/assembly.py` (collision check with its six positive controls), then
+`cad/export_ui_model.py` (the main UI's CAD model, below), and stops at the
+first failure.
 
 ## Print list
 
@@ -162,6 +163,28 @@ an M2 screw 1 mm too long); the script exits with an error if any is missed.
 | Hall post top below the washer flywheel | 9.0 mm |
 | Component height above the power board | 19.4 mm |
 | Battery holder top below the avionics deck | 2.3 mm |
+
+## CAD model for the main UI
+
+`cad/export_ui_model.py` exports the assembly's placed parts as binary glTF to
+`frontend/public/assets/direcsun.glb`, which the ground station loads
+(`frontend/src/ground/RealCubeSatModel.tsx`). `tools/build-cad.sh` writes it
+after a clean assembly check and records it in `cad/out/manifest.json`, so
+`tools/check-cad-stale.py` flags it when any part script or `stack.py` changes.
+Never edit the GLB by hand.
+
+| Item | Value |
+| --- | --- |
+| Frame | glTF Y up, metres. CAD (x, y, z) mm maps to glTF (-y, z, -x) / 1000, a rotation with no mirror. At heading 0, CAD +X (the sun-sensor face) points north (-Z in the UI) and the stack stands up +Y; the origin is on the spin axis at the bottom cap's underside |
+| Nodes | One top-level node per part (the UI sorts only top-level nodes). 41 nodes, about 58,000 triangles, about 1.8 MB |
+| Fixed nodes | `base_hub` and `bolt`: the only names matching the UI's fixed pattern `/^(base\|fixed\|hub\|bolt\|stand)/i`. The export refuses to write a file in which any other node would match, or either of these would not |
+| Wheel | Node `wheel` (the washer stack with the shaft and nuts), so the UI can spin it later. The motor stand-in is node `motor` |
+| Left out | The lock pin (pulled before the box turns; a turning model would cut through the fixed hub) and the threaded rods (inside the corner columns; `assembly_view.stl` leaves them out too) |
+| Materials | By material, all non-metallic because the UI has no environment map: printed parts light grey, the black PLA avionics deck dark grey, the base hub mid grey, steel hardware, motor, boards, and cells each their own colour |
+
+The UI only tries to load the model when `cubesatModel.available` is `true` in
+`frontend/src/data/assets.ts`; until that flag is set the ground station keeps
+its schematic.
 
 ## Flywheel
 

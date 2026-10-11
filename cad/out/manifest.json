@@ -187,6 +187,27 @@
         "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e"
       }
     },
+    "frontend/public/assets/direcsun.glb": {
+      "script": "cad/export_ui_model.py",
+      "sha256": "d3dfa02c79bf3dceb7ac6ce538c8b65e51b07262a82a96b565f8055a0379acaf",
+      "sources": {
+        "cad/assembly.py": "0fa4d6e01b7d99fd00f04df8200b668f89345ba1e610b1d91c94031969eb2617",
+        "cad/avionics_deck.py": "8658cd544d39e568f3ebcfbe939e1b4e7b03c00c2c2eaa1f21223d74abba1b24",
+        "cad/base_hub.py": "c7193577404bac428a677f52b6b5211837711eec2b981123b7b65f5f10774bec",
+        "cad/battery_deck.py": "ae2bfd53e39ca3c4697bd6aa2ac334864e2e21dcc0cc568e78e3f90f38889096",
+        "cad/battery_holder_body.py": "4653f3d3419dad0c82aac74de5ff89ea46c29a0b7433714712ed3dc0568f7cc8",
+        "cad/battery_holder_cap.py": "6bb0c02c21f226ef47933a6502f5cd20bf044ae43f0341557a0b078c15c1e119",
+        "cad/bottom_cap.py": "38d42c8edf8843e8f94ab8d4f4b6ef2d8c40de42fe8e36add02b68f0cb0f3071",
+        "cad/export_ui_model.py": "2b8e4f2bb35f0ec17d6c32e34d91b560c2da508c545411c1977d3a20585ead15",
+        "cad/flywheel_guard.py": "72c1b2bd76f00f38efef1e98d7f30381ba468c0ac94a29a5036f1c26cb0df331",
+        "cad/hall_bracket.py": "3de60b1abdc72864bff54821cc9e257e1127278034f9fa07777ff5d3127528ae",
+        "cad/lock_pin.py": "81a9ba76d4366b6cd6c01bbd3ab93fcff26722a4e1439af44f4fd438d3901a71",
+        "cad/motor_deck.py": "e3b3476bc5f676c69a7cfb0b17b0cf7ee4b62d867f919f32ed6c7cb1bcb58cae",
+        "cad/power_deck.py": "a46969d1c3fcf4d1fdeb6c0b6926c59b204e259753b34dc5da482bf9936935cd",
+        "cad/stack.py": "7ce81551bad09c657e16dd7ed5e994792008e7e677f8b2cc2b30beac6d02491e",
+        "cad/top_deck.py": "863daa450ee7d11faa516ec08202b9d6957e83d7c10db003f915cb7294f24caa"
+      }
+    },
     "hall_bracket.stl": {
       "script": "cad/hall_bracket.py",
       "sha256": "a4e09efe965bb71bc5f6fb95e16ed2cb5377e4b5b0c280227f2891eecd048e15",
