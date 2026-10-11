@@ -198,20 +198,19 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
         rig.tick({mode_cmd(Mode::Manual, ManualInput::None)});
         CHECK(rig.last_reason() == "input not available");
     }
-    SUBCASE("not implemented: later-set modes and commands")
+    SUBCASE("wheel loop not available: SUN_POINT and respin need the feed-forward table")
     {
         Rig rig;
         rig.arm_to_ready();
-        // HOLD and SLEW are implemented from R4.3 (test_slew.cpp).
-        for (Mode m : {Mode::SunPoint}) {
-            rig.tick({mode_cmd(m)});
-            CHECK(rig.last_reason() == "not implemented");
-            CHECK(rig.out.mode == Mode::Ready);
-        }
-        // wheel_step is implemented from R3.8 (bench only, test_controllers.cpp)
-        // and zero_heading from R4.2 (test_heading.cpp).
+        // HOLD and SLEW are in test_slew.cpp, SUN_POINT and respin in test_pointing.cpp
+        // (their full guard orders). wheel_step is bench only (test_controllers.cpp)
+        // and zero_heading is R4.2 (test_heading.cpp).
+        rig.tick({mode_cmd(Mode::SunPoint)});
+        CHECK(rig.last_reason() == "wheel loop not available");
+        CHECK(rig.out.mode == Mode::Ready);
         rig.tick({cmd(CommandKind::Respin)});
-        CHECK(rig.last_reason() == "not implemented");
+        CHECK(rig.last_reason() == "wheel loop not available");
+        CHECK(rig.out.mode == Mode::Ready);
     }
     SUBCASE("MANUAL only from READY")
     {
@@ -360,7 +359,7 @@ TEST_CASE("HT-11 MANUAL setpoints clamp to their limits")
     }
     SUBCASE("wheel to [omega_low, omega_cap]")
     {
-        Rig rig;
+        Rig rig(characterised_params());
         rig.enter_manual(ManualInput::Wheel);
         rig.tick({manual_cmd(ManualInput::Wheel, 9000.0f)});
         CHECK(rig.ctl.last_demand.manual_wheel_rpm == doctest::Approx(rig.sup.params().omega_cap_rpm));
@@ -370,7 +369,7 @@ TEST_CASE("HT-11 MANUAL setpoints clamp to their limits")
     }
     SUBCASE("rate to +-90 deg/s")
     {
-        Rig rig;
+        Rig rig(characterised_params());
         rig.enter_manual(ManualInput::Rate);
         rig.tick({manual_cmd(ManualInput::Rate, 500.0f)});
         CHECK(rig.ctl.last_demand.manual_rate_dps == doctest::Approx(90.0f));
@@ -406,7 +405,7 @@ TEST_CASE("HT-11 MANUAL staleness: rate falls to 0, throttle and wheel hold")
     const uint32_t stale = ticks_from_ms(kManualStaleMs);
     SUBCASE("rate")
     {
-        Rig rig;
+        Rig rig(characterised_params());
         rig.enter_manual(ManualInput::Rate);
         rig.tick({manual_cmd(ManualInput::Rate, 30.0f)});
         rig.run(stale - 2);
@@ -430,7 +429,7 @@ TEST_CASE("HT-11 MANUAL staleness: rate falls to 0, throttle and wheel hold")
     }
     SUBCASE("wheel holds")
     {
-        Rig rig;
+        Rig rig(characterised_params());
         rig.enter_manual(ManualInput::Wheel);
         rig.tick({manual_cmd(ManualInput::Wheel, 2700.0f)});
         rig.run(stale * 3);

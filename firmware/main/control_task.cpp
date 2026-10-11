@@ -28,6 +28,7 @@
 #include "direcsun/core/estimator.hpp"
 #include "direcsun/core/modes.hpp"
 #include "direcsun/core/snapshot.hpp"
+#include "direcsun/core/sun.hpp"
 #include "direcsun/core/timebase.hpp"
 #include "direcsun/core/wheel_speed.hpp"
 #include "direcsun/drivers/hall.hpp"
@@ -194,11 +195,16 @@ void control_task(void *)
     static TelemetrySnapshot snap;
     static TickStats stats;
 
+    static SunSensor sun;
+
     drv::BatteryAverage battery = ctx.battery;
     if (ctx.gyro_bias_seeded) {
         estimator.seed_bias(ctx.gyro_bias_dps);
         estimator.set_accel_reference(ctx.accel_reference_g);
     }
+    // The stored magnetometer calibration (R5.1). set_params changes it only in
+    // SAFE, and the loop below reloads it when the supervisor reports a change.
+    estimator.set_mag_calibration(mag_calibration_from(supervisor.params()));
 
     // Logged before the tick timer starts: a log line inside a tick blocks on
     // the console for milliseconds and made the first tick overrun (R3.4 bench).
@@ -283,6 +289,11 @@ void control_task(void *)
             mag_waiting = false;
             if (drv::mag_read_data(mag)) {
                 mag_fresh = true;
+                // One compass step (FD section 11.3). The heading snaps to the
+                // compass only in SAFE, so it can never jump under a HOLD or SLEW.
+                const float raw[3] = {static_cast<float>(mag.raw[0]), static_cast<float>(mag.raw[1]),
+                                      static_cast<float>(mag.raw[2])};
+                estimator.update_mag(raw, supervisor.mode() == Mode::Safe);
             }
             STAGE_END(stages, TickStage::Mag);
         } else {
@@ -303,6 +314,8 @@ void control_task(void *)
             break;
         case 4:
             drv::adc_read_mv(drv::AdcInput::kSunB, &sun_b_mv);
+            // Both channels are fresh: one sun-angle step per 50 Hz pair (R5.4).
+            sun.update(static_cast<float>(sun_a_mv), static_cast<float>(sun_b_mv), 0.02f, supervisor.params());
             STAGE_END(stages, TickStage::Adc);
             break;
         default:
@@ -345,6 +358,9 @@ void control_task(void *)
         in.tick = clock.now();
         in.rate_dps = estimator.rate_dps();
         in.heading_deg = estimator.heading_unwrapped_deg();
+        in.heading_mag_fusing = estimator.mag_fusing();
+        in.sun_valid = sun.reading().valid;
+        in.sun_deg = sun.reading().angle_deg;
         in.wheel_rpm_safe = wheel_safe;
         in.wheel_rpm_fast = wheel_fast;
         in.hall_edge_age_ms = edge_age_us < 0 ? UINT32_MAX : static_cast<uint32_t>(edge_age_us / 1000);
@@ -355,8 +371,13 @@ void control_task(void *)
         in.estop_requested = shared_take_estop();
         in.command_count = shared_drain_commands(commands, kCommandQueueDepth);
         in.commands = commands;
-        in.built_inputs = kRungOneBuiltInputs;  // MANUAL throttle; wheel and rate come later
+        in.built_inputs = kAllBuiltInputs;  // wheel and rate also need ff_table: the supervisor checks
         supervisor.step(in, controller, out);
+        if (out.params_changed) {
+            // set_params is accepted in SAFE only, so reloading here cannot move
+            // the heading under a HOLD or SLEW; the next compass step re-snaps.
+            estimator.set_mag_calibration(mag_calibration_from(supervisor.params()));
+        }
         outbox_dropped_total = saturating_add(outbox_dropped_total, out.acks.dropped + out.events.dropped);
         STAGE_END(stages, TickStage::Supervisor);
 
@@ -394,6 +415,10 @@ void control_task(void *)
             snap.psi_deg = wrap_deg180(out.heading_deg);  // relative to the last zero_heading (R4.2)
             snap.psi_ref_valid = out.psi_ref_valid;        // HOLD and SLEW (R4.3)
             snap.psi_ref_deg = wrap_deg180(out.psi_ref_deg);
+            snap.mag_heading_valid = estimator.mag_heading_valid();
+            snap.mag_deg = estimator.mag_heading_deg();
+            snap.sun_valid = sun.reading().valid;
+            snap.sun_deg = sun.reading().angle_deg;
             snap.rate_dps = estimator.rate_dps();
             snap.gyro_bias_dps = estimator.bias_dps();
             snap.tilt_deg = estimator.tilt_deg();

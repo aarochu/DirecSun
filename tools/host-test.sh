@@ -89,6 +89,11 @@ else
         "flip_kpsi|HT-5 sim: a 90 deg SLEW settles within 3 deg in under 3 s (PR-2)"
         "no_hold_deadband|HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s"
         "slew_settle_per_step|missed ticks: the SLEW settle dwell and timeout run on wall time"
+        "mag_snap_armed|R5.1 compass: the heading never snaps to the compass while armed"
+        "mag_sign_flip|R5.1 compass: a counter-clockwise turn increases the compass heading"
+        "sun_extrapolate|R5.4 sun angle: outside the calibrated range is invalid and not extrapolated"
+        "no_respin_range|R5.3 respin: start speeds outside the guarded range are refused"
+        "no_sun_lost|R5.4 SUN_POINT: 0.5 s of invalid sun drops to READY"
     )
     for entry in "${mutants[@]}"; do
         name="${entry%%|*}"

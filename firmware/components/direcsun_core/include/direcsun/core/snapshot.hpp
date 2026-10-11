@@ -79,6 +79,10 @@ struct TelemetrySnapshot {
     float psi_deg = 0.0f;              // gyro-only heading, wrapped (-180, 180] [D]
     bool psi_ref_valid = false;        // HOLD and SLEW only (R4.3); null on the wire otherwise
     float psi_ref_deg = 0.0f;          // the heading reference, wrapped (-180, 180]
+    bool mag_heading_valid = false;    // a calibrated magnetometer heading exists (R5.1)
+    float mag_deg = 0.0f;              // that heading, counter-clockwise positive, wrapped (-180, 180]
+    bool sun_valid = false;            // calibrated, bright enough, inside the table (R5.4)
+    float sun_deg = 0.0f;              // sun angle, counter-clockwise positive, internal frame
     float rate_dps = 0.0f;             // box rate estimate
     float gyro_bias_dps = 0.0f;
     float tilt_deg = 0.0f;

@@ -204,12 +204,20 @@ bool valid_ff_table(const cJSON *item, ParamValue &value)
     return true;
 }
 
-bool valid_mag_axis_map(const cJSON *item)
+// Carried as three signed axis codes: +-1 x, +-2 y, +-3 z (Params::mag_axis).
+bool valid_mag_axis_map(const cJSON *item, ParamValue &value)
 {
     if (!cJSON_IsArray(item) || cJSON_GetArraySize(item) != 3) return false;
+    value.type = ParamValue::Type::Array;
+    value.array_len = 0;
     for (const cJSON *axis = item->child; axis != nullptr; axis = axis->next) {
         bool ok = false;
-        for (const char *name : {"+x", "-x", "+y", "-y", "+z", "-z"}) ok = ok || string_is(axis, name);
+        for (const char *name : {"+x", "-x", "+y", "-y", "+z", "-z"}) {
+            if (!string_is(axis, name)) continue;
+            ok = true;
+            const float code = static_cast<float>(name[1] - 'x' + 1);
+            value.array[value.array_len++] = name[0] == '-' ? -code : code;
+        }
         if (!ok) return false;
     }
     return true;
@@ -224,7 +232,8 @@ bool numeric_array(const cJSON *item, int size)
     return true;
 }
 
-bool valid_mag_cal(const cJSON *item)
+// Carried as offset[3] then the soft-iron matrix row-major [4] (Params::mag_cal).
+bool valid_mag_cal(const cJSON *item, ParamValue &value)
 {
     if (!cJSON_IsObject(item) || unexpected_member(item, {"offset", "soft_iron"}) != nullptr) return false;
     const cJSON *offset = member(item, "offset");
@@ -234,15 +243,33 @@ bool valid_mag_cal(const cJSON *item)
     for (const cJSON *row = soft->child; row != nullptr; row = row->next) {
         if (!numeric_array(row, 2)) return false;
     }
+    value.type = ParamValue::Type::Array;
+    value.array_len = 0;
+    for (const cJSON *v = offset->child; v != nullptr; v = v->next) {
+        value.array[value.array_len++] = static_cast<float>(v->valuedouble);
+    }
+    for (const cJSON *row = soft->child; row != nullptr; row = row->next) {
+        for (const cJSON *v = row->child; v != nullptr; v = v->next) {
+            value.array[value.array_len++] = static_cast<float>(v->valuedouble);
+        }
+    }
     return true;
 }
 
-bool valid_sun_cal(const cJSON *item)
+// Carried as d/angle pairs, flattened. The wire angle is clockwise positive;
+// the box stores counter-clockwise positive (FD section 2.3), so it is negated.
+// More than kSunCalMaxPoints points do not fit and are refused.
+bool valid_sun_cal(const cJSON *item, ParamValue &value)
 {
-    if (!cJSON_IsArray(item) || cJSON_GetArraySize(item) < 2) return false;
+    const int count = cJSON_IsArray(item) ? cJSON_GetArraySize(item) : 0;
+    if (count < 2 || count > static_cast<int>(kSunCalMaxPoints)) return false;
+    value.type = ParamValue::Type::Array;
+    value.array_len = 0;
     for (const cJSON *point = item->child; point != nullptr; point = point->next) {
         if (!cJSON_IsObject(point) || unexpected_member(point, {"d", "deg"}) != nullptr) return false;
         if (!in_range(member(point, "d"), -1.0, 1.0) || !in_range(member(point, "deg"), -90.0, 90.0)) return false;
+        value.array[value.array_len++] = static_cast<float>(member(point, "d")->valuedouble);
+        value.array[value.array_len++] = -static_cast<float>(member(point, "deg")->valuedouble);
     }
     return true;
 }
@@ -266,14 +293,6 @@ bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
             if (item->valuedouble == a) return number(a, a);
         }
         return false;
-    };
-    // Keys the supervisor does not implement yet (Set 5) still get the full schema
-    // check here; the supervisor then answers "not implemented: <key>".
-    auto deferred = [&](bool schema_ok) {
-        if (!schema_ok) return false;
-        value.type = ParamValue::Type::Number;
-        value.number = 0.0;
-        return true;
     };
     constexpr double kInf = HUGE_VAL;
 
@@ -302,10 +321,10 @@ bool param_from_wire(const cJSON *item, ParamValue &value, bool &unknown)
         std::strcmp(key, "spinup_throttle") == 0 || std::strcmp(key, "hall_expect_throttle") == 0) {
         return integer(48.0, 2047.0);
     }
-    if (std::strcmp(key, "mag_axis_map") == 0) return deferred(valid_mag_axis_map(item));
-    if (std::strcmp(key, "mag_cal") == 0) return deferred(valid_mag_cal(item));
-    if (std::strcmp(key, "sun_cal") == 0) return deferred(valid_sun_cal(item));
-    if (std::strcmp(key, "light_threshold") == 0) return deferred(in_range(item, 0.0, kInf));
+    if (std::strcmp(key, "mag_axis_map") == 0) return valid_mag_axis_map(item, value);
+    if (std::strcmp(key, "mag_cal") == 0) return valid_mag_cal(item, value);
+    if (std::strcmp(key, "sun_cal") == 0) return valid_sun_cal(item, value);
+    if (std::strcmp(key, "light_threshold") == 0) return number(0.0, 6600.0);
     unknown = true;
     return false;
 }
@@ -615,15 +634,23 @@ std::size_t encode_tlm(const TelemetrySnapshot &snap, uint32_t seq, uint32_t tlm
 
     w.raw(",\"psi_deg\":");
     w.num(angle_to_wire(snap.psi_deg), 2);
-    // A heading reference exists only in HOLD and SLEW (R4.3), and there is no
-    // calibrated magnetometer heading or sun angle until Set 5: null, never a
-    // fake number.
+    // A heading reference exists only in HOLD and SLEW (R4.3): null otherwise,
+    // never a fake number.
     w.raw(",\"psi_ref_deg\":");
     if (snap.psi_ref_valid) w.num(angle_to_wire(snap.psi_ref_deg), 2);
     else w.raw("null");
     w.raw(",\"rate_dps\":");
     w.num(signed_to_wire(snap.rate_dps), 2);
-    w.raw(",\"mag_deg\":null,\"sun_deg\":null,\"sun_valid\":false,\"wheel_rpm\":");
+    // mag_deg and sun_deg are null until the calibrations exist (T-9, T-10),
+    // never a fake number.
+    w.raw(",\"mag_deg\":");
+    if (snap.mag_heading_valid) w.num(angle_to_wire(snap.mag_deg), 2);
+    else w.raw("null");
+    w.raw(",\"sun_deg\":");
+    if (snap.sun_valid) w.num(angle_to_wire(snap.sun_deg), 2);
+    else w.raw("null");
+    w.raw(snap.sun_valid ? ",\"sun_valid\":true" : ",\"sun_valid\":false");
+    w.raw(",\"wheel_rpm\":");
     w.num(snap.wheel_rpm > 0.0f ? snap.wheel_rpm : 0.0f, 1);
     w.raw(",\"wheel_ref_rpm\":");
     w.num(snap.wheel_ref_rpm > 0.0f ? snap.wheel_ref_rpm : 0.0f, 1);

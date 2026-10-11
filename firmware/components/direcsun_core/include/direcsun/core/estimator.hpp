@@ -1,9 +1,9 @@
 #pragma once
 
-// Estimator subset for Set 3 (FD sections 11.1 and 11.5): box rate with a
-// stillness-gated gyro bias, a gyro-only heading, and tilt from the averaged
-// accelerometer. Magnetometer fusion (FD section 11.3) and the sun angle
-// (11.4) arrive in Set 5.
+// Estimator (FD sections 11.1, 11.3 and 11.5): box rate with a stillness-gated
+// gyro bias, a heading that integrates the gyro and, once the magnetometer is
+// calibrated (R5.1), is pulled toward the compass, and tilt from the averaged
+// accelerometer. The sun angle (11.4) is in sun.hpp.
 //
 // Pure: the control task feeds one IMU sample per 2 ms tick and reads the
 // results. Units: deg/s, deg, g. The gyro bias is kept in the sensor frame;
@@ -11,6 +11,8 @@
 
 #include <cstddef>
 #include <cstdint>
+
+#include "direcsun/core/params.hpp"
 
 namespace direcsun {
 
@@ -21,7 +23,35 @@ struct EstimatorConfig {
     float still_accel_tol_g = 0.05f;   // FD 11.1 as amended: | |a| - reference | below this
     float still_wheel_rpm = 200.0f;    // FD 11.1: wheel below this, or not reported
     float min_accel_norm_g = 0.2f;     // below this the box is falling: tilt reads 90 deg
+    float mag_dt_s = 0.02f;            // FD 11.3: one magnetometer step every 20 ms
+    float mag_tau_s = 2.0f;            // FD 11.3: complementary filter time constant [A, tune in T-9]
+    float mag_min_field = 1.0f;        // below this horizontal magnitude (counts) there is no heading
+    uint32_t mag_stale_ticks = 250;    // no magnetometer step for 0.5 s: stop claiming fusion
 };
+
+// Magnetometer calibration (FD sections 10.2 and 11.3), taken from Params. The
+// hard-iron offset is in the sensor's own axes; `axis` maps box X, Y, Z to
+// signed sensor axes (+-1 x, +-2 y, +-3 z); `soft` is the horizontal soft-iron
+// matrix, row-major, applied to the box-frame (X, Y) after the offset.
+struct MagCalibration {
+    bool valid = false;
+    int8_t axis[3] = {1, -2, -3};
+    float offset[3] = {0.0f, 0.0f, 0.0f};
+    float soft[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+};
+
+// The calibration the parameters describe (FD section 16).
+inline MagCalibration mag_calibration_from(const Params &params)
+{
+    MagCalibration cal;
+    cal.valid = params.mag_cal_valid;
+    for (int i = 0; i < 3; ++i) {
+        cal.axis[i] = params.mag_axis[i];
+        cal.offset[i] = params.mag_offset[i];
+    }
+    for (int i = 0; i < 4; ++i) cal.soft[i] = params.mag_soft[i];
+    return cal;
+}
 
 struct EstimatorInputs {
     float gyro_z_dps = 0.0f;           // raw sensor z rate, deg/s
@@ -61,14 +91,35 @@ public:
     float tilt_deg() const { return tilt_deg_; }      // from vertical, 0..180
     float accel_norm_g() const { return accel_norm_g_; }
 
-    // Gyro-only heading (R4.2, FD section 11.3): the bias-corrected box rate
+    // Heading (R4.2, R5.1, FD section 11.3): the bias-corrected box rate
     // integrated every tick, counter-clockwise positive, kept continuous
-    // (unwrapped) as double. Set 5 adds the magnetometer. It is never reset:
-    // `zero_heading` is an offset the supervisor keeps, so one tick can zero
-    // the heading and start a HOLD or SLEW against the same reference.
+    // (unwrapped) as double, pulled toward the magnetometer heading by the
+    // complementary filter once the magnetometer is calibrated and fusing. It
+    // is never reset: `zero_heading` is an offset the supervisor keeps, so one
+    // tick can zero the heading and start a HOLD or SLEW against the same
+    // reference.
     double heading_unwrapped_deg() const { return heading_deg_; }
     // The same, wrapped to (-180, 180] for display.
     float heading_deg() const;
+
+    // The calibration in force. Changing it drops the fusion state: the next
+    // magnetometer step in SAFE starts the heading from the compass again.
+    void set_mag_calibration(const MagCalibration &calibration);
+    // One fresh magnetometer sample, raw counts in sensor axes (50 Hz, FD 11.3).
+    // The first step after a calibration snaps the heading to the compass, but
+    // only in SAFE: a jump while armed would move the reference of a HOLD or
+    // SLEW, so until then the heading stays gyro-only. After that, each step
+    // pulls the heading by k = mag_dt / mag_tau of the wrapped difference.
+    void update_mag(const float raw[3], bool safe_mode);
+    // True while the heading includes the compass: calibrated, started, and a
+    // step arrived within mag_stale_ticks. False means gyro-only (HEADING_GYRO).
+    bool mag_fusing() const { return mag_started_ && mag_ticks_since_ < config_.mag_stale_ticks; }
+    // The last magnetometer heading, counter-clockwise positive, absolute
+    // (not relative to zero_heading); wrapped to (-180, 180]. Valid when
+    // mag_heading_valid().
+    // Calibrated, and a step arrived within mag_stale_ticks.
+    bool mag_heading_valid() const { return mag_have_heading_ && mag_ticks_since_ < config_.mag_stale_ticks; }
+    float mag_heading_deg() const { return wrap_mag_heading_deg_; }
 
 private:
     EstimatorConfig config_;
@@ -77,6 +128,12 @@ private:
     float rate_dps_ = 0.0f;
     double heading_deg_ = 0.0;
     bool bias_updating_ = false;
+
+    MagCalibration mag_cal_;
+    bool mag_started_ = false;       // the heading has been snapped to the compass
+    bool mag_have_heading_ = false;  // a magnetometer heading exists
+    float wrap_mag_heading_deg_ = 0.0f;
+    uint32_t mag_ticks_since_ = UINT32_MAX;
 
     float accel_window_[kAccelWindow][3] = {};
     std::size_t accel_next_ = 0;

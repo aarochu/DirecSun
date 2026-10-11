@@ -53,7 +53,7 @@ TEST_CASE("params: cross-key, type, and unknown-key errors name the key")
         {"s_w", 0.0, "invalid param: s_w"},
         {"spinup_throttle", 47.5, "invalid param: spinup_throttle"},
         {"no_such_key", 1.0, "unknown param: no_such_key"},
-        {"mag_cal", 1.0, "not implemented: mag_cal"},
+        {"mag_cal", 1.0, "invalid param: mag_cal"},  // a number, not offset + soft-iron
     };
     for (const Bad &b : bad) {
         CAPTURE(b.key);

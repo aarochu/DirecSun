@@ -20,9 +20,12 @@ constexpr float kOmegaCapMaxRpm = 4000.0f;
 // Version of the persisted layout. Bump it whenever a persisted field is added,
 // removed, or reinterpreted; a stored blob with another version is discarded
 // and the defaults load (event PARAMS_RESET).
-constexpr uint32_t kParamVersion = 2;  // 2: rate_gain_scale (R3.9)
+constexpr uint32_t kParamVersion = 3;  // 2: rate_gain_scale (R3.9); 3: heading and sun calibration (R5.1, R5.4)
 
 constexpr std::size_t kFfPoints = 8;
+// Most points in the sun-angle calibration table (FD section 11.4): 8 d/angle
+// pairs fit the 16-number ParamValue array.
+constexpr std::size_t kSunCalMaxPoints = 8;
 
 struct Params {
     // Attitude and rate loops (FD section 12.2).
@@ -65,6 +68,25 @@ struct Params {
     // which the wheel must already turn at or above the low limit (FD section
     // 14.1, "the low-limit FF value"). Set to FF(omega_low) after T-5 [D].
     uint16_t hall_expect_throttle = 200;
+
+    // Heading (R5.1, FD sections 10.2 and 11.3). mag_axis[i] says which sensor
+    // axis supplies box axis i (X, Y, Z): +-1 for x, +-2 for y, +-3 for z. The
+    // default is the flipped top deck, box (X, Y, Z) = (+x, -y, -z). The
+    // magnetometer joins the heading only once mag_cal_valid (T-9 sets it).
+    int8_t mag_axis[3] = {1, -2, -3};
+    bool mag_cal_valid = false;
+    float mag_offset[3] = {0.0f, 0.0f, 0.0f};       // hard-iron offset, raw counts
+    float mag_soft[4] = {1.0f, 0.0f, 0.0f, 1.0f};   // horizontal soft-iron matrix, row-major
+
+    // Sun angle (R5.4, FD section 11.4). sun_cal_count is 0 (not calibrated:
+    // sun_valid stays false) or 2..kSunCalMaxPoints d/angle pairs from T-10,
+    // d strictly increasing and the angle strictly monotonic, in degrees
+    // counter-clockwise positive (the wire flips the sign).
+    uint8_t sun_cal_count = 0;
+    float sun_cal_d[kSunCalMaxPoints] = {};
+    float sun_cal_deg[kSunCalMaxPoints] = {};
+    // Minimum A + B, millivolts, for a valid sun angle.
+    float light_threshold_mv = 0.0f;
 
     // Volatile: never persisted, reset at every boot.
     bool bench_mode = false;

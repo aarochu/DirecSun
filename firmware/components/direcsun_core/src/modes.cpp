@@ -10,7 +10,8 @@
 // prove the tests notice. They exist only in host selftest builds.
 #if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_LATCH) || defined(DIRECSUN_MUTANT_NO_BYPASS_CLAMP) || \
                               defined(DIRECSUN_MUTANT_PARAMS_DURING_RAMP) || defined(DIRECSUN_MUTANT_DURATIONS_PER_STEP) || \
-                              defined(DIRECSUN_MUTANT_SLEW_SETTLE_PER_STEP))
+                              defined(DIRECSUN_MUTANT_SLEW_SETTLE_PER_STEP) || defined(DIRECSUN_MUTANT_NO_RESPIN_RANGE) || \
+                              defined(DIRECSUN_MUTANT_NO_SUN_LOST))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -52,6 +53,8 @@ const char *flag_wire_name(uint32_t flag_bit)
     case kFlagWheelStep: return "WHEEL_STEP";
     case kFlagMomentumSaturated: return "MOMENTUM_SATURATED";
     case kFlagHeadingGyro: return "HEADING_GYRO";
+    case kFlagFfTableMissing: return "FF_TABLE_MISSING";
+    case kFlagRateGainReduced: return "RATE_GAIN_REDUCED";
     default: return nullptr;
     }
 }
@@ -78,11 +81,7 @@ constexpr const char *kInvalidMode = "invalid mode";
 constexpr const char *kInvalidSetpoint = "invalid setpoint";
 constexpr const char *kNoParams = "no params";
 constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
-
-bool is_later_set_mode(Mode m)
-{
-    return m == Mode::SunPoint;
-}
+constexpr const char *kSunNotValid = "sun not valid";
 
 bool has_heading_reference(Mode m)
 {
@@ -174,8 +173,10 @@ bool Supervisor::input_available(ManualInput input, ManualInputSet built) const
 {
     if (input == ManualInput::None) return false;
     if ((built & manual_input_bit(input)) == 0) return false;
-    // With the Hall bypassed, only open-loop throttle exists.
-    return params_.hall_installed || input == ManualInput::Throttle;
+    // With the Hall bypassed, only open-loop throttle exists. `wheel` and `rate`
+    // run on the closed wheel loop, which needs the T-5 feed-forward table too.
+    if (input == ManualInput::Throttle) return true;
+    return wheel_loop_available(params_);
 }
 
 ThrottleBand manual_throttle_band(const Params &params)
@@ -261,7 +262,6 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
 
     case CommandKind::Mode: {
         const Mode target = cmd.target_mode;
-        if (is_later_set_mode(target)) return ack(out, cmd, kNotImplemented);
         if (target == Mode::Ready) {
             if (mode_ == Mode::Ready) {
                 // Also ends a bench wheel-step hold (FD section 15.3).
@@ -269,7 +269,8 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
                 pending_wheel_step_rpm_ = 0.0f;
                 return ack_ok(out, cmd);
             }
-            if (mode_ == Mode::Manual || mode_ == Mode::Detumble || has_heading_reference(mode_)) {
+            if (mode_ == Mode::Manual || mode_ == Mode::Detumble || mode_ == Mode::SunPoint ||
+                has_heading_reference(mode_)) {
                 enter(Mode::Ready, t);
                 post_mode_event(out, "mode");
                 return ack_ok(out, cmd);
@@ -284,7 +285,10 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
             manual_input_ = cmd.manual_input;
             // Start from what the wheel is doing now, so entry is not a step.
             manual_throttle_ = clamp_manual_throttle(static_cast<float>(prev_throttle_));
-            manual_wheel_rpm_ = clampf(spinup_target_rpm_, params_.omega_low_rpm, params_.omega_cap_rpm);
+            // `wheel` starts at the measured speed (the bias if the Hall reads
+            // below the low limit), so entering MANUAL is not a speed step.
+            manual_wheel_rpm_ = clampf(in.wheel_rpm_safe >= params_.omega_low_rpm ? in.wheel_rpm_safe : spinup_target_rpm_,
+                                       params_.omega_low_rpm, params_.omega_cap_rpm);
             manual_rate_dps_ = 0.0f;
             manual_has_setpoint_ = false;
             manual_fresh_tick_ = t;
@@ -295,6 +299,18 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
             if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
             if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
             enter(Mode::Detumble, t);
+            post_mode_event(out, "mode");
+            return ack_ok(out, cmd);
+        }
+        if (target == Mode::SunPoint) {
+            // R5.4. From READY only, on the closed wheel loop, and only while the
+            // sun angle is valid (FD section 13.1); it drops back to READY after
+            // kSunLostMs of invalid sun.
+            if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+            if (!in.sun_valid) return ack(out, cmd, kSunNotValid);
+            enter(Mode::SunPoint, t);
+            sun_invalid_ticks_ = 0;
             post_mode_event(out, "mode");
             return ack_ok(out, cmd);
         }
@@ -388,8 +404,34 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
         heading_zero_deg_ = in.heading_deg;
         return ack_ok(out, cmd);
 
-    case CommandKind::Respin:
-        return ack(out, cmd, kNotImplemented);
+    case CommandKind::Respin: {
+        // R5.3, desaturation (FD section 13.4, TD 3.6): READY to SPINUP with a new
+        // wheel start speed, with the box held. The firmware cannot sense the lock
+        // pin, so it checks the box is still; the ground station asks the operator
+        // to confirm the pin first.
+        if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+        if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+        float target = params_.omega_bias_rpm;
+        if (cmd.has_wheel_rpm) {
+            const float lo = params_.omega_low_rpm + kRespinMarginRpm;
+            const float hi = effective_cap_rpm(params_) - kRespinMarginRpm;
+#ifdef DIRECSUN_MUTANT_NO_RESPIN_RANGE
+            (void)lo;
+            (void)hi;
+            if (!std::isfinite(cmd.wheel_rpm)) return ack(out, cmd, kInvalidSetpoint);
+#else
+            if (!std::isfinite(cmd.wheel_rpm) || cmd.wheel_rpm < lo || cmd.wheel_rpm > hi) {
+                return ack(out, cmd, kInvalidSetpoint);
+            }
+#endif
+            target = cmd.wheel_rpm;
+        }
+        if (!(std::fabs(in.rate_dps) < kArmMaxRateDps)) return ack(out, cmd, kBoxNotStill);
+        spinup_target_rpm_ = target;
+        enter(Mode::Spinup, t);
+        post_mode_event(out, "respin");
+        return ack_ok(out, cmd);
+    }
     case CommandKind::Estop:
     case CommandKind::Ping:
         break;
@@ -453,6 +495,19 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
         manual_stale_ = ticks_since(t, manual_fresh_tick_) >= ticks_from_ms(kManualStaleMs);
         if (manual_stale_ && manual_input_ == ManualInput::Rate) manual_rate_dps_ = 0.0f;
     }
+    if (mode_ == Mode::SunPoint) {
+        // A duration counter like the others: it adds the alarms this tick stands
+        // for, so missed ticks cannot stretch the 0.5 s (V-66).
+        sun_invalid_ticks_ = in.sun_valid ? 0 : sun_invalid_ticks_ + elapsed;
+#ifdef DIRECSUN_MUTANT_NO_SUN_LOST
+        if (false) {
+#else
+        if (sun_invalid_ticks_ >= ticks_from_ms(kSunLostMs)) {
+#endif
+            enter(Mode::Ready, t);
+            post_mode_event(out, "sun_invalid");
+        }
+    }
     const double psi = in.heading_deg - heading_zero_deg_;
     bool reference_still = mode_ == Mode::Hold;
     if (mode_ == Mode::Slew) {
@@ -504,6 +559,15 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
                               ? attitude_rate_cmd_dps(psi_ref_deg_, psi, params_.k_psi,
                                                       reference_still ? kHoldDeadbandDeg : 0.0f)
                               : 0.0f;
+        if (mode_ == Mode::SunPoint && in.sun_valid) {
+            // The sun error is its angle from the box's pointing axis; driving it
+            // to 0 uses the same attitude gain and hold deadband (FD section 13.2).
+            // While the sun is briefly invalid the command stays 0 (hold rate).
+            d.omega_cmd_dps = attitude_rate_cmd_dps(static_cast<double>(in.sun_deg), 0.0, params_.k_psi,
+                                                    kHoldDeadbandDeg);
+        } else if (mode_ == Mode::Manual && manual_input_ == ManualInput::Rate) {
+            d.omega_cmd_dps = manual_rate_dps_;  // 0 once stale (FD section 13.5)
+        }
         pending_wheel_step_rpm_ = 0.0f;
         int request = controller.throttle(d, in, params_);
         if (request < 0) request = 0;
@@ -573,13 +637,19 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     prev_throttle_ = throttle;
 
     // 6. Flags and outputs.
-    // The heading is gyro-only until Set 5 adds the magnetometer (R4.2).
-    uint32_t flags = kFlagHeadingGyro;
+    // The heading is gyro-only until the magnetometer is calibrated and fusing
+    // (R4.2, R5.1); the flag tells a UI not to present it as a compass bearing.
+    uint32_t flags = in.heading_mag_fusing ? 0u : static_cast<uint32_t>(kFlagHeadingGyro);
     if (!params_.hall_installed) flags |= kFlagHallBypass;
+    // Status the operator needs to explain a refusal or a gentle loop (R5.2):
+    // a fitted Hall without the T-5 table leaves the wheel loop unavailable, and
+    // a reduced rate gain (the default after a reset) slows every correction.
+    if (params_.hall_installed && params_.ff_count != kFfPoints) flags |= kFlagFfTableMissing;
+    if (params_.rate_gain_scale < 1.0f) flags |= kFlagRateGainReduced;
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;
     if (armed()) flags |= controller.flags();
-    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Detumble ||
+    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Detumble || mode_ == Mode::SunPoint ||
                                    mode_ == Mode::Manual || has_heading_reference(mode_))) {
         const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;
