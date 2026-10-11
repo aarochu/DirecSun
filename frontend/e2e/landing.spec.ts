@@ -140,6 +140,12 @@ test.describe('landing page', () => {
     await open(page, 375, 812);
     const hero = await page.locator('.panel--hero').evaluate((element) => getComputedStyle(element).backgroundImage);
     expect(hero).toContain('linear-gradient');
+    const cta = page.getByRole('link', { name: 'See how it works' });
+    const ctaIsTopmost = await cta.evaluate((link) => {
+      const rect = link.getBoundingClientRect();
+      return link.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
+    });
+    expect(ctaIsTopmost).toBe(true);
     await open(page, 1440, 900);
     const rail = await page.locator('.panel--rail a').first().evaluate((element) => Number(getComputedStyle(element).opacity));
     expect(rail).toBeGreaterThanOrEqual(0.8);

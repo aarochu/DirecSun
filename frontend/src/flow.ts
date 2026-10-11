@@ -75,7 +75,7 @@ const edges: readonly FlowEdge[] = [
   { from: 'sun', to: 'xiao', kind: 'sense', label: 'D0, D1', at: [140, 279], path: [[130, 285], [160, 285], [160, 210], [190, 210]] },
   { from: 'divider', to: 'xiao', kind: 'sense', label: 'D9', at: [246, 264], path: [[240, 280], [240, 240]] },
   { from: 'hall', to: 'xiao', kind: 'sense', label: 'D10', at: [366, 262], path: [[400, 250], [372, 250], [372, 210], [350, 210]] },
-  { from: 'xiao', to: 'esc', kind: 'control', label: 'DShot', at: [358, 84], path: [[350, 120], [376, 120], [376, 90], [400, 90]] },
+  { from: 'xiao', to: 'esc', kind: 'control', label: 'DShot, D8', at: [358, 84], path: [[350, 120], [376, 120], [376, 90], [400, 90]] },
   { from: 'esc', to: 'motor', kind: 'control', label: '3 phases', at: [472, 133], path: [[465, 110], [465, 150]] },
   { from: 'motor', to: 'hall', kind: 'sense', label: 'magnets', at: [472, 213], path: [[465, 190], [465, 230]], physical: true },
   { from: 'xiao', to: 'laptop', kind: 'control', label: 'Wi-Fi', at: [278, 68], path: [[270, 90], [270, 40]], both: true },

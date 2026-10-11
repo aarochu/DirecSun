@@ -388,7 +388,7 @@ function boot() {
     if (name.startsWith('part-')) return partAt(Number(name.slice(5))) + 150;
     if (name === 'rail') return HW_PARTS_AT + 150;
     if (name.startsWith('hero')) return 0;
-    if (name === 'system') return START.system + 300;
+    if (name === 'system') return START.system + 1300;
     if (name === 'hw-head') return START.hardware + 400;
     if (name === 'control') return START.control + 2000;
     return START.ground + 400;
@@ -451,9 +451,19 @@ function boot() {
     }
   });
 
+  let interactionFrame = 0;
+  const syncPanelInteractions = () => {
+    for (const el of allPanels) {
+      const opacity = Number(el.style.opacity || getComputedStyle(el).opacity);
+      el.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+    }
+  };
+
   const onRender = () => {
-    // Hidden panels must not take clicks.
-    for (const el of allPanels) el.style.pointerEvents = Number(el.style.opacity) > 0.5 ? 'auto' : 'none';
+    // Anime invokes the callback before the new opacity is painted. Sync on
+    // the next frame so visible panels receive clicks and hidden ones do not.
+    window.cancelAnimationFrame(interactionFrame);
+    interactionFrame = window.requestAnimationFrame(syncPanelInteractions);
     document.documentElement.style.setProperty('--light', view.light.toFixed(3));
     document.documentElement.classList.toggle('is-light', view.light > 0.5);
     const yaw = Math.round(view.yaw - 360);
@@ -492,6 +502,7 @@ function boot() {
       onUpdate: (self) => onProgress(self.progress),
     });
     observer.link(tl);
+    syncPanelInteractions();
     if (import.meta.env.DEV) (window as unknown as { __tl: Timeline }).__tl = tl;
     onProgress(observer.progress);
   };
