@@ -227,6 +227,57 @@ describe('DeviceOperator', () => {
     expect(operator.getState().result).toEqual({ tone: 'error', text: 'SUN POINT ENDED: THE SUN READING WAS INVALID FOR 0.5 S.' });
   });
 
+  it('slews to a typed heading from READY, wraps it onto the wire, and reports slew_complete', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    await operator.setMode('SLEW');
+    expect(socket.commands().filter((frame) => frame.cmd === 'mode')).toEqual([]);
+
+    const slew = operator.slewToHeading(270);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: -90 });
+    socket.message(ack(socket.lastCommand().seq));
+    await slew;
+    expect(operator.getState().result).toEqual({ tone: 'ok', text: 'SLEW ACCEPTED: TURNING TO -90°.' });
+    socket.message(tlm({ psi_deg: -40, psi_ref_deg: -60, mode: 'SLEW' }));
+    await operator.slewToHeading(10);
+    expect(socket.commands().filter((frame) => frame.cmd === 'mode')).toHaveLength(1);
+
+    socket.message(modeEvent('READY', 'slew_complete'));
+    expect(operator.getState().result).toEqual({ tone: 'ok', text: 'SLEW COMPLETE: HOLDING AT THE TARGET HEADING IN READY.' });
+  });
+
+  it('nudges the manual setpoint by the step for its input, inside the limits', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'MANUAL', manual_input: 'throttle', throttle_band: [150, 400] }));
+    operator.nudgeManual(1);
+    operator.nudgeManual(1);
+    expect(operator.getState().manual?.value).toBe(170);
+    operator.nudgeManual(-5);
+    expect(operator.getState().manual?.value).toBe(150);
+    operator.estop();
+  });
+
+  it('sends respin from READY only, with an optional start speed inside 1000 to 3800 rpm', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    const bias = operator.respin(null);
+    expect(socket.lastCommand()).toEqual({ v: 1, type: 'cmd', seq: socket.lastCommand().seq, cmd: 'respin' });
+    socket.message(ack(socket.lastCommand().seq, false, 'not implemented'));
+    await bias;
+    expect(operator.getState().result?.text).toBe('RESPIN REFUSED: not implemented. THE FIRMWARE DOES NOT RUN THIS YET');
+
+    const before = socket.commands().length;
+    await operator.respin(4500);
+    expect(socket.commands()).toHaveLength(before);
+    expect(operator.getState().result?.text).toBe('RESPIN NOT SENT: THE START SPEED MUST BE 1000 TO 3800 RPM.');
+
+    const fast = operator.respin(3800);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'respin', wheel_rpm: 3800 });
+    socket.message(ack(socket.lastCommand().seq));
+    await fast;
+  });
+
   it('does not change mode unless it controls the box in a mode that allows it', async () => {
     const { socket, operator } = armed();
     await operator.setMode('HOLD');
@@ -477,7 +528,9 @@ describe('ground station box controls', () => {
     fireEvent.click(trigger());
     expect(trigger().getAttribute('aria-expanded')).toBe('true');
     const items = screen.getAllByRole('menuitem').map((item) => item.getAttribute('aria-label'));
-    expect(items).toEqual(['Ready', 'Hold heading', 'Manual: rate', 'Manual: throttle', 'Manual: wheel speed', 'Detumble', 'Sun point']);
+    expect(items).toEqual(['Ready', 'Hold heading', 'Slew to heading…', 'Manual: rate', 'Manual: throttle', 'Manual: wheel speed', 'Detumble', 'Sun point', 'Respin wheel…']);
+    expect((screen.getByRole('menuitem', { name: 'Sun point' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('No valid sun')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Manual: throttle' }));
     expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'MANUAL', input: 'throttle' });
@@ -493,9 +546,21 @@ describe('ground station box controls', () => {
     fireEvent.click(trigger());
     const enabled = screen.getAllByRole('menuitem').filter((item) => !(item as HTMLButtonElement).disabled).map((item) => item.getAttribute('aria-label'));
     expect(enabled).toEqual(['Ready']);
-    expect(screen.getAllByText('Firmware pending')).toHaveLength(2);
+    expect(screen.getAllByText('Firmware pending')).toHaveLength(1);
+    expect(screen.getByText('Ready only')).toBeTruthy();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     expect(trigger().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('keeps Arm now disabled while the box turns or the pack is low, and says why (TD 6.6)', async () => {
+    const socket = connect();
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 50, psi_deg: 0, rate_dps: 12, vbat: 10.1, mode: 'SAFE' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(screen.getByRole('button', { name: 'Arm now' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText(/THE BOX IS TURNING AT 12.0 DEG\/S/)).toBeTruthy();
+    expect(socket.commands()).toEqual([]);
   });
 
   it('the E-stop button sends estop; the space bar does too, only while the box is armed', async () => {

@@ -1,14 +1,21 @@
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import { canEnter, MODE_CHOICES, MODES, type CommandableMode, type ManualInput } from '../hardware/modes';
 
-interface ModeMenuProps {
-  readonly mode: string | null;
+export interface MenuEntry {
+  readonly label: string;
   readonly disabled: boolean;
-  readonly onSelect: (mode: CommandableMode, input?: ManualInput) => void;
+  readonly current?: boolean;
+  readonly tag?: string;
+  readonly separated?: boolean;
+  readonly onPick: () => void;
 }
 
-export function ModeMenu({ mode, disabled, onSelect }: ModeMenuProps) {
+interface ModeMenuProps {
+  readonly entries: readonly MenuEntry[];
+  readonly disabled: boolean;
+}
+
+export function ModeMenu({ entries, disabled }: ModeMenuProps) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -30,7 +37,7 @@ export function ModeMenu({ mode, disabled, onSelect }: ModeMenuProps) {
   }, [open]);
 
   const move = (from: number, step: number) => {
-    const count = MODE_CHOICES.length;
+    const count = entries.length;
     for (let i = 1; i <= count; i += 1) {
       const next = items.current[(from + step * i + count * i) % count];
       if (next && !next.disabled) return next.focus();
@@ -68,8 +75,8 @@ export function ModeMenu({ mode, disabled, onSelect }: ModeMenuProps) {
           }
         }}
       >
-        {MODE_CHOICES.map((choice, index) => (
-          <li key={choice.label} role="none">
+        {entries.map((choice, index) => (
+          <li key={choice.label} role="none" className={choice.separated ? 'modemenu__separated' : undefined}>
             <button
               type="button"
               role="menuitem"
@@ -77,9 +84,9 @@ export function ModeMenu({ mode, disabled, onSelect }: ModeMenuProps) {
                 items.current[index] = node;
               }}
               className="modemenu__item"
-              disabled={!canEnter(choice.mode, mode)}
+              disabled={choice.disabled}
               aria-label={choice.label}
-              aria-current={choice.mode === mode && choice.input === undefined ? 'true' : undefined}
+              aria-current={choice.current ? 'true' : undefined}
               onKeyDown={(event) => {
                 if (event.key === 'ArrowDown') {
                   event.preventDefault();
@@ -92,11 +99,11 @@ export function ModeMenu({ mode, disabled, onSelect }: ModeMenuProps) {
               onClick={() => {
                 setOpen(false);
                 trigger.current?.focus();
-                onSelect(choice.mode, choice.input);
+                choice.onPick();
               }}
             >
               {choice.label}
-              {MODES[choice.mode].firmware === 'pending' ? <span className="modemenu__tag mono-label">Firmware pending</span> : null}
+              {choice.tag ? <span className="modemenu__tag mono-label">{choice.tag}</span> : null}
             </button>
           </li>
         ))}

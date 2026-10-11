@@ -1,6 +1,6 @@
 import { normalizeDeg } from '../simulation/physics';
 import type { Direction } from '../simulation/types';
-import { ARMED_MODES, AUTO_EXITS, canEnter, modeCommand, REFUSAL_HINTS, type CommandableMode, type ManualInput } from './modes';
+import { ARMED_MODES, AUTO_EXITS, canEnter, MANUAL_NUDGE, modeCommand, REFUSAL_HINTS, RESPIN_RANGE_RPM, type CommandableMode, type ManualInput } from './modes';
 import { DeviceCommandError, type DeviceEvent, type DeviceLink } from './deviceLink';
 
 export type TurnPhase = 'idle' | 'rotating' | 'holding' | 'returning';
@@ -121,7 +121,7 @@ export class DeviceOperator {
   }
 
   async setMode(mode: CommandableMode, input?: ManualInput): Promise<void> {
-    if (!this.canChangeMode || !canEnter(mode, this.boxMode)) return;
+    if (mode === 'SLEW' || !this.canChangeMode || !canEnter(mode, this.boxMode)) return;
     const label = input ? `${mode} (${input.toUpperCase()})` : mode.replace('_', ' ');
     this.set({ busy: 'mode', result: null });
     try {
@@ -130,6 +130,41 @@ export class DeviceOperator {
     } catch (error) {
       this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
     }
+  }
+
+  async slewToHeading(headingDeg: number): Promise<void> {
+    if (!Number.isFinite(headingDeg) || !this.canChangeMode || !canEnter('SLEW', this.boxMode)) return;
+    const target = wireAngle(headingDeg);
+    this.set({ busy: 'mode', result: null });
+    try {
+      await this.link.command('mode', modeCommand({ mode: 'SLEW', psiRefDeg: target }));
+      this.set({ busy: null, result: { tone: 'ok', text: `SLEW ACCEPTED: TURNING TO ${target}°.` } });
+    } catch (error) {
+      this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+    }
+  }
+
+  async respin(wheelRpm: number | null): Promise<void> {
+    if (!this.canChangeMode || this.boxMode !== 'READY') return;
+    if (wheelRpm !== null && !(Number.isFinite(wheelRpm) && wheelRpm >= RESPIN_RANGE_RPM[0] && wheelRpm <= RESPIN_RANGE_RPM[1])) {
+      this.set({ result: { tone: 'error', text: `RESPIN NOT SENT: THE START SPEED MUST BE ${RESPIN_RANGE_RPM[0]} TO ${RESPIN_RANGE_RPM[1]} RPM.` } });
+      return;
+    }
+    this.set({ busy: 'mode', result: null });
+    try {
+      await this.link.command('respin', wheelRpm === null ? {} : { wheel_rpm: Math.round(wheelRpm) });
+      this.set({
+        busy: null,
+        result: { tone: 'ok', text: `RESPIN ACCEPTED: SPINNING TO ${wheelRpm === null ? 'THE BIAS SPEED' : `${Math.round(wheelRpm)} RPM`}. KEEP THE PIN IN UNTIL READY.` },
+      });
+    } catch (error) {
+      this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+    }
+  }
+
+  nudgeManual(steps: number): void {
+    const manual = this.state.manual;
+    if (manual) this.setManual(manual.value + steps * MANUAL_NUDGE[manual.input]);
   }
 
   setManual(value: number): void {
@@ -335,7 +370,7 @@ export class DeviceOperator {
 
   private onEvent = (event: DeviceEvent) => {
     const exit = event.event === 'mode' && event.cause ? AUTO_EXITS[event.cause] : undefined;
-    if (exit && this.state.controlling) this.set({ result: { tone: 'error', text: exit } });
+    if (exit && this.state.controlling && this.state.phase === 'idle') this.set({ result: exit });
     if (event.event === 'mode' && event.mode === 'SAFE' && this.state.controlling && event.cause && event.cause !== 'disarm') {
       this.set({ result: { tone: 'error', text: `THE BOX WENT SAFE: ${event.cause.replace(/_/g, ' ')}` } });
     }

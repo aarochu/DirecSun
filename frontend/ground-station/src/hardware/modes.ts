@@ -1,5 +1,7 @@
+import type { DisplayTelemetry } from '../ground/displaySource';
+
 export type WireMode = 'SAFE' | 'SPINUP' | 'READY' | 'DETUMBLE' | 'HOLD' | 'SLEW' | 'SUN_POINT' | 'MANUAL';
-export type CommandableMode = 'READY' | 'DETUMBLE' | 'HOLD' | 'SUN_POINT' | 'MANUAL';
+export type CommandableMode = 'READY' | 'DETUMBLE' | 'HOLD' | 'SLEW' | 'SUN_POINT' | 'MANUAL';
 export type ManualInput = 'rate' | 'throttle' | 'wheel';
 export type FirmwareSupport = 'available' | 'pending';
 
@@ -85,11 +87,13 @@ export interface ModeChoice {
   readonly label: string;
   readonly mode: CommandableMode;
   readonly input?: ManualInput;
+  readonly needsTarget?: boolean;
 }
 
 export const MODE_CHOICES: readonly ModeChoice[] = [
   { label: 'Ready', mode: 'READY' },
   { label: 'Hold heading', mode: 'HOLD' },
+  { label: 'Slew to heading…', mode: 'SLEW', needsTarget: true },
   { label: 'Manual: rate', mode: 'MANUAL', input: 'rate' },
   { label: 'Manual: throttle', mode: 'MANUAL', input: 'throttle' },
   { label: 'Manual: wheel speed', mode: 'MANUAL', input: 'wheel' },
@@ -97,9 +101,13 @@ export const MODE_CHOICES: readonly ModeChoice[] = [
   { label: 'Sun point', mode: 'SUN_POINT' },
 ];
 
-export function modeCommand(choice: Pick<ModeChoice, 'mode' | 'input'>): Record<string, unknown> {
-  return choice.mode === 'MANUAL' ? { mode: choice.mode, input: choice.input } : { mode: choice.mode };
+export function modeCommand(choice: Pick<ModeChoice, 'mode' | 'input'> & { psiRefDeg?: number }): Record<string, unknown> {
+  if (choice.mode === 'MANUAL') return { mode: choice.mode, input: choice.input };
+  if (choice.mode === 'SLEW') return { mode: choice.mode, psi_ref_deg: choice.psiRefDeg };
+  return { mode: choice.mode };
 }
+
+export const MANUAL_NUDGE: Readonly<Record<ManualInput, number>> = { rate: 5, throttle: 10, wheel: 100 };
 
 export function canEnter(mode: CommandableMode, from: string | null): boolean {
   return from !== null && (MODES[mode].enterFrom as readonly string[]).includes(from);
@@ -120,6 +128,39 @@ export const REFUSAL_HINTS: Readonly<Record<string, string>> = {
   'not controlling client': 'ANOTHER CLIENT IS CONTROLLING THE BOX',
 };
 
-export const AUTO_EXITS: Readonly<Record<string, string>> = {
-  sun_invalid: 'SUN POINT ENDED: THE SUN READING WAS INVALID FOR 0.5 S.',
+export const AUTO_EXITS: Readonly<Record<string, { readonly tone: 'ok' | 'error'; readonly text: string }>> = {
+  slew_complete: { tone: 'ok', text: 'SLEW COMPLETE: HOLDING AT THE TARGET HEADING IN READY.' },
+  SLEW_TIMEOUT: { tone: 'error', text: 'SLEW TIMED OUT: THE BOX DID NOT SETTLE WITHIN 6 S.' },
+  sun_invalid: { tone: 'error', text: 'SUN POINT ENDED: THE SUN READING WAS INVALID FOR 0.5 S.' },
 };
+
+export type GuardReadout = Pick<DisplayTelemetry, 'flags' | 'rateDegS' | 'batteryV' | 'sensors'>;
+
+export const ARM_MAX_RATE_DPS = 5;
+export const ARM_MIN_BATTERY_V = 9.6;
+export const RESPIN_RANGE_RPM: readonly [number, number] = [1000, 3800];
+export const RESPIN_FIRMWARE: FirmwareSupport = 'pending';
+
+const turning = (readout: GuardReadout) => readout.rateDegS !== null && Math.abs(readout.rateDegS) >= ARM_MAX_RATE_DPS;
+
+export function choiceBlock(choice: ModeChoice, readout: GuardReadout): string | null {
+  if (choice.mode === 'SUN_POINT' && readout.sensors?.sunValid !== true) return 'No valid sun';
+  if (choice.mode === 'MANUAL' && choice.input !== 'throttle' && readout.flags.includes('HALL_BYPASS')) return 'Hall bypassed';
+  return null;
+}
+
+export function armBlock(readout: GuardReadout): string | null {
+  if (turning(readout)) return `THE BOX IS TURNING AT ${Math.abs(readout.rateDegS!).toFixed(1)} DEG/S: HOLD IT STILL (UNDER ${ARM_MAX_RATE_DPS})`;
+  if (readout.batteryV !== null && readout.batteryV <= ARM_MIN_BATTERY_V) {
+    return `BATTERY AT ${readout.batteryV.toFixed(2)} V: ARMING NEEDS MORE THAN ${ARM_MIN_BATTERY_V} V`;
+  }
+  return null;
+}
+
+export function respinBlock(mode: string | null, readout: GuardReadout): string | null {
+  if (mode !== 'READY') return 'Ready only';
+  if (turning(readout)) return 'Box turning';
+  return null;
+}
+
+export const NEAR_LIMIT_GUIDANCE = 'WHEEL NEAR ITS LIMIT: RETURN TO READY, PIN THE BOX, THEN RESPIN FROM THE MODE MENU';
