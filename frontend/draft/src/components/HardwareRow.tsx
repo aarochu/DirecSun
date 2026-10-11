@@ -4,7 +4,6 @@ import { captionFor, imageAssets } from '../data/assets';
 import type { HardwarePart } from '../data/hardware';
 import { hardwareViews } from '../data/hardwareModels';
 import { isWebGLAvailable } from '../lib/environment';
-import { useInView } from '../lib/useInView';
 import { MissingAsset } from './MissingAsset';
 
 const PartModel = lazy(() => import('./PartModel'));
@@ -76,10 +75,9 @@ function HardwareMedia({ part, open }: { part: HardwarePart; open: boolean }) {
   const [failed, setFailed] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const [modelFailed, setModelFailed] = useState(false);
-  const [frameRef, inView] = useInView<HTMLDivElement>();
   const isCadAssembly = asset.kind === 'cad-assembly';
   const showImage = asset.available && !failed;
-  const live = open && inView && !modelFailed && view !== undefined && isWebGLAvailable();
+  const live = open && !modelFailed && view !== undefined && isWebGLAvailable();
 
   useEffect(() => {
     if (!live) setModelReady(false);
@@ -87,7 +85,7 @@ function HardwareMedia({ part, open }: { part: HardwarePart; open: boolean }) {
 
   return (
     <figure className="hardware-row__media">
-      <div ref={frameRef} className={`media-frame${live && modelReady ? ' is-live' : ''}`}>
+      <div className={`media-frame${live && modelReady ? ' is-live' : ''}`}>
         {showImage ? (
           <img
             src={asset.src}

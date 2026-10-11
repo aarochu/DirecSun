@@ -1114,6 +1114,12 @@
   opacity: 0;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .media-frame img {
+    transition: none;
+  }
+}
+
 .hardware-row__media figcaption {
   display: grid;
   gap: 4px;
@@ -1132,6 +1138,10 @@
   position: absolute;
   inset: 0;
   cursor: grab;
+}
+
+.part-view__stage:focus-visible {
+  outline-offset: -2px;
 }
 
 .part-view__stage:active {
@@ -1186,9 +1196,13 @@
 
 .part-view__hint {
   position: absolute;
-  left: 12px;
+  left: 10px;
   bottom: 10px;
-  right: 12px;
+  max-width: calc(100% - 20px);
+  padding: 4px 8px;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 0.72);
+  color: var(--text-secondary);
   font-size: 10px;
   pointer-events: none;
 }

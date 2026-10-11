@@ -12,8 +12,13 @@ export function HardwareBreakdown() {
 
   useEffect(() => {
     if (!near || !isWebGLAvailable()) return;
-    const idle = window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 200));
-    idle(() => void import('../components/PartModel').then((module) => module.preloadStack()));
+    const start = () => void import('../components/PartModel').then((module) => module.preloadStack());
+    if (window.requestIdleCallback) {
+      const handle = window.requestIdleCallback(start);
+      return () => window.cancelIdleCallback(handle);
+    }
+    const timer = window.setTimeout(start, 200);
+    return () => window.clearTimeout(timer);
   }, [near]);
 
   const toggle = (id: string) =>

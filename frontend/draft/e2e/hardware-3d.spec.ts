@@ -95,20 +95,25 @@ test.describe('hardware CAD views', () => {
     await expect(page.locator('.hardware-row__shows')).toHaveCount(10);
   });
 
-  test('expanding every row never keeps more than a few WebGL views alive', async ({ page }) => {
+  test('expanding every row draws every view through one shared WebGL context', async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __contexts: number };
+      w.__contexts = 0;
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+        const context = (original as (...args: unknown[]) => unknown).call(this, type, ...rest);
+        if (context && (type === 'webgl' || type === 'webgl2')) w.__contexts += 1;
+        return context as never;
+      } as typeof original;
+    });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/#hardware');
+    await page.waitForTimeout(1500);
+    const before = await page.evaluate(() => (window as unknown as { __contexts: number }).__contexts);
     await page.getByRole('button', { name: 'Expand all' }).click();
-    await page.evaluate(async () => {
-      for (let y = 0; y < document.body.scrollHeight; y += 500) {
-        window.scrollTo(0, y);
-        await new Promise((resolve) => setTimeout(resolve, 120));
-      }
-    });
-    await page.waitForTimeout(800);
-    const canvases = await page.locator('canvas').count();
-    expect(canvases).toBeGreaterThan(0);
-    expect(canvases).toBeLessThanOrEqual(4);
+    await expect(page.locator('.part-view[data-view-state="ready"]')).toHaveCount(10, { timeout: 30000 });
+    const created = (await page.evaluate(() => (window as unknown as { __contexts: number }).__contexts)) - before;
+    expect(created).toBe(1);
   });
 
   test('a phone-width view opens without horizontal overflow and keeps its controls inside the frame', async ({ page }) => {
@@ -126,16 +131,68 @@ test.describe('hardware CAD views', () => {
     }
   });
 
-  test('opening a row never blocks the page for long', async ({ page }) => {
+  test('opening a row stalls the page briefly: the first pays for the context, the rest only draw', async ({ page }) => {
     await page.addInitScript(() => {
-      (window as unknown as { __long: number[] }).__long = [];
-      new PerformanceObserver((list) =>
-        list.getEntries().forEach((entry) => (window as unknown as { __long: number[] }).__long.push(entry.duration)),
-      ).observe({ entryTypes: ['longtask'] });
+      const w = window as unknown as { __long: number[] };
+      w.__long = [];
+      new PerformanceObserver((list) => list.getEntries().forEach((entry) => w.__long.push(entry.duration))).observe({
+        entryTypes: ['longtask'],
+      });
     });
     await openRow(page, 'frame');
     await page.waitForTimeout(500);
-    const longest = await page.evaluate(() => Math.max(0, ...(window as unknown as { __long: number[] }).__long));
-    expect(longest).toBeLessThan(800);
+    const longest = () => page.evaluate(() => Math.max(0, ...(window as unknown as { __long: number[] }).__long));
+    expect(await longest()).toBeLessThan(1200);
+
+    for (const id of ['esp32s3', 'mpu6050', 'esc']) {
+      await page.evaluate(() => ((window as unknown as { __long: number[] }).__long = []));
+      await toggle(page, id).click();
+      await page.locator(`#part-${id}-panel`).scrollIntoViewIfNeeded();
+      await expect(live(page, id)).toBeVisible({ timeout: 15000 });
+      await page.waitForTimeout(300);
+      expect(await longest(), id).toBeLessThan(500);
+    }
+  });
+
+  test('opening and closing rows never creates more than one WebGL context', async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __contexts: number };
+      w.__contexts = 0;
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+        const context = (original as (...args: unknown[]) => unknown).call(this, type, ...rest);
+        if (context && (type === 'webgl' || type === 'webgl2')) w.__contexts += 1;
+        return context as never;
+      } as typeof original;
+    });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/#hardware');
+    await page.waitForTimeout(1500);
+    const before = await page.evaluate(() => (window as unknown as { __contexts: number }).__contexts);
+    const ids = ['frame', 'esp32s3', 'mpu6050', 'qmc5883p', 'esc', 'power'];
+    for (let cycle = 0; cycle < 12; cycle++) {
+      const id = ids[cycle % ids.length]!;
+      await toggle(page, id).click();
+      await page.locator(`#part-${id}-panel`).scrollIntoViewIfNeeded();
+      await expect(live(page, id)).toBeVisible({ timeout: 15000 });
+      await toggle(page, id).click();
+    }
+    const created = (await page.evaluate(() => (window as unknown as { __contexts: number }).__contexts)) - before;
+    expect(created).toBe(1);
+  });
+
+  test('the focused 3D view shows a visible focus ring, and the hint is readable', async ({ page }) => {
+    await openRow(page, 'mpu6050');
+    await page.locator('#part-mpu6050-panel .part-view__stage').focus();
+    await page.keyboard.press('ArrowRight');
+    const ring = await page.locator('#part-mpu6050-panel .part-view__stage').evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { width: parseFloat(style.outlineWidth), offset: parseFloat(style.outlineOffset), style: style.outlineStyle };
+    });
+    expect(ring.style).not.toBe('none');
+    expect(ring.width).toBeGreaterThan(0);
+    expect(ring.offset).toBeLessThanOrEqual(0);
+    const hint = await page.locator('#part-mpu6050-panel .part-view__hint').evaluate((element) => getComputedStyle(element).backgroundColor);
+    expect(hint).not.toBe('rgba(0, 0, 0, 0)');
   });
 });
