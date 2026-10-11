@@ -14,14 +14,16 @@ A judge spinning the box by hand in READY sees it come to rest (DETUMBLE behavio
 
 ## Status
 <!-- markers: [ ] not started · [~] in progress · [t] tests passing, awaiting merge · [x] merged -->
-- [ ] R4.1 ui-command-contract: implement the commands the finished UI sends (arm, disarm, e-stop, rotate ±90 / stop / reset, heartbeat), matching `frontend/`'s client exactly; schema additions stay v1 if additive
-- [ ] R4.2 gyro-heading: heading from integrated gyro with `zero_heading` at sequence start; drift budget measured over 10 s
-- [ ] R4.3 hold-and-slew: attitude loop, HOLD capture, relative SLEW trapezoid at 60 deg/s and 120 deg/s² (HT-4), completion and timeout, the return leg
+- [~] R4.1 ui-command-contract: implement the commands the finished UI sends (arm, disarm, e-stop, rotate ±90 / stop / reset, heartbeat), matching `frontend/`'s client exactly; schema additions stay v1 if additive
+- [~] R4.2 gyro-heading: heading from integrated gyro with `zero_heading` at sequence start; drift budget measured over 10 s
+- [~] R4.3 hold-and-slew: attitude loop, HOLD capture, relative SLEW trapezoid at 60 deg/s and 120 deg/s² (HT-4), completion and timeout, the return leg
 - [ ] R4.4 detumble-and-safety: the DETUMBLE wire mode for hand spins; T-12 and T-13 on the real box (ESC signal loss, every interlock)
 - [ ] R4.5 characterisation-and-acceptance: T-2 to T-4, T-7, T-8 on the assembled box, `sizing.py` re-run (G2); T-15 and T-16 trials driven from the UI
 
 ## Open questions / decisions before implementing
-1. Who sequences rotate, hold, and return: the UI, sending SLEW commands (FD §17's ground-orchestrated pair), or the firmware (a single "judge" command)? Decided by whatever the finished UI sends, per the backend-matches-UI rule.
+1. ~~Who sequences rotate, hold, and return?~~ **Answered by the UI (Aaron's PR #10, 2026-10-10).** The UI sequences it with two `mode SLEW` commands, each carrying an absolute `psi_ref_deg` in the wire frame (start ± 90, then back to the start). It treats a slew as done when `mode` returns to READY or a `slew_complete` event arrives. It aborts on `SLEW_TIMEOUT`, a refusal, or SAFE. `mode READY` stops a slew and `disarm` cancels.
+
+   No new command is needed. R4.1's scope becomes: confirm the firmware's events and timings match this flow, and run the UI against the real box with Aaron (integration). R4.3 and the mock box are being aligned with it.
 
 2. Known requirements on the UI's client once it starts commanding, from R1.8's look at `frontend/`:
    - It must send `ping` at 5 Hz while it controls an armed box. Today it sends nothing, so the box would treat it as a passive viewer, and the heartbeat ramp-down would stop any motion it started.
@@ -35,3 +37,4 @@ None.
 ## Log
 - 2026-10-10: Outline created during Set 3 planning (as "Detumble"), then replanned the same day around the main UI's judge sequence.
 - 2026-10-10: R4.2 and R4.3 specs approved, including the guard amendment (HOLD and SLEW on gyro heading for relative use). They are built ahead, stacked on R3.9.
+- 2026-10-10: Set branch `feat/set4-judge-sequence` created from `feat/set3-teleop` (stacked; rebased onto `main` once Set 3 lands). R4.2 and R4.3 started on feature branches stacked on R3.9.
