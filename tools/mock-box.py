@@ -104,6 +104,7 @@ except ImportError:
 WS_PATH = "/ws"          # the firmware's and the main UI's endpoint path
 TICK_S = 0.02            # 50 Hz telemetry
 HEARTBEAT_S = 1.0        # FD section 14.4
+IMBALANCE_G_PER_KRPM2 = 0.004   # accel RMS added per (1000 rpm)^2 by a washer stack off the axis (T-7)
 SPINUP_REF_RAMP_RPM_S = 400.0   # kWheelRefRampRpmPerS: SPINUP omega_ref slope (FD section 13.3)
 SPINUP_BAND = 0.05               # kSpinupBand: READY within 5 % of the target ...
 SPINUP_DWELL_S = 0.5             # kSpinupDwellMs: ... for this long
@@ -466,6 +467,14 @@ class Box:
             return
         self._ack(conn, seq, False, "invalid mode")
 
+    def _accel_rms_g(self):
+        # The bench vibration figure (T-7): a floor of sensor noise plus the wheel's
+        # imbalance, which grows with the square of its speed (F = m e w^2, TD 3.5).
+        # The balancing procedure compares readings at one wheel speed, so the shape
+        # matters here, not the numbers.
+        rpm = max(0.0, self.wheel)
+        return round(0.004 + IMBALANCE_G_PER_KRPM2 * (rpm / 1000.0) ** 2 + random.uniform(0.0, 0.0006), 4)
+
     def _spinup_throttle(self, now):
         # Rung 1's open-loop ramp (R3.7): 200 units/s up to spinup_throttle.
         return min(self.params["spinup_throttle"], (now - self.mode_since) * SPINUP_RAMP_PER_S)
@@ -678,7 +687,8 @@ class Box:
             "loop_us": random.randint(690, 790), "flags": flags,
             "t_c": 23.5, "p_pa": 101300.0, "tlm_dropped": 0, "dropped_events": 0,
             **({"gyro_raw": [0, 0, int(max(-32768, min(32767, -self.rate * 16.4)))], "mag_raw": [812, -1234, 300],
-                "sun_a_mv": 0, "sun_b_mv": 0} if self.params["bench_mode"] else {}),
+                "sun_a_mv": 0, "sun_b_mv": 0,
+                "accel_rms_g": self._accel_rms_g()} if self.params["bench_mode"] else {}),
         })
 
 
@@ -887,6 +897,20 @@ def selftest_attitude(schema):
     box, conn, clock = armed()
     if send(box, conn, 2, cmd="mode", mode="SUN_POINT").get("reason") != "sun not valid":
         problems.append("SUN_POINT from READY was not refused with 'sun not valid'")
+
+    # accel_rms_g (T-7): bench tlm only, and it grows with the wheel speed.
+    box, conn, clock = armed()
+    tlm, _events = run(box, clock, 0.1)
+    if "accel_rms_g" in tlm[-1]:
+        problems.append("accel_rms_g in a tlm outside bench mode")
+    box.params["bench_mode"] = True
+    tlm, _events = run(box, clock, 0.1)
+    spinning = tlm[-1].get("accel_rms_g")
+    box.wheel = 0.0
+    tlm, _events = run(box, clock, 0.02)
+    still = tlm[-1].get("accel_rms_g")
+    if spinning is None or still is None or not spinning > still + 0.01:
+        problems.append(f"bench accel_rms_g does not grow with the wheel speed: {spinning} at speed, {still} at rest")
 
     # DETUMBLE (R4.4): from READY with the wheel loop; the same zero-rate cascade
     # as READY, so a spinning box comes to rest; `mode READY` leaves it.

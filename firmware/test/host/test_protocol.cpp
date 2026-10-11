@@ -293,12 +293,14 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     manual.gyro_raw[2] = 32767;
     manual.mag_raw[1] = -1234;
     manual.sun_a_mv = 812;
+    manual.accel_rms_g = 0.0312f;
     manual.baro_valid = true;
     manual.baro_t_c = 23.51f;
     manual.baro_p_pa = 101325.4f;
     manual.psi_deg = -179.999f;
     emit(encode_tlm(manual, 3, 0, buf, sizeof buf));
     const std::string manual_tlm = buf;
+    CHECK(manual_tlm.find("\"accel_rms_g\":0.0312") != std::string::npos);  // bench tlm only (T-7)
 
     // tlm: READY during a bench wheel step (R3.8): wheel reference and WHEEL_STEP.
     TelemetrySnapshot stepped = ready_snapshot();
