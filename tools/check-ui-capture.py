@@ -26,7 +26,11 @@ The capture passes only if all of these hold:
   passes while a throttled tab (1 s) does not;
 - no mode event with cause HEARTBEAT_LOST (except in the watch scenario, which
   closes the operator page to provoke it);
-- a page that only watches receives nothing but tlm until it sends.
+- a page that only watches receives nothing but tlm until it sends;
+- the recorder reported no failure of its own (meta.json "failures"), and a
+  hidden-scenario run counts only if the page really was hidden for the window
+  (meta.json "hidden"): a page Playwright launches never hides, and its frames
+  would otherwise pass as if the hidden tab had been tested.
 
 It also prints the comms phase, the most common tlm t_ms modulo 20, so a
 hardware run says how exposed the box was to the stale-tlm defect of U-5.
@@ -42,6 +46,7 @@ ACK_TIMEOUT_MS = 1000.0
 SLEW_LIMIT_MS = 6000.0
 PING_MS, PING_MEDIAN_SLACK_MS, PING_GAP_MAX_MS = 200.0, 20.0, 500.0
 CLOSE_GRACE_MS = 300.0
+HIDDEN_MIN_S = 29.5  # the recorder hides the page for 30 s
 
 
 def load(capture_dir):
@@ -60,6 +65,16 @@ def check(records, meta, out=print):
     # The watch scenario closes the operator page on purpose and reads the loss
     # from the watch page; every other scenario must never lose the heartbeat.
     heartbeat_lost_expected = meta.get("scenario") == "watch"
+    for failure in meta.get("failures", []):
+        problems.append(f"the recorder reported: {failure}")
+    if meta.get("scenario") == "hidden":
+        hidden = meta.get("hidden") or {}
+        hidden_s = (hidden.get("until_ms", 0.0) - hidden.get("from_ms", 0.0)) / 1000.0
+        if hidden.get("visibility") != "hidden":
+            problems.append(f"the page was {hidden.get('visibility', 'not recorded')} during the hidden window, "
+                            "not hidden, so the run tested nothing")
+        elif hidden_s < HIDDEN_MIN_S:
+            problems.append(f"the page was hidden for {hidden_s:.1f} s, under {HIDDEN_MIN_S} s")
     if not records:
         return ["the capture is empty"]
     pages = sorted({r["page"] for r in records})
@@ -273,13 +288,25 @@ def selftest():
         print(f"check-ui-capture selftest: FAILED, a single 450 ms ping gap was rejected: {problems}", file=sys.stderr)
         return 1
 
+    hidden_ok = {"scenario": "hidden", "hidden": {"visibility": "hidden", "from_ms": 0.0, "until_ms": 30000.5}}
+    problems = check(clean, hidden_ok, quiet)
+    if problems:
+        print(f"check-ui-capture selftest: FAILED, a page hidden for 30 s was rejected: {problems}", file=sys.stderr)
+        return 1
+    # Planted defect 6: a hidden run whose page never hid (Playwright's own launcher).
+    never_hidden = {"scenario": "hidden", "hidden": {"visibility": "visible", "from_ms": 0.0, "until_ms": 30000.5}}
+    # Planted defect 7: the recorder failed the run, though the frames look clean.
+    recorder_failed = {"scenario": "turn", "failures": ["turn 2: no TURN COMPLETE"]}
+
     failures = 0
-    for name, capture, needle in (("stale tlm after slew_complete", stale, "followed by a tlm in SLEW"),
-                                  ("missing ack", missing, "acked 0 times"),
-                                  ("600 ms ping gap", gap, "ping gap"),
-                                  ("300 ms ping cadence", slow, "median ping gap"),
-                                  ("HEARTBEAT_LOST", lost, "HEARTBEAT_LOST")):
-        got = check(capture, {}, quiet)
+    for name, capture, meta, needle in (("stale tlm after slew_complete", stale, {}, "followed by a tlm in SLEW"),
+                                        ("missing ack", missing, {}, "acked 0 times"),
+                                        ("600 ms ping gap", gap, {}, "ping gap"),
+                                        ("300 ms ping cadence", slow, {}, "median ping gap"),
+                                        ("HEARTBEAT_LOST", lost, {}, "HEARTBEAT_LOST"),
+                                        ("hidden run that never hid", clean, never_hidden, "not hidden"),
+                                        ("recorder failure", clean, recorder_failed, "the recorder reported")):
+        got = check(capture, meta, quiet)
         if any(needle in p for p in got):
             print(f"check-ui-capture selftest: PASSED, the planted {name} was detected")
         else:

@@ -19,8 +19,8 @@
 namespace direcsun::drivers {
 
 enum class DshotRate : uint32_t {
-    kDshot150 = 150,  // default until the ESC MCU is read (FD section 16, dshot_rate)
-    kDshot300 = 300,
+    kDshot150 = 150,
+    kDshot300 = 300,  // the default: the bench ESCs misread DShot150 (FD section 16, V-68)
 };
 
 // RMT channel tick rate. 25 ns resolves both rates' bit timing to the tick.

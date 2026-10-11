@@ -281,7 +281,9 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     TelemetrySnapshot ready = ready_snapshot();
     ready.flags = kFlagMomentumNearLimit | kFlagHallBypass | kFlagHeadingGyro;  // HEADING_GYRO: every tlm until Set 5 (R4.2)
     ready.latched = interlock_bit(Interlock::Overspeed) | interlock_bit(Interlock::Estop);
+    ready.accel_rms_g = 0.05f;  // measured, but this is not bench telemetry
     emit(encode_tlm(ready, 2, 3, buf, sizeof buf));
+    CHECK(std::string(buf).find("accel_rms_g") == std::string::npos);  // bench tlm only (T-7)
 
     // tlm: MANUAL throttle in bench mode, barometer present, stale setpoint.
     TelemetrySnapshot manual = ready_snapshot();

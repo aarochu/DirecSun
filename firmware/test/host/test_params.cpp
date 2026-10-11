@@ -225,6 +225,40 @@ TEST_CASE("params: a param_version mismatch loads the defaults")
     CHECK(loaded.manual_throttle_max == 400);
 }
 
+TEST_CASE("params: a version 2 set migrates, keeping every stored value, with dshot_rate 300 (V-68)")
+{
+    MemoryStore store;
+    Params saved;
+    saved.k_psi = 2.0f;
+    saved.manual_throttle_max = 380;
+    saved.rate_gain_scale = 1.0f;
+    saved.dshot_rate = 150;  // the old default, still stored on boxes set up before V-68
+    REQUIRE(save_params(store, saved));
+    store.version = 2;
+
+    Params loaded;
+    const ParamsLoad r = load_params(store, loaded);
+    CHECK_FALSE(r.reset);
+    CHECK(r.migrated_from == 2);
+    CHECK(loaded.dshot_rate == 300);
+    CHECK(loaded.k_psi == doctest::Approx(2.0f));
+    CHECK(loaded.manual_throttle_max == 380);
+    CHECK(loaded.rate_gain_scale == doctest::Approx(1.0f));
+
+    // A current set is not migrated, and its stored rate is kept.
+    REQUIRE(save_params(store, saved));
+    const ParamsLoad current = load_params(store, loaded);
+    CHECK_FALSE(current.reset);
+    CHECK(current.migrated_from == 0);
+    CHECK(loaded.dshot_rate == 150);
+
+    // Version 1 has another layout and cannot be migrated.
+    store.version = 1;
+    const ParamsLoad old = load_params(store, loaded);
+    CHECK(old.reset);
+    CHECK(std::string(old.detail) == "version");
+}
+
 TEST_CASE("params: missing, short, and out-of-range stored sets load the defaults")
 {
     Params loaded;
