@@ -60,6 +60,8 @@ async function attachFakeBox(page: Page) {
       if (frame.cmd === 'arm') {
         setMode('SPINUP', 'arm');
         setTimeout(() => setMode('READY', 'spinup_complete'), 300);
+      } else if (frame.cmd === 'zero_heading') {
+        heading = 0;
       } else if (frame.cmd === 'estop') {
         flags.push('ESTOP');
         setMode('SAFE', 'ESTOP');
@@ -114,9 +116,9 @@ test.describe('box control against a scripted box', () => {
     await expect(page.locator('.controls__result')).toHaveText('TURN COMPLETE: BACK AT THE START HEADING.');
 
     const sent = commands(received);
-    expect(sent.map((frame) => frame.cmd)).toEqual(['arm', 'mode', 'mode']);
-    expect(sent[1]).toMatchObject({ mode: 'SLEW', psi_ref_deg: 90 });
-    expect(sent[2]).toMatchObject({ mode: 'SLEW', psi_ref_deg: 0 });
+    expect(sent.map((frame) => frame.cmd)).toEqual(['arm', 'zero_heading', 'mode', 'mode']);
+    expect(sent[2]).toMatchObject({ mode: 'SLEW', psi_ref_deg: 90 });
+    expect(sent[3]).toMatchObject({ mode: 'SLEW', psi_ref_deg: 0 });
     const pings = received.filter((frame) => frame.type === 'ping');
     expect(pings.length).toBeGreaterThan(8);
   });

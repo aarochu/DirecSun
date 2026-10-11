@@ -125,6 +125,14 @@ describe('DeviceOperator', () => {
     await flush();
   }
 
+  async function startTurn(socket: FakeSocket, operator: DeviceOperator, direction: 1 | -1) {
+    const turn = operator.rotate(direction);
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'zero_heading' });
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    return { turn };
+  }
+
   it('cannot rotate before it controls an armed box in READY', async () => {
     const { socket, operator } = armed();
     socket.message(tlm({ psi_deg: 10, mode: 'READY' }));
@@ -132,22 +140,26 @@ describe('DeviceOperator', () => {
     expect(socket.commands()).toEqual([]);
   });
 
-  it('runs right 90: SLEW to start + 90, hold 1.0 s, SLEW back to the captured start', async () => {
+  it('zeros heading, runs right 90, holds 1.0 s, and SLEWs back to zero', async () => {
     const { socket, operator } = armed(10);
     await armAndReady(socket, operator, 10);
     expect(operator.getState().controlling).toBe(true);
 
     const turn = operator.rotate(1);
-    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: 100 });
-    expect(operator.getState()).toMatchObject({ phase: 'rotating', originDeg: 10, targetDeg: 100 });
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'zero_heading' });
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(0);
+    expect(operator.getState()).toMatchObject({ phase: 'rotating', originDeg: 0, targetDeg: 90 });
 
+    socket.message(ack(socket.lastCommand().seq));
+    await flush();
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: 90 });
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     socket.message(tlm({ psi_deg: 10, mode: 'READY' }));
     await flush();
     expect(operator.getState().phase).toBe('rotating');
     socket.message(tlm({ psi_deg: 60, mode: 'SLEW' }));
-    socket.message(tlm({ psi_deg: 100, mode: 'READY' }));
+    socket.message(tlm({ psi_deg: 90, mode: 'READY' }));
     await flush();
     expect(operator.getState().phase).toBe('rotating');
     socket.message(modeEvent('READY', 'slew_complete'));
@@ -157,40 +169,54 @@ describe('DeviceOperator', () => {
     await vi.advanceTimersByTimeAsync(HOLD_MS - 10);
     expect(socket.commands()).toHaveLength(commandsDuringHold);
     await vi.advanceTimersByTimeAsync(10);
-    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: 10 });
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'mode', mode: 'SLEW', psi_ref_deg: 0 });
     expect(operator.getState().phase).toBe('returning');
 
-    await finishSlew(socket, 10);
+    await finishSlew(socket, 0);
     await turn;
     expect(operator.getState()).toMatchObject({ phase: 'idle', result: { tone: 'ok' } });
+    expect(socket.commands().map((command) => command.cmd)).toEqual(['arm', 'zero_heading', 'mode', 'mode']);
   });
 
-  it('sends clean two-decimal targets, never float noise or -180', async () => {
+  it('uses zero-based targets regardless of the old heading, with a negative step for left', async () => {
     const { socket, operator } = armed(-111.06);
     await armAndReady(socket, operator, -111.06);
-    void operator.rotate(1);
-    expect(socket.lastCommand().psi_ref_deg).toBe(-21.06);
+    void startTurn(socket, operator, 1);
+    await flush();
+    expect(socket.lastCommand().psi_ref_deg).toBe(90);
     const second = armed(90);
     await armAndReady(second.socket, second.operator, 90);
-    void second.operator.rotate(1);
-    expect(second.socket.lastCommand().psi_ref_deg).toBe(180);
+    void startTurn(second.socket, second.operator, -1);
+    await flush();
+    expect(second.socket.lastCommand().psi_ref_deg).toBe(-90);
     const third = armed(-90);
     await armAndReady(third.socket, third.operator, -90);
-    void third.operator.rotate(-1);
-    expect(third.socket.lastCommand().psi_ref_deg).toBe(180);
+    void startTurn(third.socket, third.operator, 1);
+    await flush();
+    expect(third.socket.lastCommand().psi_ref_deg).toBe(90);
   });
 
-  it('wraps the target into (-180, 180] and turns left with a negative step', async () => {
-    const { socket, operator } = armed(-120);
-    await armAndReady(socket, operator, -120);
-    void operator.rotate(-1);
-    expect(socket.lastCommand()).toMatchObject({ psi_ref_deg: 150 });
+  it('does not SLEW if zero_heading is refused or the turn is stopped before its ack', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    let turn = operator.rotate(1);
+    socket.message(ack(socket.lastCommand().seq, false, 'heading unavailable'));
+    await turn;
+    expect(operator.getState().result).toMatchObject({ tone: 'error', text: expect.stringContaining('heading unavailable') });
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(0);
+
+    turn = operator.rotate(-1);
+    const zeroSeq = socket.lastCommand().seq;
+    await operator.stopTurn();
+    socket.message(ack(zeroSeq));
+    await turn;
+    expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(0);
   });
 
   it('Stop turn cancels the sequence and sends mode READY while the box is slewing', async () => {
     const { socket, operator } = armed();
     await armAndReady(socket, operator);
-    const turn = operator.rotate(1);
+    const { turn } = await startTurn(socket, operator, 1);
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     socket.message(tlm({ psi_deg: 40, mode: 'SLEW' }));
@@ -208,7 +234,7 @@ describe('DeviceOperator', () => {
   it('e-stop aborts the turn, and no return SLEW follows', async () => {
     const { socket, operator } = armed();
     await armAndReady(socket, operator);
-    const turn = operator.rotate(1);
+    const { turn } = await startTurn(socket, operator, 1);
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     operator.estop();
@@ -223,12 +249,12 @@ describe('DeviceOperator', () => {
     const { socket, operator } = armed();
     await armAndReady(socket, operator);
 
-    let turn = operator.rotate(1);
+    let { turn } = await startTurn(socket, operator, 1);
     socket.message(ack(socket.lastCommand().seq, false, 'magnetometer not OK'));
     await turn;
     expect(operator.getState().result).toMatchObject({ tone: 'error', text: expect.stringContaining('magnetometer not OK') });
 
-    turn = operator.rotate(1);
+    ({ turn } = await startTurn(socket, operator, 1));
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
@@ -241,7 +267,7 @@ describe('DeviceOperator', () => {
     expect(socket.commands().filter((command) => command.mode === 'SLEW')).toHaveLength(2);
 
     socket.message(tlm({ psi_deg: 30, mode: 'READY' }));
-    turn = operator.rotate(-1);
+    ({ turn } = await startTurn(socket, operator, -1));
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
@@ -254,7 +280,7 @@ describe('DeviceOperator', () => {
   it('fails if READY telemetry arrives after SLEW but no completion event follows', async () => {
     const { socket, operator } = armed();
     await armAndReady(socket, operator);
-    const turn = operator.rotate(1);
+    const { turn } = await startTurn(socket, operator, 1);
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));
@@ -270,7 +296,7 @@ describe('DeviceOperator', () => {
   it('gives up when the slew never finishes', async () => {
     const { socket, operator } = armed();
     await armAndReady(socket, operator);
-    const turn = operator.rotate(1);
+    const { turn } = await startTurn(socket, operator, 1);
     socket.message(ack(socket.lastCommand().seq));
     await flush();
     socket.message(tlm({ psi_deg: 30, mode: 'SLEW' }));

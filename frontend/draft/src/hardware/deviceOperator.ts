@@ -135,12 +135,13 @@ export class DeviceOperator {
 
   async rotate(direction: Direction): Promise<void> {
     if (!this.canRotate) return;
-    const reading = this.link.latestReading!;
     const token = ++this.turnToken;
-    const origin = wireAngle(reading.headingDeg);
-    const target = wireAngle(origin + direction * TURN_STEP_DEG);
+    const origin = 0;
+    const target = wireAngle(direction * TURN_STEP_DEG);
     this.set({ phase: 'rotating', direction, originDeg: origin, targetDeg: target, result: null });
     try {
+      await this.link.command('zero_heading');
+      if (token !== this.turnToken) throw new TurnAborted('Superseded');
       await this.slewTo(target, token);
       this.set({ phase: 'holding' });
       await this.watch(token, HOLD_MS, (mode) => (mode === 'READY' ? 'continue' : `THE BOX LEFT READY (${mode})`));
