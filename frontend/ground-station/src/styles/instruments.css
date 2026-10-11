@@ -332,3 +332,45 @@
 .history__dot {
   fill: var(--text);
 }
+
+.plots {
+  display: grid;
+  gap: 18px;
+  padding: 16px 20px 18px;
+}
+
+@media (min-width: 900px) {
+  .plots {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+.series .history__plot {
+  flex: none;
+  min-height: 0;
+}
+
+.series__value {
+  margin-left: auto;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.series__band {
+  fill: var(--danger);
+  opacity: 0.12;
+}
+
+.series__band-label {
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.series__marker {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+  opacity: 0.7;
+}

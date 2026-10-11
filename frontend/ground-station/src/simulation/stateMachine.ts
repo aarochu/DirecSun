@@ -129,6 +129,8 @@ const sampleOf = (state: SimState): HistorySample => ({
   t: state.timeS,
   heading: state.headingDeg,
   target: state.targetDeg,
+  rate: state.rateDegS,
+  wheel: state.wheelRpm,
 });
 
 export function createPlant(initialHeadingDeg = 0): PlantModel {

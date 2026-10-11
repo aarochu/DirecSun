@@ -440,7 +440,15 @@ export class DeviceLink implements DisplaySource {
     this.firstTimeS ??= deviceTimeS;
     this.nowS = deviceTimeS - this.firstTimeS;
     const targetDeg = this.unwrappedTarget(reading);
-    this.history.push({ t: this.nowS, heading: this.unwrappedHeading, target: targetDeg });
+    this.history.push({
+      t: this.nowS,
+      heading: this.unwrappedHeading,
+      target: targetDeg,
+      rate: reading.rateDegS,
+      wheel: reading.wheelRpm,
+      wheelRef: reading.wheelRefRpm,
+      vbat: reading.batteryV,
+    });
     const oldest = this.nowS - HISTORY_WINDOW_S - 0.5;
     while (this.history.length > 1 && (this.history[0]!.t < oldest || this.history.length > MAX_HISTORY_SAMPLES)) this.history.shift();
 

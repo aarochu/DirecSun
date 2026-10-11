@@ -683,6 +683,16 @@
   background: var(--surface);
 }
 
+.gs > .plots-panel {
+  margin: 0 var(--gs-pad) 32px;
+}
+
+.plots-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
 .rail__header {
   display: flex;
   flex-wrap: wrap;
@@ -719,9 +729,17 @@
 
 @media (min-width: 900px) {
   .gs {
-    height: 100vh;
-    height: 100dvh;
-    min-height: 660px;
+    min-height: max(660px, 100vh);
+    min-height: max(660px, 100dvh);
+  }
+
+  .gs-main {
+    height: calc(max(660px, 100vh) - 68px);
+    height: calc(max(660px, 100dvh) - 68px);
+  }
+
+  .gs > .plots-panel {
+    margin: 0 24px 24px;
   }
 
   .gs-header {
@@ -741,7 +759,7 @@
   }
 
   .gs-main {
-    flex: 1 1 auto;
+    flex: none;
     min-height: 0;
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -798,6 +816,10 @@
     grid-column: 8 / span 5;
     grid-row: 1 / span 2;
     min-height: 0;
+    /* The main grid has a fixed height and the plots panel sits below it, so a
+       tall side column (the SAFE parameters panel open) scrolls here instead of
+       spilling under the plots panel, which would then take its clicks. */
+    overflow-y: auto;
   }
 
   .rail {
