@@ -6,7 +6,7 @@ import './styles.css';
 import { animate, createTimeline, onScroll, stagger, svg, utils, type Timeline } from 'animejs';
 import logoUrl from './assets/logo.webp';
 import {
-  blurbs,
+  componentBullets,
   control,
   footer,
   ground,
@@ -84,7 +84,7 @@ function render(root: HTMLElement) {
         <figure class="part__media">
           <img src="${asset.src}" alt="${esc(asset.alt)}" loading="lazy" decoding="async" />
         </figure>
-        <p class="part__func">${esc(blurbs[part.id] ?? part.func)}</p>
+        <ul class="part__bullets">${componentBullets[part.id]!.map((bullet) => `<li>${esc(bullet)}</li>`).join('')}</ul>
       </article>`;
     })
     .join('');
