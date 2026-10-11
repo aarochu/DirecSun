@@ -16,6 +16,19 @@ Two people, each with their own agent sessions, work in this repository. This fi
 | `changes/` | **Julian** | Spec-driven sets; Aaron's requests arrive as issues, not edits |
 | `README.md`, `AGENTS.md`, `WORKSTREAMS.md`, `changes/CONTEXT.md`, `.github/` | Shared | Small PRs, either person, reviewed by the other |
 
+## Since 2026-10-11: Aaron also takes the unfinished software
+
+Julian approved Aaron to edit the firmware and all other software that is not finished, while Julian works on bench testing and printing. #80 lists the work and its order.
+
+- **Aaron's work may now edit** `firmware/`, `protocol/`, `tools/`, `ground/`, `docs/` and `changes/`, as well as `frontend/`. A contract change no longer waits for Julian's agent: Aaron's work specs it in `changes/` and changes the schema, the firmware and the mock together, as the "Crossing the line" section below describes for Julian.
+- **Still Julian's:**
+  - the bench and every motor-capable step;
+  - CAD part geometry and printing;
+  - merging into `main`.
+- **Safety is unchanged.** Only Julian arms or spins the motor. Any step that can turn the motor stops, states exactly what will happen, and waits for Julian's explicit go, every time. Agents never arm (`changes/CONTEXT.md`).
+- **The workflow is unchanged.** A spec is approved by Julian before code, and a feature's `## Tests` section is its merge gate.
+- **The firmware branches are on the bench.** Don't push straight to `feat/set3/*`, `feat/set4/*`, `feat/set3-teleop` or `feat/set4-judge-sequence`. Branch from the one you change and open a PR into it, so the bench session pulls it cleanly.
+
 ## Julian: printing, hardware, low-level firmware, wire contract
 
 - **Printing** (`cad/README.md` has the print plan): plates 1 to 3 now, plate 4 once the motor height is confirmed at 37 mm or less. Set 2's parts follow its measurements.
@@ -57,7 +70,7 @@ Two people, each with their own agent sessions, work in this repository. This fi
 - **Julian changes the contract:**
   - Additive v1 changes are listed in `protocol/README.md` "Changes" and in the PR description.
   - A breaking change bumps `v` and needs Aaron's ack on the PR before merge.
-- **Never edit the other person's paths.** If an agent finds a defect there, it opens an issue assigned to the owner (as with #2).
+- **Never edit the other person's paths,** except as the 2026-10-11 section above allows. If an agent finds a defect there, it opens an issue assigned to the owner (as with #2).
 - **Branches and merges:**
   - Julian: `feat/setN-slug` and `feat/setN/RN.M-slug`.
   - Aaron: `feat/ui-<topic>` off `main` (stacked PRs are fine, as with #10 on #9).
