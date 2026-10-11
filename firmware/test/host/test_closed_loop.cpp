@@ -430,12 +430,16 @@ void track_ref(BoxRig &rig, AttitudeRun &r)
 
 // A SLEW to `target_deg` from rest, run for `seconds`. The error is the true
 // heading's, measured from where the zero was taken; `band_deg` sets settle_s.
+// `ib_scale` and `iw_scale` move the plant's inertias off the controller's
+// constants (R4.5 robustness).
 AttitudeRun slew_run(double friction_nm, unsigned seed, double target_deg, double seconds, double band_deg,
-                     double deadline_s)
+                     double deadline_s, double ib_scale = 1.0, double iw_scale = 1.0)
 {
     Params p = cascade_params();
     p.rate_gain_scale = 1.0f;
     BoxRig rig(p);
+    rig.box.i_b *= ib_scale;
+    rig.box.i_w *= iw_scale;
     ready_and_zeroed(rig, friction_nm, seed);
     const double zero_true = rig.box.heading_deg;
     Command c = harness::mode_cmd(Mode::Slew);
@@ -578,4 +582,166 @@ TEST_CASE("R4.3 timeout path (sim): at 30 mN m of friction the SLEW times out at
     CHECK_FALSE(r.left_safe_modes);
     CHECK(r.ref_min >= 800.0);
     CHECK(r.ref_max <= 4000.0);
+}
+
+TEST_CASE("R4.4 DETUMBLE meets PR-1 both ways at every friction in the planning range")
+{
+    // A 1 rev/s hand spin in DETUMBLE is under 5 deg/s within 5 s and stays
+    // there for 5 s more, with no interlock on the way. The wheel lags its
+    // reference, so the reference can touch the cap or the floor for a moment
+    // early on (MOMENTUM_SATURATED, reported below); it must be off the clamp
+    // by the end.
+    for (double friction : {0.0, 1e-3, 3e-3}) {
+        for (double dir : {1.0, -1.0}) {
+            CAPTURE(friction);
+            CAPTURE(dir);
+            Params p = cascade_params();
+            p.rate_gain_scale = 1.0f;
+            BoxRig rig(p);
+            rig.box.friction_nm = friction;
+            rig.arm_to_ready();
+            rig.tick({harness::mode_cmd(Mode::Detumble)});
+            REQUIRE(rig.out.mode == Mode::Detumble);
+            REQUIRE_FALSE(rig.saw_saturated_flag);
+            rig.release(dir * kOneRevPerSecondDps);
+            double after = 0.0;
+            float ref_min = 1e9f;
+            float ref_max = -1e9f;
+            double first_sat = -1.0;
+            double last_sat = -1.0;
+            for (int i = 0; i < static_cast<int>(10.0 / kDt); ++i) {
+                rig.run(1);
+                const double t = (i + 1) * kDt;
+                if (t >= 5.0) after = std::fmax(after, std::fabs(rig.box.rate_dps()));
+                ref_min = std::fmin(ref_min, rig.ctl.wheel_ref_rpm());
+                ref_max = std::fmax(ref_max, rig.ctl.wheel_ref_rpm());
+                if (rig.out.flags & kFlagMomentumSaturated) {
+                    if (first_sat < 0.0) first_sat = t;
+                    last_sat = t;
+                }
+                REQUIRE(rig.out.mode == Mode::Detumble);  // no interlock on the way
+            }
+            MESSAGE("friction " << friction * 1e3 << " mN m, direction " << dir << ": max |rate| from 5 to 10 s "
+                                << after << " deg/s; wheel reference " << ref_min << " to " << ref_max
+                                << " rpm; MOMENTUM_SATURATED from " << first_sat << " to " << last_sat
+                                << " s after release (-1: never)");
+            CHECK(after < 5.0);
+            CHECK(last_sat < 5.0);
+            CHECK((rig.out.flags & kFlagMomentumSaturated) == 0u);
+        }
+    }
+}
+
+TEST_CASE("R4.4 DETUMBLE past the absorbable spin saturates the wheel without tripping an interlock")
+{
+    // 2.2 rev/s is more than the wheel can absorb (about 1.5 rev/s each way):
+    // the reference sits on a clamp and MOMENTUM_SATURATED is set, but nothing trips.
+    for (double dir : {1.0, -1.0}) {
+        CAPTURE(dir);
+        Params p = cascade_params();
+        p.rate_gain_scale = 1.0f;
+        BoxRig rig(p);
+        rig.arm_to_ready();
+        rig.tick({harness::mode_cmd(Mode::Detumble)});
+        REQUIRE(rig.out.mode == Mode::Detumble);
+        rig.release(dir * 2.2 * kOneRevPerSecondDps);
+        float ref_min = 1e9f;
+        float ref_max = -1e9f;
+        for (int i = 0; i < static_cast<int>(8.0 / kDt); ++i) {
+            rig.run(1);
+            REQUIRE(rig.out.mode == Mode::Detumble);
+            ref_min = std::fmin(ref_min, rig.ctl.wheel_ref_rpm());
+            ref_max = std::fmax(ref_max, rig.ctl.wheel_ref_rpm());
+        }
+        MESSAGE("direction " << dir << ": wheel reference " << ref_min << " to " << ref_max << " rpm");
+        CHECK(ref_min >= omega_ref_floor_rpm(p) - 0.5f);
+        CHECK(ref_max <= p.omega_cap_rpm + 0.5f);
+        CHECK(rig.saw_saturated_flag);
+        CHECK(rig.out.latched == 0u);
+    }
+}
+
+TEST_CASE("R4.4 DETUMBLE and READY run the same controller: identical wheel reference trajectories")
+{
+    // The same hand spin, once in READY and once in DETUMBLE, tick for tick.
+    // A DETUMBLE with a gain, limit, or bleed of its own makes the two differ.
+    auto trajectory = [](bool detumble) {
+        Params p = cascade_params();
+        p.rate_gain_scale = 1.0f;
+        BoxRig rig(p);
+        rig.box.friction_nm = 1e-3;
+        rig.arm_to_ready();
+        if (detumble) {
+            rig.tick({harness::mode_cmd(Mode::Detumble)});
+        } else {
+            rig.tick();
+        }
+        REQUIRE(rig.out.mode == (detumble ? Mode::Detumble : Mode::Ready));
+        rig.release(kOneRevPerSecondDps);
+        std::vector<float> ref;
+        for (int i = 0; i < static_cast<int>(3.0 / kDt); ++i) {
+            rig.run(1);
+            ref.push_back(rig.ctl.wheel_ref_rpm());
+        }
+        return ref;
+    };
+    const std::vector<float> ready = trajectory(false);
+    const std::vector<float> detumble = trajectory(true);
+    REQUIRE(ready.size() == detumble.size());
+    float worst = 0.0f;
+    float span = 0.0f;
+    for (std::size_t i = 0; i < ready.size(); ++i) {
+        worst = std::fmax(worst, std::fabs(ready[i] - detumble[i]));
+        span = std::fmax(span, std::fabs(ready[i] - ready[0]));
+    }
+    MESSAGE("largest difference " << worst << " rpm over a reference that moved " << span << " rpm");
+    CHECK(span > 100.0f);  // the spin really moved the wheel reference
+    CHECK(worst == 0.0f);
+}
+
+TEST_CASE("R4.5 robustness: the controller built on the TD inertias meets PR-1 and PR-2 on a plant 30 % off")
+{
+    // T-3 passes within 30 % of 1.03e-3, so the gains must tolerate that band,
+    // and a wheel 20 % off, without retuning. Friction at both ends of the
+    // planning range, ten gyro-noise seeds.
+    double worst_settle = 0.0;
+    double worst_detumble = 0.0;
+    for (double ib : {0.7, 1.3}) {
+        for (double iw : {0.8, 1.2}) {
+            for (double friction : {0.0, 3e-3}) {
+                CAPTURE(ib);
+                CAPTURE(iw);
+                CAPTURE(friction);
+                for (unsigned seed = 1; seed <= 10; ++seed) {
+                    CAPTURE(seed);
+                    const AttitudeRun r = slew_run(friction, seed, 90.0, 5.0, 3.0, 3.0, ib, iw);
+                    worst_settle = std::fmax(worst_settle, r.settle_s);
+                    CHECK(r.settle_s < 3.0);
+                    CHECK(r.timeout_s < 0.0);
+                    CHECK(std::fabs(r.end_error_deg) < 3.0);
+                    CHECK_FALSE(r.left_safe_modes);
+
+                    Params p = cascade_params();
+                    p.rate_gain_scale = 1.0f;
+                    BoxRig rig(p);
+                    rig.box.i_b *= ib;
+                    rig.box.i_w *= iw;
+                    rig.box.friction_nm = friction;
+                    rig.gyro.rng.seed(seed);
+                    rig.arm_to_ready();
+                    rig.release(kOneRevPerSecondDps);
+                    double after = 0.0;
+                    for (int i = 0; i < static_cast<int>(8.0 / kDt); ++i) {
+                        rig.run(1);
+                        if ((i + 1) * kDt >= 5.0) after = std::fmax(after, std::fabs(rig.box.rate_dps()));
+                    }
+                    worst_detumble = std::fmax(worst_detumble, after);
+                    CHECK(after < 5.0);
+                    CHECK(rig.out.mode == Mode::Ready);
+                }
+            }
+        }
+    }
+    MESSAGE("worst 90 deg slew settle " << worst_settle << " s; worst |rate| 5 to 8 s after a 1 rev/s spin "
+                                       << worst_detumble << " deg/s");
 }

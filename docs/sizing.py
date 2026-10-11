@@ -54,6 +54,14 @@ PACK_R = 8 * 0.030 + 0.10     # [A] ohm: 30 mOhm per NiMH cell plus holder conta
 MU_DGBB = 0.0015              # [V] SKF constant-coefficient value for deep groove ball bearings
 BORE = 0.008                  # m
 FRICTION_PLAN = (1e-3, 3e-3)  # [A] N*m planning range (doc Section 3.6): grease, shields, and a printed fit raise it well above the SKF figure
+# Measurements from the assembled box (R4.5, TD section 9: T-3 and T-4). Empty until measured;
+# when set they replace the calculated value and the printed line is labelled [M].
+MEASURED = {
+    "box_inertia_kgm2": None,      # T-3: box Iz excluding the wheel
+    "running_friction_nm": None,   # T-4
+}
+if MEASURED["running_friction_nm"] is not None:
+    FRICTION_PLAN = (MEASURED["running_friction_nm"],) * 2
 ROD_D, ROD_L = 0.0038, 0.245  # #8-32 threaded rod, modelled as a 3.8 mm solid rod (between root and major diameter)
 ROD_R = 0.04575 * math.sqrt(2)  # corner column centre, from the axis
 
@@ -113,6 +121,9 @@ def main():
         m_box = m_print + m_hw + 4 * m_rod + m_w + BELL_MASS
         i_box = i_print + i_hw + i_rod                    # wheel excluded: it is the actuator
         print(f"\n=== Flywheel: {wname}, bias {BIAS_RPM:.0f} rpm, cap {CAP_RPM:.0f} rpm ===")
+        if MEASURED["box_inertia_kgm2"] is not None:
+            print(f"  box Iz: calculated {i_box:.2e}, measured {MEASURED['box_inertia_kgm2']:.2e} kg*m2 [M]; using the measurement")
+            i_box = MEASURED["box_inertia_kgm2"]
         print(f"  washer mass {m_w*1000:.0f} g, wheel Iz (washers+bell) {i_wheel:.2e} kg*m2, rim speed at cap "
               f"{rpm2rad(CAP_RPM)*od/2000:.1f} m/s")
         print(f"  box mass (incl. wheel) {m_box*1000:.0f} g, weight {m_box*G:.2f} N, box Iz (excl. wheel) {i_box:.2e} kg*m2")
@@ -166,8 +177,12 @@ def main():
         # Can the box turn itself? Bearing friction against motor torque.
         m_skf = 0.5 * MU_DGBB * m_box * G * BORE        # whole box weight on the lower bearing
         h_margin = i_wheel * rpm2rad(min(CAP_RPM - BIAS_RPM, BIAS_RPM - LOW_RPM))
-        print(f"  bearing friction: SKF estimate {m_skf*1000:.3f} mN*m; planning range "
-              f"{FRICTION_PLAN[0]*1000:.0f} to {FRICTION_PLAN[1]*1000:.0f} mN*m")
+        if MEASURED["running_friction_nm"] is None:
+            print(f"  bearing friction: SKF estimate {m_skf*1000:.3f} mN*m; planning range "
+                  f"{FRICTION_PLAN[0]*1000:.0f} to {FRICTION_PLAN[1]*1000:.0f} mN*m")
+        else:
+            print(f"  bearing friction: SKF estimate {m_skf*1000:.3f} mN*m; running friction "
+                  f"{FRICTION_PLAN[0]*1000:.2f} mN*m [M]")
         for fr in FRICTION_PLAN:
             print(f"  friction {fr*1000:.0f} mN*m: motor torque at 1 A is {kt/fr:.1f} x, at 3 A {3*kt/fr:.1f} x; "
                   f"{fr/kt*1000:.0f} mA of motor current to overcome it; while the box turns, it uses the "
