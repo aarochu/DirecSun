@@ -1,0 +1,76 @@
+
+> direcsun-ground-station@0.1.0 test:e2e
+> playwright test
+
+
+Running 42 tests using 1 worker
+
+  ✓   1 e2e/box-control.spec.ts:99:3 › box control against a scripted box › connecting and watching sends nothing (3.0s)
+  ✓   2 e2e/box-control.spec.ts:106:3 › box control against a scripted box › SAFE parameters send only changed values and show the applied set (2.0s)
+  ✓   3 e2e/box-control.spec.ts:117:3 › box control against a scripted box › arm needs the lock-pin confirmation, then right 90 turns, holds and returns (5.2s)
+  ✓   4 e2e/box-control.spec.ts:145:3 › box control against a scripted box › the space bar sends e-stop while armed, and the latched fault shows (3.3s)
+  ✓   5 e2e/box-control.spec.ts:168:3 › box control against a scripted box › a dropped link never reconnects by itself (3.6s)
+  ✓   6 e2e/hardware-3d.spec.ts:17:3 › hardware CAD views › close-up and Ground Station both render the illustrative electronics (3.4s)
+  ✓   7 e2e/hardware-3d.spec.ts:26:3 › hardware CAD views › a row opens a 3D view that rotates by dragging and resets (5.3s)
+  ✓   8 e2e/hardware-3d.spec.ts:47:3 › hardware CAD views › arrow keys rotate the focused view (2.8s)
+  ✓   9 e2e/hardware-3d.spec.ts:58:3 › hardware CAD views › plain scrolling over the view still scrolls the page; Ctrl + scroll zooms instead (3.0s)
+  ✓  10 e2e/hardware-3d.spec.ts:80:3 › hardware CAD views › Part only hides the surrounding stack and brings it back (2.9s)
+  ✓  11 e2e/hardware-3d.spec.ts:94:3 › hardware CAD views › all ten posters are served as images, each labeled with what it highlights (5.2s)
+  ✓  12 e2e/hardware-3d.spec.ts:107:3 › hardware CAD views › expanding every row draws every view through one shared WebGL context (7.3s)
+  ✓  13 e2e/hardware-3d.spec.ts:128:3 › hardware CAD views › a phone-width view opens without horizontal overflow and keeps its controls inside the frame (1.7s)
+  ✓  14 e2e/hardware-3d.spec.ts:143:3 › hardware CAD views › opening a row stalls the page briefly: the first pays for the context, the rest only draw (5.3s)
+  ✓  15 e2e/hardware-3d.spec.ts:166:3 › hardware CAD views › opening and closing rows never creates more than one WebGL context (14.4s)
+  ✓  16 e2e/hardware-3d.spec.ts:193:3 › hardware CAD views › the focused 3D view shows a visible focus ring, and the hint is readable (2.3s)
+  -  17 e2e/screenshots.spec.ts:8:3 › capture 320px
+  -  18 e2e/screenshots.spec.ts:8:3 › capture 375px
+  -  19 e2e/screenshots.spec.ts:8:3 › capture 768px
+  -  20 e2e/screenshots.spec.ts:8:3 › capture 1024px
+  -  21 e2e/screenshots.spec.ts:8:3 › capture 1440px
+  ✓  22 e2e/smoke.spec.ts:19:3 › ground station judge flow › ROUTE_REFRESH: the ground station loads directly and after a reload (1.2s)
+  ✓  23 e2e/smoke.spec.ts:32:5 › ground station judge flow › right 90° → hold → automatic return → READY (25.1s)
+  ✓  24 e2e/smoke.spec.ts:32:5 › ground station judge flow › left 90° → hold → automatic return → READY (20.2s)
+  ✓  25 e2e/smoke.spec.ts:55:3 › ground station judge flow › STOP cancels the pending return; RESET restores 0° (9.0s)
+  ✘  26 e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request (30.9s)
+  ✓  27 e2e/smoke.spec.ts:93:3 › ground station judge flow › OFFLINE: both pages load only same-origin resources, fonts included (2.5s)
+  ✓  28 e2e/smoke.spec.ts:114:3 › landing › LANDING_NAV: header links scroll to their sections; CTA opens the ground station (3.9s)
+  ✓  29 e2e/smoke.spec.ts:134:3 › landing › OrbitSpace renders in the hero only and leaves CTAs clickable (1.0s)
+  ✓  30 e2e/smoke.spec.ts:156:3 › landing › REDUCED_MOTION: static hero, ground station still works (25.6s)
+  ✓  31 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 320px (2.1s)
+  ✓  32 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 375px (2.0s)
+  ✓  33 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 390px (2.1s)
+  ✓  34 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 768px (2.2s)
+  ✓  35 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 1024px (2.9s)
+  ✓  36 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 1440px (2.7s)
+  ✓  37 e2e/smoke.spec.ts:188:3 › responsive › at 1440×900 the model and both direction commands fit without scrolling (1.5s)
+  ✓  38 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 320px (1.5s)
+  ✓  39 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 375px (1.8s)
+  ✓  40 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 390px (1.7s)
+  ✓  41 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 768px (1.6s)
+  ✓  42 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 1440px (1.8s)
+
+
+  1) e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.textContent: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.controls__status')
+
+
+      10 | async function advanceSimulationTo(page: Page, status: string, maxSimulatedMs: number) {
+      11 |   for (let elapsed = 0; elapsed <= maxSimulatedMs; elapsed += 100) {
+    > 12 |     if ((await phase(page).textContent()) === status) return;
+         |                            ^
+      13 |     await page.clock.runFor(100);
+      14 |   }
+      15 |   await expect(phase(page)).toHaveText(status);
+        at advanceSimulationTo (/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/m33/frontend/ground-station/e2e/smoke.spec.ts:12:28)
+        at /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/m33/frontend/ground-station/e2e/smoke.spec.ts:87:5
+
+    Error Context: test-results/smoke-ground-station-judge-1431d-ol-makes-no-network-request/error-context.md
+
+  1 failed
+    e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request 
+  5 skipped
+  36 passed (3.7m)

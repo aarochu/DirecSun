@@ -1,0 +1,30 @@
+roots 1; IRAM functions reached 67; flash callees 29; unresolved callx 8
+  FLASH __cxa_guard_acquire  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH __cxa_guard_release  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH acosf  <- direcsun::Estimator::update(direcsun::EstimatorInputs const&
+  FLASH adc_oneshot_get_calibrated_result  <- direcsun::drivers::adc_read_mv(direcsun::drivers::AdcInput, 
+  FLASH direcsun::app::baro_reading()  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH direcsun::app::shared_drain_commands(direcsun::Command*, unsigned int)  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH direcsun::app::shared_dropped_outbound()  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH direcsun::app::shared_post_outbound(direcsun::Outbound const&)  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH direcsun::app::shared_take_estop()  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH direcsun::app::telemetry()  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH direcsun::app::tick_stats()  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH esp_err_to_name  <- direcsun::app::(anonymous namespace)::control_task(void*) (+3)
+  FLASH esp_log_is_tag_loggable  <- esp_log
+  FLASH esp_timer_delete  <- direcsun::drivers::dshot_zero_sender_stop()
+  FLASH floor  <- _ZZN8direcsun18apply_param_updateERKNS_6ParamsERKNS_11ParamU (+1)
+  FLASH floorf  <- direcsun::validate_params(direcsun::Params const&)
+  FLASH gpio_config  <- direcsun::drivers::hall_init(gpio_num_t)
+  FLASH gptimer_new_timer  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH gptimer_register_event_callbacks  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH gptimer_set_alarm_action  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH gptimer_start  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH i2c_master_bus_reset  <- direcsun::drivers::i2c_bus_reset()
+  FLASH i2c_master_transmit_receive  <- direcsun::drivers::imu_read(direcsun::drivers::ImuSample&) (+1)
+  FLASH lroundf  <- direcsun::Supervisor::handle(direcsun::Command const&, direc
+  FLASH remainder  <- direcsun::Estimator::heading_deg() const
+  FLASH remainderf  <- direcsun::wrap_pi(float)
+  FLASH rmt_transmit  <- direcsun::drivers::DshotRmt::transmit_frame(unsigned short)
+  FLASH snprintf  <- direcsun::(anonymous namespace)::fail(char const*, char cons (+3)
+  FLASH sqrtf  <- direcsun::Estimator::update(direcsun::EstimatorInputs const&

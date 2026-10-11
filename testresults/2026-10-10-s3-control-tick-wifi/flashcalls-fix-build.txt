@@ -1,0 +1,17 @@
+roots 1; IRAM functions reached 148; flash callees 16; unresolved callx 15
+  FLASH __cxa_guard_acquire  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH __cxa_guard_release  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH __isnanf  <- __math_invalidf (+1)
+  FLASH esp_err_to_name  <- direcsun::app::(anonymous namespace)::control_task(void*) (+3)
+  FLASH esp_log_is_tag_loggable  <- esp_log
+  FLASH esp_timer_delete  <- direcsun::drivers::dshot_zero_sender_stop()
+  FLASH floor  <- _ZZN8direcsun18apply_param_updateERKNS_6ParamsERKNS_11ParamU (+1)
+  FLASH floorf  <- direcsun::validate_params(direcsun::Params const&)
+  FLASH gpio_config  <- direcsun::drivers::hall_init(gpio_num_t)
+  FLASH gpio_install_isr_service  <- direcsun::drivers::hall_init(gpio_num_t)
+  FLASH gpio_isr_handler_add  <- direcsun::drivers::hall_init(gpio_num_t)
+  FLASH gptimer_new_timer  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH gptimer_register_event_callbacks  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH gptimer_set_alarm_action  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH gptimer_start  <- direcsun::app::(anonymous namespace)::control_task(void*)
+  FLASH snprintf  <- direcsun::(anonymous namespace)::fail(char const*, char cons (+3)

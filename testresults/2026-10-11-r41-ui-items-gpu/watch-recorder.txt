@@ -1,0 +1,4 @@
+ui-turn-recorder: watched turn: TURN COMPLETE: BACK AT THE START HEADING.
+ui-turn-recorder: HEARTBEAT_LOST in the watch page's tlm 1009 ms after the operator's last ping
+ui-turn-recorder: done, capture in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/r41/watch
+recorder exit 0

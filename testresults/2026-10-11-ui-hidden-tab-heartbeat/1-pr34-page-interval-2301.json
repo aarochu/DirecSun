@@ -1,0 +1,32 @@
+{
+ "uiUrl": "http://localhost:4473/",
+ "stateBeforeHide": "visible",
+ "stateAfterHide": "hidden",
+ "stateAtEnd": "hidden",
+ "visibility": [
+  [
+   8355,
+   "hidden"
+  ],
+  [
+   15136,
+   "visible"
+  ],
+  [
+   20704,
+   "hidden"
+  ],
+  [
+   39402,
+   "visible"
+  ]
+ ],
+ "hiddenWindowS": 30.1,
+ "pingsHidden": 53,
+ "pingRateHz": 1.76,
+ "maxPingGapMs": 1032,
+ "finalStatus": "SAFE / DEVICE",
+ "finalResult": "THE BOX WENT SAFE: HEARTBEAT LOST",
+ "finalFlags": "MOMENTUM OKLATCHED HEARTBEAT LOST"
+}
+stageB exit=0

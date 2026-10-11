@@ -1,0 +1,24 @@
+{
+ "uiUrl": "http://localhost:4474/",
+ "stateBeforeHide": "visible",
+ "stateAfterHide": "hidden",
+ "stateAtEnd": "hidden",
+ "visibility": [
+  [
+   8930,
+   "hidden"
+  ],
+  [
+   40001,
+   "visible"
+  ]
+ ],
+ "hiddenWindowS": 30.1,
+ "pingsHidden": 150,
+ "pingRateHz": 4.98,
+ "maxPingGapMs": 281,
+ "finalStatus": "READY / DEVICE",
+ "finalResult": "ARM ACCEPTED: SPINNING UP. KEEP THE LOCK PIN IN.",
+ "finalFlags": "MOMENTUM OK"
+}
+stageB exit=0

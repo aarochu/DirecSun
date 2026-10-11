@@ -1,0 +1,6 @@
+[mock-box 1791709344.329] listening on ws://127.0.0.1:8765/ws (inputs: throttle,wheel,rate; characterised)
+[mock-box 1791709345.381] client 352 connected from ('127.0.0.1', 57234)
+[mock-box 1791709345.603] mode SPINUP (cause arm)
+[mock-box 1791709351.969] mode READY (cause spinup_complete)
+[mock-box 1791709384.055] mode SAFE (cause disarm)
+[mock-box 1791709384.376] client 352 disconnected

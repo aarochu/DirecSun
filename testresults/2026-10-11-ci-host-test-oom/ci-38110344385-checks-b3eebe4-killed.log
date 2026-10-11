@@ -1,0 +1,181 @@
+﻿2026-10-11T04:03:07.8810106Z Current runner version: '2.337.0'
+2026-10-11T04:03:07.8837147Z ##[group]Runner Image Provisioner
+2026-10-11T04:03:07.8838021Z Hosted Compute Agent
+2026-10-11T04:03:07.8838658Z Version: 20261002.596
+2026-10-11T04:03:07.8840310Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-11T04:03:07.8841073Z Build Date: 2026-10-02T22:28:27Z
+2026-10-11T04:03:07.8841810Z Worker ID: {da1d85f2-af8d-4ea0-bc5f-136c5a469ea0}
+2026-10-11T04:03:07.8842548Z Region: eastus
+2026-10-11T04:03:07.8843168Z Cloud: Azure
+2026-10-11T04:03:07.8843768Z ##[endgroup]
+2026-10-11T04:03:07.8845673Z ##[group]Operating System
+2026-10-11T04:03:07.8846393Z Ubuntu
+2026-10-11T04:03:07.8846938Z 24.04.5
+2026-10-11T04:03:07.8847470Z LTS
+2026-10-11T04:03:07.8848128Z ##[endgroup]
+2026-10-11T04:03:07.8848690Z ##[group]Runner Image
+2026-10-11T04:03:07.8849689Z Image: ubuntu-24.04
+2026-10-11T04:03:07.8850295Z Version: 20261004.327.1
+2026-10-11T04:03:07.8851698Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-11T04:03:07.8853254Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-11T04:03:07.8854251Z ##[endgroup]
+2026-10-11T04:03:07.8855402Z ##[group]GITHUB_TOKEN Permissions
+2026-10-11T04:03:07.8857729Z Contents: read
+2026-10-11T04:03:07.8858349Z Metadata: read
+2026-10-11T04:03:07.8859227Z ##[endgroup]
+2026-10-11T04:03:07.8861527Z Secret source: Actions
+2026-10-11T04:03:07.8862556Z Cache mode: write
+2026-10-11T04:03:07.8863700Z Prepare workflow directory
+2026-10-11T04:03:07.9224053Z Prepare all required actions
+2026-10-11T04:03:07.9275123Z Getting action download info
+2026-10-11T04:03:08.1060130Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+2026-10-11T04:03:08.2156574Z Download action repository 'actions/setup-node@v7' (SHA:949feb2413d6458794dcd2491c4babbbce0c15c1)
+2026-10-11T04:03:08.4063341Z Download action repository 'actions/setup-python@v7' (SHA:5fda3b95a4ea91299a34e894583c3862153e4b97)
+2026-10-11T04:03:08.5187198Z Download action repository 'actions/upload-artifact@v7' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+2026-10-11T04:03:08.7987764Z Complete job name: checks (purity, host tests, schema, link, mock box, CAD staleness)
+2026-10-11T04:03:08.8879808Z ##[group]Run actions/checkout@v7
+2026-10-11T04:03:08.8880828Z with:
+2026-10-11T04:03:08.8881279Z   submodules: false
+2026-10-11T04:03:08.8881765Z   repository: aarochu/DirecSun
+2026-10-11T04:03:08.8886132Z   token: ***
+2026-10-11T04:03:08.8886604Z   ssh-strict: true
+2026-10-11T04:03:08.8887058Z   ssh-user: git
+2026-10-11T04:03:08.8887523Z   persist-credentials: true
+2026-10-11T04:03:08.8888029Z   clean: true
+2026-10-11T04:03:08.8888503Z   sparse-checkout-cone-mode: true
+2026-10-11T04:03:08.8889262Z   fetch-depth: 1
+2026-10-11T04:03:08.8889709Z   fetch-tags: false
+2026-10-11T04:03:08.8890166Z   show-progress: true
+2026-10-11T04:03:08.8890615Z   lfs: false
+2026-10-11T04:03:08.8891044Z   set-safe-directory: true
+2026-10-11T04:03:08.8891590Z   allow-unsafe-pr-checkout: false
+2026-10-11T04:03:08.8892481Z ##[endgroup]
+2026-10-11T04:03:09.0123830Z Syncing repository: aarochu/DirecSun
+2026-10-11T04:03:09.0126706Z ##[group]Getting Git version info
+2026-10-11T04:03:09.0127883Z Working directory is '/home/runner/work/DirecSun/DirecSun'
+2026-10-11T04:03:09.0130135Z [command]/usr/bin/git version
+2026-10-11T04:03:09.0207459Z git version 2.55.0
+2026-10-11T04:03:09.0234998Z ##[endgroup]
+2026-10-11T04:03:09.0261903Z Temporarily overriding HOME='/home/runner/work/_temp/bd5ce70b-4690-4558-95ef-8f4e7fe5191e' before making global git config changes
+2026-10-11T04:03:09.0263968Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-11T04:03:09.0269391Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/DirecSun/DirecSun
+2026-10-11T04:03:09.0324792Z Deleting the contents of '/home/runner/work/DirecSun/DirecSun'
+2026-10-11T04:03:09.0328637Z ##[group]Determining repository object format
+2026-10-11T04:03:09.0330819Z ##[endgroup]
+2026-10-11T04:03:09.0331676Z ##[group]Initializing the repository
+2026-10-11T04:03:09.0336515Z [command]/usr/bin/git init /home/runner/work/DirecSun/DirecSun
+2026-10-11T04:03:09.0451838Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-11T04:03:09.0453750Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-11T04:03:09.0455830Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-11T04:03:09.0457140Z hint: call:
+2026-10-11T04:03:09.0457837Z hint:
+2026-10-11T04:03:09.0458713Z hint: 	git config --global init.defaultBranch <name>
+2026-10-11T04:03:09.0460084Z hint:
+2026-10-11T04:03:09.0460908Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-11T04:03:09.0462077Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-11T04:03:09.0463316Z hint:
+2026-10-11T04:03:09.0464172Z hint: 	git branch -m <name>
+2026-10-11T04:03:09.0465029Z hint:
+2026-10-11T04:03:09.0466065Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-11T04:03:09.0467803Z Initialized empty Git repository in /home/runner/work/DirecSun/DirecSun/.git/
+2026-10-11T04:03:09.0470114Z [command]/usr/bin/git remote add origin https://github.com/aarochu/DirecSun
+2026-10-11T04:03:09.0520551Z ##[endgroup]
+2026-10-11T04:03:09.0521717Z ##[group]Disabling automatic garbage collection
+2026-10-11T04:03:09.0524504Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-11T04:03:09.0577746Z ##[endgroup]
+2026-10-11T04:03:09.0579778Z ##[group]Setting up auth
+2026-10-11T04:03:09.0581098Z Removing SSH command configuration
+2026-10-11T04:03:09.0585289Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-11T04:03:09.0634907Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-11T04:03:09.1043471Z Removing HTTP extra header
+2026-10-11T04:03:09.1051476Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-11T04:03:09.1097430Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-11T04:03:09.1347690Z Removing includeIf entries pointing to credentials config files
+2026-10-11T04:03:09.1355205Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-11T04:03:09.1407811Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-11T04:03:09.1661710Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-673e42cb-fc08-414e-9021-cf4c27b2e411.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-11T04:03:09.1707747Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/DirecSun/DirecSun/.git.path /home/runner/work/_temp/git-credentials-673e42cb-fc08-414e-9021-cf4c27b2e411.config
+2026-10-11T04:03:09.1747429Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/DirecSun/DirecSun/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-673e42cb-fc08-414e-9021-cf4c27b2e411.config
+2026-10-11T04:03:09.1793556Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-673e42cb-fc08-414e-9021-cf4c27b2e411.config
+2026-10-11T04:03:09.1839567Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-673e42cb-fc08-414e-9021-cf4c27b2e411.config
+2026-10-11T04:03:09.1880787Z ##[endgroup]
+2026-10-11T04:03:09.1881712Z ##[group]Fetching the repository
+2026-10-11T04:03:09.1888956Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +b3eebe4f9d373b81d0ae13833281384f7e189948:refs/remotes/origin/feat/set4/R4.3-hold-and-slew
+2026-10-11T04:03:09.6148012Z From https://github.com/aarochu/DirecSun
+2026-10-11T04:03:09.6151249Z  * [new ref]         b3eebe4f9d373b81d0ae13833281384f7e189948 -> origin/feat/set4/R4.3-hold-and-slew
+2026-10-11T04:03:09.6159699Z [command]/usr/bin/git branch --list --remote origin/feat/set4/R4.3-hold-and-slew
+2026-10-11T04:03:09.6194161Z   origin/feat/set4/R4.3-hold-and-slew
+2026-10-11T04:03:09.6203925Z [command]/usr/bin/git rev-parse refs/remotes/origin/feat/set4/R4.3-hold-and-slew
+2026-10-11T04:03:09.6234394Z b3eebe4f9d373b81d0ae13833281384f7e189948
+2026-10-11T04:03:09.6239952Z ##[endgroup]
+2026-10-11T04:03:09.6241611Z ##[group]Determining the checkout info
+2026-10-11T04:03:09.6243133Z ##[endgroup]
+2026-10-11T04:03:09.6245913Z [command]/usr/bin/git sparse-checkout disable
+2026-10-11T04:03:09.6307547Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-11T04:03:09.6350132Z ##[group]Checking out the ref
+2026-10-11T04:03:09.6355064Z [command]/usr/bin/git checkout --progress --force -B feat/set4/R4.3-hold-and-slew refs/remotes/origin/feat/set4/R4.3-hold-and-slew
+2026-10-11T04:03:09.7229165Z Switched to a new branch 'feat/set4/R4.3-hold-and-slew'
+2026-10-11T04:03:09.7234137Z branch 'feat/set4/R4.3-hold-and-slew' set up to track 'origin/feat/set4/R4.3-hold-and-slew'.
+2026-10-11T04:03:09.7248141Z ##[endgroup]
+2026-10-11T04:03:09.7301623Z [command]/usr/bin/git log -1 --format=%H
+2026-10-11T04:03:09.7337133Z b3eebe4f9d373b81d0ae13833281384f7e189948
+2026-10-11T04:03:09.7814329Z ##[group]Run actions/setup-node@v7
+2026-10-11T04:03:09.7815507Z with:
+2026-10-11T04:03:09.7816289Z   node-version: 24
+2026-10-11T04:03:09.7817167Z   check-latest: false
+2026-10-11T04:03:09.7827718Z   token: ***
+2026-10-11T04:03:09.7828616Z   package-manager-cache: true
+2026-10-11T04:03:09.7829803Z ##[endgroup]
+2026-10-11T04:03:09.9266125Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+2026-10-11T04:03:10.0173652Z ##[group]Environment details
+2026-10-11T04:03:10.3440707Z node: v24.21.0
+2026-10-11T04:03:10.3441524Z npm: 11.19.0
+2026-10-11T04:03:10.3442124Z yarn: 1.22.22
+2026-10-11T04:03:10.3443307Z ##[endgroup]
+2026-10-11T04:03:10.3635035Z ##[group]Run actions/setup-python@v7
+2026-10-11T04:03:10.3635589Z with:
+2026-10-11T04:03:10.3636007Z   python-version: 3.12
+2026-10-11T04:03:10.3636458Z   check-latest: false
+2026-10-11T04:03:10.3639899Z   token: ***
+2026-10-11T04:03:10.3640347Z   update-environment: true
+2026-10-11T04:03:10.3640802Z   allow-prereleases: false
+2026-10-11T04:03:10.3641233Z   freethreaded: false
+2026-10-11T04:03:10.3641637Z ##[endgroup]
+2026-10-11T04:03:10.4985454Z ##[group]Installed versions
+2026-10-11T04:03:10.5080469Z Successfully set up CPython (3.12.15)
+2026-10-11T04:03:10.5081509Z ##[endgroup]
+2026-10-11T04:03:10.5267509Z ##[group]Run python -m venv "$RUNNER_TEMP/tools-venv"
+2026-10-11T04:03:10.5268258Z [36;1mpython -m venv "$RUNNER_TEMP/tools-venv"[0m
+2026-10-11T04:03:10.5269568Z [36;1m"$RUNNER_TEMP/tools-venv/bin/pip" install --quiet $(grep -E '^(jsonschema|websockets)==' tools/requirements.txt)[0m
+2026-10-11T04:03:10.5270533Z [36;1mecho "DIRECSUN_PYTHON=$RUNNER_TEMP/tools-venv/bin/python" >> "$GITHUB_ENV"[0m
+2026-10-11T04:03:10.5644253Z shell: /usr/bin/bash -e {0}
+2026-10-11T04:03:10.5644948Z env:
+2026-10-11T04:03:10.5645572Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:10.5646497Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+2026-10-11T04:03:10.5647427Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:10.5648268Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:10.5649310Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:10.5650300Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+2026-10-11T04:03:10.5651059Z ##[endgroup]
+2026-10-11T04:03:17.4813772Z 
+2026-10-11T04:03:17.4814917Z [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+2026-10-11T04:03:17.4816811Z [notice] To update, run: python -m pip install --upgrade pip
+2026-10-11T04:03:17.5785333Z ##[group]Run tools/check-all.sh
+2026-10-11T04:03:17.5785697Z [36;1mtools/check-all.sh[0m
+2026-10-11T04:03:17.5854609Z shell: /usr/bin/bash -e {0}
+2026-10-11T04:03:17.5854947Z env:
+2026-10-11T04:03:17.5855273Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:17.5855786Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+2026-10-11T04:03:17.5856298Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:17.5856742Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:17.5857191Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+2026-10-11T04:03:17.5857658Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+2026-10-11T04:03:17.5858143Z   DIRECSUN_PYTHON: /home/runner/work/_temp/tools-venv/bin/python
+2026-10-11T04:03:17.5858547Z ##[endgroup]
+2026-10-11T04:03:17.6104901Z core-purity                  PASS
+2026-10-11T04:03:17.6310416Z core-purity-selftest         PASS
+2026-10-11T04:03:49.8931726Z host-tests                   PASS
+2026-10-11T04:05:07.4111883Z host-tests-selftest          
+2026-10-11T04:05:07.4513503Z ##[error]Process completed with exit code 143.
+2026-10-11T04:05:07.4513831Z ##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.
+2026-10-11T04:05:07.5996473Z Cleaning up orphan processes

@@ -1,0 +1,3 @@
+ui-turn-recorder: stop: TURN STOPPED: HOLDING WHERE THE BOX IS.
+ui-turn-recorder: done, capture in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/r41/stop
+recorder exit 0

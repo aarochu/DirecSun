@@ -1,0 +1,93 @@
+29224.319554 I (40271) status: s 28 ticks 500 missed 0 (total 0) loop_us_max ESP-ROM:esp32s3-20210327
+29224.319677 Build:Mar 27 2021
+29224.320197 rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+29224.320545 Saved PC:0x403899f6
+29224.322210 SPIWP:0xee
+29224.322210 mode:DIO, clock div:1
+29224.324391 load:0x3fce2820,len:0x14f0
+29224.327620 load:0x403c8700,len:0xda0
+29224.330077 load:0x403cb700,len:0x2f58
+29224.337729 entry 0x403c8908
+29224.343065 I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+29224.343065 I (24) boot: compile time Oct 10 2026 23:41:56
+29224.343197 I (25) boot: Multicore bootloader
+29224.345812 I (25) boot: chip revision: v0.2
+29224.349342 I (27) boot: efuse block revision: v1.4
+29224.353234 I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+29224.356895 I (35) boot.esp32s3: SPI Mode       : DIO
+29224.360494 I (39) boot.esp32s3: SPI Flash Size : 8MB
+29224.365018 I (42) boot: Enabling RNG early entropy source...
+29224.367659 I (47) boot: Partition Table:
+29224.374022 I (49) boot: ## Label            Usage          Type ST Offset   Length
+29224.380438 I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+29224.387267 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+29224.393541 I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+29224.396683 I (75) boot: End of partition table
+29224.404077 I (79) esp_image: segment 0: paddr=00010020 vaddr=3c0a0020 size=228b0h (141488) map
+29224.430253 I (111) esp_image: segment 1: paddr=000328d8 vaddr=3fca9700 size=087cch ( 34764) load
+29224.437677 I (119) esp_image: segment 2: paddr=0003b0ac vaddr=40378000 size=04f6ch ( 20332) load
+29224.442650 I (124) esp_image: segment 3: paddr=00040020 vaddr=42000020 size=9e914h (649492) map
+29224.559671 I (241) esp_image: segment 4: paddr=000de93c vaddr=4037cf6c size=1c700h (116480) load
+29224.585608 I (267) esp_image: segment 5: paddr=000fb044 vaddr=50000004 size=00024h (    36) load
+29224.600171 I (281) boot: Loaded app from partition at offset 0x10000
+29224.600171 I (281) boot: Disabling RNG early entropy source...
+29224.610366 I (292) cpu_start: Multicore app
+29224.618948 I (300) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+29224.619501 I (301) cpu_start: Pro cpu start user code
+29224.620917 I (301) cpu_start: cpu freq: 240000000 Hz
+29224.624938 I (302) app_init: Application information:
+29224.628747 I (306) app_init: Project name:     direcsun
+29224.632621 I (310) app_init: App version:      65f9c11
+29224.637678 I (314) app_init: Compile time:     Oct 10 2026 23:41:34
+29224.642124 I (319) app_init: ELF file SHA256:  789f2059b...
+29224.645726 I (324) app_init: ESP-IDF:          v6.0
+29224.649540 I (327) efuse_init: Min chip rev:     v0.0
+29224.653565 I (331) efuse_init: Max chip rev:     v0.99
+29224.657333 I (335) efuse_init: Chip rev:         v0.2
+29224.663564 I (339) heap_init: Initializing. RAM available for dynamic allocation:
+29224.668817 I (345) heap_init: At 3FCBD9E0 len 0002BD30 (175 KiB): RAM
+29224.673883 I (350) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+29224.678897 I (355) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+29224.684248 I (361) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+29224.687600 I (367) spi_flash: detected chip: gd
+29224.690413 I (369) spi_flash: flash io: dio
+29224.696539 I (373) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+29224.703318 I (378) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+29224.706747 I (385) main_task: Started on CPU0
+29224.709999 I (388) main_task: Calling app_main()
+29224.724304 I (405) dshot: GPIO7 DShot150: bit 267 ticks, '1' high 200, '0' high 100 at 40000000 Hz
+29224.724304 I (405) direcsun: DirecSun flight firmware
+29224.728823 I (406) direcsun: firmware 65f9c11, ESP-IDF v6.0
+29224.734701 I (410) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+29224.739473 I (416) direcsun: flash 8MB configured, 8MB detected
+29224.743715 I (420) direcsun: reset reason: USB peripheral (11)
+29224.749743 I (425) direcsun: DShot150 zeros on GPIO7 from 39719 us after boot
+29224.754736 W (431) direcsun: parameters reset to defaults (missing)
+29224.760472 I (436) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+29224.769720 I (442) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+29224.777198 I (451) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea670).
+29224.829934 E (511) i2c.master: I2C transaction timeout detected
+29224.833043 E (511) i2c.master: probe device timeout. Please check if xfer_timeout_ms and pull-ups are correctly set up
+29224.841419 I (514) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea670 (SDA=5, SCL=6, ref_count=0)
+29224.850594 I (522) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_ERR_TIMEOUT
+29224.859385 I (532) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fceabf8, Speed: 400000 Hz).
+29225.859875 W (1541) i2cdev: [0x68 at 0] I2C op failed (Try 0, Handle 0x3fceabf8): 264 (ESP_ERR_INVALID_RESPONSE).
+29225.899806 W (1581) i2cdev: [0x68 at 0] Retrying operation...
+29226.899756 W (2581) i2cdev: [0x68 at 0] I2C op failed (Try 1, Handle 0x3fceabf8): 264 (ESP_ERR_INVALID_RESPONSE).
+29226.979433 W (2661) i2cdev: [0x68 at 0] Retrying operation...
+29227.979796 W (3661) i2cdev: [0x68 at 0] I2C op failed (Try 2, Handle 0x3fceabf8): 264 (ESP_ERR_INVALID_RESPONSE).
+29228.139601 W (3821) i2cdev: [0x68 at 0] Retrying operation...
+29229.139707 W (4821) i2cdev: [0x68 at 0] I2C op failed (Try 3, Handle 0x3fceabf8): 264 (ESP_ERR_INVALID_RESPONSE).
+29229.147493 E (4821) i2cdev: [0x68 at 0] I2C operation failed after 4 retries. Last error: 264 (ESP_ERR_INVALID_RESPONSE)
+29229.151240 E (4828) imu: no answer at 0x68: IMU_MISSING
+29229.159220 I (4832) direcsun: IMU: ESP_ERR_NOT_FOUND (WHO_AM_I 0x00), IMU_MISSING: the box stays in SAFE
+29230.159713 E (5841) QMC5883P: Failed to communicate with QMC5883P (NACK or Error)
+29232.159528 E (7841) mag: no answer at 0x2C: MAG_MISSING
+29232.159528 I (7841) direcsun: magnetometer: ESP_ERR_NOT_FOUND (chip ID 0x00), MAG_MISSING
+29232.168412 I (7841) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fceac8c, Speed: 400000 Hz).
+29233.168725 W (8850) i2cdev: [0x77 at 0] I2C op failed (Try 0, Handle 0x3fceac8c): 264 (ESP_ERR_INVALID_RESPONSE).
+29233.208580 W (8890) i2cdev: [0x77 at 0] Retrying operation...
+29234.208726 W (9890) i2cdev: [0x77 at 0] I2C op failed (Try 1, Handle 0x3fceac8c): 264 (ESP_ERR_INVALID_RESPONSE).
+29234.288662 W (9970) i2cdev: [0x77 at 0] Retrying operation...
+29235.288813 W (10970) i2cdev: [0x77 at 0] I2C op failed (Try 2, Handle 0x3fceac8c): 264 (ESP_ERR_INVALID_RESPONSE).
+29235.448571 W (11130) i2cdev: [0x77 at 0] Retrying operation...

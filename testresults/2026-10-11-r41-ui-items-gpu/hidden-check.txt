@@ -1,0 +1,6 @@
+check-ui-capture: comms phase 1 ms (tlm t_ms mod 20, 1114 of 1935 frames)
+check-ui-capture: acks p50 12.3 ms, max 15.9 ms, over 2 commands
+check-ui-capture: operator pings median 200 ms, max gap 222 ms
+check-ui-capture: commands 2, mode events 3, pings 193
+check-ui-capture: PASSED, scenario hidden
+checker exit 0

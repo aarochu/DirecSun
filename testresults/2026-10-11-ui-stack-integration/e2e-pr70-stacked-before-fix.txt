@@ -1,0 +1,181 @@
+
+> direcsun-ground-station@0.1.0 test:e2e
+> playwright test
+
+
+Running 44 tests using 1 worker
+
+  ✓   1 e2e/box-control.spec.ts:99:3 › box control against a scripted box › READY with Hall bypass refuses turns in the UI without sending a command (2.7s)
+  ✓   2 e2e/box-control.spec.ts:114:3 › box control against a scripted box › connecting and watching sends nothing (2.9s)
+  ✘   3 e2e/box-control.spec.ts:121:3 › box control against a scripted box › SAFE parameters send only changed values and show the applied set (30.1s)
+  ✓   4 e2e/box-control.spec.ts:132:3 › box control against a scripted box › arm needs the lock-pin confirmation, then right 90 turns, holds and returns (5.0s)
+  ✓   5 e2e/box-control.spec.ts:160:3 › box control against a scripted box › the space bar sends e-stop while armed, and the latched fault shows (3.1s)
+  ✓   6 e2e/box-control.spec.ts:183:3 › box control against a scripted box › a dropped link never reconnects by itself (3.8s)
+  ✓   7 e2e/hardware-3d.spec.ts:17:3 › hardware CAD views › close-up and Ground Station both render the illustrative electronics (4.2s)
+  ✓   8 e2e/hardware-3d.spec.ts:26:3 › hardware CAD views › a row opens a 3D view that rotates by dragging and resets (6.3s)
+  ✓   9 e2e/hardware-3d.spec.ts:47:3 › hardware CAD views › arrow keys rotate the focused view (3.0s)
+  ✓  10 e2e/hardware-3d.spec.ts:58:3 › hardware CAD views › plain scrolling over the view still scrolls the page; Ctrl + scroll zooms instead (3.6s)
+  ✓  11 e2e/hardware-3d.spec.ts:80:3 › hardware CAD views › Part only hides the surrounding stack and brings it back (3.1s)
+  ✓  12 e2e/hardware-3d.spec.ts:94:3 › hardware CAD views › all ten posters are served as images, each labeled with what it highlights (5.1s)
+  ✓  13 e2e/hardware-3d.spec.ts:107:3 › hardware CAD views › expanding every row draws every view through one shared WebGL context (7.6s)
+  ✓  14 e2e/hardware-3d.spec.ts:128:3 › hardware CAD views › a phone-width view opens without horizontal overflow and keeps its controls inside the frame (2.0s)
+  ✓  15 e2e/hardware-3d.spec.ts:143:3 › hardware CAD views › opening a row stalls the page briefly: the first pays for the context, the rest only draw (5.7s)
+  ✓  16 e2e/hardware-3d.spec.ts:166:3 › hardware CAD views › opening and closing rows never creates more than one WebGL context (16.7s)
+  ✓  17 e2e/hardware-3d.spec.ts:193:3 › hardware CAD views › the focused 3D view shows a visible focus ring, and the hint is readable (2.4s)
+  -  18 e2e/screenshots.spec.ts:8:3 › capture 320px
+  -  19 e2e/screenshots.spec.ts:8:3 › capture 375px
+  -  20 e2e/screenshots.spec.ts:8:3 › capture 768px
+  -  21 e2e/screenshots.spec.ts:8:3 › capture 1024px
+  -  22 e2e/screenshots.spec.ts:8:3 › capture 1440px
+  ✓  23 e2e/smoke.spec.ts:19:3 › ground station judge flow › ROUTE_REFRESH: the ground station loads directly and after a reload (1.3s)
+  ✓  24 e2e/smoke.spec.ts:32:5 › ground station judge flow › right 90° → hold → automatic return → READY (26.2s)
+  ✓  25 e2e/smoke.spec.ts:32:5 › ground station judge flow › left 90° → hold → automatic return → READY (28.8s)
+  ✓  26 e2e/smoke.spec.ts:55:3 › ground station judge flow › STOP cancels the pending return; RESET restores 0° (10.7s)
+  ✘  27 e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request (30.5s)
+  ✓  28 e2e/smoke.spec.ts:93:3 › ground station judge flow › OFFLINE: both pages load only same-origin resources, fonts included (2.9s)
+  ✓  29 e2e/smoke.spec.ts:114:3 › landing › LANDING_NAV: header links scroll to their sections; CTA opens the ground station (3.5s)
+  ✓  30 e2e/smoke.spec.ts:134:3 › landing › OrbitSpace renders in the hero only and leaves CTAs clickable (1.2s)
+  ✓  31 e2e/smoke.spec.ts:156:3 › landing › REDUCED_MOTION: static hero, ground station still works (25.9s)
+  ✓  32 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 320px (2.2s)
+  ✓  33 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 375px (2.3s)
+  ✓  34 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 390px (2.3s)
+  ✓  35 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 768px (2.7s)
+  ✓  36 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 1024px (2.7s)
+  ✓  37 e2e/smoke.spec.ts:173:5 › responsive › MOBILE_320 and friends: no horizontal overflow at 1440px (2.8s)
+  ✓  38 e2e/smoke.spec.ts:188:3 › responsive › at 1440×900 the model and both direction commands fit without scrolling (1.7s)
+  ✓  39 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 320px (1.5s)
+  ✓  40 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 375px (1.7s)
+  ✓  41 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 390px (1.7s)
+  ✓  42 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 768px (1.7s)
+  ✓  43 e2e/smoke.spec.ts:200:5 › responsive › device link URL field shows a full endpoint at 1440px (1.8s)
+  ✘  44 e2e/telemetry-backpressure.spec.ts:3:1 › slow rendering displays recent telemetry instead of building a frame backlog (4.7s)
+
+
+  1) e2e/box-control.spec.ts:121:3 › box control against a scripted box › SAFE parameters send only changed values and show the applied set 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Browser logs:
+
+    <launching> /opt/google/chrome/chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-Yt6V5t --remote-debugging-pipe --no-startup-window
+    <launched> pid=2200238
+    [pid=2200238][err] [1011/043947.422267:WARNING:chrome/app/chrome_main_linux.cc:84] Read channel stable from /opt/google/chrome/CHROME_VERSION_EXTRA
+    [pid=2200238][err] [2200367:2200371:1011/043948.090091:ERROR:base/nix/mime_util_xdg.cc:139] Invalid mime.cache file does not contain null prior to ALIAS_LIST_OFFSET=44
+    [pid=2200238][err] [2200280:2200280:1011/043948.424501:ERROR:gpu/command_buffer/service/gl_utils.cc:431] [.WebGL-0x12cc00141600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+    [pid=2200238][err] [2200280:2200280:1011/043948.699733:ERROR:gpu/command_buffer/service/gl_utils.cc:431] [.WebGL-0x12cc00141600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+    [pid=2200238][err] [2200280:2200280:1011/043949.583671:ERROR:gpu/command_buffer/service/gl_utils.cc:431] [.WebGL-0x12cc00141600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+    [pid=2200238][err] [2200500:2200506:1011/043950.810002:ERROR:base/nix/mime_util_xdg.cc:139] Invalid mime.cache file does not contain null prior to ALIAS_LIST_OFFSET=44
+    [pid=2200238][err] [2200280:2200280:1011/043951.010653:ERROR:gpu/command_buffer/service/gl_utils.cc:431] [.WebGL-0x12cc0013ee00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+    [pid=2200238][err] [2200622:2200628:1011/043953.686709:ERROR:base/nix/mime_util_xdg.cc:139] Invalid mime.cache file does not contain null prior to ALIAS_LIST_OFFSET=44
+    [pid=2200238][err] [2200238:2200264:1011/043958.835473:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+    [pid=2200238][err] [2200238:2200264:1011/044020.039901:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+    [pid=2200238] <gracefully close start>
+    Call log:
+      - waiting for getByRole('button', { name: 'Apply changed parameters' })
+        - locator resolved to <button type="submit" class="button button--primary params__apply">Apply changed parameters</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div class="rail__header">…</div> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events
+      - retrying click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <figure class="history series">…</figure> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events
+      - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div class="rail__header">…</div> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        13 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div class="rail__header">…</div> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <figure class="history series">…</figure> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div class="rail__header">…</div> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div class="rail__header">…</div> from <section class="plots-panel" aria-labelledby="plots-title">…</section> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+
+
+      124 |     await page.getByRole('button', { name: /PARAMETERS \/ SAFE ONLY/ }).click();
+      125 |     await page.getByLabel(/Rate gain/).fill('0.02');
+    > 126 |     await page.getByRole('button', { name: 'Apply changed parameters' }).click();
+          |                                                                          ^
+      127 |
+      128 |     await expect(page.getByText('Applied: k_omega = 0.02')).toBeVisible();
+      129 |     expect(commands(received).at(-1)).toMatchObject({ cmd: 'set_params', params: { k_omega: 0.02 } });
+        at /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/m70/frontend/ground-station/e2e/box-control.spec.ts:126:74
+
+    Error Context: test-results/box-control-box-control-ag-42d5f-es-and-show-the-applied-set/error-context.md
+
+  2) e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.textContent: Target page, context or browser has been closed
+
+      10 | async function advanceSimulationTo(page: Page, status: string, maxSimulatedMs: number) {
+      11 |   for (let elapsed = 0; elapsed <= maxSimulatedMs; elapsed += 100) {
+    > 12 |     if ((await phase(page).textContent()) === status) return;
+         |                            ^
+      13 |     await page.clock.runFor(100);
+      14 |   }
+      15 |   await expect(phase(page)).toHaveText(status);
+        at advanceSimulationTo (/tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/m70/frontend/ground-station/e2e/smoke.spec.ts:12:28)
+        at /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/m70/frontend/ground-station/e2e/smoke.spec.ts:87:5
+
+    Error Context: test-results/smoke-ground-station-judge-1431d-ol-makes-no-network-request/error-context.md
+
+  3) e2e/telemetry-backpressure.spec.ts:3:1 › slow rendering displays recent telemetry instead of building a frame backlog 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 10
+    Received:    12
+
+      37 |     const packets = Number(displayed?.match(/(\d+) PACKETS/)?.[1]);
+      38 |     expect(packets).toBeGreaterThan(0);
+    > 39 |     expect(sent - packets).toBeLessThanOrEqual(10);
+         |                            ^
+      40 |     expect(readMs).toBeLessThan(200);
+      41 |   }
+      42 | });
+        at /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/m70/frontend/ground-station/e2e/telemetry-backpressure.spec.ts:39:28
+
+    Error Context: test-results/telemetry-backpressure-slo-84631-of-building-a-frame-backlog/error-context.md
+
+  3 failed
+    e2e/box-control.spec.ts:121:3 › box control against a scripted box › SAFE parameters send only changed values and show the applied set 
+    e2e/smoke.spec.ts:72:3 › ground station judge flow › MOCK_ONLY: clicking every control makes no network request 
+    e2e/telemetry-backpressure.spec.ts:3:1 › slow rendering displays recent telemetry instead of building a frame backlog 
+  5 skipped
+  36 passed (4.6m)

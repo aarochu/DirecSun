@@ -1,0 +1,3 @@
+ui-turn-recorder: re-arm inside the ramp-down: ARM REFUSED: ramp-down in progress
+ui-turn-recorder: done, capture in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/r41/estop
+recorder exit 0

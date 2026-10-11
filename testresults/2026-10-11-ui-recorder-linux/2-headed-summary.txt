@@ -1,0 +1,4 @@
+== turn: recorder exit 0 / checker exit 0
+== stop: recorder exit 0 / checker exit 1
+== estop: recorder exit 0 / checker exit 0
+== watch: recorder exit 0 / checker exit 0

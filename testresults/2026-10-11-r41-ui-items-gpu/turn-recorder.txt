@@ -1,0 +1,6 @@
+ui-turn-recorder: turn 1 right: TURN COMPLETE: BACK AT THE START HEADING.
+ui-turn-recorder: turn 2 left: TURN COMPLETE: BACK AT THE START HEADING.
+ui-turn-recorder: turn 3 right: TURN COMPLETE: BACK AT THE START HEADING.
+ui-turn-recorder: turn 4 left: TURN COMPLETE: BACK AT THE START HEADING.
+ui-turn-recorder: done, capture in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/r41/turn
+recorder exit 0

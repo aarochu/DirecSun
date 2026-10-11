@@ -1,0 +1,155 @@
+40223.445395 I (111) esp_image: segment 1: paddr=000328d8 vaddr=3fca9700 sizeev:   ESP-ROM:esp32s3-20210327
+40223.445445 Build:Mar 27 2021
+40223.446316 rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+40223.446588 Saved PC:0x4004883b
+40223.447949 SPIWP:0xee
+40223.448244 mode:DIO, clock div:1
+40223.450212 load:0x3fce2820,len:0x14f0
+40223.453732 load:0x403c8700,len:0xda0
+40223.456201 load:0x403cb700,len:0x2f58
+40223.463605 entry 0x403c8908
+40223.468767 I (24) boot: ESP-IDF v6.0 2nd stage bootloader
+40223.468802 I (24) boot: compile time Oct 11 2026 03:54:40
+40223.469097 I (25) boot: Multicore bootloader
+40223.471546 I (25) boot: chip revision: v0.2
+40223.475322 I (27) boot: efuse block revision: v1.4
+40223.479215 I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+40223.482810 I (35) boot.esp32s3: SPI Mode       : DIO
+40223.486564 I (39) boot.esp32s3: SPI Flash Size : 8MB
+40223.490897 I (42) boot: Enabling RNG early entropy source...
+40223.493567 I (47) boot: Partition Table:
+40223.499957 I (49) boot: ## Label            Usage          Type ST Offset   Length
+40223.506465 I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+40223.513129 I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+40223.519516 I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+40223.522852 I (75) boot: End of partition table
+40223.530280 I (79) esp_image: segment 0: paddr=00010020 vaddr=3c0a0020 size=228b0h (141488) map
+40223.556207 I (111) esp_image: segment 1: paddr=000328d8 vaddr=3fca9700 size=087cch ( 34764) load
+40223.563625 I (119) esp_image: segment 2: paddr=0003b0ac vaddr=40378000 size=04f6ch ( 20332) load
+40223.568509 I (124) esp_image: segment 3: paddr=00040020 vaddr=42000020 size=9e8f8h (649464) map
+40223.685510 I (241) esp_image: segment 4: paddr=000de920 vaddr=4037cf6c size=1c700h (116480) load
+40223.711489 I (267) esp_image: segment 5: paddr=000fb028 vaddr=50000004 size=00024h (    36) load
+40223.725966 I (281) boot: Loaded app from partition at offset 0x10000
+40223.725966 I (281) boot: Disabling RNG early entropy source...
+40223.736208 I (292) cpu_start: Multicore app
+40223.744892 I (300) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+40223.745400 I (301) cpu_start: Pro cpu start user code
+40223.746763 I (301) cpu_start: cpu freq: 240000000 Hz
+40223.750536 I (302) app_init: Application information:
+40223.754688 I (306) app_init: Project name:     direcsun
+40223.759256 I (310) app_init: App version:      912aed8-dirty
+40223.764152 I (315) app_init: Compile time:     Oct 11 2026 03:54:14
+40223.768346 I (320) app_init: ELF file SHA256:  5a98c617a...
+40223.772040 I (324) app_init: ESP-IDF:          v6.0
+40223.775850 I (328) efuse_init: Min chip rev:     v0.0
+40223.779923 I (331) efuse_init: Max chip rev:     v0.99
+40223.783680 I (335) efuse_init: Chip rev:         v0.2
+40223.789958 I (339) heap_init: Initializing. RAM available for dynamic allocation:
+40223.795172 I (346) heap_init: At 3FCBD9E0 len 0002BD30 (175 KiB): RAM
+40223.800323 I (351) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+40223.805521 I (356) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+40223.810700 I (361) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+40223.814054 I (367) spi_flash: detected chip: gd
+40223.816885 I (370) spi_flash: flash io: dio
+40223.823138 I (373) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+40223.829709 I (379) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+40223.833052 I (386) main_task: Started on CPU0
+40223.836461 I (389) main_task: Calling app_main()
+40223.856163 I (411) dshot: GPIO7 DShot300: bit 133 ticks, '1' high 100, '0' high 50 at 40000000 Hz
+40223.856163 I (412) direcsun: DirecSun flight firmware
+40223.861193 I (412) direcsun: firmware 912aed8-dirty, ESP-IDF v6.0
+40223.866878 I (417) direcsun: target esp32s3, chip ESP32-S3 rev v0.2, 2 cores
+40223.871485 I (423) direcsun: flash 8MB configured, 8MB detected
+40223.876140 I (427) direcsun: reset reason: USB peripheral (11)
+40223.882238 I (432) direcsun: DShot300 zeros on GPIO7 from 45191 us after boot
+40223.887331 W (438) direcsun: parameters reset to defaults (missing)
+40223.893069 I (443) shared: command queue 16 x 44 B, outbound queue 16 x 96 B
+40223.902168 I (449) i2cdev: [Port 0] First initialization. Configuring bus with SDA=5, SCL=6 (Pullups SCL:0 SDA:0)
+40223.909450 I (458) i2cdev: [Port 0] Successfully installed I2C master bus (Handle: 0x3fcea6f4).
+40223.917708 I (465) i2cdev: [Port 0] Shared bus handle retrieved: 0x3fcea6f4 (SDA=5, SCL=6, ref_count=0)
+40223.926341 I (473) i2c_bus: bus on port 0: SDA GPIO5, SCL GPIO6, 400000 Hz per device; probe of 0x68: ESP_OK
+40223.935203 I (482) i2cdev: [0x68 at 0] Device added successfully (Device Handle: 0x3fceac7c, Speed: 400000 Hz).
+40223.942224 I (493) imu: MPU-6050 WHO_AM_I 0x68; DLPF 4, +-2000 deg/s, +-4 g, 400000 Hz SCL
+40223.946195 I (498) direcsun: IMU: ESP_OK (WHO_AM_I 0x68)
+40223.949736 I (502) QMC5883P: QMC5883P Chip ID: 0x80
+40223.960418 I (516) QMC5883P: QMC5883P initialized successfully
+40223.961266 I (517) mag: QMC5883P chip ID 0x80; 8 G, normal mode, ODR 200 Hz, 400000 Hz SCL
+40223.966202 I (517) direcsun: magnetometer: ESP_OK (chip ID 0x80)
+40223.975342 I (522) i2cdev: [0x77 at 0] Device added successfully (Device Handle: 0x3fcead44, Speed: 400000 Hz).
+40223.983972 W (531) i2cdev: [0x77 at 0] I2C op failed (Try 0, Handle 0x3fcead44): 264 (ESP_ERR_INVALID_RESPONSE).
+40224.023821 W (580) i2cdev: [0x77 at 0] Retrying operation...
+40224.026101 W (580) i2cdev: [0x77 at 0] I2C op failed (Try 1, Handle 0x3fcead44): 264 (ESP_ERR_INVALID_RESPONSE).
+40224.106124 W (662) i2cdev: [0x77 at 0] Retrying operation...
+40224.108349 W (662) i2cdev: [0x77 at 0] I2C op failed (Try 2, Handle 0x3fcead44): 264 (ESP_ERR_INVALID_RESPONSE).
+40224.267985 W (824) i2cdev: [0x77 at 0] Retrying operation...
+40224.270221 W (824) i2cdev: [0x77 at 0] I2C op failed (Try 3, Handle 0x3fcead44): 264 (ESP_ERR_INVALID_RESPONSE).
+40224.279713 E (826) i2cdev: [0x77 at 0] I2C operation failed after 4 retries. Last error: 264 (ESP_ERR_INVALID_RESPONSE)
+40224.282434 E (835) bmp280: Sensor not found
+40224.286889 E (838) baro: chip ID 0x08 at 0x77, expected 0x58
+40224.293385 I (843) direcsun: barometer: ESP_ERR_INVALID_RESPONSE (chip ID 0x08)
+40224.300520 I (849) adc_inputs: sun A: GPIO1 = ADC1 channel 0, 12 dB, curve-fitting calibration
+40224.307935 I (856) adc_inputs: sun B: GPIO2 = ADC1 channel 1, 12 dB, curve-fitting calibration
+40224.315622 I (864) adc_inputs: battery: GPIO8 = ADC1 channel 7, 12 dB, curve-fitting calibration
+40224.858508 I (1413) direcsun: gyro z bias seeded at -2.097 deg/s from 271 still samples (range 0.183); accel reference 0.871 g (norm 0.866 to 0.875)
+40224.866892 I (1414) direcsun: boot window done: 502 DShot frames sent, battery 0.01 V over 28 readings
+40224.873026 I (1423) hall: A1104 edge capture on GPIO9, falling edge, ring of 8
+40224.875955 I (1424) pp: pp rom version: e7ae62f
+40224.885888 I (1429) control: control task on core 1; it takes the DShot output over from the zero sender at its first tick
+40224.890284 I (1432) net80211: net80211 rom version: e7ae62f
+40224.896370 I (1447) wifi:wifi driver task: 3fcc7194, prio:23, stack:6656, core=0
+40224.906394 I (1462) wifi:wifi firmware version: 44738b4
+40224.906394 I (1462) wifi:wifi certification version: v7.0
+40224.908035 I (1462) wifi:config NVS flash: enabled
+40224.912410 I (1464) wifi:config nano formatting: disabled
+40224.917192 I (1468) wifi:Init data frame dynamic rx buffer num: 32
+40224.921391 I (1473) wifi:Init static rx mgmt buffer num: 5
+40224.925988 I (1477) wifi:Init management short buffer num: 32
+40224.930141 I (1482) wifi:Init dynamic tx buffer num: 32
+40224.933998 I (1486) wifi:Init static tx FG buffer num: 2
+40224.938141 I (1490) wifi:Init static rx buffer size: 1600
+40224.941942 I (1494) wifi:Init static rx buffer num: 10
+40224.945950 I (1498) wifi:Init dynamic rx buffer num: 32
+40224.948901 I (1502) wifi_init: rx ba win: 6
+40224.952032 I (1505) wifi_init: accept mbox: 6
+40224.955135 I (1508) wifi_init: tcpip mbox: 32
+40224.957946 I (1511) wifi_init: udp mbox: 6
+40224.960772 I (1514) wifi_init: tcp mbox: 6
+40224.964070 I (1517) wifi_init: tcp tx win: 5760
+40224.967378 I (1520) wifi_init: tcp rx win: 5760
+40224.970550 I (1523) wifi_init: tcp mss: 1440
+40224.974089 I (1526) wifi_init: WiFi IRAM OP enabled
+40224.978223 I (1530) wifi_init: WiFi RX IRAM OP enabled
+40224.986896 W (1534) wifi:Password length matches WPA2 standards, authmode threshold changes from OPEN to WPA2
+40224.992505 I (1543) phy_init: phy_version 711,97bcf0a2,Aug 25 2025,19:04:10
+40225.032794 I (1588) wifi:mode : sta (e0:72:a1:fc:49:5c)
+40225.032794 I (1589) wifi:enable tsf
+40225.033564 I (1589) wifi:Set ps type: 0, coexist: 0
+40225.033564 
+40225.035444 I (1590) wifi: joining "<bench-network>"
+40225.039389 I (1593) wifi: mDNS hostname direcsun.local
+40225.046837 I (1598) wifi:new:<8,0>, old:<1,0>, ap:<255,255>, sta:<8,0>, prof:6, snd_ch_cfg:0x0
+40225.050328 I (1603) wifi:state: init -> auth (0xb0)
+40225.056198 I (1609) ws: WebSocket server on port 80 at /ws (up to 3 clients)
+40225.060189 I (1612) main_task: Returned from app_main()
+40225.111609 I (1667) wifi:state: auth -> assoc (0x0)
+40225.141826 I (1697) wifi:state: assoc -> run (0x10)
+40225.278169 I (1833) wifi:connected with <bench-network>, aid = 4, channel 8, BW20, bssid = <bssid>
+40225.280201 I (1834) wifi:security: WPA2-PSK, phy: bgn, rssi: -30
+40225.283111 I (1838) wifi:pm start, type: 0
+40225.283111 
+40225.291243 I (1839) wifi:dp: 1, bi: 102400, li: 3, scale listen interval from 307200 us to 307200 us
+40225.299596 I (1847) wifi:set rx beacon pti, rx_bcn_pti: 0, bcn_timeout: 25000, mt_pti: 0, mt_time: 10000
+40225.322176 I (1877) wifi:<ba-add>idx:0 (ifx:0, <bssid>), tid:7, ssn:2, winSize:64
+40225.324423 I (1880) wifi:AP's beacon interval = 102400 us, DTIM period = 1
+40225.330751 I (1881) wifi:<ba-add>idx:1 (ifx:0, <bssid>), tid:0, ssn:2, winSize:64
+40226.117376 I (2673) status: s 1 ticks 501 missed 0 (total 0) loop_us_max 1586 dev_max_us 27 p99_dev_us 7 dshot sent 1017 dropped 0 imu_invalid 0
+40226.129071 I (2673) status: mode SAFE throttle 0 vbat 0.03 rate -0.04 bias -2.10 tilt 2.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro --
+40226.314568 I (2870) esp_netif_handlers: sta ip: 192.168.8.224, mask: 255.255.255.0, gw: 192.168.8.1
+40226.315362 I (2870) wifi: connected, address 192.168.8.224
+40226.322126 I (2871) wifi: WebSocket: ws://direcsun.local/ws  or  ws://192.168.8.224/ws
+40227.129411 I (3685) status: s 2 ticks 500 missed 0 (total 0) loop_us_max 758 dev_max_us 6 p99_dev_us 2 dshot sent 1517 dropped 0 imu_invalid 0
+40227.141028 I (3685) status: mode SAFE throttle 0 vbat 0.02 rate 0.02 bias -2.09 tilt 2.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro --
+40227.891408 I (4447) status: s 3 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 3 p99_dev_us 0 dshot sent 2017 dropped 0 imu_invalid 0
+40227.902993 I (4447) status: mode SAFE throttle 0 vbat 0.02 rate 0.02 bias -2.10 tilt 2.8 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro --
+40228.903372 I (5459) status: s 4 ticks 500 missed 0 (total 0) loop_us_max 759 dev_max_us 4 p99_dev_us 1 dshot sent 2517 dropped 0 imu_invalid 0
+40228.914920 I (5459) status: mode SAFE throttle 0 vbat 0.02 rate 0.02 bias -2.10 tilt 2.9 psi 0.0 wheel 0 latched 0x0010 flags 0x00 baro --

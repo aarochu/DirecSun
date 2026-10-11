@@ -1,0 +1,143 @@
+mock-suite: 43 cases, output in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/pr50/tools/bench/r35/results/mock-20261011-024102
+  ok  t1-pass: expected PASS, got PASS (13 s)
+  ok  t1-f-wrong-ip: expected FAIL, got FAIL (13 s)
+  ok  t1-f-no-wifi: expected FAIL, got FAIL (13 s)
+  ok  t1-f-unresolvable: expected FAIL, got FAIL (43 s)
+  ok  t1-f-resolver: expected FAIL, got FAIL (19 s)
+  ok  t1-f-no-server: expected FAIL, got FAIL (35 s)
+  ok  t2-pass: expected PASS, got PASS (64 s)
+  ok  t2-f-short: expected FAIL, got FAIL (22 s)
+  ok  t2-f-bad-tlm: expected FAIL, got FAIL (17 s)
+  ok  t2-f-no-server: expected FAIL, got FAIL (1 s)
+  BAD t3-pass: expected PASS, got FAIL (10 s)
+  ok  t3-f-ccw: expected FAIL, got FAIL (11 s)
+  ok  t3-f-no-turn: expected FAIL, got FAIL (8 s)
+  ok  t3-f-junk: expected FAIL, got FAIL (8 s)
+  ok  t3-f-no-server: expected FAIL, got FAIL (17 s)
+  ok  t4-pass-hall: expected PASS, got PASS (74 s)
+  ok  t4-pass-estop-fwlike: expected PASS, got PASS (31 s)
+  ok  t4-pass-arm: expected PASS, got PASS (32 s)
+  ok  t4-pass-raw: expected PASS, got PASS (24 s)
+  ok  t4-f-estop-stock-mock: expected FAIL, got FAIL (34 s)
+  ok  t4-f-leaky-ui: expected FAIL, got FAIL (34 s)
+  ok  t4-f-leaky-raw: expected FAIL, got FAIL (24 s)
+  ok  t4-f-arm-unconfirmed: expected EXIT2, got EXIT2 (0 s)
+  ok  t4-f-no-server: expected FAIL, got FAIL (0 s)
+  ok  t5-pass-bursty-sender: expected PASS, got PASS (32 s)
+  ok  t5-f-box-closed-early: expected FAIL, got FAIL (21 s)
+  done (long) t7-pass: PASS
+  done (long) t5-pass: PASS
+  ok  t5-f-rate-no-pongs: expected FAIL, got FAIL (32 s)
+  ok  t5-f-loss: expected FAIL, got FAIL (32 s)
+  ok  t5-f-latency: expected FAIL, got FAIL (32 s)
+  ok  t6-pass: expected PASS, got PASS (10 s)
+  ok  t6-f-unconfirmed: expected EXIT2, got EXIT2 (0 s)
+  ok  t6-f-throttle-guard: expected FAIL, got FAIL (4 s)
+  ok  t6-f-slow-heartbeat: expected FAIL, got FAIL (13 s)
+  ok  t6-f-no-controller-rule: expected FAIL, got FAIL (10 s)
+  ok  t6-f-battery-low: expected BLOCKED, got BLOCKED (1 s)
+  ok  t6-f-no-server: expected FAIL, got FAIL (0 s)
+  ok  t7-f-spike: expected FAIL, got FAIL (36 s)
+  ok  t7-f-log-not-growing: expected FAIL, got FAIL (3 s)
+  ok  t7-f-baro-silent: expected FAIL, got FAIL (36 s)
+  ok  t7-f-reboot: expected FAIL, got FAIL (36 s)
+  ok  t7-f-wifi-drop: expected FAIL, got FAIL (36 s)
+mock suite mock-20261011-024102: 42/43 cases behaved as expected
+
+[ok ] t1-pass: expected PASS, got PASS, 13 s, exit 0
+[ok ] t1-f-wrong-ip: expected FAIL, got FAIL, 13 s, exit 1
+      [FAIL] resolved address equals the boot log's: ping 172.18.0.1, boot log 192.168.1.99
+[ok ] t1-f-no-wifi: expected FAIL, got FAIL, 13 s, exit 1
+      [FAIL] Wi-Fi configured: the box logged 'no Wi-Fi network configured': put CONFIG_DIRECSUN_WIFI_SSID and _PASSWORD in firmware/sdkconfig.defaults.local, delete firmware/sdkconfig, rebuild, reflash
+      [FAIL] boot log: IP line: no 'wifi: connected, address' line: the box never got an address, or the log missed the boot
+      [FAIL] boot log: URL line: no 'wifi: WebSocket:' line
+[ok ] t1-f-unresolvable: expected FAIL, got FAIL, 43 s, exit 1
+      [FAIL] ping resolves the URL host: ping could not resolve nosuchbox-r35kit.local: ping: nosuchbox-r35kit.local: Name or service not known
+      [FAIL] raw client receives tlm: gaierror: [Errno -2] Name or service not known
+[ok ] t1-f-resolver: expected FAIL, got FAIL, 19 s, exit 1
+      [FAIL] resolver works (laptop's own .local name): nosuchself-r35kit.local did not resolve (getent exit 2): fix nss-mdns/avahi on the laptop before judging the box
+[ok ] t1-f-no-server: expected FAIL, got FAIL, 35 s, exit 1
+      [FAIL] raw client receives tlm: ConnectionRefusedError: [Errno 111] Connect call failed ('172.18.0.1', 60447)
+      [FAIL] bench console connects: locator.waitFor: Timeout 15000ms exceeded. | Call log: | [2m  - waiting for locator('#state').getByText('CONNECTED', { exact: true }) to be visible[22m |
+      [FAIL] main UI Device link connects: locator.waitFor: Timeout 15000ms exceeded. | Call log: | [2m  - waiting for getByText('DEVICE CONNECTED — RECEIVING TELEMETRY') to be visible[22m |
+[ok ] t2-pass: expected PASS, got PASS, 64 s, exit 0
+[ok ] t2-f-short: expected FAIL, got FAIL, 22 s, exit 1
+      [FAIL] at least 2900 tlm: 1000 tlm in capture.jsonl (capture-box says 1000)
+[ok ] t2-f-bad-tlm: expected FAIL, got FAIL, 17 s, exit 1
+      [FAIL] check-schema: 0 failures: capture.jsonl: 675/750 valid (tlm 675); commander.jsonl: 676/751 valid (tlm 676)
+      [FAIL] acks captured: 0 ack for 14 refused frames sent; reasons []
+[ok ] t2-f-no-server: expected FAIL, got FAIL, 1 s, exit 1
+      [FAIL] capture-box ran: exit 1
+[BAD] t3-pass: expected PASS, got FAIL, 10 s, exit 1
+      PROBLEM: expected PASS, got FAIL
+[ok ] t3-f-ccw: expected FAIL, got FAIL, 11 s, exit 1
+      [FAIL] heading readout increased (clockwise): +6.3° -> +18.7°, net +12.4 deg (range +0.0 to +12.7); needs >= +30
+      [FAIL] dial needle turned clockwise: net +12.3 deg on screen
+      [ok  ] ignored-frame counter 0: max 0 over 78 samples; last status 'RECEIVING TELEMETRY · 408 PACKETS'
+[ok ] t3-f-no-turn: expected FAIL, got FAIL, 8 s, exit 1
+      [FAIL] heading readout increased (clockwise): +6.1° -> +19.1°, net +13.0 deg (range +0.0 to +13.0); needs >= +30
+[ok ] t3-f-junk: expected FAIL, got FAIL, 8 s, exit 1
+      [FAIL] ignored-frame counter 0: max 6 over 59 samples; last status 'RECEIVING TELEMETRY · 304 PACKETS · 6 IGNORED'
+      [FAIL] only tlm on the wire: page received {'tlm': 313, 'debug': 6}; non-tlm samples ['{"v": 1, "type": "debug", "seq": 103, "text": "junk"}', '{"v": 1, "type": "debug", "seq": 154, "text": "junk"}', '{"v": 1, "type": "debug", "se
+[ok ] t3-f-no-server: expected FAIL, got FAIL, 17 s, exit 1
+      [FAIL] Device link connects: locator.waitFor: Timeout 15000ms exceeded. | Call log: | [2m  - waiting for getByText('DEVICE CONNECTED — RECEIVING TELEMETRY') to be visible[22m |
+[ok ] t4-pass-hall: expected PASS, got PASS, 74 s, exit 0
+[ok ] t4-pass-estop-fwlike: expected PASS, got PASS, 31 s, exit 0
+[ok ] t4-pass-arm: expected PASS, got PASS, 32 s, exit 0
+[ok ] t4-pass-raw: expected PASS, got PASS, 24 s, exit 0
+[ok ] t4-f-estop-stock-mock: expected FAIL, got FAIL, 34 s, exit 1
+      [FAIL] events were generated: no event reached the generator: the positive control below cannot pass, so the run proves nothing about the read-only rule
+      [FAIL] positive control: the pinger received the events: pinger 0, generator 0, missing at the pinger 0
+[ok ] t4-f-leaky-ui: expected FAIL, got FAIL, 34 s, exit 1
+      [FAIL] reader received only tlm: Chrome saw {'tlm': 1437, 'event:notice': 6}; non-tlm ['{"v":1,"type":"event","seq":136,"t_ms":2686,"event":"notice","name":"HALL_BYPASS","detail":"on"}', '{"v":1,"type":"event","seq":288,"t_ms":569
+      [ok  ] UI ignored counter stayed 0: max 0 over 111 samples; last 'RECEIVING TELEMETRY · 1415 PACKETS'
+[ok ] t4-f-leaky-raw: expected FAIL, got FAIL, 24 s, exit 1
+      [FAIL] reader received only tlm: {'event:notice': 6, 'tlm': 1051}
+[ok ] t4-f-arm-unconfirmed: expected EXIT2, got EXIT2, 0 s, exit 2
+      server log: 0 x /connected from/ (nothing connected)
+[ok ] t4-f-no-server: expected FAIL, got FAIL, 0 s, exit 1
+      [FAIL] clients connect: ConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 58681)
+[ok ] t5-pass: expected PASS, got PASS, 630 s, exit 0
+[ok ] t5-pass-bursty-sender: expected PASS, got PASS, 32 s, exit 0
+      [ok  ] tlm loss under 1 %: 0 of 1500 frames never arrived = 0.000 % (count over the span; 0 duplicate(s) ignored)
+      loss by capture-box's gap method (information): 40 = 2.597 %, largest gap 101 ms: the gap method counts late frames as lost; the count above says they arrived
+[ok ] t5-f-box-closed-early: expected FAIL, got FAIL, 21 s, exit 1
+      [FAIL] capture lasted the whole window: box clock span 19.6 s of 60 s; the box closed the connection
+[ok ] t5-f-rate-no-pongs: expected FAIL, got FAIL, 32 s, exit 1
+      [FAIL] tlm at 50 Hz: 40.00 Hz from 1200 tlm (capture-box: 40.0 Hz)
+      [FAIL] round-trip p95 under 100 ms: p95 None ms, p50 None ms, max None ms from None pongs (capture-box's measurement; the capture file has no arrival times to recompute it)
+[ok ] t5-f-loss: expected FAIL, got FAIL, 32 s, exit 1
+      [FAIL] tlm loss under 1 %: 30 of 1500 frames never arrived = 2.000 % (count over the span; 0 duplicate(s) ignored)
+      [ok  ] round-trip p95 under 100 ms: p95 7.0 ms, p50 6.5 ms, max 7.2 ms from 150 pongs (capture-box's measurement; the capture file has no arrival times to recompute it)
+[ok ] t5-f-latency: expected FAIL, got FAIL, 32 s, exit 1
+      [FAIL] round-trip p95 under 100 ms: p95 153.1 ms, p50 152.0 ms, max 153.6 ms from 149 pongs (capture-box's measurement; the capture file has no arrival times to recompute it)
+      [ok  ] tlm at 50 Hz: 50.00 Hz from 1500 tlm (capture-box: 50.0 Hz)
+      [ok  ] tlm loss under 1 %: 0 of 1500 frames never arrived = 0.000 % (count over the span; 0 duplicate(s) ignored)
+[ok ] t6-pass: expected PASS, got PASS, 10 s, exit 0
+[ok ] t6-f-unconfirmed: expected EXIT2, got EXIT2, 0 s, exit 2
+      server log: 0 x /connected from/ (nothing connected)
+[ok ] t6-f-throttle-guard: expected FAIL, got FAIL, 4 s, exit 1
+      THROTTLE GUARD: tlm throttle 50 > 0: estop from B now
+      [FAIL] sequence completed: throttle guard tripped: {'v': 1, 'type': 'tlm', 'seq': 75, 't_ms': 1221, 'mode': 'SPINUP', 'manual_input': None, 'psi_deg': 4.9, 'psi_ref_deg': None, 'rate_dps': 3.85, 'mag_deg': None, 'sun_deg': None, '
+      server log: estop from client 8704
+[ok ] t6-f-slow-heartbeat: expected FAIL, got FAIL, 13 s, exit 1
+      [FAIL] ramp-down starts within 1.5 s of closing A: 2893 ms from the close (A's last ping was 3028 ms before the event; heartbeat timeout 1000 ms)
+[ok ] t6-f-no-controller-rule: expected FAIL, got FAIL, 10 s, exit 1
+      [FAIL] B's mode refused 'not controlling client': ack {'v': 1, 'type': 'ack', 'seq': 4, 'ok': False, 'reason': 'wheel not at bias'}
+[ok ] t6-f-battery-low: expected BLOCKED, got BLOCKED, 1 s, exit 2
+      BLOCKED: arm precondition not met (battery low). See RUNBOOK step 7.)
+[ok ] t6-f-no-server: expected FAIL, got FAIL, 0 s, exit 1
+      [FAIL] clients connect: ConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 43641)
+[ok ] t7-pass: expected PASS, got PASS, 607 s, exit 0
+      RESULT t5-t11: PASS
+[ok ] t7-f-spike: expected FAIL, got FAIL, 36 s, exit 1
+      [FAIL] worst loop_us_max under 1000 us: worst 1200 us at s 12; median 921, p99 1200, 1 second(s) at or over 1000, 1 within 50 us of it; over 33 s
+[ok ] t7-f-log-not-growing: expected FAIL, got FAIL, 3 s, exit 1
+      [FAIL] serial log is growing: 0 bytes in 3 s: start the monitor capture first (RUNBOOK step 1)
+[ok ] t7-f-baro-silent: expected FAIL, got FAIL, 36 s, exit 1
+      [FAIL] every sensor read: barometer answered every second: baro ok in 2 of 33 status lines
+[ok ] t7-f-reboot: expected FAIL, got FAIL, 36 s, exit 1
+      [FAIL] no reboot in the window: s 6..24; restarts [(14, 1)]; reset lines ['rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)']
+[ok ] t7-f-wifi-drop: expected FAIL, got FAIL, 36 s, exit 1
+      [FAIL] Wi-Fi stayed connected: 1 'wifi: disconnected' line(s) ['8']
+mock-suite exit 1
