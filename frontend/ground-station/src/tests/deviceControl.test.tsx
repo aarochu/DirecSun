@@ -53,7 +53,7 @@ describe('DeviceLink commands', () => {
     expect(settled).toBeNull();
     socket.message(ack(seq));
     await flush();
-    expect(settled).toEqual({ seq, ok: true, reason: null });
+    expect(settled).toEqual({ seq, ok: true, reason: null, applied: null });
     expect(link.getState().ignored).toBe(0);
   });
 
@@ -528,6 +528,34 @@ describe('ground station box controls', () => {
     expect(screen.getByText(/ARM ACCEPTED/)).toBeTruthy();
   });
 
+  it('sends only changed SAFE parameters and shows the applied set or exact refusal reason', async () => {
+    const socket = connect();
+    const toggle = screen.getByRole('button', { name: /PARAMETERS \/ SAFE ONLY/ });
+    fireEvent.click(toggle);
+
+    fireEvent.change(screen.getByLabelText(/Rate gain/), { target: { value: '0.02' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changed parameters' }));
+    expect(socket.lastCommand()).toMatchObject({ cmd: 'set_params', params: { k_omega: 0.02 } });
+    expect(Object.keys(socket.lastCommand().params as object)).toEqual(['k_omega']);
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq, true, undefined, { applied: { k_omega: 0.02 } }));
+      await flush();
+    });
+    expect(screen.getByText('Applied: k_omega = 0.02')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText(/Heading gain/), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changed parameters' }));
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq, false, 'invalid param: k_psi'));
+      await flush();
+    });
+    expect(screen.getByText('Set params refused: invalid param: k_psi')).toBeTruthy();
+
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    expect(screen.queryByRole('button', { name: /PARAMETERS \/ SAFE ONLY/ })).toBeNull();
+  });
+
   it('the mode menu sends the chosen mode, and stays disabled until the box is armed', async () => {
     const socket = connect();
     const trigger = () => screen.getByRole('button', { name: 'Set the box mode' });
@@ -625,5 +653,24 @@ describe('ground station box controls', () => {
     fireEvent.keyDown(window, { code: 'Space', key: ' ' });
     expect(socket.commands()).toHaveLength(before + 1);
     expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+  });
+
+  it('while armed, the space bar sends e-stop even from a focused text field, checkbox or slider (FD 17, V-63)', async () => {
+    const socket = connect();
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'READY' })));
+    const url = screen.getByRole('textbox', { name: 'DEVICE LINK / WEBSOCKET' }) as HTMLInputElement;
+    for (const target of [url, document.createElement('input')]) {
+      if (target !== url) {
+        target.type = 'range';
+        document.body.append(target);
+      }
+      target.focus();
+      const before = socket.commands().length;
+      const event = fireEvent.keyDown(target, { code: 'Space', key: ' ' });
+      expect(event).toBe(false);
+      expect(socket.commands()).toHaveLength(before + 1);
+      expect(socket.lastCommand()).toMatchObject({ cmd: 'estop' });
+    }
   });
 });
