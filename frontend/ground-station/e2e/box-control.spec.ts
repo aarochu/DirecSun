@@ -2,12 +2,12 @@ import { expect, test, type Page, type WebSocketRoute } from '@playwright/test';
 
 type Frame = Record<string, unknown>;
 
-async function attachFakeBox(page: Page) {
+async function attachFakeBox(page: Page, options: { wheelRefRpm?: number; flags?: string[] } = {}) {
   const received: Frame[] = [];
   let mode = 'SAFE';
   let heading = 0;
   let target: number | null = null;
-  const flags: string[] = ['MOMENTUM_OK'];
+  const flags: string[] = options.flags ?? ['MOMENTUM_OK'];
   let route: WebSocketRoute | null = null;
   let seq = 0;
   let sockets = 0;
@@ -34,7 +34,7 @@ async function attachFakeBox(page: Page) {
         sun_deg: null,
         sun_valid: false,
         wheel_rpm: mode === 'SAFE' ? 0 : 2400,
-        wheel_ref_rpm: mode === 'SAFE' ? 0 : 2400,
+        wheel_ref_rpm: mode === 'SAFE' ? 0 : (options.wheelRefRpm ?? 2400),
         throttle: 0,
         tau_cmd_mNm: 0,
         vbat: 10.1,
@@ -92,6 +92,21 @@ const commands = (received: Frame[]) => received.filter((frame) => frame.type ==
 const status = (page: Page) => page.locator('.controls__status');
 
 test.describe('box control against a scripted box', () => {
+  test('READY with Hall bypass refuses turns in the UI without sending a command', async ({ page }) => {
+    const { received } = await attachFakeBox(page, { wheelRefRpm: 0, flags: ['HALL_BYPASS'] });
+    await connect(page);
+    await page.getByRole('button', { name: 'Arm the box' }).click();
+    await page.getByRole('checkbox').check();
+    await page.getByRole('button', { name: 'Arm now' }).click();
+    await expect(status(page)).toHaveText('READY / DEVICE', { timeout: 4000 });
+
+    const rotate = page.getByRole('button', { name: 'Rotate right ninety degrees and return' });
+    await expect(rotate).toBeDisabled();
+    await expect(page.getByText(/HALL SENSOR IS BYPASSED/)).toBeVisible();
+    await rotate.evaluate((button: HTMLButtonElement) => button.click());
+    expect(commands(received).map((frame) => frame.cmd)).toEqual(['arm']);
+  });
+
   test('connecting and watching sends nothing', async ({ page }) => {
     const { received } = await attachFakeBox(page);
     await connect(page);

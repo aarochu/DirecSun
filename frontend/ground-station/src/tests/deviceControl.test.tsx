@@ -5,7 +5,9 @@ import { App } from '../App';
 import { operatorDisplaySource } from '../ground/displaySource';
 import { ACK_TIMEOUT_MS, DeviceCommandError, DeviceLink, PING_INTERVAL_MS } from '../hardware/deviceLink';
 import { DeviceOperator, HOLD_MS, SLEW_EVENT_WAIT_MS, SLEW_WAIT_MS } from '../hardware/deviceOperator';
-import { ack, FakeSocket, modeEvent, tlm } from './fakeSocket';
+import { ack, FakeSocket, modeEvent, tlm as rawTlm } from './fakeSocket';
+
+const tlm = (fields: Record<string, unknown>) => rawTlm({ wheel_ref_rpm: fields.mode === 'READY' ? 2400 : 0, ...fields });
 
 const flush = () => vi.advanceTimersByTimeAsync(0);
 
@@ -139,6 +141,20 @@ describe('DeviceOperator', () => {
     socket.message(tlm({ psi_deg: 10, mode: 'READY' }));
     await operator.rotate(1);
     expect(socket.commands()).toEqual([]);
+  });
+
+  it('does not send a turn when READY has no closed wheel reference', async () => {
+    const { socket, operator } = armed();
+    await armAndReady(socket, operator);
+    socket.message(tlm({ psi_deg: 10, mode: 'READY', wheel_ref_rpm: 0 }));
+    expect(operator.canRotate).toBe(false);
+    await operator.rotate(1);
+    expect(socket.commands().map((command) => command.cmd)).toEqual(['arm']);
+
+    socket.message(rawTlm({ psi_deg: 10, mode: 'READY' }));
+    expect(operator.canRotate).toBe(false);
+    socket.message(tlm({ psi_deg: 10, mode: 'READY', wheel_ref_rpm: 2400 }));
+    expect(operator.canRotate).toBe(true);
   });
 
   it('zeros heading, runs right 90, holds 1.0 s, and SLEWs back to zero', async () => {
@@ -383,6 +399,42 @@ describe('ground station box controls', () => {
       socket.message(tlm({ t_ms: 200, psi_deg: 0, mode: 'READY' }));
     });
   }
+
+  it('disables Rotate and explains an unavailable wheel loop before a turn', async () => {
+    const socket = connect();
+    await armFromPage(socket);
+    const rotate = screen.getByRole('button', { name: 'Rotate right ninety degrees and return' });
+    expect(rotate.hasAttribute('disabled')).toBe(false);
+
+    act(() => socket.message(tlm({ psi_deg: 0, mode: 'READY', wheel_ref_rpm: 0, flags: ['HALL_BYPASS'] })));
+    expect(rotate.hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText(/HALL SENSOR IS BYPASSED/)).toBeTruthy();
+    fireEvent.click(rotate);
+    expect(socket.commands().map((command) => command.cmd)).toEqual(['arm']);
+
+    act(() => socket.message(rawTlm({ psi_deg: 0, mode: 'READY' })));
+    expect(rotate.hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText(/BOX MAY NEED CHARACTERISATION/)).toBeTruthy();
+
+    act(() => socket.message(tlm({ psi_deg: 0, mode: 'READY', wheel_ref_rpm: 2400, flags: [] })));
+    expect(rotate.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('warns after ten seconds in SPINUP without commanding the box', async () => {
+    const socket = connect();
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm now' }));
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    act(() => socket.message(tlm({ psi_deg: 0, mode: 'SPINUP' })));
+    await act(async () => vi.advanceTimersByTimeAsync(10_000));
+    expect(screen.getByText(/SPIN-UP IS TAKING LONGER THAN EXPECTED/)).toBeTruthy();
+    expect(screen.getByText(/DISARM AND ASK JULIAN/)).toBeTruthy();
+    expect(socket.commands().map((command) => command.cmd)).toEqual(['arm']);
+  });
 
   it('asks to confirm the lock pin before it sends arm', async () => {
     const socket = connect();

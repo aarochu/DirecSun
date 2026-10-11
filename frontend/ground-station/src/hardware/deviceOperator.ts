@@ -92,7 +92,8 @@ export class DeviceOperator {
   }
 
   get canRotate(): boolean {
-    return this.state.controlling && this.state.phase === 'idle' && this.boxMode === 'READY';
+    return this.state.controlling && this.state.phase === 'idle' && this.boxMode === 'READY' &&
+      (this.link.latestReading?.wheelRefRpm ?? 0) > 0;
   }
 
   async arm(): Promise<void> {
