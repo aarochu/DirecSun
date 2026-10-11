@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Checks a frames.jsonl written by tools/ui-turn-recorder.mjs.
 
-Usage:  tools/check-ui-capture.py frames.jsonl [--expect-hidden [--min-hidden-s 20]]
+Usage:  tools/check-ui-capture.py frames.jsonl [--expect-hidden [--min-hidden-s 30]]
         tools/check-ui-capture.py --selftest
 
 Each line is one JSON object:
@@ -18,8 +18,8 @@ It passes only if, per page:
 
 Any HEARTBEAT_LOST mode event fails a capture. With --expect-hidden (the recorder's hidden
 scenario) the operator page must have recorded a visibilitychange to hidden for at least
---min-hidden-s seconds, or the run is not a result, and a hidden tab's pings are held to
-a gap budget (MAX_HIDDEN_GAP_MS) instead of 200 +/- 60 ms, because a Worker timer jitters.
+--min-hidden-s seconds, or the run is not a result. Hidden-tab pings are held to the
+same 200 +/- 60 ms requirement as every other capture.
 
 It also prints the comms phase (the commonest tlm.t_ms mod 20) and, when the capture
 holds visibility records, how long the operator page was hidden.
@@ -33,7 +33,6 @@ ACK_MAX_MS = 1000.0
 SLEW_MAX_MS = 6000.0
 PING_MS = 200.0
 PING_TOL_MS = 60.0
-MAX_HIDDEN_GAP_MS = 450.0
 
 
 def load(path):
@@ -49,7 +48,7 @@ def load(path):
     return frames
 
 
-def check(frames, expect_hidden=False, quiet=False, min_hidden_s=20.0):
+def check(frames, expect_hidden=False, quiet=False, min_hidden_s=30.0):
     problems = []
     say = (lambda *a: None) if quiet else print
     pages = collections.OrderedDict()
@@ -139,17 +138,13 @@ def check(frames, expect_hidden=False, quiet=False, min_hidden_s=20.0):
                 pongs[f["msg"].get("ping_seq")] += 1
         if pings:
             gaps = [b["t"] - a["t"] for a, b in zip(pings, pings[1:])]
-            if expect_hidden:
-                bad = [g for g in gaps if g > MAX_HIDDEN_GAP_MS]
-            else:
-                bad = [g for g in gaps if abs(g - PING_MS) > PING_TOL_MS]
+            bad = [g for g in gaps if abs(g - PING_MS) > PING_TOL_MS]
             if gaps:
                 say(f"{name}: {len(pings)} pings, gap median {statistics.median(gaps):.0f} ms, max {max(gaps):.0f} ms, "
                     f"{len(bad)} outside {PING_MS:.0f} +/- {PING_TOL_MS:.0f}")
             if bad:
-                limit = (f"over {MAX_HIDDEN_GAP_MS:.0f} ms" if expect_hidden
-                         else f"outside {PING_MS:.0f} +/- {PING_TOL_MS:.0f} ms")
-                problems.append(f"{name}: {len(bad)} of {len(gaps)} ping gaps {limit} (max {max(bad):.0f} ms)")
+                problems.append(f"{name}: {len(bad)} of {len(gaps)} ping gaps outside "
+                                f"{PING_MS:.0f} +/- {PING_TOL_MS:.0f} ms (max {max(bad):.0f} ms)")
             missing = [p for p in pings if pongs.get(p["msg"].get("seq"), 0) < 1 and end_t - p["t"] > ACK_MAX_MS]
             if missing:
                 problems.append(f"{name}: {len(missing)} pings never got a pong (first seq {missing[0]['msg'].get('seq')})")
@@ -304,7 +299,8 @@ def selftest():
             failures.append(f"{label}: expected {'pass' if should_pass else 'fail'}, got {problems or 'pass'}")
         print(f"check-ui-capture selftest: {label}: {'passes' if ok else 'fails'}" + (f" ({problems[0]})" if problems else ""))
 
-    expect_hidden("hidden run, Worker-like 5 Hz pings with 300 ms jitter", hidden_run(300, 9.5), True)
+    expect_hidden("hidden run with 225 ms Worker pings", hidden_run(225, 9.5), True)
+    expect_hidden("planted hidden run with 300 ms pings", hidden_run(300, 9.5), False, "ping gaps")
     expect_hidden("planted hidden run with 1 s pings (page timer throttled)", hidden_run(1000, 9.5), False, "ping gaps")
     expect_hidden("planted hidden run that never hid the page", hidden_run(200, 0), False, "hidden for")
 
@@ -323,7 +319,7 @@ def main():
     parser.add_argument("frames", nargs="?")
     parser.add_argument("--selftest", action="store_true")
     parser.add_argument("--expect-hidden", action="store_true")
-    parser.add_argument("--min-hidden-s", type=float, default=20.0)
+    parser.add_argument("--min-hidden-s", type=float, default=30.0)
     args = parser.parse_args()
     if args.selftest:
         sys.exit(selftest())
