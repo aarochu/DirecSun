@@ -81,7 +81,7 @@ constexpr const char *kWheelLoopUnavailable = "wheel loop not available";
 
 bool is_later_set_mode(Mode m)
 {
-    return m == Mode::Detumble || m == Mode::SunPoint;
+    return m == Mode::SunPoint;
 }
 
 bool has_heading_reference(Mode m)
@@ -269,7 +269,7 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
                 pending_wheel_step_rpm_ = 0.0f;
                 return ack_ok(out, cmd);
             }
-            if (mode_ == Mode::Manual || has_heading_reference(mode_)) {
+            if (mode_ == Mode::Manual || mode_ == Mode::Detumble || has_heading_reference(mode_)) {
                 enter(Mode::Ready, t);
                 post_mode_event(out, "mode");
                 return ack_ok(out, cmd);
@@ -288,6 +288,13 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
             manual_rate_dps_ = 0.0f;
             manual_has_setpoint_ = false;
             manual_fresh_tick_ = t;
+            post_mode_event(out, "mode");
+            return ack_ok(out, cmd);
+        }
+        if (target == Mode::Detumble) {
+            if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
+            enter(Mode::Detumble, t);
             post_mode_event(out, "mode");
             return ack_ok(out, cmd);
         }
@@ -572,7 +579,8 @@ void Supervisor::step(const TickInputs &in, ThrottleController &controller, Tick
     if (mode_ == Mode::Manual && manual_stale_) flags |= kFlagManualStale;
     if (wheel_hold_) flags |= kFlagWheelStep;
     if (armed()) flags |= controller.flags();
-    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Manual || has_heading_reference(mode_))) {
+    if (params_.hall_installed && (mode_ == Mode::Ready || mode_ == Mode::Detumble ||
+                                   mode_ == Mode::Manual || has_heading_reference(mode_))) {
         const bool near = in.wheel_rpm_safe > effective_cap_rpm(params_) - kMomentumWarnRpm ||
                           in.wheel_rpm_safe < params_.omega_low_rpm + kMomentumWarnRpm;
         flags |= near ? kFlagMomentumNearLimit : kFlagMomentumOk;
