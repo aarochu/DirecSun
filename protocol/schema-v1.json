@@ -70,9 +70,12 @@
             "MANUAL_STALE",
             "HALL_BYPASS",
             "WHEEL_STEP",
-            "HEADING_GYRO"
+            "HEADING_GYRO",
+            "FF_TABLE_MISSING",
+            "RATE_GAIN_REDUCED",
+            "PARAMS_RESET"
           ],
-          "description": "HALL_BYPASS: the Hall bench bypass is on (bench only, FD section 14.1): the Hall interlocks are suspended and the throttle is capped at a compile-time ceiling. WHEEL_STEP: a bench wheel_step hold is active (R3.8): omega_ref was stepped and the rate and attitude loops are suspended until `mode READY`. HEADING_GYRO: psi_deg is integrated from the gyro alone and is relative to the last zero_heading, not a compass heading (R4.2); set on every tlm until the magnetometer heading of Set 5."
+          "description": "HALL_BYPASS: the Hall bench bypass is on (bench only, FD section 14.1): the Hall interlocks are suspended and the throttle is capped at a compile-time ceiling. WHEEL_STEP: a bench wheel_step hold is active (R3.8): omega_ref was stepped and the rate and attitude loops are suspended until `mode READY`. HEADING_GYRO: psi_deg is integrated from the gyro alone and is relative to the last zero_heading, not a compass heading (R4.2); set on every tlm until the magnetometer heading of Set 5. FF_TABLE_MISSING: the Hall is fitted and the T-5 ff_table is not set, so the closed wheel loop does not exist and HOLD, SLEW and wheel_step are refused with 'wheel loop not available' (every mode, R4.6). RATE_GAIN_REDUCED: rate_gain_scale is below 1 (every mode, R4.6). PARAMS_RESET: the stored parameters were missing, of another version, or invalid and the defaults are running; set from boot until the first accepted set_params (R4.6), because the one-shot PARAMS_RESET notice is posted before any client has spoken."
         },
         { "$ref": "#/$defs/interlock", "description": "A latched fault." }
       ]

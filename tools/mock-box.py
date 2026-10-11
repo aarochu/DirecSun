@@ -24,7 +24,7 @@ finding U-7), with the same refusal reasons:
 - disarm and mode READY in SAFE: not armed; mode READY in SPINUP: wheel not at
   bias; MANUAL, HOLD, SLEW, and DETUMBLE outside READY: not in READY; DETUMBLE
   in READY without the wheel loop: wheel loop not available, with it the mode
-  runs (R4.4) and `mode READY` leaves it; SUN_POINT and respin: not implemented;
+  runs (R4.4) and `mode READY` leaves it; SUN_POINT: not in READY outside READY, sun not valid in it; respin: not implemented;
 - SPINUP as FD section 13.3 runs it: with the wheel loop available, omega_ref
   ramps from the wheel's speed toward the bias at 400 rpm/s, and READY comes
   after 0.5 s within 5 % of it, about 6.3 s after arm. Without the T-5 table
@@ -121,7 +121,6 @@ BYPASS_THROTTLE_MAX = 400                 # kBypassThrottleMax in the firmware
 SPINUP_THROTTLE = 300                     # spinup_throttle default; rung 1 holds it in READY
 HALL_EXPECT_THROTTLE = 200                # hall_expect_throttle default; must stay below spinup_throttle
 SPINUP_RAMP_PER_S = 200                   # open-loop ramp, DShot units per second (R3.7)
-LATER_SET_MODES = {"SUN_POINT"}   # not implemented yet (R5.4); DETUMBLE runs from R4.4
 # HOLD and SLEW as the firmware (R4.3): controllers.hpp and FD section 12.
 SLEW_RATE_DPS, SLEW_ACCEL_DPS2 = 60.0, 120.0
 SLEW_SETTLE_DEG, SLEW_SETTLE_RATE_DPS, SLEW_SETTLE_S = 3.0, 5.0, 0.5
@@ -223,6 +222,11 @@ class Box:
                        "bench_underspeed_rpm": 0, "bench_cap_rpm": 0}
         if characterised:
             self.params["ff_table"] = DEFAULT_FF_TABLE
+        # A prepared box (T-5 done, the operator's pre-demo checklist run) runs at gain 1 with
+        # its parameters stored; a fresh one, as the firmware boots, runs at 0.2 on the
+        # defaults, which it reports with PARAMS_RESET until the first set_params (R4.6).
+        self.params["rate_gain_scale"] = 1.0 if characterised else 0.2
+        self.params_reset = not characterised
         self.wheel_hold = False           # bench wheel_step hold (R3.8)
         self.talkers = set()              # clients that have sent anything get events (R3.5)
         self.outbox = []                  # (connection or None for broadcast, message)
@@ -382,6 +386,7 @@ class Box:
                     if key not in update:
                         self.params[key] = 0
             self.params.update(update)
+            self.params_reset = False
             self._ack(conn, seq, True, applied=update)
             if was_bypassed != (not self.params["hall_installed"]):
                 self._emit(None, {"v": 1, "type": "event", "seq": self._next_seq(), "t_ms": self._t_ms(),
@@ -401,8 +406,9 @@ class Box:
 
     def _mode_command(self, conn, seq, message):
         target = message["mode"]
-        if target in LATER_SET_MODES:
-            return self._ack(conn, seq, False, "not implemented")
+        if target == "SUN_POINT":
+            # R4.6: not in READY, then sun not valid (no sun angle until R5.4).
+            return self._ack(conn, seq, False, "not in READY" if self.mode != "READY" else "sun not valid")
         if target == "DETUMBLE":
             # As the firmware supervisor (R4.4): from READY only, with the closed wheel
             # loop; the same zero-rate cascade as READY.
@@ -627,6 +633,13 @@ class Box:
         if self.wheel_hold:
             flags.append("WHEEL_STEP")
         flags.append("HEADING_GYRO")   # gyro-only heading, relative to zero_heading, until Set 5 (R4.2)
+        # Status the UI cannot see otherwise, in every mode (R4.6).
+        if self.params["hall_installed"] and not self._wheel_loop_available():
+            flags.append("FF_TABLE_MISSING")
+        if self.params["rate_gain_scale"] < 1.0:
+            flags.append("RATE_GAIN_REDUCED")
+        if self.params_reset:
+            flags.append("PARAMS_RESET")
         flags.extend(self.latched)
 
         # Throttle as rung 1 (R3.7) sends it: an open-loop ramp in SPINUP, the
@@ -847,6 +860,33 @@ def selftest_attitude(schema):
     reason = send(box, conn, 4, cmd="mode", mode="DETUMBLE").get("reason")
     if reason != "not in READY":
         problems.append(f"DETUMBLE from MANUAL refused with {reason!r}, expected 'not in READY'")
+
+    # The status flags and SUN_POINT refusals of R4.6. A prepared box carries none of the
+    # flags; a fresh one carries all three until its parameters are set.
+    def flags_of(box, clock):
+        tlm, _events = run(box, clock, 0.1)
+        return set(tlm[-1]["flags"])
+
+    box, conn, clock = armed()
+    status = {"FF_TABLE_MISSING", "RATE_GAIN_REDUCED", "PARAMS_RESET"}
+    if flags_of(box, clock) & status:
+        problems.append("a prepared box carries a status flag")
+    fresh = Box(schema, {"throttle"}, clock=Clock(), characterised=False)
+    fresh_clock = fresh.clock
+    if flags_of(fresh, fresh_clock) & status != status:
+        problems.append(f"a fresh box lacks status flags: {flags_of(fresh, fresh_clock)}")
+    send(fresh, Conn(), 1, cmd="set_params", params={"rate_gain_scale": 1.0})
+    after = flags_of(fresh, fresh_clock)
+    if "PARAMS_RESET" in after or "RATE_GAIN_REDUCED" in after or "FF_TABLE_MISSING" not in after:
+        problems.append(f"after set_params rate_gain_scale 1 the fresh box shows {after}")
+    send(fresh, Conn(), 2, cmd="set_params", params={"ff_table": DEFAULT_FF_TABLE})
+    if "FF_TABLE_MISSING" in flags_of(fresh, fresh_clock):
+        problems.append("FF_TABLE_MISSING stayed after a table was set")
+    if send(fresh, Conn(), 3, cmd="mode", mode="SUN_POINT").get("reason") != "not in READY":
+        problems.append("SUN_POINT in SAFE was not refused with 'not in READY'")
+    box, conn, clock = armed()
+    if send(box, conn, 2, cmd="mode", mode="SUN_POINT").get("reason") != "sun not valid":
+        problems.append("SUN_POINT from READY was not refused with 'sun not valid'")
 
     # DETUMBLE (R4.4): from READY with the wheel loop; the same zero-rate cascade
     # as READY, so a spinning box comes to rest; `mode READY` leaves it.
@@ -1113,7 +1153,7 @@ def selftest():
         problems.append(f"zero_heading in READY left psi_deg at {zeroed_psi}")
     # The firmware's answers on the UI's paths (R4.1, finding U-7), reason for reason.
     gap3 = {104: "ramp-down in progress", 105: "not armed", 106: "not armed", 107: "not in SAFE",
-            108: "wheel not at bias", 110: "not implemented", 111: "not implemented",
+            108: "wheel not at bias", 110: "sun not valid", 111: "not implemented",
             112: "box not still"}
     for seq, reason in gap3.items():
         if reasons.get(seq) != reason:

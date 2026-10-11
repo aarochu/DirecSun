@@ -330,6 +330,13 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     holding.rate_dps = 0.2f;
     emit(encode_tlm(holding, 7, 0, buf, sizeof buf));
 
+    // tlm: SAFE with the three status flags of R4.6, in bit order after the older ones.
+    TelemetrySnapshot status = safe;
+    status.flags = kFlagMomentumOk | kFlagHeadingGyro | kFlagFfTableMissing | kFlagRateGainReduced | kFlagParamsReset;
+    emit(encode_tlm(status, 8, 0, buf, sizeof buf));
+    CHECK(std::string(buf).find("\"flags\":[\"MOMENTUM_OK\",\"HEADING_GYRO\",\"FF_TABLE_MISSING\","
+                                "\"RATE_GAIN_REDUCED\",\"PARAMS_RESET\"") != std::string::npos);
+
     // ack: ok, refused, and set_params with the applied set.
     Ack ack;
     ack.seq = 77;
@@ -377,7 +384,7 @@ TEST_CASE("HT-9: every encoded message kind is written for the schema check")
     // pong
     emit(encode_pong(16, 79, 512330.25, 83120, buf, sizeof buf));
 
-    CHECK(written == 19);
+    CHECK(written == 20);
 
     // Positive control for the schema check: the MANUAL tlm with psi_deg turned
     // into a string must be rejected by tools/check-protocol.sh.

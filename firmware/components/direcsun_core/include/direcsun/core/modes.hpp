@@ -41,6 +41,9 @@ enum Flag : uint32_t {
     kFlagWheelStep = 1u << 4,        // bench wheel_step hold: rate and attitude loops suspended (R3.8)
     kFlagMomentumSaturated = 1u << 5,  // omega_ref on a limit in the direction the loop needs (R3.9)
     kFlagHeadingGyro = 1u << 6,        // the heading is gyro-only and relative to the last zero_heading (R4.2)
+    kFlagFfTableMissing = 1u << 7,     // Hall fitted, no T-5 ff_table: no closed wheel loop (R4.6)
+    kFlagRateGainReduced = 1u << 8,    // rate_gain_scale below 1 (R4.6)
+    kFlagParamsReset = 1u << 9,        // defaults are running; cleared by the first accepted set_params (R4.6)
 };
 
 // Wire name of a single flag bit, or nullptr.
@@ -193,6 +196,7 @@ private:
     double heading_zero_deg_ = 0.0;
 
     bool pending_reset_notice_ = false;
+    bool params_reset_active_ = false;   // the PARAMS_RESET flag: until the first accepted set_params (R4.6)
     const char *reset_detail_ = "";
 };
 

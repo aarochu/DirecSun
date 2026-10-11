@@ -504,9 +504,9 @@ The box only reaches the five demonstration modes through Ready, after the wheel
 | Boot | Safe | IMU found (WHO\_AM\_I) and DShot 0 sent for 1 s. A missing magnetometer (QMC5883P chip ID 0x80 not read) is reported; until Set 5 it blocks nothing, because Hold and Slew run on the gyro heading (I-19) |
 | Safe | Spin-up | Ground `arm` command, box still (rate under 5 deg/s) and held by the lock pin or the operator, battery above 9.6 V, no latched fault. The sender becomes the controlling client (Section 6.7) |
 | Spin-up | Ready | Ω within 5 % of the bias speed for 0.5 s; Ready holds box rate at zero |
-| Ready | Detumble | Ground command |
+| Ready | Detumble | Ground command. Refused with `not in READY` from any other mode and `wheel loop not available` without the closed wheel loop (R4.4, R4.6) |
 | Ready | Hold, Slew | Ground command. Until the magnetometer is calibrated (Set 5) the heading is gyro-only: Hold holds the heading captured at entry, and a Slew target is relative to the last `zero_heading` (I-19). `zero_heading` is accepted in Safe and Ready only |
-| Ready | Sun point | Ground command; valid sun angle |
+| Ready | Sun point | Ground command; valid sun angle. Refused with `not in READY` from any other mode and `sun not valid` without a valid sun angle (R4.6) |
 | Ready | Manual | Ground command with an `input` of `throttle`, `wheel`, or `rate`; refused with a reason while the firmware lacks that input's loop |
 | Ready | Spin-up | Ground `respin` with the box pinned and still (rate under 5 deg/s). The new wheel start speed must lie between the low limit + 200 rpm and the cap − 200 rpm |
 | Any active mode | Ready | Ground command, or slew complete; Sun point also returns after 0.5 s without a valid sun angle |

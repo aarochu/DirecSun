@@ -202,12 +202,8 @@ TEST_CASE("HT-7 refusals carry their exact reasons and leave the mode alone")
     {
         Rig rig;
         rig.arm_to_ready();
-        // HOLD and SLEW are implemented from R4.3 (test_slew.cpp).
-        for (Mode m : {Mode::SunPoint}) {
-            rig.tick({mode_cmd(m)});
-            CHECK(rig.last_reason() == "not implemented");
-            CHECK(rig.out.mode == Mode::Ready);
-        }
+        // HOLD and SLEW are implemented from R4.3 (test_slew.cpp), DETUMBLE from
+        // R4.4, and SUN_POINT answers with its guards until R5.4 (test_status_flags.cpp).
         // wheel_step is implemented from R3.8 (bench only, test_controllers.cpp)
         // and zero_heading from R4.2 (test_heading.cpp).
         rig.tick({cmd(CommandKind::Respin)});
