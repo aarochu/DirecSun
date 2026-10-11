@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
+    "build:demo": "npm run build && npm run build:deploy --prefix draft",
+    "demo:check": "node scripts/serve-demo.mjs --check",
+    "demo:serve": "node scripts/serve-demo.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

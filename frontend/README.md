@@ -14,6 +14,24 @@ npm run typecheck    # type-check only
 
 For the ground station in development, also run `npm run dev` in `draft/` (port 5174); the landing page's ground station links point there.
 
+## Run the demo offline
+
+Install and build both apps once while the laptop has internet access:
+
+```bash
+npm ci
+npm ci --prefix draft
+npm run build:demo
+```
+
+At the venue, connect the laptop to the box's Wi-Fi and serve the already-built files (no internet required):
+
+```bash
+npm run demo:serve
+```
+
+Open `http://127.0.0.1:4173`. The landing page and `/draft/ground-station` are served from the same local origin, and the ground station may connect to the box over `ws://direcsun.local/ws`. Keep this terminal open during the demo. Set `DIRECSUN_DEMO_PORT` if port 4173 is unavailable.
+
 ## Layout
 
 - `src/main.ts`: markup, the scroll timeline, and boot.

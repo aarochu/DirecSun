@@ -98,9 +98,15 @@ jobs:
       - name: npm ci
         run: npm ci
 
-      # build runs the typecheck first.
-      - name: Build
-        run: npm run build
+      - name: Ground station dependencies
+        run: npm ci --prefix draft
+
+      # Exercises the exact combined output used by Vercel and the offline demo.
+      - name: Build both demo apps
+        run: npm run build:demo
+
+      - name: Check offline routes
+        run: npm run demo:check
 
   frontend-draft:
     name: frontend/draft (typecheck, unit, e2e in Chrome)
