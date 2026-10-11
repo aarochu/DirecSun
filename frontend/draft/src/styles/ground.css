@@ -602,3 +602,132 @@
     transition: none;
   }
 }
+
+/* Sensor readings (ground/SensorPanel.tsx): collapsible, one group per part. */
+.sensors {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.sensors__heading {
+  margin: 0;
+  font: inherit;
+}
+
+.sensors__toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sensors__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.sensors__summary {
+  margin-left: auto;
+  color: var(--text-secondary);
+}
+
+.sensors__chevron {
+  flex: none;
+  color: var(--text-secondary);
+  transition: transform 150ms var(--ease);
+}
+
+.sensors.is-open .sensors__chevron {
+  transform: rotate(180deg);
+}
+
+.sensors.is-open .sensors__toggle {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sensors__groups {
+  display: grid;
+}
+
+.sensors__group {
+  margin: 0;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sensors__group:last-child {
+  border-bottom: 0;
+}
+
+.sensors__part {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.sensors__part dt {
+  color: var(--text);
+}
+
+.sensors__part dd {
+  margin: 0;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.sensors__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.sensors__row dt {
+  color: var(--text-secondary);
+}
+
+.sensors__row dd {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sensors__value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.sensors__note {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sensors__empty {
+  margin: 0;
+  padding: 14px 16px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sensors__chevron {
+    transition: none;
+  }
+}

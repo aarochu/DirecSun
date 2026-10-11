@@ -235,9 +235,9 @@ body {
   letter-spacing: -0.055em;
 }
 
-.hero__title > span,
-.hero__title [data-line] {
-  overflow: clip;
+.hero__title .fuzzy {
+  display: block;
+  max-width: none;
 }
 
 .hero__lead {

@@ -136,7 +136,7 @@ test.describe('landing', () => {
     expect(hit).toBe(true);
 
     await page.goto('/ground-station');
-    await expect(page.locator('canvas')).toHaveCount(0);
+    await expect(page.locator('.hero__orbit')).toHaveCount(0);
   });
 
   test('REDUCED_MOTION: static hero, ground station still works', async ({ browser }) => {

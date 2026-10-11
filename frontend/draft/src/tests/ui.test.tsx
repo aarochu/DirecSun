@@ -135,6 +135,22 @@ describe('ground station', () => {
     expect(button(/Reset the simulation/).hasAttribute('disabled')).toBe(false);
   });
 
+  it('sensor readings: no numbers without a device, and the panel collapses', () => {
+    renderAt('/ground-station');
+    const panel = within(screen.getByRole('region', { name: 'SENSOR READINGS' }));
+    const toggle = panel.getByRole('button', { name: /SENSOR READINGS/ });
+    expect(panel.getByText('NO DEVICE')).toBeTruthy();
+    expect(panel.getByText(/Connect a device/)).toBeTruthy();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    const body = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+    expect(body.hidden).toBe(false);
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(body.hidden).toBe(true);
+    fireEvent.click(toggle);
+    expect(body.hidden).toBe(false);
+  });
+
   it('judge flow: right 90°, hold, automatic return, READY at 0°', () => {
     renderAt('/ground-station');
     fireEvent.click(button(/Rotate right ninety degrees/));
