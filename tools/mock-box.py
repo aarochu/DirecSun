@@ -81,6 +81,7 @@ OMEGA_LOW, OMEGA_BIAS, OMEGA_CAP = 800.0, 2400.0, 4000.0
 THROTTLE_MIN, THROTTLE_MAX = 150, 400     # the firmware's defaults until T-5 (FD section 16)
 BYPASS_THROTTLE_MAX = 400                 # kBypassThrottleMax in the firmware
 SPINUP_THROTTLE = 300                     # spinup_throttle default; rung 1 holds it in READY
+HALL_EXPECT_THROTTLE = 200                # hall_expect_throttle default; must stay below spinup_throttle
 SPINUP_RAMP_PER_S = 200                   # open-loop ramp, DShot units per second (R3.7)
 ACTIVE_MODES = {"DETUMBLE", "HOLD", "SLEW", "SUN_POINT", "MANUAL"}
 SETPOINT_KEY = {"throttle": "throttle", "wheel": "wheel_rpm", "rate": "rate_dps"}
@@ -136,7 +137,8 @@ class Box:
         self.manual_last = -1.0
         self.last_throttle = 0
         self.params = {"bench_mode": False, "hall_installed": True,
-                       "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX}
+                       "manual_throttle_min": THROTTLE_MIN, "manual_throttle_max": THROTTLE_MAX,
+                       "spinup_throttle": SPINUP_THROTTLE, "hall_expect_throttle": HALL_EXPECT_THROTTLE}
         self.talkers = set()              # clients that have sent anything get events (R3.5)
         self.outbox = []                  # (connection or None for broadcast, message)
 
@@ -264,12 +266,19 @@ class Box:
         elif cmd == "set_params":
             if self.mode != "SAFE":
                 return self._ack(conn, seq, False, "not in SAFE")
+            if self.ramp:
+                # SAFE but still ramping down: the firmware waits for the ramp to end (V-65).
+                return self._ack(conn, seq, False, "ramp-down in progress")
             update = message["params"]
             # The Hall bench bypass needs bench mode already on: two commands, never one (R3.6).
             if update.get("hall_installed") is False and not self.params.get("bench_mode"):
                 return self._ack(conn, seq, False, "bench_mode required: hall_installed")
             if update.get("bench_mode") is False and not update.get("hall_installed", self.params["hall_installed"]):
                 return self._ack(conn, seq, False, "bench_mode required: hall_installed")
+            # HALL_SILENT must arm in every SPINUP, as in the firmware (FD section 16, V-64).
+            merged = {**self.params, **update}
+            if merged["hall_expect_throttle"] >= merged["spinup_throttle"]:
+                return self._ack(conn, seq, False, "invalid param: hall_expect_throttle")
             was_bypassed = not self.params["hall_installed"]
             self.params.update(update)
             self._ack(conn, seq, True, applied=update)
@@ -593,9 +602,16 @@ def selftest():
     send(a, {"v": 1, "type": "cmd", "seq": 9, "cmd": "arm"})
     box.last_heartbeat -= 5.0
     box.tick()                                                                        # HEARTBEAT_LOST
+    send(a, {"v": 1, "type": "cmd", "seq": 15, "cmd": "set_params", "params": {"bench_mode": True}})  # mid-ramp
+    box.ramp = (box.ramp[0] - RAMP_S, box.ramp[1])
+    box.tick()                                                                        # ramp ends
     send(a, {"v": 1, "type": "cmd", "seq": 10, "cmd": "set_params", "params": {"hall_installed": False}})  # refused
     send(a, {"v": 1, "type": "cmd", "seq": 11, "cmd": "set_params", "params": {"bench_mode": True}})
     send(a, {"v": 1, "type": "cmd", "seq": 12, "cmd": "set_params", "params": {"hall_installed": False}})
+    send(a, {"v": 1, "type": "cmd", "seq": 13, "cmd": "set_params",
+             "params": {"spinup_throttle": 2047, "hall_expect_throttle": 2047}})               # refused
+    send(a, {"v": 1, "type": "cmd", "seq": 14, "cmd": "set_params",
+             "params": {"spinup_throttle": 2047, "hall_expect_throttle": 2046}})
     box.tick()                                                                        # HALL_BYPASS flag
     kinds = {}
     for _target, message in box.outbox:
@@ -621,6 +637,14 @@ def selftest():
         problems.append("HALL_BYPASS never set")
     if not any(m.get("name") == "HALL_BYPASS" for _t, m in box.outbox if m["type"] == "event"):
         problems.append("no HALL_BYPASS notice")
+    # Box rules the mock mirrors: each one refused, and the nearest legal update accepted.
+    acks = {m["seq"]: m for _t, m in box.outbox if m["type"] == "ack" and m["seq"] in (13, 14, 15)}
+    expected = {13: (False, "invalid param: hall_expect_throttle"), 14: (True, None),
+                15: (False, "ramp-down in progress")}
+    for seq, (ok, reason) in expected.items():
+        got = acks.get(seq)
+        if got is None or got["ok"] is not ok or got.get("reason") != reason:
+            problems.append(f"set_params seq {seq}: expected ok {ok} reason {reason!r}, got {got}")
     problems.extend(asyncio.run(selftest_endpoint()))
     for problem in problems:
         print(f"mock-box selftest: FAILED, {problem}", file=sys.stderr)

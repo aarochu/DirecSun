@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "direcsun/core/commands.hpp"
+#include "direcsun/core/dshot.hpp"
 #include "direcsun/core/params.hpp"
 #include "direcsun/core/timebase.hpp"
 
@@ -64,12 +65,14 @@ constexpr uint32_t kRampDownMs = 5000;              // e-stop, disarm, heartbeat
 // 2000 rpm.
 constexpr int kBypassThrottleMax = 400;
 
-// Lowest DShot throttle value; 1..47 are ESC commands flight code never sends.
-constexpr int kDshotMinThrottle = 48;
-constexpr int kDshotMaxThrottle = 2047;
+// The DShot throttle range comes from dshot.hpp, its one definition:
+// kDshotMinThrottle (48; 1..47 are ESC commands flight code never sends) and
+// kDshotMaxValue. The supervisor computes throttle in int.
+constexpr int kDshotMaxThrottle = kDshotMaxValue;
 
 // What the monitor needs each tick.
 struct FaultInputs {
+    uint32_t elapsed_ticks = 1;        // alarms since the previous evaluation (TickClock)
     bool hall_installed = true;
     bool underspeed_applies = false;   // mode is neither SAFE nor SPINUP
     float wheel_rpm_safe = 0.0f;       // median wheel speed (FD section 10.4)
@@ -82,7 +85,9 @@ struct FaultInputs {
 };
 
 // Evaluates the hard faults every tick. It keeps the two duration counters
-// (UNDERSPEED, HALL_SILENT); everything else is a threshold on its input.
+// (UNDERSPEED, HALL_SILENT), which add the alarms each evaluation stands for,
+// so a missed tick cannot stretch them; everything else is a threshold on its
+// input.
 class InterlockMonitor {
 public:
     InterlockSet evaluate(const FaultInputs &in, const Params &params);

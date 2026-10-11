@@ -54,7 +54,7 @@ struct ThrottleBand {
 ThrottleBand manual_throttle_band(const Params &params);
 
 struct TickInputs {
-    uint32_t tick = 0;                          // monotonic 2 ms tick counter
+    uint32_t tick = 0;                          // TickClock::now(): one per 2 ms alarm, missed ticks included
     float rate_dps = 0.0f;                      // box rate estimate
     float wheel_rpm_safe = 0.0f;                // median wheel speed (interlocks, spin-up)
     float wheel_rpm_fast = 0.0f;                // latest-period wheel speed (controllers)
@@ -142,6 +142,8 @@ private:
     InterlockMonitor monitor_;
     RampDown ramp_;
     int prev_throttle_ = 0;
+    uint32_t last_step_tick_ = 0;
+    bool stepped_ = false;
 
     float spinup_target_rpm_ = 0.0f;
     uint32_t spinup_in_band_ticks_ = 0;

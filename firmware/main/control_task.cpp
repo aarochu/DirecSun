@@ -27,6 +27,7 @@
 #include "direcsun/core/estimator.hpp"
 #include "direcsun/core/modes.hpp"
 #include "direcsun/core/snapshot.hpp"
+#include "direcsun/core/timebase.hpp"
 #include "direcsun/core/wheel_speed.hpp"
 #include "direcsun/drivers/hall.hpp"
 #include "direcsun/drivers/imu.hpp"
@@ -72,7 +73,8 @@ ControlContext s_context;
 
 // The gptimer ISR. Not placed in IRAM on purpose [D]: CONFIG_GPTIMER_ISR_CACHE_SAFE
 // is off, so while a flash write disables the cache (parameter persistence,
-// accepted only in SAFE) this ISR is held off together with the control task,
+// accepted only in SAFE once any ramp-down has ended, so with the wheel not
+// driven) this ISR is held off together with the control task,
 // and a long flash write cannot trip the stall watchdog.
 bool on_tick_alarm(gptimer_handle_t, const gptimer_alarm_event_data_t *, void *)
 {
@@ -202,9 +204,13 @@ void control_task(void *)
              xPortGetCoreID());
     ESP_ERROR_CHECK(start_tick_timer());
 
+    // Two counts of time: `tick` counts executed ticks and paces the sensor
+    // schedule and the snapshots; `clock` counts timer alarms, missed ticks
+    // included, and is the supervisor's time, so a missed tick cannot stretch
+    // the heartbeat timeout, the ramp-down, or an interlock (V-66).
     uint32_t tick = 0;
+    TickClock clock;
     uint32_t imu_invalid_streak = 0;
-    uint32_t missed_streak = 0;
     uint32_t missed_total = 0;
     uint32_t imu_invalid_second = 0;
     uint32_t missed_second = 0;
@@ -244,13 +250,10 @@ void control_task(void *)
             second_start = t0;
         }
 
-        const uint32_t missed = notifications > 1 ? notifications - 1 : 0;
+        const uint32_t missed = clock.advance(notifications);
         if (missed > 0) {
-            missed_streak = saturating_add(missed_streak, missed);
             missed_total = saturating_add(missed_total, missed);
             missed_second = saturating_add(missed_second, missed);
-        } else {
-            missed_streak = 0;
         }
         if (prev_tick_start != 0) {
             stats.add_period(t0 - prev_tick_start, kTickPeriodUs);
@@ -337,7 +340,7 @@ void control_task(void *)
 
         // ---- 3. Supervisor --------------------------------------------------
         TickInputs in;
-        in.tick = tick;
+        in.tick = clock.now();
         in.rate_dps = estimator.rate_dps();
         in.wheel_rpm_safe = wheel_safe;
         in.wheel_rpm_fast = wheel_fast;
@@ -345,7 +348,7 @@ void control_task(void *)
         in.vbat_avg_v = battery.average();
         in.tilt_deg = estimator.tilt_deg();
         in.imu_invalid_streak = imu_invalid_streak;
-        in.missed_tick_streak = missed_streak;
+        in.missed_tick_streak = clock.missed_streak();
         in.estop_requested = shared_take_estop();
         in.command_count = shared_drain_commands(commands, kCommandQueueDepth);
         in.commands = commands;
