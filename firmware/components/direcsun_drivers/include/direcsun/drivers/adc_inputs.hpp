@@ -13,7 +13,7 @@ namespace direcsun::drivers {
 //
 //   Sun A    XIAO D0 = GPIO1, ADC1 channel 0, OP550 emitter load resistor
 //   Sun B    XIAO D1 = GPIO2, ADC1 channel 1
-//   Battery  XIAO D9 = GPIO8, ADC1 channel 7, 100 kOhm / 22 kOhm divider from the pack
+//   Battery  XIAO D9 = GPIO8, ADC1 channel 7, divider from the pack (see kBatteryDividerRatio)
 //
 // One-shot reads take tens of microseconds each, so the control task spreads
 // them over separate ticks (FD section 9.1). Single caller only.
@@ -29,8 +29,13 @@ esp_err_t adc_inputs_init();
 // Calibrated voltage at the pin, in millivolts.
 esp_err_t adc_read_mv(AdcInput input, int *millivolts);
 
-// Battery divider (TD section 5.1): the pin sees 22 / (100 + 22) of the pack.
-constexpr float kBatteryDividerRatio = 22.0f / 122.0f;
+// Battery divider: the pin sees bottom / (top + bottom) of the pack. TD section
+// 5.1 designs 100 kOhm / 22 kOhm (0.1803); the bench rig's resistors measure
+// 83.2 kOhm and 21.23 kOhm (Julian's meter, 2026-10-10), so the ratio is 0.2033
+// (FD V-67). Change these two values with the resistors.
+constexpr float kBatteryDividerTopKohm = 83.2f;
+constexpr float kBatteryDividerBottomKohm = 21.23f;
+constexpr float kBatteryDividerRatio = kBatteryDividerBottomKohm / (kBatteryDividerTopKohm + kBatteryDividerBottomKohm);
 
 constexpr float battery_volts_from_pin_mv(int pin_mv)
 {
