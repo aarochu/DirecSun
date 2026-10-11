@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, OctagonX, Power, PowerOff, Square } from 'lucide
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { DeviceLink } from '../hardware/deviceLink';
 import type { DeviceOperator, TurnPhase } from '../hardware/deviceOperator';
+import { ModeMenu } from './ModeMenu';
 
 const SEQUENCE_STEPS: readonly { label: string; phases: readonly TurnPhase[] }[] = [
   { label: 'Turn 90°', phases: ['rotating'] },
@@ -99,6 +100,11 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
             Rotate right 90°
             <ArrowRight strokeWidth={1.75} aria-hidden />
           </button>
+          <ModeMenu
+            mode={mode}
+            disabled={!state.controlling || turning || state.busy !== null || !['READY', 'HOLD', 'SLEW', 'MANUAL', 'DETUMBLE', 'SUN_POINT'].includes(mode ?? '')}
+            onSelect={(next, input) => void operator.setMode(next, input)}
+          />
         </div>
         <div className="controls__secondary">
           <button
