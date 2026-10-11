@@ -49,6 +49,20 @@ test.describe('landing page', () => {
     const panelBox = (await panel.boundingBox())!;
     expect(itemBox.y + itemBox.height).toBeLessThanOrEqual(panelBox.y + panelBox.height + 1);
   });
+
+  test('the actual content is the main landmark and the narrow ticker stays inside the viewport', async ({ page }) => {
+    await open(page, 320, 812);
+    const main = page.getByRole('main');
+    await expect(main.locator('.panel--hero h1')).toHaveText('Control the attitude.');
+    await expect(main.locator('.panel--system')).toHaveCount(1);
+    await goTo(page, 'System');
+    const ticker = await page.locator('.ticker').boundingBox();
+    const label = await page.locator('.ticker__label').boundingBox();
+    const track = await page.locator('.ticker__track').boundingBox();
+    expect(ticker).not.toBeNull();
+    expect(label!.x).toBeGreaterThanOrEqual(ticker!.x);
+    expect(track!.x + track!.width).toBeLessThanOrEqual(ticker!.x + ticker!.width + 1);
+  });
   test('loads cleanly: no console errors, the loader clears, and the model is drawn', async ({ page }) => {
     const errors = await open(page);
     expect(errors).toEqual([]);
@@ -89,7 +103,7 @@ test.describe('landing page', () => {
         await expect(page.locator('.flow__list')).toBeVisible();
         await expect(page.locator('.flow__scroll')).toBeHidden();
         const items = page.locator('.flow__item-button');
-        expect(await items.count()).toBe(13);
+        expect(await items.count()).toBe(14);
         await items.last().scrollIntoViewIfNeeded();
         const itemBox = (await items.last().boundingBox())!;
         const panelBox = (await panel.boundingBox())!;
@@ -115,7 +129,7 @@ test.describe('landing page', () => {
     await goTo(page, 'System');
     const opacities = (selector: string) =>
       page.locator(selector).evaluateAll((elements) => elements.map((element) => Number(getComputedStyle(element).opacity)));
-    expect(await page.locator('.flow__line').count()).toBe(16);
+    expect(await page.locator('.flow__line').count()).toBe(18);
     await expect.poll(async () => (await opacities('.flow__line')).every((opacity) => opacity === 1), { timeout: 20_000 }).toBe(true);
     await expect.poll(async () => (await opacities('.flow__node')).every((opacity) => opacity === 1), { timeout: 20_000 }).toBe(true);
   });
