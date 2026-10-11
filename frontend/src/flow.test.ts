@@ -68,6 +68,16 @@ describe('flowchart data', () => {
     const markup = flowMarkup();
     expect(markup.match(/class="flow__item"/g)).toHaveLength(nodes.length);
     expect(markup).toContain('→ XIAO ESP32-S3 (I²C)');
-    expect(markup).toContain('↔ Ground station (Wi-Fi)');
+    expect(markup).toContain('↔ Wi-Fi network (Wi-Fi)');
+  });
+
+  it('shows the documented network and protected power path', () => {
+    expect(byId.has('ap')).toBe(true);
+    expect(edges.some((edge) => edge.from === 'ap' && edge.to === 'xiao' && edge.both)).toBe(true);
+    expect(edges.some((edge) => edge.from === 'laptop' && edge.to === 'ap' && edge.both)).toBe(true);
+    expect(edges.find((edge) => edge.from === 'fuse' && edge.to === 'esc')?.label).toContain('470 µF');
+    expect(edges.find((edge) => edge.from === 'buck' && edge.to === 'xiao')?.label).toContain('1N5817');
+    expect(edges.find((edge) => edge.from === 'xiao' && edge.to === 'mpu')?.label).toContain('3.3 V');
+    expect(edges.find((edge) => edge.from === 'xiao' && edge.to === 'esc')?.label).toContain('D8');
   });
 });
