@@ -29,13 +29,14 @@ esp_err_t adc_inputs_init();
 // Calibrated voltage at the pin, in millivolts.
 esp_err_t adc_read_mv(AdcInput input, int *millivolts);
 
-// Battery divider: the pin sees bottom / (top + bottom) of the pack. TD section
-// 5.1 designs 100 kOhm / 22 kOhm (0.1803); the bench rig's resistors measure
-// 83.2 kOhm and 21.23 kOhm (Julian's meter, 2026-10-10), so the ratio is 0.2033
-// (FD V-67). Change these two values with the resistors.
-constexpr float kBatteryDividerTopKohm = 83.2f;
-constexpr float kBatteryDividerBottomKohm = 21.23f;
-constexpr float kBatteryDividerRatio = kBatteryDividerBottomKohm / (kBatteryDividerTopKohm + kBatteryDividerBottomKohm);
+// Battery divider: the fraction of the pack voltage the pin sees. TD section 5.1
+// designs 100 kOhm / 22 kOhm (0.1803). On the bench rig it is calibrated end to
+// end instead: Julian's meter read 1.761 V at the tap with the supply at 10.01 V
+// (2026-10-11), a ratio of 0.1759 (FD V-67). Re-measure and change these two
+// values whenever the divider's resistors change.
+constexpr float kBatteryDividerCalTapVolts = 1.761f;
+constexpr float kBatteryDividerCalSupplyVolts = 10.01f;
+constexpr float kBatteryDividerRatio = kBatteryDividerCalTapVolts / kBatteryDividerCalSupplyVolts;
 
 constexpr float battery_volts_from_pin_mv(int pin_mv)
 {
