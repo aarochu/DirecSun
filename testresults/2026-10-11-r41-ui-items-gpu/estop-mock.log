@@ -1,0 +1,9 @@
+[mock-box 1791709303.589] listening on ws://127.0.0.1:8765/ws (inputs: throttle,wheel,rate; characterised)
+[mock-box 1791709304.711] client 3088 connected from ('127.0.0.1', 48074)
+[mock-box 1791709305.234] mode SPINUP (cause arm)
+[mock-box 1791709311.531] mode READY (cause spinup_complete)
+[mock-box 1791709311.609] mode SLEW (cause mode)
+[mock-box 1791709312.120] estop from client 3088
+[mock-box 1791709312.121] mode SAFE (cause ESTOP)
+[mock-box 1791709312.257] refused seq 40: ramp-down in progress
+[mock-box 1791709312.506] client 3088 disconnected

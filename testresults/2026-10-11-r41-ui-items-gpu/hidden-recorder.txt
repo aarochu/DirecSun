@@ -1,0 +1,4 @@
+ui-turn-recorder: the ground station was visible for 30 s behind another tab; now READY / DEVICE
+ui-turn-recorder: FAILED, the page stayed visible behind another tab: run with --headed
+ui-turn-recorder: FAILED, capture in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/r41/hidden
+recorder exit 1

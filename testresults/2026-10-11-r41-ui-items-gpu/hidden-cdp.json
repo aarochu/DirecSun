@@ -1,0 +1,23 @@
+{
+ "uiUrl": "http://127.0.0.1:4176/",
+ "stateBeforeHide": "visible",
+ "stateAfterHide": "hidden",
+ "stateAtEnd": "hidden",
+ "visibility": [
+  [
+   8566,
+   "hidden"
+  ],
+  [
+   39587,
+   "visible"
+  ]
+ ],
+ "hiddenWindowS": 30,
+ "pingsHidden": 151,
+ "pingRateHz": 5.03,
+ "maxPingGapMs": 201,
+ "finalStatus": "READY / DEVICE",
+ "finalResult": "ARM ACCEPTED: SPINNING UP. KEEP THE LOCK PIN IN.",
+ "finalFlags": "MOMENTUM OKHEADING GYRO"
+}

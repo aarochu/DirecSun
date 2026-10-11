@@ -33,6 +33,7 @@ These run without the box, but they are tests all the same: each log names its i
 | R3.5 kit against the parity mock (#50) | [Fail: 42 of 43; the kit's t3 timing assumed a 2 s spin-up; carried into #86](2026-10-11-r35-mock-suite-parity.md) |
 | UI turn recorder and capture checker (#51) | [Fail, fixes decided: a failed run hung, headless starved, the loopback check was loose, and the old ping rule failed good runs; carried into #86](2026-10-11-ui-recorder-linux.md) |
 | Ground station display lag (#78, #82) | [#82 bounds it: headless lag no longer grows; `main` reached 56 s](2026-10-11-ui-display-lag.md) |
+| R4.1 UI items with a GPU, and the R3.5 kit on #86 | [Pass: turn, stop, estop, watch and the hidden tab (plain Chrome over CDP) with the new ping rule; kit 41 of 43, the 2 failures predate #86](2026-10-11-r41-ui-items-gpu.md) |
 | Approved UI PRs merged together | [Pass after two fixes: turn readiness under the coalesced render, and the parameters panel under the plots panel](2026-10-11-ui-stack-integration.md) |
 
 Update this index only from linked session logs. Keep failed and inconclusive runs instead of overwriting them.

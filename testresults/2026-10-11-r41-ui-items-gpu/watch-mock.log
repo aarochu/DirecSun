@@ -1,0 +1,16 @@
+[mock-box 1791709312.870] listening on ws://127.0.0.1:8765/ws (inputs: throttle,wheel,rate; characterised)
+[mock-box 1791709314.994] client 7936 connected from ('127.0.0.1', 34742)
+[mock-box 1791709315.845] client 7680 connected from ('127.0.0.1', 34758)
+[mock-box 1791709316.292] mode SPINUP (cause arm)
+[mock-box 1791709322.631] mode READY (cause spinup_complete)
+[mock-box 1791709322.702] mode SLEW (cause mode)
+[mock-box 1791709325.652] mode READY (cause slew_complete)
+[mock-box 1791709326.658] mode SLEW (cause mode)
+[mock-box 1791709329.631] mode READY (cause slew_complete)
+[mock-box 1791709329.828] estop from client 7936
+[mock-box 1791709329.830] mode SAFE (cause ESTOP)
+[mock-box 1791709335.453] mode SPINUP (cause arm)
+[mock-box 1791709341.811] mode READY (cause spinup_complete)
+[mock-box 1791709342.856] client 7680 disconnected
+[mock-box 1791709343.791] mode SAFE (cause HEARTBEAT_LOST)
+[mock-box 1791709344.032] client 7936 disconnected

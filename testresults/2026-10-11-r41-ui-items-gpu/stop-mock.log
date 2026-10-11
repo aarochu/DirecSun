@@ -1,0 +1,8 @@
+[mock-box 1791709292.980] listening on ws://127.0.0.1:8765/ws (inputs: throttle,wheel,rate; characterised)
+[mock-box 1791709294.160] client 1824 connected from ('127.0.0.1', 37498)
+[mock-box 1791709294.392] mode SPINUP (cause arm)
+[mock-box 1791709300.740] mode READY (cause spinup_complete)
+[mock-box 1791709300.802] mode SLEW (cause mode)
+[mock-box 1791709301.337] mode READY (cause mode)
+[mock-box 1791709303.037] mode SAFE (cause disarm)
+[mock-box 1791709303.290] client 1824 disconnected

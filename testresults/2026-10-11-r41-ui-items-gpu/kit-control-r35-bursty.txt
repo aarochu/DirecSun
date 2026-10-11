@@ -1,0 +1,8 @@
+mock-suite: 1 cases, output in /tmp/claude-1000/-home-jazoe-projects-DirecSun/2cd541dd-44e4-4126-8e9d-aa31a633f95f/scratchpad/wt/r35/tools/bench/r35/results/mock-20261011-052229
+  BAD t5-pass-bursty-sender: expected PASS, got FAIL (31 s)
+mock suite mock-20261011-052229: 0/1 cases behaved as expected
+
+[BAD] t5-pass-bursty-sender: expected PASS, got FAIL, 31 s, exit 1
+      [ok  ] tlm loss under 1 %: 0 of 1500 frames never arrived = 0.000 % (count over the span; 0 duplicate(s) ignored)
+      loss by capture-box's gap method (information): 40 = 2.597 %, largest gap 101 ms: the gap method counts late frames as lost; the count above says they arrived
+      PROBLEM: expected PASS, got FAIL

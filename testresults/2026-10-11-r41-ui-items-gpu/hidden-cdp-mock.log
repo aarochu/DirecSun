@@ -1,0 +1,4 @@
+[mock-box 1791709411.784] listening on ws://127.0.0.1:8765/ws (inputs: throttle,wheel,rate; characterised)
+[mock-box 1791709412.656] client 3776 connected from ('127.0.0.1', 48884)
+[mock-box 1791709413.323] mode SPINUP (cause arm)
+[mock-box 1791709419.666] mode READY (cause spinup_complete)
