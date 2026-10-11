@@ -21,15 +21,13 @@ A judge spinning the box by hand in READY sees it come to rest (DETUMBLE behavio
 - [ ] R4.5 characterisation-and-acceptance: T-2 to T-4, T-7, T-8 on the assembled box, `sizing.py` re-run (G2); T-15 and T-16 trials driven from the UI
 
 ## Open questions / decisions before implementing
-1. ~~Who sequences rotate, hold, and return?~~ **Answered by the UI (Aaron's PR #10, 2026-10-10).** The UI sequences it with two `mode SLEW` commands, each carrying an absolute `psi_ref_deg` in the wire frame (start ± 90, then back to the start). It treats a slew as done when `mode` returns to READY or a `slew_complete` event arrives. It aborts on `SLEW_TIMEOUT`, a refusal, or SAFE. `mode READY` stops a slew and `disarm` cancels.
-
-   No new command is needed. R4.1's scope becomes: confirm the firmware's events and timings match this flow, and run the UI against the real box with Aaron (integration). R4.3 and the mock box are being aligned with it.
-
-2. Known requirements on the UI's client once it starts commanding, from R1.8's look at `frontend/`:
-   - It must send `ping` at 5 Hz while it controls an armed box. Today it sends nothing, so the box would treat it as a passive viewer, and the heartbeat ramp-down would stop any motion it started.
-   - It must match acks by `seq` and send `estop` without queueing it (CONTEXT.md).
+1. ~~Who sequences rotate, hold, and return?~~ **Answered by R4.1** from the UI's source: the UI does (frontend PR #13), with `zero_heading`, then `mode SLEW` to ±90, a 1 s hold in READY, then `mode SLEW` to 0. No new command; FD §17 records the flow.
+2. ~~The UI's client once it commands.~~ **Answered by R4.1**: it pings every 200 ms from its first command, matches acks by `seq` within 1 s, and sends `estop` at once (FD §17).
 
    For Aaron, at 375 px the URL field truncates to `ws://127.0.0.1:80`, which reads like a port number.
+
+3. **A host-built core box and a mock parity check** (R4.1 open question 1). Recommendation: yes, as a feature after the demo. Not decided.
+4. **Flags for demo preconditions the UI cannot see** (R4.1 open question 2): `FF_TABLE_MISSING` and `RATE_GAIN_REDUCED`, additive v1. Recommendation: yes. Not decided; until then the pre-demo checklist checks `wheel_ref_rpm` > 0 in READY and re-sends `rate_gain_scale` 1.
 
 ## DB changes in this set
 None.
