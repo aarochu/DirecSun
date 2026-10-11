@@ -51,7 +51,10 @@ struct Params {
     int8_t s_w = 1;
     int8_t s_gyro = 1;
 
-    uint16_t dshot_rate = 150;
+    // DShot300: the bench ESCs (LANRC 35A BLHeli_S) spin the motor in bursts
+    // about once a second on a DShot150 zero stream and stay still on DShot300
+    // (FD V-68).
+    uint16_t dshot_rate = 300;
 
     // MANUAL throttle band (FD section 13.5). Bench-safe defaults until the
     // T-5 throttle-to-speed map exists [D]: the ceiling equals kBypassThrottleMax.
