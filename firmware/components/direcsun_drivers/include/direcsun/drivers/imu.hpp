@@ -49,6 +49,11 @@ struct ImuStats {
 // Requires i2c_bus_init().
 esp_err_t imu_init(const ImuConfig &config = ImuConfig{});
 
+// Repeats the configuration writes and their read-back, after imu_init() found
+// the IMU (WHO_AM_I right) but the read-back failed. Does not touch the device
+// descriptor, so it can be called again.
+esp_err_t imu_reconfigure();
+
 // WHO_AM_I as read by imu_init() (0 if the read failed).
 uint8_t imu_who_am_i();
 

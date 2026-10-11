@@ -162,7 +162,15 @@ extern "C" void app_main(void)
     app::shared_init();
 
     ESP_ERROR_CHECK(drv::i2c_bus_init());
-    const esp_err_t imu_err = drv::imu_init();
+    // On the bench the ESC's tones, at power-up and when it re-arms after a reset,
+    // corrupted the IMU's configuration writes while WHO_AM_I still answered
+    // (2026-10-11). Retry the configuration for up to about 2 s.
+    esp_err_t imu_err = drv::imu_init();
+    for (int attempt = 1; imu_err == ESP_ERR_INVALID_RESPONSE && drv::imu_who_am_i() == 0x68 && attempt < 10;
+         ++attempt) {
+        vTaskDelay(pdMS_TO_TICKS(200));
+        imu_err = drv::imu_reconfigure();
+    }
     ctx.imu_present = imu_err == ESP_OK;
     ESP_LOGI(TAG, "IMU: %s (WHO_AM_I 0x%02x)%s", esp_err_to_name(imu_err), drv::imu_who_am_i(),
              ctx.imu_present ? "" : ", IMU_MISSING: the box stays in SAFE");

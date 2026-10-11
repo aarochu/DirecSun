@@ -69,6 +69,18 @@ esp_err_t verify_config()
     return ESP_OK;
 }
 
+// FD section 10.1. Writing the clock source and clearing SLEEP leaves PWR_MGMT_1 = 0x01.
+esp_err_t configure()
+{
+    ESP_RETURN_ON_ERROR(mpu6050_set_clock_source(&s_dev, MPU6050_CLOCK_PLL_X), TAG, "clock source");
+    ESP_RETURN_ON_ERROR(mpu6050_set_rate(&s_dev, 0), TAG, "sample rate divider");
+    ESP_RETURN_ON_ERROR(mpu6050_set_dlpf_mode(&s_dev, MPU6050_DLPF_4), TAG, "DLPF");
+    ESP_RETURN_ON_ERROR(mpu6050_set_full_scale_gyro_range(&s_dev, MPU6050_GYRO_RANGE_2000), TAG, "gyro range");
+    ESP_RETURN_ON_ERROR(mpu6050_set_full_scale_accel_range(&s_dev, MPU6050_ACCEL_RANGE_4), TAG, "accel range");
+    ESP_RETURN_ON_ERROR(mpu6050_set_sleep_enabled(&s_dev, false), TAG, "wake");
+    return verify_config();
+}
+
 }  // namespace
 
 esp_err_t imu_init(const ImuConfig &config)
@@ -95,19 +107,22 @@ esp_err_t imu_init(const ImuConfig &config)
         return ESP_ERR_INVALID_RESPONSE;
     }
 
-    // FD section 10.1. Writing the clock source and clearing SLEEP leaves PWR_MGMT_1 = 0x01.
-    ESP_RETURN_ON_ERROR(mpu6050_set_clock_source(&s_dev, MPU6050_CLOCK_PLL_X), TAG, "clock source");
-    ESP_RETURN_ON_ERROR(mpu6050_set_rate(&s_dev, 0), TAG, "sample rate divider");
-    ESP_RETURN_ON_ERROR(mpu6050_set_dlpf_mode(&s_dev, MPU6050_DLPF_4), TAG, "DLPF");
-    ESP_RETURN_ON_ERROR(mpu6050_set_full_scale_gyro_range(&s_dev, MPU6050_GYRO_RANGE_2000), TAG, "gyro range");
-    ESP_RETURN_ON_ERROR(mpu6050_set_full_scale_accel_range(&s_dev, MPU6050_ACCEL_RANGE_4), TAG, "accel range");
-    ESP_RETURN_ON_ERROR(mpu6050_set_sleep_enabled(&s_dev, false), TAG, "wake");
-    ESP_RETURN_ON_ERROR(verify_config(), TAG, "configuration read-back");
+    ESP_RETURN_ON_ERROR(configure(), TAG, "configuration read-back");
 
     s_stats = {};
     s_reset_armed = true;
     ESP_LOGI(TAG, "MPU-6050 WHO_AM_I 0x%02X; DLPF 4, +-2000 deg/s, +-4 g, %" PRIu32 " Hz SCL",
              s_who_am_i, bus.scl_hz);
+    return ESP_OK;
+}
+
+esp_err_t imu_reconfigure()
+{
+    ESP_RETURN_ON_FALSE(s_who_am_i == kImuWhoAmI, ESP_ERR_INVALID_STATE, TAG, "imu_init() never reached the IMU");
+    ESP_RETURN_ON_ERROR(configure(), TAG, "configuration read-back");
+    s_stats = {};
+    s_reset_armed = true;
+    ESP_LOGI(TAG, "MPU-6050 configured on a retry");
     return ESP_OK;
 }
 
