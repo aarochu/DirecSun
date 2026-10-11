@@ -33,6 +33,23 @@ async function goTo(page: Page, name: string) {
 }
 
 test.describe('landing page', () => {
+  test('each component has three readable takeaways, including on a phone', async ({ page }) => {
+    await open(page, 375, 812);
+    const panels = page.locator('.panel--part');
+    await expect(panels).toHaveCount(10);
+    for (const panel of await panels.all()) await expect(panel.locator('.part__bullets li')).toHaveCount(3);
+    await expect(page.locator('.part__bullets').first()).toHaveCSS('list-style-type', 'disc');
+
+    await page.locator('[data-part="0"]').first().evaluate((element: HTMLElement) => element.click());
+    await settle(page);
+    const panel = page.locator('[data-panel="part-0"]');
+    const lastBullet = panel.locator('.part__bullets li').last();
+    await lastBullet.scrollIntoViewIfNeeded();
+    const itemBox = (await lastBullet.boundingBox())!;
+    const panelBox = (await panel.boundingBox())!;
+    expect(itemBox.y + itemBox.height).toBeLessThanOrEqual(panelBox.y + panelBox.height + 1);
+  });
+
   test('the actual content is the main landmark and the narrow ticker stays inside the viewport', async ({ page }) => {
     await open(page, 320, 812);
     const main = page.getByRole('main');

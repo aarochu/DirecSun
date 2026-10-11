@@ -592,11 +592,21 @@ body {
   display: block;
 }
 
-.part__func {
+.part__bullets {
   margin-top: 12px;
-  font-size: 15px;
-  line-height: 1.5;
+  padding-left: 19px;
+  list-style: disc;
+  font-size: 14px;
+  line-height: 1.42;
   color: var(--text-secondary);
+}
+
+.part__bullets li + li {
+  margin-top: 6px;
+}
+
+.part__bullets li::marker {
+  color: var(--accent);
 }
 
 /* Component rail, after animejs.com's toolbox labels */
