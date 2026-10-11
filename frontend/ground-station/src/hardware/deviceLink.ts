@@ -245,6 +245,7 @@ export class DeviceLink implements DisplaySource {
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private readonly eventListeners = new Set<(event: DeviceEvent) => void>();
   private latest: DeviceTelemetry | null = null;
+  private readonly rawListeners = new Set<(dir: 'rx' | 'tx', raw: string) => void>();
   private frame: DisplayFrame = { headingDeg: 0, targetDeg: 0, originDeg: null };
   private telemetry: DisplayTelemetry;
   private history: HistorySample[] = [];
@@ -282,6 +283,11 @@ export class DeviceLink implements DisplaySource {
     return this.socket !== null && this.socket.readyState === SOCKET_OPEN && this.state.status === 'open';
   }
 
+  subscribeRaw = (listener: (dir: 'rx' | 'tx', raw: string) => void) => {
+    this.rawListeners.add(listener);
+    return () => this.rawListeners.delete(listener);
+  };
+
   subscribeEvents = (listener: (event: DeviceEvent) => void) => {
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
@@ -313,7 +319,9 @@ export class DeviceLink implements DisplaySource {
       if (this.socket === socket) this.setState({ status: 'open', message: 'Waiting for telemetry…' });
     };
     socket.onmessage = (event: MessageEvent) => {
-      if (this.socket === socket) this.receive(event.data);
+      if (this.socket !== socket) return;
+      if (this.rawListeners.size) for (const listener of this.rawListeners) listener('rx', String(event.data));
+      this.receive(event.data);
     };
     socket.onerror = () => {
       if (this.socket === socket) this.setState({ status: 'error', message: 'Connection error' });
@@ -420,7 +428,9 @@ export class DeviceLink implements DisplaySource {
   }
 
   private send(message: Record<string, unknown>) {
-    this.socket!.send(JSON.stringify(message));
+    const raw = JSON.stringify(message);
+    this.socket!.send(raw);
+    for (const listener of this.rawListeners) listener('tx', raw);
   }
 
   private sendCommand(name: string, fields: Record<string, unknown>): Promise<DeviceAck> {
