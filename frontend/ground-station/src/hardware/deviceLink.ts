@@ -60,7 +60,7 @@ const FAULT_FLAGS = new Set([
 ]);
 
 export function flagSeverity(flag: string): FlagSeverity {
-  if (flag === 'MOMENTUM_OK') return 'ok';
+  if (flag === 'MOMENTUM_OK' || flag === 'HEADING_GYRO') return 'ok';
   return FAULT_FLAGS.has(flag) ? 'fault' : 'warning';
 }
 
@@ -238,6 +238,7 @@ export class DeviceLink implements DisplaySource {
   private readonly pending = new Map<number, PendingCommand>();
   private readonly pings = new Map<number, number>();
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private pingWorker: Worker | null = null;
   private readonly eventListeners = new Set<(event: DeviceEvent) => void>();
   private latest: DeviceTelemetry | null = null;
   private frame: DisplayFrame = { headingDeg: 0, targetDeg: 0, originDeg: null };
@@ -452,10 +453,19 @@ export class DeviceLink implements DisplaySource {
   }
 
   private startTalking() {
-    if (this.pingTimer !== null) return;
+    if (this.pingTimer !== null || this.pingWorker !== null) return;
     this.setState({ talking: true });
     this.ping();
-    this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL_MS);
+    if (typeof Worker !== 'undefined') {
+      try {
+        this.pingWorker = new Worker(new URL('./heartbeat.worker.ts', import.meta.url), { type: 'module' });
+        this.pingWorker.onmessage = () => this.ping();
+        this.pingWorker.postMessage({ intervalMs: PING_INTERVAL_MS });
+      } catch {
+        this.pingWorker = null;
+      }
+    }
+    if (this.pingWorker === null) this.pingTimer = setInterval(() => this.ping(), PING_INTERVAL_MS);
   }
 
   private ping() {
@@ -478,6 +488,8 @@ export class DeviceLink implements DisplaySource {
   private stopTalking(reason: string) {
     if (this.pingTimer !== null) clearInterval(this.pingTimer);
     this.pingTimer = null;
+    this.pingWorker?.terminate();
+    this.pingWorker = null;
     this.pings.clear();
     for (const [, pending] of this.pending) {
       clearTimeout(pending.timer);

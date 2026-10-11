@@ -1,7 +1,12 @@
 import { ArrowLeft } from 'lucide-react';
 import { SITE_URL } from '../data/navigation';
 
-export function GroundHeader({ deviceLive = false }: { deviceLive?: boolean }) {
+export function GroundHeader({ deviceLive = false, deviceClosed = false }: { deviceLive?: boolean; deviceClosed?: boolean }) {
+  const status = deviceLive
+    ? 'DEVICE CONNECTED — RECEIVING TELEMETRY'
+    : deviceClosed
+      ? 'DEVICE LINK CLOSED — TELEMETRY FROZEN'
+      : 'SIMULATED — NO DEVICE CONNECTION';
   return (
     <header className="gs-header">
       <div className="gs-header__left">
@@ -15,7 +20,7 @@ export function GroundHeader({ deviceLive = false }: { deviceLive?: boolean }) {
       </div>
       <p className="gs-header__title mono-label">GROUND STATION</p>
       <p className={`gs-header__status${deviceLive ? ' gs-header__status--live' : ''}`} role="status">
-        {deviceLive ? 'DEVICE CONNECTED — RECEIVING TELEMETRY' : 'SIMULATED — NO DEVICE CONNECTION'}
+        {status}
       </p>
     </header>
   );

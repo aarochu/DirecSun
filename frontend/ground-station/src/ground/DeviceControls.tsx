@@ -31,8 +31,8 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 export function DeviceControls({ link, operator }: { link: DeviceLink; operator: DeviceOperator }) {
   const state = useSyncExternalStore(operator.subscribe, operator.getState);
-  const telemetry = useSyncExternalStore(link.subscribeTelemetry, link.getTelemetry);
-  const mode = telemetry.statusWord === '—' ? null : telemetry.statusWord;
+  const reading = useSyncExternalStore(link.subscribeFrame, () => link.latestReading);
+  const mode = reading?.mode ?? null;
   const armed = mode !== null && mode !== 'SAFE';
   const [confirming, setConfirming] = useState(false);
   const [pinIn, setPinIn] = useState(false);

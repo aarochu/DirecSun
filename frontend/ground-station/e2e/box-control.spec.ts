@@ -71,6 +71,9 @@ async function attachFakeBox(page: Page) {
         setTimeout(() => {
           heading = target!;
           setMode('READY', 'slew_complete');
+          // The real firmware can flush one pre-transition frame after the
+          // completion event. Keep this ordering in the browser gate.
+          send({ type: 'tlm', t_ms: Date.now() % 1e6, mode: 'SLEW', psi_deg: heading, psi_ref_deg: target });
         }, 400);
       }
     });
@@ -111,6 +114,7 @@ test.describe('box control against a scripted box', () => {
     await page.getByRole('button', { name: 'Rotate right ninety degrees and return' }).click();
     await expect(status(page)).toContainText('TURNING');
     await expect(status(page)).toContainText('HOLDING TARGET', { timeout: 4000 });
+    await expect(page.locator('.readout--target .readout__value')).toHaveText('+90.0°');
     await expect(status(page)).toContainText('RETURNING', { timeout: 4000 });
     await expect(status(page)).toHaveText('READY / DEVICE', { timeout: 4000 });
     await expect(page.locator('.controls__result')).toHaveText('TURN COMPLETE: BACK AT THE START HEADING.');
@@ -139,6 +143,8 @@ test.describe('box control against a scripted box', () => {
     await page.getByRole('button', { name: 'Disconnect' }).focus();
     await page.keyboard.press('Space');
     await expect(status(page)).toHaveText('SAFE / DEVICE');
+    await expect(page.locator('.controls__result')).toHaveText('E-STOP ACCEPTED: THE WHEEL RAMPS DOWN.');
+    await expect(page.getByText(/ANOTHER CLIENT IS CONTROLLING/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Disconnect' })).toBeVisible();
     await expect(page.getByRole('list', { name: 'Device flags' })).toContainText('LATCHED ESTOP');
     expect(commands(received).at(-1)).toMatchObject({ cmd: 'estop' });

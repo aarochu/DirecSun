@@ -116,11 +116,12 @@ describe('parseTelemetry', () => {
 });
 
 describe('flagSeverity', () => {
-  it('marks latched interlocks as faults, MOMENTUM_OK as ok, and everything else as a warning', () => {
+  it('marks latched interlocks as faults, normal status flags as ok, and everything else as a warning', () => {
     for (const fault of ['ESTOP', 'HEARTBEAT_LOST', 'OVERSPEED', 'UNDERSPEED', 'BATTERY_LOW', 'IMU_SILENT', 'TILT', 'CONTROL_STALL', 'HALL_SILENT']) {
       expect(flagSeverity(fault)).toBe('fault');
     }
     expect(flagSeverity('MOMENTUM_OK')).toBe('ok');
+    expect(flagSeverity('HEADING_GYRO')).toBe('ok');
     for (const warning of ['MOMENTUM_NEAR_LIMIT', 'MOMENTUM_SATURATED', 'LOOP_OVERRUN', 'MAG_MISSING', 'IMU_MISSING', 'MANUAL_STALE', 'HALL_BYPASS', 'SOMETHING_NEW']) {
       expect(flagSeverity(warning)).toBe('warning');
     }
@@ -206,6 +207,31 @@ describe('DeviceLink', () => {
     expect(link.getState().status).toBe('idle');
     first.message(tlm({ psi_deg: 5 }));
     expect(link.getState().packets).toBe(0);
+  });
+
+  it('runs command heartbeats from a worker when the browser provides one', () => {
+    class FakeWorker {
+      static instance: FakeWorker | null = null;
+      onmessage: (() => void) | null = null;
+      terminated = false;
+      constructor() {
+        FakeWorker.instance = this;
+      }
+      postMessage() {}
+      terminate() {
+        this.terminated = true;
+      }
+    }
+    vi.stubGlobal('Worker', FakeWorker);
+    const { link, socket } = setup();
+    link.connect('ws://device/ws');
+    socket().open();
+    void link.command('arm').catch(() => {});
+    expect(socket().frames().filter((frame) => frame.type === 'ping')).toHaveLength(1);
+    FakeWorker.instance!.onmessage!();
+    expect(socket().frames().filter((frame) => frame.type === 'ping')).toHaveLength(2);
+    link.disconnect();
+    expect(FakeWorker.instance!.terminated).toBe(true);
   });
 });
 
