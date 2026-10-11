@@ -179,7 +179,7 @@ def cases(suite, br):
         dict(name="t5-pass-bursty-sender",
              server=("junk", ["--junk-every", "0", "--stall-every", "3", "--stall-ms", "80", "--pong-delay-ms", "2"]),
              expect="PASS", cmd=[t("t5-t11.py"), "--url", "{url}", "--seconds", "30"],
-             must=[OK("tlm loss under 1 %"), r"loss by capture-box's gap method \(information\): \d+ = [1-9]"]),
+             must=[OK("tlm loss under 1 %"), r"loss by the gap method \(information\): \d+ = [1-9]"]),
         dict(name="t5-f-box-closed-early", server=("mock", "stock", "127.0.0.1"), kill_after=20, expect="FAIL",
              cmd=[t("t5-t11.py"), "--url", "{url}", "--seconds", "60"], must=[F("capture lasted the whole window")]),
         dict(name="t5-f-rate-no-pongs", server=("junk", ["--junk-every", "0", "--tlm-hz", "40"]), expect="FAIL",

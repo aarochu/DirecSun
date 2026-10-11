@@ -167,7 +167,7 @@ float AccelRms::rms_g() const
 {
     if (count_ < 2) return 0.0f;
     float sum_sq = 0.0f;
-    for (int axis = 0; axis < 3; ++axis) {
+    for (int axis = 0; axis < kAxes; ++axis) {
         float mean = 0.0f;
         for (std::size_t i = 0; i < count_; ++i) mean += window_[i][axis];
         mean /= static_cast<float>(count_);

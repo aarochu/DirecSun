@@ -408,8 +408,12 @@ class Box:
     def _mode_command(self, conn, seq, message):
         target = message["mode"]
         if target == "SUN_POINT":
-            # R4.6: not in READY, then sun not valid (no sun angle until R5.4).
-            return self._ack(conn, seq, False, "not in READY" if self.mode != "READY" else "sun not valid")
+            # R4.6: not in READY, then the wheel loop, then sun not valid (no sun angle until R5.4).
+            if self.mode != "READY":
+                return self._ack(conn, seq, False, "not in READY")
+            if not self._wheel_loop_available():
+                return self._ack(conn, seq, False, "wheel loop not available")
+            return self._ack(conn, seq, False, "sun not valid")
         if target == "DETUMBLE":
             # As the firmware supervisor (R4.4): from READY only, with the closed wheel
             # loop; the same zero-rate cascade as READY.
@@ -897,6 +901,12 @@ def selftest_attitude(schema):
     box, conn, clock = armed()
     if send(box, conn, 2, cmd="mode", mode="SUN_POINT").get("reason") != "sun not valid":
         problems.append("SUN_POINT from READY was not refused with 'sun not valid'")
+    bypassed, bconn, _bclock = armed(bypass=True)                    # READY with no wheel loop
+    if bypassed.mode != "READY":
+        problems.append(f"the bypassed box is in {bypassed.mode}, not READY")
+    reason = send(bypassed, bconn, 2, cmd="mode", mode="SUN_POINT").get("reason")
+    if reason != "wheel loop not available":
+        problems.append(f"SUN_POINT from READY without the wheel loop refused with {reason!r}, expected 'wheel loop not available'")
 
     # accel_rms_g (T-7): bench tlm only, and it grows with the wheel speed.
     box, conn, clock = armed()
@@ -1075,7 +1085,7 @@ def selftest():
     cmd(a, 107, "arm")                                                               # not in SAFE
     cmd(a, 108, "mode", mode="READY")                                                # wheel not at bias
     spinup_s = spin_up()                                                             # SPINUP to READY
-    cmd(a, 110, "mode", mode="SUN_POINT")                                            # not implemented
+    cmd(a, 110, "mode", mode="SUN_POINT")                                            # sun not valid
     cmd(a, 111, "respin")                                                            # not implemented
     send(a, {"v": 1, "type": "cmd", "seq": 4, "cmd": "mode", "mode": "MANUAL", "input": "rate"})
     box.manual_last -= 1.0

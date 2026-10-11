@@ -479,9 +479,13 @@ def t11_capture_cmd(url, seconds, out_path):
 def judge_t11(run, code, text, capture_path, seconds):
     """Record the T-11 checks for one capture-box --t11 run.
 
-    Rate and loss are judged on this module's recount of the capture file; round trip
-    on capture-box's numbers (the file has no arrival times). capture-box's own exit
-    status is reported, not judged: its loss figure counts sender jitter as loss.
+    Rate and loss are judged on this module's recount of the capture file, which
+    counts distinct seq numbers over the box clock's span; round trip on capture-box's
+    numbers (the file has no arrival times). capture-box counts distinct t_ms values
+    instead (3799644), right for the box, which stamps each 20 ms snapshot, but a
+    sender that stamps t_ms when it sends (test/junk-box.py after a stall) makes
+    frames share a t_ms. So the cross-check compares what both define the same way,
+    the frame count and the rate, and capture-box's loss is reported, not judged.
     """
     tool = parse_capture_box(text)
     mine = recount_tlm(capture_path) if pathlib.Path(capture_path).exists() else recount_tlm_empty()
@@ -496,7 +500,7 @@ def judge_t11(run, code, text, capture_path, seconds):
     run.check("tlm loss under 1 %", mine["loss"] < T11_MAX_LOSS,
               f"{mine['lost']} of {mine['expected']} frames never arrived = {mine['loss'] * 100:.3f} % "
               f"(count over the span; {mine['duplicates']} duplicate(s) ignored)")
-    run.check("loss by capture-box's gap method (information)", None,
+    run.check("loss by the gap method (information)", None,
               f"{mine['gap_lost']} = {mine['gap_loss'] * 100:.3f} %, largest gap {mine['max_gap_ms']} ms"
               + (": the gap method counts late frames as lost; the count above says they arrived"
                  if mine["gap_lost"] > mine["lost"] + 0.002 * mine["expected"] else ""))
@@ -506,11 +510,12 @@ def judge_t11(run, code, text, capture_path, seconds):
     run.check("round-trip p95 under 100 ms", p95 is not None and p95 < T11_MAX_P95_MS,
               f"p95 {p95} ms, p50 {tool.get('p50_ms')} ms, max {tool.get('rtt_max_ms')} ms from {tool.get('pongs')} pongs"
               " (capture-box's measurement; the capture file has no arrival times to recompute it)")
-    agree = tool.get("tlm") == mine["tlm"] and tool.get("lost") == mine["gap_lost"] \
-        and abs((tool.get("rate_hz") or 0) - mine["rate_hz"]) < 0.01
+    agree = tool.get("tlm") == mine["tlm"] and abs((tool.get("rate_hz") or 0) - mine["rate_hz"]) < 0.01
     run.check("capture file agrees with capture-box's summary", agree,
-              f"file: tlm {mine['tlm']}, gap-lost {mine['gap_lost']}, rate {mine['rate_hz']:.2f}; capture-box: tlm "
-              f"{tool.get('tlm')}, lost {tool.get('lost')}, rate {tool.get('rate_hz')}")
+              f"file: tlm {mine['tlm']}, rate {mine['rate_hz']:.2f}; capture-box: tlm {tool.get('tlm')}, "
+              f"rate {tool.get('rate_hz')}")
+    run.check("capture-box's loss, distinct t_ms over the span (information)", None,
+              f"{tool.get('lost')} lost; the recount above, distinct seq, says {mine['lost']}")
     run.check("box clock never went backwards", mine["backwards"] == 0, f"{mine['backwards']} backward step(s)")
     return tool, mine
 

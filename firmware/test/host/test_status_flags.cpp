@@ -131,6 +131,33 @@ TEST_CASE("R4.6 PARAMS_RESET is a flag until the first accepted set_params")
     REQUIRE_FALSE(out.acks.items[0].ok);
     CHECK(has(out, kFlagParamsReset));
 
+    // It survives an arm, a valid set_params refused because the box is armed,
+    // and a disarm.
+    Command arm = cmd(CommandKind::Arm);
+    in.tick = ++t;
+    in.commands = &arm;
+    in.command_count = 1;
+    sup.step(in, ctl, out);
+    REQUIRE(out.acks.items[0].ok);
+    REQUIRE(out.mode == Mode::Spinup);
+    CHECK(has(out, kFlagParamsReset));
+    ParamUpdate valid;
+    add_number(valid, "rate_gain_scale", 0.4);
+    Command armed_update = set_params_cmd(&valid);
+    in.tick = ++t;
+    in.commands = &armed_update;
+    sup.step(in, ctl, out);
+    REQUIRE_FALSE(out.acks.items[0].ok);
+    CHECK(std::string(out.acks.items[0].reason) == "not in SAFE");
+    CHECK(has(out, kFlagParamsReset));
+    Command disarm = cmd(CommandKind::Disarm);
+    in.tick = ++t;
+    in.commands = &disarm;
+    sup.step(in, ctl, out);
+    REQUIRE(out.acks.items[0].ok);
+    REQUIRE(out.mode == Mode::Safe);
+    CHECK(has(out, kFlagParamsReset));
+
     // The first accepted one clears it, from that tick on.
     ParamUpdate good;
     add_number(good, "rate_gain_scale", 0.4);
@@ -215,12 +242,15 @@ TEST_CASE("R4.6 DETUMBLE and SUN_POINT refusals: not in READY, sun not valid, wh
         CHECK(rig.out.mode == Mode::Ready);
         CHECK(rig.out.events.count == 0);
     }
-    SUBCASE("DETUMBLE from READY without the table: wheel loop not available")
+    SUBCASE("DETUMBLE and SUN_POINT from READY without the table: wheel loop not available")
     {
-        Rig rig;
-        rig.arm_to_ready();
-        rig.tick({mode_cmd(Mode::Detumble)});
-        CHECK(rig.last_reason() == "wheel loop not available");
-        CHECK(rig.out.mode == Mode::Ready);
+        for (Mode m : {Mode::Detumble, Mode::SunPoint}) {
+            CAPTURE(static_cast<int>(m));
+            Rig rig;
+            rig.arm_to_ready();
+            rig.tick({mode_cmd(m)});
+            CHECK(rig.last_reason() == "wheel loop not available");
+            CHECK(rig.out.mode == Mode::Ready);
+        }
     }
 }

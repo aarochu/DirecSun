@@ -46,6 +46,16 @@ TEST_CASE("T-7 accel RMS: gravity and tilt drop out and a 60 Hz vibration reads 
         feed(rms, 100, 60.0f, 0.03f, 0.04f);
         CHECK(rms.rms_g() == doctest::Approx(0.05f / std::sqrt(2.0f)).epsilon(0.02));
     }
+    SUBCASE("a vibration on z alone reads zero: only the x-y plane counts (R4.7)")
+    {
+        AccelRms rms;
+        for (int i = 0; i < 100; ++i) {
+            const float phase = 2.0f * kPi * 60.0f * static_cast<float>(i) / 500.0f;
+            const float a[3] = {0.0f, 0.0f, 0.87f + 0.05f * std::sin(phase)};
+            rms.add(a);
+        }
+        CHECK(rms.rms_g() < 1e-4f);
+    }
     SUBCASE("a vibration that stops leaves the window after 200 ms")
     {
         AccelRms rms;

@@ -263,9 +263,10 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
     case CommandKind::Mode: {
         const Mode target = cmd.target_mode;
         if (target == Mode::SunPoint) {
-            // R4.6: the guards in the order FD section 13.1 lists them. No sun angle
-            // exists until R5.4, so a request from READY reports exactly that.
+            // R4.6: READY, then the wheel loop as for HOLD, SLEW and DETUMBLE, then
+            // the sun. No sun angle exists until R5.4, so that last guard always fails.
             if (mode_ != Mode::Ready) return ack(out, cmd, kNotInReady);
+            if (!wheel_loop_available(params_)) return ack(out, cmd, kWheelLoopUnavailable);
             return ack(out, cmd, kSunNotValid);
         }
         if (target == Mode::Ready) {

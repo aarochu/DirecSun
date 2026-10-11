@@ -18,9 +18,12 @@ namespace direcsun {
 constexpr float kOmegaCapMaxRpm = 4000.0f;
 
 // Version of the persisted layout. Bump it whenever a persisted field is added,
-// removed, or reinterpreted; a stored blob with another version is discarded
+// removed, or reinterpreted, and teach load_params to migrate the old version:
+// a bump keeps the stored values. Any version it cannot migrate is discarded
 // and the defaults load (event PARAMS_RESET).
-constexpr uint32_t kParamVersion = 2;  // 2: rate_gain_scale (R3.9)
+// 2: rate_gain_scale (R3.9). 3: same layout; a version 2 set migrates with
+// dshot_rate 300, because the bench ESCs misread DShot150 (V-68).
+constexpr uint32_t kParamVersion = 3;
 
 constexpr std::size_t kFfPoints = 8;
 
@@ -123,10 +126,12 @@ public:
 struct ParamsLoad {
     bool reset = false;          // defaults were loaded: post PARAMS_RESET
     const char *detail = "";     // "missing", "version", or "invalid" when reset
+    uint32_t migrated_from = 0;  // the stored version that was migrated, or 0
 };
 
-// Loads the persisted set. Any problem (nothing stored, another version, a
-// short or corrupt blob, a value out of range) loads the defaults instead.
+// Loads the persisted set, migrating version 2. Any other problem (nothing
+// stored, another version, a short or corrupt blob, a value out of range) loads
+// the defaults instead.
 // The volatile fields always come back at their defaults.
 ParamsLoad load_params(KvStore &store, Params &out);
 
