@@ -571,6 +571,34 @@ describe('ground station box controls', () => {
     expect(trigger().getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('arrow keys nudge the manual setpoint, but not while the mode menu is open', async () => {
+    const socket = connect();
+    fireEvent.click(screen.getByRole('button', { name: 'Arm the box' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Arm now' }));
+    await act(async () => {
+      socket.message(ack(socket.lastCommand().seq));
+      await flush();
+    });
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    act(() => socket.message(tlm({ t_ms: 100, psi_deg: 0, mode: 'MANUAL', manual_input: 'rate' })));
+    const sentRate = async () => {
+      await act(() => vi.advanceTimersByTimeAsync(MANUAL_PERIOD_MS));
+      return socket.commands().filter((frame) => frame.cmd === 'manual').at(-1)?.rate_dps;
+    };
+    expect(await sentRate()).toBe(0);
+
+    fireEvent.keyDown(document.body, { key: 'ArrowUp' });
+    expect(await sentRate()).toBe(5);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Set the box mode' }));
+    const item = screen.getByRole('menuitem', { name: 'Ready' });
+    fireEvent.keyDown(item, { key: 'ArrowRight' });
+    fireEvent.keyDown(item, { key: 'ArrowLeft' });
+    fireEvent.keyDown(item, { key: 'ArrowLeft' });
+    expect(await sentRate()).toBe(5);
+  });
+
   it('keeps Arm now disabled while the box turns or the pack is low, and says why (TD 6.6)', async () => {
     const socket = connect();
     await act(() => vi.advanceTimersByTimeAsync(60));

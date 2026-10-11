@@ -96,6 +96,8 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
       if (event.defaultPrevented || !operator.getState().manual) return;
       const target = event.target;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
+      // Arrow keys inside the open mode menu navigate it; they must not move the setpoint.
+      if (target instanceof Element && target.closest('[role="menu"]')) return;
       const step = event.key === 'ArrowUp' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowDown' || event.key === 'ArrowLeft' ? -1 : 0;
       if (step === 0) return;
       event.preventDefault();
