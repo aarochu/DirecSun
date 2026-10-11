@@ -23,6 +23,11 @@ target_compile_definitions(direcsun_cjson PUBLIC CJSON_NESTING_LIMIT=8)
 target_compile_options(direcsun_cjson PRIVATE
     -Wall -Wextra -Werror
     -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
+if(APPLE)
+    # AppleClang 21 marks sprintf in vendored cJSON as deprecated. Keep every
+    # other warning fatal; the firmware build and core sources are unchanged.
+    target_compile_options(direcsun_cjson PRIVATE -Wno-error=deprecated-declarations)
+endif()
 
 # Protocol tests read the schema fixtures and write the messages they encode for
 # tools/check-protocol.sh to validate against protocol/schema-v1.json.
