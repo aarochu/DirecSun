@@ -724,7 +724,10 @@ body {
 }
 
 .ticker__label {
-  min-width: 15ch;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 10px;
   white-space: nowrap;
 }
@@ -732,6 +735,7 @@ body {
 .ticker__track {
   position: relative;
   display: flex;
+  flex: 0 0 auto;
   gap: 4px;
   align-items: center;
   height: 12px;
