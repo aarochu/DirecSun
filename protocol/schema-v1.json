@@ -67,8 +67,12 @@
             "LOOP_OVERRUN",
             "MAG_MISSING",
             "IMU_MISSING",
-            "MANUAL_STALE"
-          ]
+            "MANUAL_STALE",
+            "HALL_BYPASS",
+            "WHEEL_STEP",
+            "HEADING_GYRO"
+          ],
+          "description": "HALL_BYPASS: the Hall bench bypass is on (bench only, FD section 14.1): the Hall interlocks are suspended and the throttle is capped at a compile-time ceiling. WHEEL_STEP: a bench wheel_step hold is active (R3.8): omega_ref was stepped and the rate and attitude loops are suspended until `mode READY`. HEADING_GYRO: psi_deg is integrated from the gyro alone and is relative to the last zero_heading, not a compass heading (R4.2); set on every tlm until the magnetometer heading of Set 5."
         },
         { "$ref": "#/$defs/interlock", "description": "A latched fault." }
       ]
@@ -99,9 +103,9 @@
           "description": "Active MANUAL input; null in every other mode.",
           "anyOf": [{ "$ref": "#/$defs/manual_input" }, { "type": "null" }]
         },
-        "psi_deg": { "$ref": "#/$defs/angle_deg", "description": "Estimated heading, clockwise positive." },
+        "psi_deg": { "$ref": "#/$defs/angle_deg", "description": "Estimated heading, clockwise positive, relative to the last zero_heading. Gyro-only while flags contain HEADING_GYRO (R4.2)." },
         "psi_ref_deg": {
-          "description": "Current heading reference, clockwise positive; null in SAFE, SPINUP, READY, DETUMBLE.",
+          "description": "Current heading reference, clockwise positive, relative to the last zero_heading; null in SAFE, SPINUP, READY, DETUMBLE.",
           "anyOf": [{ "$ref": "#/$defs/angle_deg" }, { "type": "null" }]
         },
         "rate_dps": { "type": "number", "description": "Estimated box rate, deg/s, clockwise positive." },
@@ -114,6 +118,13 @@
         "wheel_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed (interlock estimate speed_safe), rpm, forward direction." },
         "wheel_ref_rpm": { "type": "number", "minimum": 0, "description": "Wheel speed reference, rpm." },
         "throttle": { "$ref": "#/$defs/throttle", "description": "DShot value sent this tick." },
+        "throttle_band": {
+          "description": "Optional (added in R3.7, additive v1). The band the box clamps MANUAL throttle setpoints into: [manual_throttle_min, manual_throttle_max], with the top capped at kBypassThrottleMax (400) while the Hall is bypassed. null until the box has loaded its parameters. The bench console draws its slider from it.",
+          "oneOf": [
+            { "type": "null" },
+            { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": 48, "maximum": 2047 } }
+          ]
+        },
         "tau_cmd_mNm": { "type": "number", "description": "Commanded torque on the box, mN m, clockwise positive." },
         "vbat": { "type": "number", "minimum": 0, "description": "1 s average battery voltage, V." },
         "loop_us": { "type": "integer", "minimum": 0, "description": "Longest control tick in the last 20 ms, us." },
@@ -174,7 +185,7 @@
     },
     "cmd_bare": {
       "type": "object",
-      "description": "arm (SAFE to SPINUP; the sender becomes the controlling client), disarm (ramp-down to SAFE without the ESTOP latch), estop (any state, any client), zero_heading (SAFE, READY).",
+      "description": "arm (SAFE to SPINUP; the sender becomes the controlling client), disarm (ramp-down to SAFE without the ESTOP latch), estop (any state, any client), zero_heading (SAFE and READY only: psi_deg reads 0 from that tick, and SLEW targets are relative to it).",
       "additionalProperties": false,
       "required": ["v", "type", "seq", "cmd"],
       "properties": {
@@ -195,7 +206,7 @@
         "seq": { "$ref": "#/$defs/seq" },
         "cmd": { "const": "mode" },
         "mode": { "$ref": "#/$defs/commandable_mode" },
-        "psi_ref_deg": { "$ref": "#/$defs/angle_deg", "description": "Absolute SLEW target, clockwise positive; the box takes the shortest wrapped path." },
+        "psi_ref_deg": { "$ref": "#/$defs/angle_deg", "description": "SLEW target, clockwise positive, relative to the last zero_heading (R4.2: the heading is gyro-only until Set 5); the box takes the shortest wrapped path." },
         "input": { "$ref": "#/$defs/manual_input" }
       },
       "allOf": [
@@ -284,6 +295,7 @@
         "k_psi": { "type": "number", "minimum": 0, "maximum": 10 },
         "k_omega": { "type": "number", "minimum": 0, "maximum": 0.05 },
         "k_i": { "type": "number", "minimum": 0, "maximum": 0.1 },
+        "rate_gain_scale": { "type": "number", "minimum": 0, "maximum": 1, "description": "Multiplies k_omega and k_i (R3.9). 0.2 for the first unpinned runs and the sign check (FD section 12.5), 1 for the design gains." },
         "wheel_kp": { "type": "number", "minimum": 0 },
         "wheel_ki": { "type": "number", "minimum": 0 },
         "ff_table": {
@@ -345,13 +357,18 @@
         "dshot_rate": { "enum": [150, 300] },
         "bench_mode": { "type": "boolean" },
         "manual_throttle_min": { "type": "integer", "minimum": 48, "maximum": 2047 },
-        "manual_throttle_max": { "type": "integer", "minimum": 48, "maximum": 2047 }
+        "manual_throttle_max": { "type": "integer", "minimum": 48, "maximum": 2047 },
+        "spinup_throttle": { "type": "integer", "minimum": 48, "maximum": 2047, "description": "Open-loop throttle that SPINUP ramps to (FD section 16)." },
+        "hall_expect_throttle": { "type": "integer", "minimum": 48, "maximum": 2047, "description": "Throttle above which the wheel must be turning: HALL_SILENT arms above it (FD section 14.1)." },
+        "hall_installed": { "type": "boolean", "description": "false turns on the Hall bench bypass; accepted only in SAFE with bench_mode already true; never persisted, true again at every boot (FD section 16)." },
+        "bench_underspeed_rpm": { "type": "number", "minimum": 0, "maximum": 1500, "description": "Bench only (R3.8, FD section 19.2): UNDERSPEED threshold for the T-18 low-speed search, 100 rpm up to omega_low_rpm; 0 clears it. Accepted only in SAFE with bench_mode on, never persisted, cleared when bench_mode turns off." },
+        "bench_cap_rpm": { "type": "number", "minimum": 0, "maximum": 4000, "description": "Bench only (R3.8): a lower wheel cap for the deliberate OVERSPEED test, from omega_bias_rpm up to the 4000 rpm cap; it can only lower the cap. 0 clears it. Accepted only in SAFE with bench_mode on, never persisted, cleared when bench_mode turns off." }
       }
     },
 
     "ack": {
       "type": "object",
-      "description": "Box to the sender of a cmd. seq echoes the command's seq. ok:false carries the reason, for example \"busy\", \"too large\", \"too fast\", \"not controlling client\", \"input not available\", or a failed guard.",
+      "description": "Box to the sender of a cmd (and to a client whose frame could not be read). seq echoes the command's seq, or is 0 when the refused frame had no readable seq (too large, malformed JSON). ok:false carries the reason: a parse refusal (\"too large\", \"malformed JSON\", \"unsupported v\", \"unknown type\", \"unknown cmd\", \"missing field: <f>\", \"unexpected field: <f>\", \"invalid field: <f>\", \"two setpoints\", \"missing setpoint\", \"unknown param: <k>\", \"invalid param: <k>\"), \"busy\" (command queue full), or a guard from FD section 13.1 (for example \"not in SAFE\", \"not controlling client\", \"box not still\", \"battery low\", \"latched fault: <NAME>\", \"input not available\", \"too fast\", \"not implemented\").",
       "additionalProperties": false,
       "required": ["v", "type", "seq", "ok"],
       "properties": {
@@ -395,7 +412,7 @@
     },
 
     "event": {
-      "description": "Box to all clients, on every mode change (including every interlock trip, which changes the mode to SAFE) and on notices.",
+      "description": "Box to every client that has sent at least one message, on every mode change (including every interlock trip, which changes the mode to SAFE) and on notices. A read-only viewer that never sends receives only tlm, which carries the mode in every frame (the main UI counts every non-tlm frame as ignored).",
       "type": "object",
       "required": ["v", "type", "seq", "t_ms", "event"],
       "properties": { "type": { "const": "event" } },
@@ -432,8 +449,8 @@
         "seq": { "$ref": "#/$defs/seq" },
         "t_ms": { "$ref": "#/$defs/t_ms" },
         "event": { "const": "notice" },
-        "name": { "enum": ["PARAMS_RESET"], "description": "PARAMS_RESET: NVS parameters had a stale version and the defaults were loaded (FD section 16)." },
-        "detail": { "type": "string", "maxLength": 200 }
+        "name": { "enum": ["PARAMS_RESET", "HALL_BYPASS"], "description": "PARAMS_RESET: the stored parameters were missing, of another version, or invalid, and the defaults were loaded (FD section 16). HALL_BYPASS: the Hall bench bypass was switched on or off (FD section 14.1)." },
+        "detail": { "type": "string", "maxLength": 200, "description": "PARAMS_RESET: why (\"missing\", \"version\", \"invalid\"). HALL_BYPASS: \"on\" or \"off\"." }
       }
     }
   }

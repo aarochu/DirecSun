@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "type": "cmd",
+  "seq": 22,
+  "cmd": "set_params",
+  "params": {
+    "rate_gain_scale": 1.5
+  }
+}

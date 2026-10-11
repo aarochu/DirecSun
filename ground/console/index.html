@@ -84,9 +84,55 @@ input:focus{border-color:#709bb7}
 .flag.fault{border-color:var(--redline);color:var(--red)}
 .footnote{color:#748390;font-size:10px;margin-top:17px}
 .footnote span{color:var(--amber)}
-@media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lower{grid-template-columns:1fr}}
+.teleop{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px}
+.plots{padding:12px 15px 14px;display:grid;gap:10px}
+.lane{display:grid;grid-template-columns:minmax(0,1fr);gap:3px}
+.lanehead{display:flex;justify-content:space-between;gap:8px;font:10px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.lanehead b{font-weight:500;color:var(--text)}
+.lane svg{width:100%;height:46px;display:block;border-bottom:1px solid #26333d}
+.lane polyline{fill:none;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.lane line{stroke:#2b3946;stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:3 3}
+.lane.wheel polyline{stroke:var(--blue)}.lane.rate polyline{stroke:var(--green)}.lane.throttle polyline{stroke:var(--amber)}
+.timeaxis{display:flex;justify-content:space-between;font:9px var(--mono);color:#748390;letter-spacing:.06em}
+.csvrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font:10px var(--mono);color:var(--muted)}
+.teleopbody{padding:15px;display:grid;gap:12px;align-content:start}
+.teleopbody p{margin:0;color:var(--muted);font-size:12px}
+.tpidle[hidden],.tplive[hidden]{display:none}
+.tplive{display:grid;gap:12px}
+.setpoint{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.setpoint .value{margin-top:0}
+.readouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.readout{border:1px solid var(--line);padding:7px 9px;min-width:0}
+.readout span{display:block;font:9px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.readout b{display:block;font:500 15px var(--mono);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sliderrow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.sliderrow input[type=range]{width:100%;accent-color:var(--amber)}
+.sliderrow .btn{min-width:56px;padding:9px 10px;font-family:var(--mono)}
+.bandscale{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--muted);margin-top:-6px;padding:0 66px}
+.keys{display:grid;gap:6px;font:10px/1.9 var(--mono);color:#748390;letter-spacing:.06em}
+.keys kbd{border:1px solid var(--line);padding:1px 5px;color:var(--text);font:10px var(--mono)}
+.bench{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.benchrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:end}
+.benchrow label{display:grid;gap:6px;font:10px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;min-width:0}
+.benchrow input,.gains input{width:100%;min-width:0;background:#10171e;color:var(--text);border:1px solid #334351;border-radius:2px;padding:8px 10px;outline:none;font:12px var(--mono)}
+.benchrow input:focus,.gains input:focus{border-color:#709bb7}
+.subhead{font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--text);border-top:1px solid #26333d;padding-top:12px}
+.sweeptable{width:100%;border-collapse:collapse;font:11px var(--mono)}
+.sweeptable th,.sweeptable td{text-align:right;padding:4px 8px;border-bottom:1px solid #26333d}
+.sweeptable th{font-weight:500;color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.sweeptable th:first-child,.sweeptable td:first-child{text-align:left}
+.gains{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.gains label{display:grid;gap:6px;font:10px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;min-width:0}
+.note{font:11px/1.5 var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.note.bad{color:var(--red)}.note.ok{color:var(--green)}
+.benchsetup{border-top:1px solid var(--line);margin-top:16px;padding-top:14px;display:grid;gap:10px}
+.bshead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.bsacks{margin:0;padding:0;list-style:none;display:grid;gap:2px;font:11px/1.5 var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.bsacks:empty{display:none}
+.bsacks .ok{color:var(--green)}.bsacks .bad{color:var(--red)}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lower,.teleop,.bench{grid-template-columns:1fr}}
 @media(max-width:900px){.shell{padding:0 20px 28px}}
-@media(max-width:600px){.shell{padding:0 16px 24px}.topmeta{display:none}.connection{grid-template-columns:1fr;gap:5px}.state{padding:3px 2px}.pagehead{flex-direction:column;align-items:flex-start;gap:12px}.pagehead h1{font-size:22px}.urlrow{flex-wrap:wrap}.urlrow input{flex:1 1 100%}.urlrow .btn{flex:1}.event{grid-template-columns:56px 40px 1fr;gap:7px;font-size:10px}.metric{padding:13px;min-height:118px}.metricfoot{white-space:normal}.hint{margin-top:2px}.confirm span{flex:1 1 100%}.confirm .btn{flex:1}.value{font-size:24px}.cmdrow .btn{flex:1 1 40%}}
+@media(max-width:600px){.shell{padding:0 16px 24px}.topmeta{display:none}.connection{grid-template-columns:1fr;gap:5px}.state{padding:3px 2px}.pagehead{flex-direction:column;align-items:flex-start;gap:12px}.pagehead h1{font-size:22px}.urlrow{flex-wrap:wrap}.urlrow input{flex:1 1 100%}.urlrow .btn{flex:1}.event{grid-template-columns:56px 40px 1fr;gap:7px;font-size:10px}.metric{padding:13px;min-height:118px}.metricfoot{white-space:normal}.hint{margin-top:2px}.confirm span{flex:1 1 100%}.confirm .btn{flex:1}.value{font-size:24px}.cmdrow .btn{flex:1 1 40%}.readouts{grid-template-columns:1fr 1fr 1fr}.readout b{font-size:13px}.benchrow{grid-template-columns:1fr 1fr}.benchrow label{grid-column:1 / -1}.gains{grid-template-columns:1fr 1fr}.gains label:nth-child(3){grid-column:1 / -1}.bandscale{padding:0 62px}.sliderrow{gap:6px}.sliderrow .btn{min-width:52px}}
 </style>
 </head>
 <body>
@@ -130,6 +176,133 @@ input:focus{border-color:#709bb7}
     <article class="metric"><div class="metrichead"><span>Flags</span><em>LATCHED IN RED</em></div><div class="flags" id="m-flags" style="margin-top:15px"></div></article>
   </section>
 
+  <section class="teleop">
+    <article class="panel">
+      <div class="panelhead"><span class="paneltitle">Rolling 20 s</span><span class="panelmeta">WIRE VALUES · CW +</span></div>
+      <div class="plots">
+        <div class="lane wheel"><div class="lanehead"><span>Wheel</span><b id="lane-wheel">- rpm</b></div><svg viewBox="0 0 1000 46" preserveAspectRatio="none" aria-hidden="true"><polyline id="plot-wheel" points=""/></svg></div>
+        <div class="lane rate"><div class="lanehead"><span>Box rate</span><b id="lane-rate">- deg/s</b></div><svg viewBox="0 0 1000 46" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="23" x2="1000" y2="23" id="rate-zero"/><polyline id="plot-rate" points=""/></svg></div>
+        <div class="lane throttle"><div class="lanehead"><span>Throttle</span><b id="lane-throttle">-</b></div><svg viewBox="0 0 1000 46" preserveAspectRatio="none" aria-hidden="true"><polyline id="plot-throttle" points=""/></svg></div>
+        <div class="timeaxis"><span>-20 S</span><span>-10 S</span><span>NOW</span></div>
+        <div class="csvrow"><span id="csvcount">0 TLM FRAMES RECORDED</span><button class="btn secondary" id="csv" disabled>Download CSV</button></div>
+      </div>
+    </article>
+    <article class="panel">
+      <div class="panelhead"><span class="paneltitle">Teleop · rung 1</span><span class="panelmeta" id="tp-meta">MANUAL THROTTLE · OPEN LOOP</span></div>
+      <div class="teleopbody">
+        <div class="tpidle" id="tp-idle">
+          <p id="tp-idlemsg">Arm and wait for READY, then enter MANUAL throttle. The wheel then follows the throttle you set, open loop.</p>
+          <div class="cmdrow" style="margin-top:12px"><button class="btn" id="tp-enter" disabled>Enter MANUAL throttle</button></div>
+          <div class="benchsetup" id="bs">
+            <div class="bshead"><span class="field-label" style="margin:0">Bench setup · Hall bypass</span><span class="panelmeta" id="bs-state">SAFE AT THROTTLE 0 ONLY</span></div>
+            <p>For a rig without the Hall sensor: stores the bench throttle parameters (band 150 to 400, spin-up 300, Hall expect 200), then turns on bench mode, then the Hall bypass. It never arms. The bypass lasts until the box reboots.</p>
+            <div class="cmdrow"><button class="btn secondary" id="bs-start" disabled>Bench setup</button></div>
+            <div class="confirm" id="bs-confirm" hidden>
+              <span>Send 3 set_params? The parameters are written to the box's flash. With the bypass on, the wheel-speed interlocks are off and 400 is the only throttle ceiling.</span>
+              <button class="btn" id="bs-yes">Confirm setup</button>
+              <button class="btn secondary" id="bs-no">Cancel</button>
+            </div>
+            <ul class="bsacks" id="bs-acks" aria-live="polite"></ul>
+          </div>
+        </div>
+        <div class="tplive" id="tp-live" hidden>
+          <div class="setpoint">
+            <div><span class="field-label" style="margin:0">Throttle setpoint</span><div class="value"><span id="tp-setpoint">-</span> <span class="unit">DShot</span></div></div>
+            <button class="btn secondary" id="tp-exit">Exit to READY</button>
+          </div>
+          <div class="readouts">
+            <div class="readout"><span>Box clamp</span><b id="tp-band">-</b></div>
+            <div class="readout"><span>Box sends</span><b id="tp-box">-</b></div>
+            <div class="readout"><span>Last ack</span><b id="tp-ack">-</b></div>
+          </div>
+          <div class="sliderrow">
+            <button class="btn secondary" id="tp-down" aria-label="Throttle down 10">-10</button>
+            <input type="range" id="tp-slider" min="48" max="2047" step="1" value="48" aria-label="Throttle setpoint" disabled>
+            <button class="btn secondary" id="tp-up" aria-label="Throttle up 10">+10</button>
+          </div>
+          <div class="bandscale"><span id="tp-lo">-</span><span id="tp-hi">-</span></div>
+          <div class="keys"><span><kbd>&uarr;</kbd> <kbd>&darr;</kbd> &plusmn;10 per press &nbsp;·&nbsp; <kbd>Space</kbd> e-stop</span><span>The box clamps every setpoint to its band.</span></div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="bench" aria-label="Bench tools">
+    <article class="panel">
+      <div class="panelhead"><span class="paneltitle">Bench · characterisation</span><span class="panelmeta" id="bn-meta">BENCH MODE OFF</span></div>
+      <div class="teleopbody">
+        <p>T-5, T-18, and the overspeed check (FD section 19.2). Settings apply only in SAFE; the box refuses them otherwise. Every arming of the real box needs Julian's go.</p>
+        <div class="cmdrow">
+          <button class="btn secondary" id="bn-bench-on" disabled>Bench mode on</button>
+          <button class="btn secondary" id="bn-bench-off" disabled>Bench mode off</button>
+          <button class="btn secondary" id="bn-bypass-on" disabled>Hall bypass on</button>
+          <button class="btn secondary" id="bn-bypass-off" disabled>Hall bypass off</button>
+        </div>
+        <div class="benchrow">
+          <label for="bn-under">T-18 underspeed threshold, rpm<input id="bn-under" type="number" min="100" max="1500" step="10" placeholder="e.g. 300"></label>
+          <button class="btn secondary" id="bn-under-set" disabled>Set</button>
+          <button class="btn secondary" id="bn-under-clear" disabled>Clear</button>
+        </div>
+        <div class="benchrow">
+          <label for="bn-cap">Test cap for the overspeed check, rpm<input id="bn-cap" type="number" min="1000" max="4000" step="50" placeholder="e.g. 2500"></label>
+          <button class="btn secondary" id="bn-cap-set" disabled>Set</button>
+          <button class="btn secondary" id="bn-cap-clear" disabled>Clear</button>
+        </div>
+        <div class="subhead">T-5 throttle sweep</div>
+        <p>In MANUAL throttle: steps through 8 throttles across the box's band, holds each for the dwell, and records the mean wheel speed over the last 1.5 s of each step. Widen the band with manual_throttle_max first to map the full range.</p>
+        <div class="benchrow">
+          <label for="bn-dwell">Dwell per step, s<input id="bn-dwell" type="number" min="2" max="20" step="0.5" value="4"></label>
+          <button class="btn" id="bn-sweep" disabled>Run sweep</button>
+          <button class="btn secondary" id="bn-sweep-stop" disabled>Stop</button>
+        </div>
+        <div class="note" id="bn-sweep-note">No sweep yet.</div>
+        <table class="sweeptable" id="bn-table" hidden><thead><tr><th>Step</th><th>Throttle</th><th>Wheel, rpm</th></tr></thead><tbody id="bn-rows"></tbody></table>
+        <div class="cmdrow"><button class="btn secondary" id="bn-sendff" disabled>Send as ff_table</button></div>
+      </div>
+    </article>
+    <article class="panel">
+      <div class="panelhead"><span class="paneltitle">Bench · wheel and rate loops</span><span class="panelmeta" id="bw-meta">WHEEL LOOP</span></div>
+      <div class="teleopbody">
+        <p>Steps the wheel reference in READY. Needs bench mode, the Hall, and an ff_table; the rate and attitude loops stay suspended until the step is ended.</p>
+        <div class="readouts">
+          <div class="readout"><span>Wheel ref</span><b id="bw-ref">-</b></div>
+          <div class="readout"><span>Wheel</span><b id="bw-wheel">-</b></div>
+          <div class="readout"><span>Step hold</span><b id="bw-hold">-</b></div>
+        </div>
+        <div class="cmdrow">
+          <button class="btn secondary" data-step="-300" disabled>-300 rpm</button>
+          <button class="btn secondary" data-step="-100" disabled>-100 rpm</button>
+          <button class="btn secondary" data-step="100" disabled>+100 rpm</button>
+          <button class="btn secondary" data-step="300" disabled>+300 rpm</button>
+          <button class="btn secondary" id="bw-end" disabled>End step</button>
+        </div>
+        <div class="subhead">Wheel PI gains</div>
+        <p>For a first-order wheel, steady speed = slope x throttle with time constant tau, these put the loop's crossover at the bandwidth (the firmware's wheel_pi_gains). The sweep fills the slope; read tau from a step in the CSV.</p>
+        <div class="gains">
+          <label for="bw-slope">Slope, rpm per unit<input id="bw-slope" type="number" min="0" step="0.01" placeholder="from sweep"></label>
+          <label for="bw-tau">Tau, s<input id="bw-tau" type="number" min="0" step="0.01" placeholder="e.g. 0.3"></label>
+          <label for="bw-bw">Bandwidth, Hz<input id="bw-bw" type="number" min="0.1" max="10" step="0.1" value="2"></label>
+        </div>
+        <div class="note" id="bw-gains-note">kp - · ki -</div>
+        <div class="cmdrow"><button class="btn secondary" id="bw-sendgains" disabled>Send gains</button></div>
+        <div class="subhead">Rate loop · sign check</div>
+        <p>READY holds rate. Make the first unpinned push at gain scale 0.2 (FD section 12.5): it must decay. If it grows, e-stop, set s_w -1 from SAFE, and repeat. Gain scale 1 is the design gains.</p>
+        <div class="readouts">
+          <div class="readout"><span>Rate, CW+</span><b id="br-rate">-</b></div>
+          <div class="readout"><span>Torque cmd</span><b id="br-tau">-</b></div>
+          <div class="readout"><span>Momentum</span><b id="br-mom">-</b></div>
+        </div>
+        <div class="cmdrow">
+          <button class="btn secondary" data-param="rate_gain_scale" data-value="0.2" disabled>Gain scale 0.2</button>
+          <button class="btn secondary" data-param="rate_gain_scale" data-value="1" disabled>Gain scale 1</button>
+          <button class="btn secondary" data-param="s_w" data-value="1" disabled>s_w +1</button>
+          <button class="btn secondary" data-param="s_w" data-value="-1" disabled>s_w -1</button>
+        </div>
+        <div class="note" id="br-note">Gain scale and s_w: none acked from this console yet.</div>
+      </div>
+    </article>
+  </section>
+
   <section class="lower">
     <article class="panel">
       <div class="panelhead">
@@ -146,6 +319,15 @@ input:focus{border-color:#709bb7}
           <button class="btn" id="arm" disabled>Arm</button>
           <button class="btn secondary" id="disarm" disabled>Disarm</button>
           <button class="btn secondary" id="ready" disabled>Mode READY</button>
+        </div>
+        <div class="subhead">Heading · relative to the last zero</div>
+        <p>Zero in SAFE or READY. HOLD and SLEW start from READY once the wheel loop runs; SLEW targets are clockwise positive. Mode READY ends either.</p>
+        <div class="cmdrow">
+          <button class="btn secondary" id="hd-zero" disabled>Zero heading</button>
+          <button class="btn secondary" id="hd-hold" disabled>HOLD</button>
+          <button class="btn secondary" data-slew="-90" disabled>SLEW -90</button>
+          <button class="btn secondary" data-slew="0" disabled>SLEW 0</button>
+          <button class="btn secondary" data-slew="90" disabled>SLEW +90</button>
         </div>
         <div class="confirm" id="armconfirm" hidden>
           <span>Arming spins the wheel up. Is the lock pin in, or the box held?</span>
@@ -176,6 +358,43 @@ let lastTlmLog = 0;
 let lastCause = "-";
 let tlmTimes = [];
 const series = { psi: [], rate: [], wheel: [], vbat: [] };
+
+// Rolling plots and CSV (R3.7). Time is the box's own t_ms, so plots never
+// stretch when the browser stalls.
+const WINDOW_MS = 20000;
+const CSV_MAX_ROWS = 180000;  // one hour at 50 Hz
+const CSV_KEYS = ["seq", "t_ms", "mode", "manual_input", "psi_deg", "psi_ref_deg", "rate_dps", "mag_deg",
+  "sun_deg", "sun_valid", "wheel_rpm", "wheel_ref_rpm", "throttle", "throttle_band", "tau_cmd_mNm", "vbat",
+  "loop_us", "flags", "t_c", "p_pa", "tlm_dropped", "dropped_events", "accel_rms_g", "gyro_raw", "mag_raw",
+  "sun_a_mv", "sun_b_mv"];
+let csvRows = [];
+let csvDropped = 0;
+let samples = [];
+let drawPending = false;
+
+// Teleop (rung 1): MANUAL throttle only. The box is the authority: the panel
+// shows the band the box reports and what the box actually sends.
+const STEP = 10;
+let band = null;          // [lo, hi] from tlm.throttle_band
+let manualActive = false; // tlm says MANUAL with input throttle
+let setpoint = null;
+let boxMode = null;
+
+// Bench setup (R3.7 rung 1): the parameters and the Hall bench bypass a rig
+// without the Hall sensor needs, in the order the box requires. First the
+// throttle parameters, at the FD section 16 defaults, so a stale stored set
+// cannot raise them; then bench mode; then the bypass, which the box accepts
+// only once bench mode is already on. It sends set_params and nothing else, so
+// it cannot arm. The box refuses set_params outside SAFE and during a
+// ramp-down; the console offers it only in SAFE at throttle 0, because a
+// ramp-down reports SAFE with the throttle still above 0.
+const BENCH_STEPS = [
+  { label: "throttle parameters", params: { manual_throttle_min: 150, manual_throttle_max: 400, spinup_throttle: 300, hall_expect_throttle: 200 } },
+  { label: "bench_mode on", params: { bench_mode: true } },
+  { label: "Hall bypass on (hall_installed false)", params: { hall_installed: false } },
+];
+let lastTlm = null;
+let benchBusy = false;
 
 function readEndpoint() {
   try {
@@ -235,14 +454,24 @@ function setLinkState(kind, label) {
   $("connect").hidden = live;
   $("disconnect").hidden = !live;
   for (const id of ["arm", "disarm", "ready"]) $(id).disabled = kind !== "online";
+  if (kind !== "online") for (const b of document.querySelectorAll("#hd-zero, #hd-hold, [data-slew]")) b.disabled = true;
   const stale = kind !== "online" && $("m-seq").textContent !== "TLM SEQ -";
   document.querySelector(".grid").classList.toggle("stale", stale);
   $("stalenote").classList.toggle("show", stale);
   if (kind !== "online") {
+    lastTlm = null;
+    $("tp-enter").disabled = true;
+    for (const id of ["tp-slider", "tp-up", "tp-down", "tp-exit"]) $(id).disabled = true;
+    manualActive = false;
+    setpoint = null;
+    $("tp-live").hidden = true;
+    $("tp-idle").hidden = false;
+    $("tp-idlemsg").textContent = "No link: connect to the box (or the mock box) first.";
     $("armconfirm").hidden = true;
     $("badge-mode").textContent = "NO LINK";
     $("modebadge").className = "modebadge";
   }
+  updateBenchSetup();
 }
 
 // Smallest vertical span per signal, in its own unit: noise below this stays flat.
@@ -303,6 +532,364 @@ function onTlm(t) {
   plot("rate", t.rate_dps, "chart-rate");
   plot("wheel", t.wheel_rpm, "chart-wheel");
   plot("vbat", t.vbat, "chart-vbat");
+  recordTlm(t);
+  updateTeleop(t);
+  updateBench(t);
+  updateHeading(t);
+  lastTlm = t;
+  updateBenchSetup();
+}
+
+function scheduleDraw() {
+  if (drawPending) return;
+  drawPending = true;
+  requestAnimationFrame(() => {
+    drawPending = false;
+    drawPlots();
+  });
+}
+
+function lanePoints(key, yOf) {
+  if (!samples.length) return "";
+  const end = samples[samples.length - 1].t;
+  return samples.map((s) => `${(((s.t - (end - WINDOW_MS)) / WINDOW_MS) * 1000).toFixed(1)},${yOf(s[key]).toFixed(1)}`).join(" ");
+}
+
+function drawPlots() {
+  let wheelMax = 4500;
+  let rateSpan = 10;
+  let throttleMax = 500;
+  for (const s of samples) {
+    if (s.wheel > wheelMax) wheelMax = s.wheel;
+    if (Math.abs(s.rate) > rateSpan) rateSpan = Math.abs(s.rate);
+    if (s.throttle > throttleMax) throttleMax = s.throttle;
+  }
+  $("plot-wheel").setAttribute("points", lanePoints("wheel", (v) => 44 - (v / wheelMax) * 42));
+  $("plot-rate").setAttribute("points", lanePoints("rate", (v) => 23 - (v / rateSpan) * 21));
+  $("plot-throttle").setAttribute("points", lanePoints("throttle", (v) => 44 - (v / throttleMax) * 42));
+  const last = samples[samples.length - 1];
+  if (last) {
+    $("lane-wheel").textContent = `${fmt(last.wheel, 0)} rpm`;
+    $("lane-rate").textContent = `${fmt(last.rate)} deg/s`;
+    $("lane-throttle").textContent = String(last.throttle);
+  }
+}
+
+function recordTlm(t) {
+  csvRows.push([Date.now(), t]);
+  if (csvRows.length > CSV_MAX_ROWS) {
+    csvRows.shift();
+    csvDropped += 1;
+  }
+  if (csvRows.length % 25 === 1 || csvRows.length < 25) {
+    $("csvcount").textContent = `${csvRows.length} TLM FRAMES RECORDED${csvDropped ? ` · ${csvDropped} OLDEST DROPPED` : ""}`;
+  }
+  $("csv").disabled = csvRows.length === 0;
+  samples.push({ t: t.t_ms, wheel: t.wheel_rpm, rate: t.rate_dps, throttle: t.throttle });
+  while (samples.length && samples[0].t < t.t_ms - WINDOW_MS) samples.shift();
+  scheduleDraw();
+}
+
+function csvCell(value) {
+  if (value === null || value === undefined) return "";
+  const text = Array.isArray(value) ? value.join("|") : String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function downloadCsv() {
+  const lines = [["received_ms", ...CSV_KEYS].join(",")];
+  for (const [received, t] of csvRows) lines.push([received, ...CSV_KEYS.map((k) => t[k])].map(csvCell).join(","));
+  const blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv" });
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..*/, "").replace("T", "-");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `direcsun-tlm-${stamp}.csv`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+const clampToBand = (v) => Math.round(Math.min(band[1], Math.max(band[0], v)));
+
+function renderSetpoint() {
+  $("tp-setpoint").textContent = setpoint === null ? "-" : String(setpoint);
+  if (setpoint !== null) $("tp-slider").value = String(setpoint);
+}
+
+function updateTeleop(t) {
+  boxMode = t.mode;
+  band = Array.isArray(t.throttle_band) ? t.throttle_band : null;
+  const nowManual = t.mode === "MANUAL" && t.manual_input === "throttle";
+  if (nowManual && !manualActive) {
+    // Start from what the box is sending now: entering MANUAL is not a step (FD 13.5).
+    setpoint = band ? clampToBand(t.throttle) : t.throttle;
+    renderSetpoint();
+  }
+  if (!nowManual) setpoint = null;
+  manualActive = nowManual;
+  $("tp-live").hidden = !manualActive;
+  $("tp-idle").hidden = manualActive;
+  $("tp-enter").disabled = !(link && link.state === "open" && t.mode === "READY");
+  $("tp-idlemsg").textContent =
+    t.mode === "SAFE" ? "Arm and wait for READY, then enter MANUAL throttle. The wheel then follows the throttle you set, open loop."
+    : t.mode === "SPINUP" ? "Spinning up. MANUAL throttle becomes available in READY."
+    : t.mode === "READY" ? "READY: the wheel holds its spin-up throttle. Enter MANUAL throttle to nudge it."
+    : t.mode === "MANUAL" ? `MANUAL with input ${t.manual_input}: this panel drives only the throttle input.`
+    : `Mode ${t.mode}: MANUAL throttle is entered from READY.`;
+  $("tp-meta").textContent = manualActive ? "MANUAL THROTTLE · LIVE" : "MANUAL THROTTLE · OPEN LOOP";
+  $("tp-box").textContent = String(t.throttle);
+  if (band) {
+    $("tp-band").textContent = `${band[0]} to ${band[1]}`;
+    $("tp-lo").textContent = String(band[0]);
+    $("tp-hi").textContent = String(band[1]);
+    $("tp-slider").min = String(band[0]);
+    $("tp-slider").max = String(band[1]);
+  } else {
+    $("tp-band").textContent = "unknown";
+    $("tp-lo").textContent = "-";
+    $("tp-hi").textContent = "-";
+  }
+  const usable = manualActive && band !== null;
+  for (const id of ["tp-slider", "tp-up", "tp-down", "tp-exit"]) $(id).disabled = !usable && id !== "tp-exit";
+  $("tp-exit").disabled = !manualActive;
+}
+
+const benchReady = () => link?.state === "open" && lastTlm?.mode === "SAFE" && lastTlm.throttle === 0;
+
+function benchLine(text, ok) {
+  const li = document.createElement("li");
+  li.className = ok === true ? "ok" : ok === false ? "bad" : "";
+  li.textContent = text;
+  $("bs-acks").append(li);
+}
+
+function updateBenchSetup() {
+  const ready = benchReady();
+  $("bs-start").disabled = !ready || benchBusy;
+  $("bs-state").textContent = benchBusy ? "SENDING" : ready ? "READY TO SEND" : "SAFE AT THROTTLE 0 ONLY";
+  if (!ready && !$("bs-confirm").hidden) {
+    $("bs-confirm").hidden = true;
+    benchLine("Cancelled, nothing sent: the box left SAFE at throttle 0.", false);
+  }
+}
+
+function waitForTlm(match, ms) {
+  return new Promise((resolve) => {
+    const stop = link.on("tlm", (t) => {
+      if (match(t)) { clearTimeout(timer); stop(); resolve(t); }
+    });
+    const timer = setTimeout(() => { stop(); resolve(null); }, ms);
+  });
+}
+
+async function runBenchSetup() {
+  $("bs-confirm").hidden = true;
+  $("bs-acks").replaceChildren();
+  if (!benchReady()) {
+    benchLine("Not sent: the box is not SAFE at throttle 0.", false);
+    return;
+  }
+  benchBusy = true;
+  updateBenchSetup();
+  try {
+    for (const [i, { label, params }] of BENCH_STEPS.entries()) {
+      // The frames log shows each set_params in full; this list names the steps.
+      const text = `${i + 1}/${BENCH_STEPS.length} set_params, ${label}`;
+      // Each step re-checks: the box may have been armed from elsewhere.
+      if (!benchReady()) {
+        benchLine(`${text}: not sent, the box left SAFE at throttle 0`, false);
+        return;
+      }
+      try {
+        const ack = await link.command("set_params", { params });
+        benchLine(`${text}: ack ok (seq ${ack.seq})`, true);
+      } catch (error) {
+        benchLine(`${text}: ${error.code === "REFUSED" ? `refused, ${error.ack?.reason ?? ""}` : error.message}`, false);
+        return;
+      }
+    }
+    const t = await waitForTlm((x) => x.flags.includes("HALL_BYPASS"), 2000);
+    const band = t && Array.isArray(t.throttle_band) ? t.throttle_band.join(" to ") : "unknown";
+    if (t && t.mode === "SAFE" && t.throttle === 0 && band === "150 to 400") {
+      benchLine(`Box now: SAFE, HALL_BYPASS, clamp ${band}. Arm only with Julian's go.`, true);
+    } else {
+      benchLine(t ? `Unexpected box state: ${t.mode}, throttle ${t.throttle}, clamp ${band}.` : "No tlm with HALL_BYPASS within 2 s.", false);
+    }
+  } finally {
+    benchBusy = false;
+    updateBenchSetup();
+  }
+}
+
+function sendSetpoint(value) {
+  if (!link || !manualActive || !band) return;
+  setpoint = clampToBand(value);
+  renderSetpoint();
+  $("tp-ack").textContent = "sending";
+  link.manual({ throttle: setpoint })
+    .then((ack) => { $("tp-ack").textContent = `ok #${ack.seq}`; })
+    .catch((error) => {
+      const reason = error.code === "REFUSED" ? `refused: ${error.ack?.reason ?? ""}` : error.message;
+      $("tp-ack").textContent = error.code === "REFUSED" ? "refused" : "not sent";
+      setResult(`manual: ${reason}`, false);
+    });
+}
+
+function nudge(delta) {
+  if (!manualActive || !band) return;
+  sendSetpoint((setpoint ?? band[0]) + delta);
+}
+
+// Bench (R3.8): characterisation and the wheel loop. Settings go through
+// set_params, which the box accepts only in SAFE; the box is the authority on
+// what applied. Bench mode is read from the tlm, which carries the bench-only
+// fields (gyro_raw and friends) exactly while it is on.
+const SWEEP_POINTS = 8;
+const SWEEP_SETTLE_MS = 1500;
+let benchOn = false;
+let sweep = null;        // { levels, i, dwellMs, levelStart, samples, results }
+let ffResult = null;     // [{ rpm, throttle }] x 8, ready to send
+
+function updateBench(t) {
+  benchOn = Array.isArray(t.gyro_raw);
+  const bypass = t.flags.includes("HALL_BYPASS");
+  const hold = t.flags.includes("WHEEL_STEP");
+  const open = Boolean(link && link.state === "open");
+  const safe = t.mode === "SAFE";
+  $("bn-meta").textContent = `${benchOn ? "BENCH MODE ON" : "BENCH MODE OFF"}${bypass ? " · HALL BYPASS" : ""}`;
+  for (const id of ["bn-bench-on", "bn-bench-off", "bn-bypass-on", "bn-bypass-off", "bn-under-set", "bn-under-clear", "bn-cap-set", "bn-cap-clear"]) {
+    $(id).disabled = !(open && safe);
+  }
+  $("bn-sweep").disabled = !(open && manualActive && band !== null && sweep === null);
+  $("bn-sweep-stop").disabled = sweep === null;
+  $("bn-sendff").disabled = !(open && safe && ffResult !== null);
+  $("bw-meta").textContent = hold ? "WHEEL STEP · LOOPS SUSPENDED" : "WHEEL LOOP";
+  $("bw-ref").textContent = t.wheel_ref_rpm > 0 ? `${fmt(t.wheel_ref_rpm, 0)} rpm` : "open loop";
+  $("bw-wheel").textContent = `${fmt(t.wheel_rpm, 0)} rpm`;
+  $("bw-hold").textContent = hold ? "on" : "off";
+  for (const b of document.querySelectorAll("[data-step]")) b.disabled = !(open && t.mode === "READY" && benchOn);
+  $("bw-end").disabled = !(open && hold);
+  $("bw-sendgains").disabled = !(open && safe && computeGains() !== null);
+  $("br-rate").textContent = `${fmt(t.rate_dps, 1)} deg/s`;
+  $("br-tau").textContent = `${fmt(t.tau_cmd_mNm, 2)} mN m`;
+  $("br-mom").textContent = t.flags.includes("MOMENTUM_SATURATED") ? "saturated"
+    : t.flags.includes("MOMENTUM_NEAR_LIMIT") ? "near limit"
+    : t.flags.includes("MOMENTUM_OK") ? "ok" : "-";
+  for (const b of document.querySelectorAll("[data-param]")) b.disabled = !(open && safe);
+  if (sweep) sweepTick(t);
+}
+
+// Heading commands (R4.2, R4.3): enabled where the box would accept them.
+function updateHeading(t) {
+  const open = Boolean(link && link.state === "open");
+  $("hd-zero").disabled = !(open && (t.mode === "SAFE" || t.mode === "READY"));
+  $("hd-hold").disabled = !(open && t.mode === "READY");
+  for (const b of document.querySelectorAll("[data-slew]")) b.disabled = !(open && t.mode === "READY");
+}
+
+function sweepNote(text, cls = "") {
+  $("bn-sweep-note").textContent = text;
+  $("bn-sweep-note").className = "note" + (cls ? " " + cls : "");
+}
+
+function startSweep() {
+  if (!manualActive || !band) return;
+  const dwell = Number($("bn-dwell").value);
+  const dwellMs = Math.round((Number.isFinite(dwell) ? Math.min(20, Math.max(2, dwell)) : 4) * 1000);
+  const levels = Array.from({ length: SWEEP_POINTS }, (_, i) => Math.round(band[0] + (i * (band[1] - band[0])) / (SWEEP_POINTS - 1)));
+  sweep = { levels, i: 0, dwellMs, levelStart: null, samples: [], results: [] };
+  ffResult = null;
+  $("bn-rows").replaceChildren();
+  $("bn-table").hidden = false;
+  sendSetpoint(levels[0]);
+  sweepNote(`step 1 of ${SWEEP_POINTS}: throttle ${levels[0]}`);
+}
+
+function stopSweep(reason) {
+  sweep = null;
+  sweepNote(`sweep stopped: ${reason}`, "bad");
+}
+
+function sweepTick(t) {
+  if (!(t.mode === "MANUAL" && t.manual_input === "throttle")) return stopSweep(`the box left MANUAL throttle (${t.mode})`);
+  if (sweep.levelStart === null) sweep.levelStart = t.t_ms;
+  const elapsed = t.t_ms - sweep.levelStart;
+  if (elapsed >= sweep.dwellMs - SWEEP_SETTLE_MS) sweep.samples.push(t.wheel_rpm);
+  if (elapsed < sweep.dwellMs) return;
+  const mean = sweep.samples.reduce((a, b) => a + b, 0) / Math.max(1, sweep.samples.length);
+  const throttle = t.throttle;
+  sweep.results.push({ throttle, rpm: Math.round(mean * 10) / 10 });
+  const row = document.createElement("tr");
+  for (const cell of [String(sweep.i + 1), String(throttle), fmt(mean, 0)]) {
+    const td = document.createElement("td");
+    td.textContent = cell;
+    row.append(td);
+  }
+  $("bn-rows").append(row);
+  sweep.i += 1;
+  sweep.samples = [];
+  sweep.levelStart = null;
+  if (sweep.i < SWEEP_POINTS) {
+    sendSetpoint(sweep.levels[sweep.i]);
+    sweepNote(`step ${sweep.i + 1} of ${SWEEP_POINTS}: throttle ${sweep.levels[sweep.i]}`);
+    return;
+  }
+  finishSweep(sweep.results);
+  sweep = null;
+}
+
+function finishSweep(results) {
+  // The box accepts a table whose rpm strictly increases and whose throttle
+  // never decreases (FD section 16); say so here rather than send a refusal.
+  for (let i = 1; i < results.length; i += 1) {
+    if (!(results[i].rpm > results[i - 1].rpm) || results[i].throttle < results[i - 1].throttle) {
+      sweepNote("not monotonic: the wheel did not speed up at every step. Check the wheel and run it again.", "bad");
+      return;
+    }
+  }
+  ffResult = results.map((r) => ({ rpm: r.rpm, throttle: r.throttle }));
+  // Least-squares slope of rpm against throttle, for the gains helper.
+  const n = results.length;
+  const mx = results.reduce((a, r) => a + r.throttle, 0) / n;
+  const my = results.reduce((a, r) => a + r.rpm, 0) / n;
+  const sxx = results.reduce((a, r) => a + (r.throttle - mx) ** 2, 0);
+  const sxy = results.reduce((a, r) => a + (r.throttle - mx) * (r.rpm - my), 0);
+  if (sxx > 0) $("bw-slope").value = (sxy / sxx).toFixed(3);
+  renderGains();
+  sweepNote(`sweep complete: ${n} points. Disarm, then send it as the ff_table from SAFE.`, "ok");
+}
+
+function computeGains() {
+  const slope = Number($("bw-slope").value);
+  const tau = Number($("bw-tau").value);
+  const bw = Number($("bw-bw").value);
+  if (!(slope > 0 && tau > 0 && bw > 0)) return null;
+  const w = 2 * Math.PI * bw;
+  return { kp: (w * tau) / slope, ki: w / slope };
+}
+
+function renderGains() {
+  const g = computeGains();
+  $("bw-gains-note").textContent = g ? `kp ${g.kp.toFixed(4)} · ki ${g.ki.toFixed(4)}` : "kp - · ki -";
+  $("bw-gains-note").className = "note";
+}
+
+function setBenchParam(key, value) {
+  if (value === null) return;
+  send("set_params", { params: { [key]: value } });
+}
+
+// Rate loop settings (R3.9). The box does not report its parameters, so the
+// note shows what it last acked from this console.
+const rateAcked = {};
+async function setRateParam(key, value) {
+  const ack = await send("set_params", { params: { [key]: value } });
+  if (!ack) return;
+  rateAcked[key] = value;
+  const parts = Object.entries(rateAcked).map(([k, v]) => (k === "s_w" ? `s_w ${v > 0 ? "+" : ""}${v}` : `gain scale ${v}`));
+  $("br-note").textContent = `Acked by the box: ${parts.join(" · ")}`;
+  $("br-note").className = "note ok";
 }
 
 function updateRtt() {
@@ -317,8 +904,10 @@ async function send(name, fields = {}) {
   try {
     const ack = await link.command(name, fields);
     setResult(`${name}: ack ok (seq ${ack.seq})`, true);
+    return ack;
   } catch (error) {
     setResult(`${name}: ${error.code === "REFUSED" ? "refused, " + (error.ack?.reason ?? "") : error.message}`, false);
+    return null;
   }
 }
 
@@ -342,12 +931,23 @@ function connect() {
   const url = $("endpoint").value.trim();
   saveEndpoint(url);
   link?.close();
-  link = new DirecSunLink(url);
+  // 60 ms between manual setpoints: the box refuses frames closer than 50 ms
+  // ("too fast"), and network jitter can bunch frames sent exactly 50 ms apart.
+  link = new DirecSunLink(url, { manualIntervalMs: 60 });
   tlmTimes = [];
+  csvRows = [];
+  csvDropped = 0;
+  samples = [];
+  $("csvcount").textContent = "0 TLM FRAMES RECORDED";
+  $("csv").disabled = true;
   link.on("state", ({ state, reason }) => {
     if (state === "connecting") setLinkState("connecting", "CONNECTING");
-    else if (state === "open") setLinkState("online", "CONNECTED");
-    else if (state === "closed") {
+    else if (state === "open") {
+      setLinkState("online", "CONNECTED");
+      // Connecting with Enter leaves focus in the field; take it out, so the
+      // keys go to the page from the first moment the link is live.
+      $("endpoint").blur();
+    } else if (state === "closed") {
       setLinkState(reason === "closed by client" ? "" : "error", reason === "closed by client" ? "DISCONNECTED" : `CLOSED · ${String(reason).toUpperCase()}`);
       logFrame("LINK", `closed: ${reason}`, "err");
     }
@@ -393,13 +993,74 @@ $("armno").onclick = () => { $("armconfirm").hidden = true; };
 $("armyes").onclick = () => { $("armconfirm").hidden = true; send("arm"); };
 $("disarm").onclick = () => send("disarm");
 $("ready").onclick = () => send("mode", { mode: "READY" });
+$("hd-zero").onclick = () => send("zero_heading");
+$("hd-hold").onclick = () => send("mode", { mode: "HOLD" });
+for (const b of document.querySelectorAll("[data-slew]")) b.onclick = () => send("mode", { mode: "SLEW", psi_ref_deg: Number(b.dataset.slew) });
 $("estop").onclick = estop;
+$("csv").onclick = downloadCsv;
+$("tp-enter").onclick = () => send("mode", { mode: "MANUAL", input: "throttle" });
+$("tp-exit").onclick = () => send("mode", { mode: "READY" });
+$("tp-up").onclick = () => nudge(STEP);
+$("tp-down").onclick = () => nudge(-STEP);
+$("tp-slider").addEventListener("input", (e) => sendSetpoint(Number(e.target.value)));
+$("bn-bench-on").onclick = () => setBenchParam("bench_mode", true);
+$("bn-bench-off").onclick = () => setBenchParam("bench_mode", false);
+$("bn-bypass-on").onclick = () => setBenchParam("hall_installed", false);
+$("bn-bypass-off").onclick = () => setBenchParam("hall_installed", true);
+const numberIn = (id) => {
+  const v = Number($(id).value);
+  if ($(id).value === "" || !Number.isFinite(v)) {
+    setResult(`${id === "bn-under" ? "underspeed" : "test cap"}: enter a number first`, false);
+    return null;
+  }
+  return v;
+};
+$("bn-under-set").onclick = () => setBenchParam("bench_underspeed_rpm", numberIn("bn-under"));
+$("bn-under-clear").onclick = () => setBenchParam("bench_underspeed_rpm", 0);
+$("bn-cap-set").onclick = () => setBenchParam("bench_cap_rpm", numberIn("bn-cap"));
+$("bn-cap-clear").onclick = () => setBenchParam("bench_cap_rpm", 0);
+$("bn-sweep").onclick = startSweep;
+$("bn-sweep-stop").onclick = () => stopSweep("stopped by the operator");
+$("bn-sendff").onclick = () => { if (ffResult) send("set_params", { params: { ff_table: ffResult } }); };
+for (const b of document.querySelectorAll("[data-step]")) b.onclick = () => send("wheel_step", { delta_rpm: Number(b.dataset.step) });
+$("bw-end").onclick = () => send("mode", { mode: "READY" });
+for (const b of document.querySelectorAll("[data-param]")) b.onclick = () => setRateParam(b.dataset.param, Number(b.dataset.value));
+for (const id of ["bw-slope", "bw-tau", "bw-bw"]) $(id).addEventListener("input", renderGains);
+$("bw-sendgains").onclick = () => {
+  const g = computeGains();
+  if (g) send("set_params", { params: { wheel_kp: Number(g.kp.toFixed(5)), wheel_ki: Number(g.ki.toFixed(5)) } });
+};
+$("bs-start").onclick = () => {
+  if (!benchReady()) return;
+  $("bs-confirm").hidden = false;
+  $("bs-yes").focus();
+};
+$("bs-no").onclick = () => { $("bs-confirm").hidden = true; };
+$("bs-yes").onclick = runBenchSetup;
 document.addEventListener("keydown", (e) => {
-  if (e.code !== "Space" || e.repeat) return;
-  const tag = document.activeElement?.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA") return;
-  e.preventDefault();
-  estop();
+  // Space is the e-stop wherever focus is, the endpoint field included: an
+  // endpoint URL never contains a space, so nothing useful is lost there.
+  // preventDefault also stops it typing, scrolling, or toggling a checkbox, and
+  // a held key sends one e-stop, not one per repeat.
+  if (e.code === "Space") {
+    e.preventDefault();
+    if (!e.repeat) estop();
+    return;
+  }
+  const el = document.activeElement;
+  const typing = el?.tagName === "TEXTAREA" || (el?.tagName === "INPUT" && el.type !== "range" && el.type !== "checkbox");
+  if (typing) return;
+  if ((e.code === "ArrowUp" || e.code === "ArrowDown") && manualActive) {
+    // One step per press: holding the key does not keep raising the throttle.
+    e.preventDefault();
+    if (e.repeat) return;
+    nudge(e.code === "ArrowUp" ? STEP : -STEP);
+  }
+});
+// A focused button acts on Space's keyup: cancel that too, so Space can never
+// press Confirm arm (or any other button) instead of stopping.
+document.addEventListener("keyup", (e) => {
+  if (e.code === "Space") e.preventDefault();
 });
 </script>
 </body>

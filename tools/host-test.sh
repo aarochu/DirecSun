@@ -28,7 +28,10 @@ mkdir -p "$build"
 cmake -S "$repo_root/firmware/test/host" -B "$build" \
     -DCMAKE_BUILD_TYPE=Debug -DDIRECSUN_HT_SELFTEST="$selftest" >"$build/configure.txt" 2>&1 ||
     { cat "$build/configure.txt" >&2; echo "host-test: configure failed" >&2; exit 1; }
-cmake --build "$build" -j >"$build/build.txt" 2>&1 ||
+# A bare -j has no job limit with Makefiles. The selftest compiles the suite once
+# per mutant, and hundreds of compilers at once exhaust a CI runner's memory (#57).
+jobs="${CMAKE_BUILD_PARALLEL_LEVEL:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)}"
+cmake --build "$build" -j "$jobs" >"$build/build.txt" 2>&1 ||
     { cat "$build/build.txt" >&2; echo "host-test: build failed" >&2; exit 1; }
 
 set +e
@@ -62,4 +65,48 @@ else
         echo "host-test selftest: FAILED, a deliberately failing test did not fail the run" >&2
         exit 1
     fi
+
+    # Mutants (firmware/test/host/CMakeLists.txt): each has one safety mechanism
+    # compiled out. The named test must run (exactly one case) and fail; a
+    # mutant whose test still passes means that test cannot see the defect.
+    mutants=(
+        "no_latch|HT-8 latch: no path leaves SAFE after a fault without a new arm"
+        "no_bypass_clamp|bypass property: throttle never exceeds kBypassThrottleMax while bypassed"
+        "no_still_gate|HT-3 positive control: a spinning box in SAFE leaves the bias unchanged"
+        "absolute_stillness|boot bias seed: an uncalibrated 0.871 g accelerometer at rest still seeds"
+        "no_wire_sign|sign conversion: internal CCW encodes as wire CW and decodes back"
+        "no_spinup_ramp|rung 1: SPINUP ramps at 200 DShot units per second through the supervisor"
+        "no_hall_expect_rule|HT-10 HALL_SILENT trips in SPINUP for every parameter set the box accepts"
+        "params_during_ramp|HT-7 set_params is refused during the ramp-down and nothing changes or persists while the wheel turns"
+        "ticks_not_alarms|missed ticks: HEARTBEAT_LOST trips at 1.0 s and the ramp ends at 5.0 s of wall time"
+        "durations_per_step|missed ticks: HALL_SILENT UNDERSPEED and the SPINUP dwell run on wall time"
+        "no_wheel_antiwindup|R3.8 positive control: a saturating step overshoots under 10 % with anti-windup"
+        "rate_sign_flip|HT-5 sim: READY detumbles a 1 rev/s spin within 5 s at the design gains"
+        "no_rate_antiwindup|R3.9 anti-windup: a command held into MOMENTUM_SATURATED does not wind up"
+        "no_rate_bleed|R3.9 stick-slip bleed: a stopped box does not walk the wheel to a limit"
+        "floor_at_low|V-52 floor: a reference pinned on the floor does not trip UNDERSPEED"
+        "raw_rate_heading|R4.2 heading: a seeded 0.5 deg/s bias is removed before integration"
+        "flip_kpsi|HT-5 sim: a 90 deg SLEW settles within 3 deg in under 3 s (PR-2)"
+        "no_hold_deadband|HT-5 sim: a HOLD poked with 10 mN m for 100 ms returns within 2 deg in under 2 s"
+        "slew_settle_per_step|missed ticks: the SLEW settle dwell and timeout run on wall time"
+    )
+    for entry in "${mutants[@]}"; do
+        name="${entry%%|*}"
+        test_case="${entry#*|}"
+        mutant_out="$build/mutant-$name.txt"
+        set +e
+        "$build/host_tests_mutant_$name" --test-case="$test_case" >"$mutant_out" 2>&1
+        mutant_status=$?
+        set -e
+        mutant_summary="$(grep -E '^\[doctest\] test cases:' "$mutant_out" || true)"
+        mutant_cases="$(sed -E 's/^\[doctest\] test cases: *([0-9]+).*/\1/' <<<"$mutant_summary")"
+        mutant_failed="$(sed -E 's/.*\| *([0-9]+) failed.*/\1/' <<<"$mutant_summary")"
+        if [[ -n "$mutant_summary" && "$mutant_cases" -eq 1 && "$mutant_failed" -eq 1 && "$mutant_status" -ne 0 ]]; then
+            echo "host-test selftest: PASSED, mutant $name was caught by \"$test_case\""
+        else
+            cat "$mutant_out" >&2
+            echo "host-test selftest: FAILED, mutant $name survived (cases ${mutant_cases:-?}, failed ${mutant_failed:-?}, exit $mutant_status)" >&2
+            exit 1
+        fi
+    done
 fi

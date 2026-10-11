@@ -455,7 +455,7 @@ Budget: a 14-byte burst read takes about 1.5 ms at 100 kHz I2C and 0.4 ms at 400
 ### 6.4 Estimation
 
 - **Box rate.** Gyro Z minus a bias estimated while the box is still in Safe mode. The gyro runs at its ±2000 deg/s full scale (FS\_SEL = 3): the box can reach about 1440 deg/s if the wheel stops from the cap (Section 10.1), which the ±250 and ±500 deg/s ranges would clip (V-9). MPU6050 digital low-pass filter DLPF\_CFG = 4 gives 20 Hz gyro and 21 Hz accel bandwidth at 1 kHz output \[V: register map\], with 8.3 ms of gyro delay \[V\], which only partly reduces the 40 Hz wheel vibration at bias. The register map gives cutoff and delay but not the filter order; a first- or second-order filter would pass 25 to 45 % of the amplitude at 40 Hz \[C\], so balancing remains the main defence. A software notch filter centred on the wheel frequency, which the Hall sensor measures, removes the residual; T-7 and T-8 show whether it is needed.
-- **Heading.** Complementary filter. Integrate the gyro, and pull toward the magnetometer heading with a 2 s time constant \[A, tune in T-9\]. The axle is vertical, so heading is atan2 of the calibrated horizontal field and no tilt compensation is needed when the base is level \[A\]. The motor's magnets rotate at 13 to 67 Hz over the 800 to 4000 rpm range, but a 14-pole rotor and the phase currents produce fields at the electrical frequency, seven times the mechanical one: 93 to 467 Hz \[C on A-6\]. That is above the 100 Hz Nyquist limit of the QMC5883P's 200 Hz maximum output rate \[V\], so these components can alias to a steady heading offset that no low-pass filter removes (V-5). The sensor is still read at 200 Hz and averaged to 50 Hz, which attenuates some of it; the real defences are the 14 cm distance, the sensor's own oversampling filter, the gyro-dominant filter, and T-9 at three wheel speeds. If T-9 shows a speed-dependent offset, the fallback is a heading correction table indexed by wheel speed. Motor current also changes the field with torque, so the filter trusts the gyro over seconds and the magnetometer only over its 2 s time constant.
+- **Heading.** Until the magnetometer is calibrated (repository Set 5), the heading is the integrated gyro alone, relative to the last `zero_heading`, and telemetry flags it `HEADING_GYRO` (I-19). With the magnetometer: complementary filter. Integrate the gyro, and pull toward the magnetometer heading with a 2 s time constant \[A, tune in T-9\]. The axle is vertical, so heading is atan2 of the calibrated horizontal field and no tilt compensation is needed when the base is level \[A\]. The motor's magnets rotate at 13 to 67 Hz over the 800 to 4000 rpm range, but a 14-pole rotor and the phase currents produce fields at the electrical frequency, seven times the mechanical one: 93 to 467 Hz \[C on A-6\]. That is above the 100 Hz Nyquist limit of the QMC5883P's 200 Hz maximum output rate \[V\], so these components can alias to a steady heading offset that no low-pass filter removes (V-5). The sensor is still read at 200 Hz and averaged to 50 Hz, which attenuates some of it; the real defences are the 14 cm distance, the sensor's own oversampling filter, the gyro-dominant filter, and T-9 at three wheel speeds. If T-9 shows a speed-dependent offset, the fallback is a heading correction table indexed by wheel speed. Motor current also changes the field with torque, so the filter trusts the gyro over seconds and the magnetometer only over its 2 s time constant.
 - **Sun angle.** Normalised difference (A − B)/(A + B), mapped to angle with the T-10 calibration. Valid only when A + B exceeds a light threshold.
 - **Wheel speed Ω.** Hall period, two pulses per turn (two magnets), kept as two estimates (V-7). The control loop uses the latest single period, because a four-period median spans 50 ms at bias and delays the estimate by about 25 ms, roughly 45 deg of phase at a 5 Hz loop bandwidth \[C\]. The interlocks and telemetry use the median of the last four periods, which rejects single bad edges. Bluejay eRPM divided by the pole-pair count is an optional cross-check; the pole-pair count is 7 (14 magnet poles) for a 12N14P motor but must be counted on the actual motor \[M\].
 
@@ -483,8 +483,8 @@ stateDiagram-v2
         SPINUP --> READY: wheel within 5 percent of bias for 0.5 s
         READY --> SPINUP: respin with the box pinned and still
         READY --> DETUMBLE: mode DETUMBLE
-        READY --> HOLD: mode HOLD, magnetometer present
-        READY --> SLEW: mode SLEW, magnetometer present
+        READY --> HOLD: mode HOLD (gyro heading until Set 5)
+        READY --> SLEW: mode SLEW, target relative to zero_heading
         READY --> SUN_POINT: mode SUN_POINT, valid sun angle
         READY --> MANUAL: mode MANUAL with an input whose loop is built
         DETUMBLE --> READY: mode READY
@@ -501,11 +501,11 @@ The box only reaches the five demonstration modes through Ready, after the wheel
 
 | From | To | Guard |
 | --- | --- | --- |
-| Boot | Safe | IMU found (WHO\_AM\_I) and DShot 0 sent for 1 s. A missing magnetometer (QMC5883P chip ID 0x80 not read) is reported and blocks only Hold and Slew |
+| Boot | Safe | IMU found (WHO\_AM\_I) and DShot 0 sent for 1 s. A missing magnetometer (QMC5883P chip ID 0x80 not read) is reported; until Set 5 it blocks nothing, because Hold and Slew run on the gyro heading (I-19) |
 | Safe | Spin-up | Ground `arm` command, box still (rate under 5 deg/s) and held by the lock pin or the operator, battery above 9.6 V, no latched fault. The sender becomes the controlling client (Section 6.7) |
 | Spin-up | Ready | Ω within 5 % of the bias speed for 0.5 s; Ready holds box rate at zero |
 | Ready | Detumble | Ground command |
-| Ready | Hold, Slew | Ground command; magnetometer present |
+| Ready | Hold, Slew | Ground command. Until the magnetometer is calibrated (Set 5) the heading is gyro-only: Hold holds the heading captured at entry, and a Slew target is relative to the last `zero_heading` (I-19). `zero_heading` is accepted in Safe and Ready only |
 | Ready | Sun point | Ground command; valid sun angle |
 | Ready | Manual | Ground command with an `input` of `throttle`, `wheel`, or `rate`; refused with a reason while the firmware lacks that input's loop |
 | Ready | Spin-up | Ground `respin` with the box pinned and still (rate under 5 deg/s). The new wheel start speed must lie between the low limit + 200 rpm and the cap − 200 rpm |
@@ -521,6 +521,8 @@ The box only reaches the five demonstration modes through Ready, after the wheel
 
 Setpoints are accepted only from the controlling client, only for the active input, and at up to 20 Hz, and each one counts as a heartbeat. If they stop for 250 ms while pings continue, the `rate` input falls to a zero rate command, so the box stops turning, while `throttle` and `wheel` hold their last value, so the wheel holds its speed and the box does not move. The 1 s heartbeat rule still ramps everything down. Every interlock stays active, and no input can command past the cap or below the low limit. Manual returns to Ready on a ground command, and drops to Safe on `disarm`, e-stop, or any interlock.
 
+**Hall bench bypass** (approved Oct 10). Until the Hall magnets can be mounted, Manual's throttle input is tested with the Hall sensor declared absent. The parameter `hall_installed` can be set false only in Safe while bench mode is already on, by a separate command, and every boot sets it true again. While it is false, `arm` needs bench mode, only the `throttle` input is available, Spin-up ramps the throttle open loop to `spinup_throttle` and reaches Ready after the ramp plus 0.5 s with no speed check, and every throttle the controller emits is clamped to a compile-time ceiling of 400 (about 17.5 % duty, estimated at 1600 rpm no-load at 10 V \[A\], measured in repository feature R3.7 before it is relied on). Telemetry flags `HALL_BYPASS` on every frame. The wheel-speed interlocks it suspends are listed in Section 6.7.
+
 **Desaturation.** `respin` is the lock-pin desaturation of Section 3.6, and it replaces the automatic momentum dump once described in Section 10.2 (V-2). When the wheel nears a limit, the ground station prompts the operator to stop and pin the box, then sends `respin`. The firmware returns the wheel to its start speed (the bias by default; 1000 or 3800 rpm for the long one-way spins of Section 3.6) with the reaction going into the bench, and Ready is reached again before the pin comes out.
 
 ### 6.7 Interlocks
@@ -534,10 +536,14 @@ Ground e-stop, `disarm`, and heartbeat loss ramp the wheel throttle to zero over
 | Wheel underspeed in any mode except Spin-up (`UNDERSPEED`) | Ω below the low limit for 200 ms | \[M\] T-18 sets the limit |
 | Battery low (`BATTERY_LOW`) | Below 8.8 V (1.1 V per NiMH cell) for 1 s | \[A\] |
 | IMU silent (`IMU_SILENT`) | No valid read for 50 ms | Design choice |
-| Hall silent (`HALL_SILENT`) | Throttle above the low-limit feed-forward value for 500 ms with no Hall edge. Without it, a disconnected Hall sensor during Spin-up, where the underspeed check is exempt, would let the wheel pass the cap with no overspeed detection (V-11) | Design choice |
+| Hall silent (`HALL_SILENT`) | Throttle above `hall_expect_throttle` (200 by default; set to the low-limit feed-forward value once T-5 measures it) for 500 ms with no Hall edge. Without it, a disconnected Hall sensor during Spin-up, where the underspeed check is exempt, would let the wheel pass the cap with no overspeed detection (V-11) | Design choice |
 | Tilt (`TILT`) | Accelerometer shows more than 30 deg from vertical | Box lifted or falling |
 | Control task stalled (`CONTROL_STALL`) | 100 ms watchdog | Resets the MCU; boot path sends DShot 0 |
 | Momentum near limits (`MOMENTUM_NEAR_LIMIT`) | Ω within 300 rpm of cap or low limit | Warning only; ground shows it |
+
+**Hall bench bypass.** While `hall_installed` is false (Section 6.6), wheel overspeed, wheel underspeed, and Hall silent are suspended, because all three need wheel speed. The 400 throttle ceiling is then the only overspeed protection, so the bypass exists only in bench mode on the clamped bench rig. Every other interlock, the e-stop, and the heartbeat stay active.
+
+**Latches.** A tripped interlock stays latched until the next `arm`. `arm` clears the latches only if each one's release condition holds: the wheel below the bias after an overspeed, the battery above 9.6 V, a valid IMU read, the box within 30 deg of vertical. A control-task stall never releases; it needs a reboot.
 
 ## 7. Ground station and networking
 
@@ -719,7 +725,7 @@ Eighteen tests, run in the order below, replace every \[M\] label with a measure
 | ID | Verifies | Method | Pass |
 | --- | --- | --- | --- |
 | T-15 | PR-1 detumble | Hand spin to about 1 rev/s, enter Detumble | Under 5 deg/s within 5 s, ten trials |
-| T-16 | PR-2 slew | Command 90 deg from Hold | Within 3 s, settled to ±3 deg, ten trials |
+| T-16 | PR-2 slew | Command 90 deg from Ready | Within 3 s, settled to ±3 deg, ten trials |
 | T-17 | PR-3 hold | Hold for 60 s, then three pokes | Heading within ±2 deg outside the 2 s after each poke |
 
 ## 10. Risks, failure modes, and safety
@@ -1022,7 +1028,10 @@ The document was imported from the original Claude Doc export into `docs/technic
 | I-15 | Open questions on owners and on the network closed | Answered in Sections 11.5 and 7.1 | 12.3 |
 | I-16 | Wi-Fi drop mitigation no longer assumes the OM5P-AC | Network decision | 10.2 |
 | I-17 | `docs/sizing_output.txt` regenerated from the current CAD. The saved output (02:07) predated the Oct 10 03:32 `stack.py` change and later deck edits. Changed by the re-run: box rate per 1000 rpm 356 to 355 deg/s (baseline) and 151 to 150 deg/s (fallback); wheel acceleration at 3 A 4861 to 4860 and 11604 to 11603 rpm/s (output only). Section 3 figures that already disagreed with the old output now match the new one: rate 357 to 355 deg/s; printed parts 253 to 254 g, I\_z 4.50e-4 to 4.54e-4; box mass 844 to 845 g (weight 8.28 to 8.29 N, box 0.84 to 0.85 kg); hand spin 1.59 to 1.58 and 1.26 to 1.25 rev/s; box acceleration 578 to 576 deg/s²; slew wheel swing 639 to 640 and 1510 to 1513 rpm. I\_b stays 1.03e-3 kg·m² at the stated precision, so K\_ω (V-1) is unchanged | `sizing.py` wins over this document's prose (Section 1); a stale output had hidden the drift | 2, 3, 3.2, 3.3, 3.6; firmware design §23.2 |
-| I-19 | Team ownership moved to `WORKSTREAMS.md`. Julian: printing, measuring, bench electronics, firmware, wire contract. Aaron: `frontend/` (the main UI) and integration testing. The original table is kept as history | Owner decision 2026-10-10, after Aaron's frontend became the main UI (PR #1) | 11.5 |
+| I-18 | Hall bench bypass added: `hall_installed` false only from bench mode, never persisted; open-loop Spin-up; wheel-speed interlocks suspended; compile-time throttle ceiling 400. The Hall-silent threshold becomes the parameter `hall_expect_throttle`, and the latch release rules are stated | Owner decision 2026-10-10 (repository Set 3, R3.6); the Hall magnets cannot be mounted until Set 2; the low-limit feed-forward value does not exist before T-5 | 6.6, 6.7 |
+| I-19 | Hold and Slew no longer need the magnetometer: until Set 5 calibrates it, they use the gyro-only heading for relative moves, Slew targets are relative to the last `zero_heading`, `zero_heading` is accepted in Safe and Ready only, and every telemetry frame carries `HEADING_GYRO` | Owner decision 2026-10-10 (repository Set 4, R4.2): the main UI's judge sequence needs Hold and Slew before the magnetometer calibration (T-9) exists, and lasts only 5 to 6 s | 6.4, 6.6 |
+| I-20 | T-16 commands its slew from Ready, not from Hold | The mode machine (Section 6.6) enters Slew from Ready only, and a finished Slew returns to Ready, so "from Hold" could not be run as written (repository Set 4, R4.3) | 9.3 |
+| I-21 | Team ownership moved to `WORKSTREAMS.md`. Julian: printing, measuring, bench electronics, firmware, wire contract. Aaron: `frontend/` (the main UI) and integration testing. The original table is kept as history | Owner decision 2026-10-10, after Aaron's frontend became the main UI (PR #1) | 11.5 |
 
 **Main UI contract, 2026-10-10**
 

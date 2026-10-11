@@ -17,4 +17,12 @@ float wrap_pi(float angle_rad)
     return wrapped;
 }
 
+float wrap_deg180(double angle_deg)
+{
+    constexpr double kRadPerDeg = 3.14159265358979323846 / 180.0;
+    constexpr double kDegPerRad = 180.0 / 3.14159265358979323846;
+    const double reduced = std::remainder(angle_deg, 360.0);
+    return static_cast<float>(wrap_pi(static_cast<float>(reduced * kRadPerDeg)) * kDegPerRad);
+}
+
 }  // namespace direcsun

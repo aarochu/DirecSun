@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "type": "tlm",
+  "seq": 5000,
+  "t_ms": 200000,
+  "mode": "MANUAL",
+  "manual_input": "throttle",
+  "psi_deg": -12.5,
+  "psi_ref_deg": null,
+  "rate_dps": 15.2,
+  "mag_deg": -12.0,
+  "sun_deg": 4.5,
+  "sun_valid": true,
+  "wheel_rpm": 2650,
+  "wheel_ref_rpm": 2700,
+  "throttle": 350,
+  "throttle_band": [
+    150,
+    400,
+    500
+  ],
+  "tau_cmd_mNm": -3.1,
+  "vbat": 9.9,
+  "loop_us": 801,
+  "flags": [
+    "MOMENTUM_OK",
+    "MANUAL_STALE"
+  ],
+  "t_c": null,
+  "p_pa": null,
+  "tlm_dropped": 0,
+  "dropped_events": 1,
+  "accel_rms_g": 0.031,
+  "gyro_raw": [
+    12,
+    -40,
+    246
+  ],
+  "mag_raw": [
+    -1200,
+    3400,
+    210
+  ],
+  "sun_a_mv": 812.0,
+  "sun_b_mv": 640.5
+}

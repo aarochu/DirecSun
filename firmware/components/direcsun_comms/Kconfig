@@ -1,0 +1,68 @@
+menu "DirecSun network"
+
+    config DIRECSUN_WIFI_SOFTAP
+        bool "Run a SoftAP instead of joining a network"
+        default n
+        help
+            Fallback (FD section 15.1): the box runs its own access point and
+            serves ws://192.168.4.1/ws, the main UI's default endpoint. Chosen at
+            build time only; the box never switches modes on its own.
+
+    config DIRECSUN_WIFI_SSID
+        string "Wi-Fi network name (station mode)"
+        default ""
+        depends on !DIRECSUN_WIFI_SOFTAP
+        help
+            Set it in firmware/sdkconfig.defaults.local (gitignored), never in a
+            tracked file. With an empty name the box stays offline and logs why.
+
+    config DIRECSUN_WIFI_PASSWORD
+        string "Wi-Fi password (station mode)"
+        default ""
+        depends on !DIRECSUN_WIFI_SOFTAP
+
+    config DIRECSUN_WIFI_STATIC_IP
+        bool "Static address instead of DHCP (station mode)"
+        default n
+        depends on !DIRECSUN_WIFI_SOFTAP
+        help
+            For a network without DHCP, or a fixed address on the OM5P-AC radio.
+
+    config DIRECSUN_WIFI_IP
+        string "Static address"
+        default "10.0.0.120"
+        depends on DIRECSUN_WIFI_STATIC_IP
+
+    config DIRECSUN_WIFI_GATEWAY
+        string "Gateway"
+        default "10.0.0.1"
+        depends on DIRECSUN_WIFI_STATIC_IP
+
+    config DIRECSUN_WIFI_NETMASK
+        string "Netmask"
+        default "255.255.255.0"
+        depends on DIRECSUN_WIFI_STATIC_IP
+
+    config DIRECSUN_SOFTAP_SSID
+        string "SoftAP network name"
+        default "DirecSun"
+        depends on DIRECSUN_WIFI_SOFTAP
+
+    config DIRECSUN_SOFTAP_PASSWORD
+        string "SoftAP password (8 or more characters; empty for an open network)"
+        default ""
+        depends on DIRECSUN_WIFI_SOFTAP
+
+    config DIRECSUN_SOFTAP_CHANNEL
+        int "SoftAP channel"
+        default 6
+        range 1 13
+        depends on DIRECSUN_WIFI_SOFTAP
+
+    config DIRECSUN_HOSTNAME
+        string "mDNS hostname"
+        default "direcsun"
+        help
+            The box answers at ws://<hostname>.local/ws.
+
+endmenu

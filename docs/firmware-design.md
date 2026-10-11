@@ -183,7 +183,7 @@ The PR-1 requirement needs the gyro range to cover at least 360 deg/s, and TD §
 | DShot | DShot300 if ESC MCU is 48 MHz ("H" in its name), DShot150 if 24 MHz ("L") | [V] TD §5.2; [M] read in ESC Configurator |
 | DShot frame | 11-bit throttle, 1 telemetry bit, 4-bit CRC; 0 = disarm, 1–47 commands, 48–2047 throttle | [V] TD §6.3 |
 | Hall | 2 magnets, both south-out → 2 falling edges per wheel turn | [V] TD §4.6 |
-| Battery divider | 22/122 = 0.1803; 11.2 V → 2.02 V; 8.8 V → 1.59 V; 9.6 V → 1.73 V | [C] |
+| Battery divider | Design 22/122 = 0.1803; the bench rig measures 21.23/104.43 = 0.2033 (V-67): 11.2 V → 2.28 V; 9.6 V → 1.95 V; 8.8 V → 1.79 V; the ADC's 2.9 V limit is 14.3 V | [C] |
 | ADC | 12 dB attenuation, usable to about 2.9 V | [V] TD §5.1 |
 | Sensors' supply | 3.3 V from XIAO 3V3 | [V] TD §5.3 |
 
@@ -257,7 +257,7 @@ flowchart TB
 | --- | --- | --- | --- |
 | Commands | comms → control | FreeRTOS queue, depth 16, items are a fixed-size `Command` struct; `xQueueSend` with timeout 0 from comms, `xQueueReceive` with timeout 0 in control | Full queue: comms answers `ack ok:false reason:"busy"`. `estop` bypasses the queue through an atomic flag (below) |
 | E-stop | comms → control | `std::atomic<bool> estop_requested` | Set by comms on any `estop`; read and cleared by control on the next tick |
-| Heartbeat | comms → control | `std::atomic<int64_t> last_heartbeat_us` | Written on every accepted `ping` or `cmd` from the controlling client |
+| Heartbeat | comms → control | Every `ping` is forwarded through the command queue as a `Ping` item (never acked); the supervisor, which alone knows the controlling client, times the heartbeat from any `ping` or `cmd` that client sends | Replaces an atomic `last_heartbeat_us` written by comms, which would need comms to track the controlling client across cores [D, V-32] |
 | Telemetry snapshot | control → comms | Double buffer + sequence counter (seqlock) | Control writes the inactive buffer, then flips an atomic index. Comms copies the active buffer and retries if the counter changed during the copy. Control never waits |
 | Events and acks | control → comms | FreeRTOS queue, depth 16 | Control posts with timeout 0; if full, the event is dropped and a `dropped_events` counter in telemetry increments |
 | Hall edges | ISR → control | Ring buffer of 8 `int64_t` timestamps + atomic write index | ISR writes only; control reads only |
@@ -279,7 +279,7 @@ flowchart TD
     E -- no --> F["Fault: IMU_MISSING<br/>stay in SAFE, keep DShot 0,<br/>report over Wi-Fi when up"]
     E -- yes --> G["Configure MPU-6050:<br/>wake, DLPF_CFG=4, gyro ±2000 dps, accel ±4 g"]
     G --> H{"QMC5883P chip ID 0x00 == 0x80?"}
-    H -- no --> I["Fault: MAG_MISSING<br/>SAFE; HOLD, SLEW, SUN_POINT refused"]
+    H -- no --> I["Fault: MAG_MISSING<br/>SAFE; reported in tlm.<br/>HOLD and SLEW run on gyro heading (R4.2)"]
     H -- yes --> J["Configure QMC5883P continuous 200 Hz"]
     I --> K
     J --> K["BMP280 probe 0x77 then 0x76<br/>(optional, never blocks boot)"]
@@ -297,8 +297,8 @@ flowchart TD
 
 - **DShot 0 starts first.** The ESC arms only after seeing zero throttle [V] TD §5.2, and TD §6.3 asks for about 1 s of zeros [A] A-22. Sending zeros from the first milliseconds also means that a reset caused by the watchdog stops drive quickly. The ESC itself switches drive off about 0.3 s after pulses stop [V] TD §5.2, so the reset gap is bounded either way.
 - **Boot does not wait for Wi-Fi.** The box is safe in `SAFE` without a ground connection; heartbeat rules only apply in active modes (§14.1).
-- **Missing magnetometer** is not fatal: `DETUMBLE` needs only the gyro. Modes that need heading (`HOLD`, `SLEW`, `SUN_POINT`) are refused with a reason [D].
-- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). It is not taken once at boot, because the box may be moving after a watchdog reset [D, finding V-10].
+- **Missing magnetometer** is not fatal: `DETUMBLE` needs only the gyro, and until Set 5 `HOLD` and `SLEW` run on the gyro-only heading for relative use (§13.1, V-48). `SUN_POINT` needs the sun sensors, not the magnetometer [D].
+- **Gyro bias.** Bias is estimated continuously while the box is in `SAFE` **and** still (§11.1). The boot window seeds it only when the window itself proves the box was still, because the box may be moving after a watchdog reset [D, findings V-10 and V-61].
 
 ---
 
@@ -311,10 +311,13 @@ flowchart TD
     T0["Task notified by timer"] --> T1["t = esp_timer_get_time()<br/>record loop start"]
     T1 --> T2["Read MPU-6050 14 bytes from 0x3B<br/>(accel, temp, gyro)"]
     T2 --> T3{"Even tick?"}
-    T3 -- yes --> T4["Read QMC5883P status; if DRDY,<br/>read 6 data bytes, add to 20 ms average"]
-    T3 -- no --> T5
-    T4 --> T5{"Every 10th tick?"}
-    T5 -- yes --> T6["Read sun A, sun B, battery ADC<br/>(spread over ticks 0, 3, 6 of each 10)"]
+    T3 -- yes --> T4["Read QMC5883P status;<br/>remember DRDY"]
+    T3 -- no --> T3b{"DRDY on the<br/>previous tick?"}
+    T3b -- yes --> T4b["Read 6 data bytes,<br/>add to 20 ms average"]
+    T3b -- no --> T5
+    T4 --> T5{"Tick 0, 2, or 4<br/>of each 10?"}
+    T4b --> T5
+    T5 -- yes --> T6["Read one ADC input:<br/>battery, sun A, sun B in turn"]
     T5 -- no --> T7
     T6 --> T7["Drain Hall ring buffer;<br/>update wheel speed estimate"]
     T7 --> T8["Estimator update:<br/>rate, heading (mag fused at 50 Hz), sun angle"]
@@ -334,16 +337,34 @@ flowchart TD
 | Step | Estimate | Label |
 | --- | --- | --- |
 | IMU burst read, 14 bytes at 400 kHz | 0.39 ms (155 bit times) | [C] |
-| Magnetometer status + 6 bytes (every 2nd tick) | about 0.25 ms | [C] |
+| Magnetometer status (even ticks) or 6 data bytes (the odd tick after DRDY), never both on one tick | about 0.25 ms | [C] |
 | One ADC read with calibration (at most one per tick) | tens of µs | [A] |
 | Estimator + controllers + interlocks (float) | < 50 µs | [A] |
 | DShot encode + RMT start | < 20 µs; the 53 µs DShot300 frame is sent by hardware | [A]; frame [V] |
 | JSON is **not** on this core | 0 | [D] |
 | **Worst tick** | **about 0.75 ms of 2 ms** | [C on A] |
 
+**Measured on the XIAO (R3.4 bench, 2026-10-10) [V].** The first build ran its worst tick at 1.4 to 1.9 ms, and its first tick at 6.9 ms with 2 missed ticks. Per-stage timing (the bench Kconfig `DIRECSUN_BENCH_STAGE_TIMING`) found three causes:
+- The ESP32-S3's default 16 KB instruction cache could not hold the tick's code (core, drivers, the I2C and RMT drivers, libc math), so it refilled from flash every tick: the estimator took 43 µs and the telemetry snapshot 99 µs. The firmware uses the 32 KB instruction cache (`CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB`) and places `direcsun_core`, `direcsun_drivers`, and the control task in IRAM through linker fragments (`linker.lf`), so the core's sources stay free of ESP-IDF attributes (§18).
+- The magnetometer status and data reads shared a tick with each other and with an ADC read. They are now on separate ticks, with the ADC reads next to the short status read (§9.1).
+- The first tick logged a line on the console, which blocks for milliseconds. The line is logged before the tick timer starts.
+
+After the fixes, per stage, mean (max) in µs: IMU 456, magnetometer 207 (282), ADC 48, estimator 6 (11), supervisor 4 (9), DShot 15, snapshot 7. Over 11.6 min the flight build's worst tick was 911 to 926 µs each second and 976 µs in the first, with no missed ticks [D, V-60].
+
+The IMU read's maximum is not stable from build to build: 463 to 473 µs in one, 655 to 694 µs in another, once in every second. A same-binary comparison on 2026-10-10 confirmed the cause [V]. With the BMP280 silent the maximum was 459 to 462 µs, and with it answering 655 to 691 µs, while the mean did not move (`testresults/2026-10-10-s3-loop-time-barometer.md`). The core-0 barometer task (§10.3) reads once a second, and its transaction holds the shared bus when the IMU read starts. With the IRAM placement below, the worst tick including this delay is 754 µs, so moving the barometer read into the idle part of the tick would add margin; the budget no longer needs it.
+
+**Measured with Wi-Fi (R3.5 bench, 2026-10-10) [V].** With the SoftAP up and no client, the R3.4 placement was not enough: the worst tick was 1369 to 1649 µs in every second over 10 min (median 1454). The Wi-Fi stack on core 0 shares the 32 KB instruction cache and evicts the tick's code that still ran from flash.
+- A disassembly of the image, following every call out of the control task (including the `l32r`/`callx` calls that are the only way IRAM code reaches flash), listed that code: the I2C master driver and HAL, the RMT transmit path and its encoders, the ADC one-shot read with its calibration and lock, picolibc's `sqrtf`, `acosf`, `remainderf` and `remainder` with their helpers, and `main/shared.cpp`.
+- `main/linker.lf` now places those objects in IRAM, together with `CONFIG_FREERTOS_IN_IRAM`, `CONFIG_I2C_ISR_IRAM_SAFE` and `CONFIG_ADC_ONESHOT_CTRL_FUNC_IN_IRAM`. What the tick still calls in flash is start-up and error paths only. Internal RAM use is 63%.
+- Result over 10 min with the SoftAP up: worst tick 753 to 756 µs in every second after the first, no missed ticks, p99 deviation at most 9 µs [D, V-62]. A client streaming telemetry has not been measured yet.
+
+**The boot second with Wi-Fi [A].** Comms start about 30 ms after the control task. In about half of boots the first second then shows one tick of about 4 ms, one or two missed ticks, and two invalid IMU reads (I2C reads that time out). None of these removed it: turning off Wi-Fi's NVS storage, turning off PHY calibration storage, or creating the I2C bus and the DShot channel on core 1. The likely cause is a flash access during Wi-Fi start-up, which stalls the other core, but it is not confirmed. It happens in SAFE, before any client can arm the box.
+
 At 100 kHz I2C the IMU read alone is 1.55 ms [C], and an IMU + magnetometer tick would exceed 2 ms, which is why TD §5.3 runs the bus at 400 kHz. Every tick reads the IMU, so there is no tick free for the magnetometer at 100 kHz. If the oscilloscope check in TD §5.3 forces 100 kHz, the control rate falls to 250 Hz (4 ms ticks: IMU 1.55 ms, plus magnetometer status and data on alternate ticks, about 0.8 ms), and the gains in §12.2 are rechecked for the longer step [D, finding V-6].
 
 `loop_us` above 1500 for more than 10 consecutive ticks raises a `LOOP_OVERRUN` warning flag. A tick that is still running when the next notification arrives counts as a missed tick; 25 consecutive missed ticks (50 ms) trip `CONTROL_STALL` before the watchdog fires [D].
+
+Missed ticks do not stretch time [D, finding V-66]. The supervisor's clock (`TickClock` in `direcsun_core`) advances by every timer alarm, not by every executed tick, so the heartbeat timeout, the ramp-down, the `SPINUP` dwell, the `SLEW` profile, settle dwell, and timeout (R4.3), and the `UNDERSPEED` and `HALL_SILENT` durations are wall time. A duration counter counts the condition a late tick sees for the whole interval since the tick before, so a trip can come up to one tick early, never late. The sensor schedule and the telemetry snapshots still follow executed ticks. So do the integration steps outside the supervisor, at a fixed 2 ms per executed tick: the estimator's bias filter and heading, the wheel loop's `SPINUP` Ω_ref ramp and integrator (R3.8), and the rate loop's Ω_ref update, integral, and stick-slip bleed (R3.9). Over a missed tick they integrate less, never more; whether they should step by the alarms too is not decided.
 
 ---
 
@@ -378,13 +399,13 @@ Axis mapping: the board sits face up, centred on the spin axis (TD §4.8), so se
 
 Driver: the vendored `duruofu/qmc5883p` 0.1.0 in `firmware/components/qmc5883p`, given the i2cdev bus through `i2cdev_get_shared_handle(I2C_NUM_0, ...)` after the first i2cdev transaction has created it [D]. The driver hard-codes a 100 kHz device clock, and its own comments flag its 8 G sensitivity value as uncertain; both are corrected by documented local patches after checking the QST datasheet [A].
 
-Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). It reads data only when data-ready is set, which yields every new 200 Hz sample once, and averages all new samples in each 20 ms window into one 50 Hz heading measurement [D].
+Sampling plan (revised from TD, finding V-5): the control loop runs at 500 Hz and the magnetometer at 200 Hz, so 200 Hz is not an integer divisor of the tick rate. The driver polls the status register every 2nd tick (250 Hz). When data-ready is set it reads the data on the next tick, so the two transactions never share a tick (§9.2, V-60); this yields every new 200 Hz sample once, and all new samples in each 20 ms window are averaged into one 50 Hz heading measurement [D].
 
 Mounting: the board hangs upside down under the flipped top deck (TD §4.8). Turning a board over is a 180° rotation about a horizontal axis, which flips **Z and one horizontal axis**, not Z alone (finding V-4). Heading uses only the horizontal components, so the horizontal flip matters and the Z flip does not. The driver applies a configurable axis map `mag_axis_map` (default: negate Y and Z, keep X), and T-9 confirms it: rotating the box counter-clockwise must make magnetic heading increase in the same direction as the integrated gyro [M].
 
 ### 10.3 BMP280 (I2C 0x77, optional)
 
-Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz on a spare tick if present, and reported in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`. Driver: esp-idf-lib `bmp280` ^1.0.7 at 400 kHz.
+Probed at boot at 0x77, then 0x76 [V] TD §5.3. It is read at 1 Hz by a low-priority task on core 0 if present, never on a control tick, because the esp-idf-lib read path retries a failed transaction with backoff and can block for about 0.3 s [D, V-37]. The task publishes through a seqlock that the control task copies into the telemetry snapshot, and the readings appear in telemetry as `t_c` and `p_pa` (§15.3). It never affects control, modes, or boot [V] TD §5.3. If absent, the fields are `null`. Driver: esp-idf-lib `bmp280` ^1.0.7 at 400 kHz.
 
 ### 10.4 A1104 Hall sensor and wheel speed
 
@@ -419,7 +440,7 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | Sun A | 1 (ADC1 ch0) | 50 Hz | Calibrated mV, 4-sample average | [V] pin; [D] averaging |
 | Sun B | 2 (ADC1 ch1) | 50 Hz | Same | n/a |
-| Battery | 8 (ADC1 ch7) | 50 Hz | mV / 0.1803, then a 1 s moving average for the undervoltage interlock | [C] ratio |
+| Battery | 8 (ADC1 ch7) | 50 Hz | mV / `kBatteryDividerRatio` (0.2033 on the bench rig, V-67), then a 1 s moving average for the undervoltage interlock | [C] ratio |
 
 Use the ESP-IDF `adc_oneshot` driver with `ADC_ATTEN_DB_12` and the `adc_cali` curve-fitting scheme for mV conversion [A]. ADC2 must not be used, because it is unavailable with Wi-Fi on [V] TD §5.4.
 
@@ -470,7 +491,9 @@ Rules [D]:
 ```
 
 - `s_gyro` = +1 by default, confirmed in T-8 [M].
-- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of 1 g, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Bias `b_z`:** updated with a slow exponential average (time constant 5 s) only when all of these hold: mode is `SAFE`, |g_z − b_z| < 2 deg/s, accel magnitude within 0.05 g of the reference `a_ref`, and the wheel is below 200 rpm or the box is held [D]. The update is frozen otherwise, so a spinning box after an e-stop cannot corrupt the bias (finding V-10).
+- **Stillness is relative, not 1 g** [D, V-61]. An uncalibrated MPU-6050 reads well off 1 g at rest: the bench unit reads 0.871 g, so a test against 1 g never passes and the bias never learns. `a_ref` is the boot window's own mean accel magnitude, and 1 g until a boot window qualifies.
+- **Boot seed** [D, V-61]. The MPU-6050 offset can exceed the 2 deg/s gate (the register map allows ±20 deg/s; the bench unit reads about −2.1 deg/s), so from b_z = 0 the gate might never open. The 1 s boot window (§8.1) therefore averages g_z and seeds b_z, and sets `a_ref`, only when the window proves the box was still: at least 250 samples, g_z range under 0.5 deg/s, |mean g_z| under 25 deg/s, a mean accel magnitude between 0.7 and 1.3 g (a dead accelerometer reading near 0 g is not still), and every sample's magnitude within 0.05 g of that mean. Otherwise b_z starts at 0, and the boot log names the first criterion that failed.
 - **Vibration:** the 20 Hz DLPF passes 25 to 45 % of the 40 Hz bias-speed vibration [V] TD §6.4. A software notch filter is implemented but off by default. When enabled, its centre follows `speed_safe / 60` Hz and it is switched on only if T-7/T-8 show residual vibration in ω̂ [D].
 
 ### 11.2 Wheel speed
@@ -495,7 +518,9 @@ every 50 Hz magnetometer step:  ψ̂ ← ψ̂ + k · wrap(ψ_mag − ψ̂),   k 
 | `wrap()` | maps to (−π, π] | [D] |
 | Storage | ψ̂ kept continuous (unwrapped) as `double` for control; wrapped only for display | [D] |
 | Reported | `psi_deg` = wrapped ψ̂ in (−180, 180]; `mag_deg` = wrapped ψ_mag | [D] |
-| `zero_heading` command | Adds an offset so that ψ̂ reads 0 at the current orientation; offset stored in RAM, not NVS | [D] |
+| `zero_heading` command | Accepted in `SAFE` and `READY` only. The supervisor stores the estimator's continuous ψ̂ at that moment as an offset, so the reported heading reads 0 from that tick on; the estimator itself is never reset. RAM only, not NVS (R4.2) | [D] |
+
+**Gyro-only heading until Set 5 (R4.2, finding V-48).** Until the magnetometer calibration of T-9 exists (repository Set 5), the magnetometer step above is skipped: ψ̂ is the integral of the bias-corrected ω̂ alone, reported relative to the last `zero_heading`, and every `tlm` carries the flag `HEADING_GYRO` so no UI presents it as a compass bearing. The bias is learned while still in `SAFE` (§11.1), so the residual drift over the 5 to 6 s judge sequence is expected to sit well inside PR-2's ±3° band [A]; R4.2's hardware test measures it on the turntable [M].
 
 **Aliasing (finding V-5).** TD §6.4 says the motor's magnets rotate at 13 to 67 Hz and that 200 Hz sampling avoids aliasing. The mechanical rotation is 13 to 67 Hz, but a 14-pole rotor and the phase currents produce fields at the electrical frequency, 7 × mechanical = 93 to 467 Hz [C on A-6]. That is above the 100 Hz Nyquist limit of 200 Hz sampling, so components there **can** alias. The firmware still samples at 200 Hz and averages, which attenuates some of it, but the real defences are the 14 cm distance, the QMC5883P's own oversampling filter, the gyro-dominant filter (τ = 2 s), and T-9 at three wheel speeds. If T-9 shows a speed-dependent offset, the fallback is a per-speed heading correction table indexed by Ω̂ [D].
 
@@ -522,7 +547,7 @@ Tilt angle = `acos(a_z / |a|)` from the averaged accelerometer (20 ms window). I
 flowchart LR
     REF["ψ_ref<br/>(Hold capture,<br/>Slew trapezoid)"] --> A["Attitude P<br/>ω_cmd = K_ψ · wrap(ψ_ref − ψ̂)<br/>limit ±90 deg/s"]
     A --> R["Rate PI<br/>τ_cmd = K_ω e + K_i ∫e<br/>limit ±31 mN·m"]
-    R --> W["Torque → wheel reference<br/>Ω_ref += −s_w τ_cmd (1/I_w + 1/I_b) Δt<br/>clamp [Ω_low, Ω_cap]"]
+    R --> W["Torque → wheel reference<br/>Ω_ref += −s_w τ_cmd (1/I_w + 1/I_b) Δt<br/>clamp [Ω_low + 100, Ω_cap]"]
     W --> S["Wheel speed PI + feed-forward<br/>throttle = FF(Ω_ref) + PI(Ω_ref − Ω̂)"]
     S --> D["DShot throttle"]
     D --> P(("Plant"))
@@ -533,6 +558,8 @@ flowchart LR
 
 `DETUMBLE` bypasses the attitude block (ω_cmd = 0). `READY` also uses ω_cmd = 0 [V] TD §6.6. `SUN_POINT` replaces `wrap(ψ_ref − ψ̂)` with the calibrated sun angle [V] TD §6.5.
 
+`HOLD` and `SLEW` run the attitude block (R4.3). ψ̂ and ψ_ref are relative to the last `zero_heading` (§11.3, V-49). While the reference stands still (`HOLD`, and `SLEW` once its profile has ended), an error under the hold deadband commands ω_cmd = 0, so the stick-slip bleed of §12.3 hands the box to bearing friction instead of the wheel creeping it the last fraction of a degree [D] (V-51).
+
 ### 12.2 Starting gains and limits
 
 All gains are starting points until G2 (plant measured) [V] TD §6.5. Values recomputed here with the current TD plant (I_b = 1.03e-3 kg·m², I_w = 6.50e-5 kg·m²):
@@ -541,12 +568,14 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 | --- | --- | --- | --- |
 | K_ψ | 3.1 s⁻¹ | about 0.49 Hz attitude bandwidth (3.1 / 2π) | [C] TD §6.5 |
 | ω_cmd limit | ±90 deg/s | TD §6.5 | [V] TD |
+| Hold deadband | 1° on a still reference | Inside PR-3's ±2°; at 3 mN·m a creep spends about 440 rpm of wheel speed per second (R4.3 host simulation, V-51); TD §10 lists a deadband against stick-slip | [D] |
 | K_ω | **0.0129 N·m·s/rad** | 2π · 2 Hz · I_b with I_b = 1.03e-3. TD §6.5 states 0.011, which equals 2π · 2 · 8.9e-4, the superseded I_b (finding V-1) | [C] |
 | K_i (rate) | start at K_ω · 2π · 0.2 Hz = 0.0163 N·m/rad | Integral corner a decade below the 2 Hz rate bandwidth [D] | [C on D] |
 | Integral limit | ±3 mN·m equivalent | Covers the planned friction range 1 to 3 mN·m (TD §3.6) without letting the integral command large torque | [D] |
 | τ_cmd limit | ±31 mN·m (3 A × 10.38 mN·m/A) | TD §6.5 | [C] |
 | Wheel ref slope at the τ limit | 4842 rpm/s, 9.7 rpm per tick | 0.031 × (1/I_w + 1/I_b) × 60/2π | [C] |
 | Ω_low | 800 rpm | until T-18 | [A] A-8 |
+| Ω_ref floor | Ω_low + 100 rpm (900 rpm) | Margin between the floor of the Ω_ref clamp and the `UNDERSPEED` threshold (Ω_low), as Ω_cap has 100 rpm to `OVERSPEED` (V-52) | [D] |
 | Ω_bias | 2400 rpm | midpoint of low limit and cap | [V] TD §3.4 |
 | Ω_cap | 4000 rpm | PR-4 | [V] TD |
 | Wheel PI bandwidth | start at **2 Hz**, raise toward 5 Hz only after measuring delay | Hall update 80/s at bias; see V-7 | [D] |
@@ -556,22 +585,23 @@ All gains are starting points until G2 (plant measured) [V] TD §6.5. Values rec
 
 ### 12.3 Saturation and anti-windup
 
-- **Rate integral:** conditional integration. Stop integrating when τ_cmd is saturated or Ω_ref is clamped at a limit in the direction that would need more [D].
-- **Ω_ref clamp:** when Ω_ref hits Ω_cap or Ω_low, set the flag `MOMENTUM_SATURATED`, freeze the rate integral, and report through telemetry. The box then cannot be driven further in that direction until desaturation (§13.4).
+- **Rate integral:** conditional integration. Stop integrating when τ_cmd is saturated or Ω_ref is clamped at a limit in the direction that would need more [D]. The integral's torque K_i ∫e is then bounded to ±3 mN·m (§12.2), so its bound in rad is 3 mN·m / K_i and widens as `rate_gain_scale` lowers K_i; with K_i = 0 the integral is held at 0 [D].
+- **Stick-slip bleed (finding V-46):** while ω_cmd = 0 and |ω̂| < 1 deg/s, the rate integral decays with a 0.5 s time constant [D].
+- **Ω_ref clamp:** Ω_ref stays within [Ω_low + 100, Ω_cap]; the floor is 100 rpm above the `UNDERSPEED` threshold so that a wheel held on it does not trip (V-52). When Ω_ref hits Ω_cap or the floor, set the flag `MOMENTUM_SATURATED`, freeze the rate integral, and report through telemetry. The box then cannot be driven further in that direction until desaturation (§13.4).
 - **Throttle clamp:** 48..2047 while running; 0 only from the safety layer.
 
 ### 12.4 Slew profile
 
-Trapezoid in ψ_ref, limited to 60 deg/s and 120 deg/s² [V] TD §6.5. A 90° slew takes 0.5 s accelerating (15°), 1.0 s at 60 deg/s (60°), and 0.5 s decelerating (15°), 2.0 s in all [C], within PR-2's 3 s. The slew ends (`SLEW` → `READY`, per TD §6.6 "slew complete") when |ψ_ref − ψ̂| < 3° and |ω̂| < 5 deg/s for 0.5 s [D]; a timeout of 6 s ends it with the event `SLEW_TIMEOUT` [D].
+Trapezoid in ψ_ref, limited to 60 deg/s and 120 deg/s² [V] TD §6.5. A 90° slew takes 0.5 s accelerating (15°), 1.0 s at 60 deg/s (60°), and 0.5 s decelerating (15°), 2.0 s in all [C], within PR-2's 3 s; a half-turn takes 3.5 s [C]. A move under 30° never reaches 60 deg/s and is a triangle at 120 deg/s². The slew ends (`SLEW` → `READY`, per TD §6.6 "slew complete", event cause `slew_complete`) once the profile has ended and |ψ_ref − ψ̂| < 3° and |ω̂| < 5 deg/s have held for 0.5 s [D] (V-50); a timeout 6 s after entry ends it with the cause `SLEW_TIMEOUT` [D]. Either way the box is in `READY` holding rate, not heading. The host simulation of R4.3 settles a 90° slew within 3° by 2.36 s and completes it by 3.02 s across 0 to 3 mN·m of friction [C on A: plant model, §23.3].
 
-`SLEW` targets arrive as absolute `psi_ref_deg` (TD §7.3). The firmware moves ψ_ref along the **shortest** wrapped path to the target [D]. A ground station that wants a specific direction for a 180° move must send an intermediate target.
+`SLEW` targets arrive as `psi_ref_deg` in the same frame as `psi_deg`: clockwise positive on the wire and, until Set 5, relative to the last `zero_heading` (§13.1, V-48). The firmware moves ψ_ref along the **shortest** wrapped path to the target [D]. A half-turn is deterministic: it always goes counter-clockwise (internal +180°, wire −180°) [D]. A ground station that wants the other direction must send an intermediate target.
 
 ### 12.5 Sign check before closing the loop
 
 TD R-1 notes that a wrong sign in the torque-to-wheel step makes the rate loop unstable. Before T-15:
 
 1. With the box pinned and `bench_mode` on, step Ω_ref from bias to bias + 300 rpm with the attitude and rate loops disabled (bench command `wheel_step`, §15.3). Confirm the wheel follows. The pin stays in for this step.
-2. Unpinned, at reduced K_ω (×0.2), push the box counter-clockwise by hand. Log ω̂ and Ω_ref. Correct behaviour: Ω_ref moves so that the reaction opposes the push, and ω̂ decays. Wrong sign: ω̂ grows; the operator hits e-stop.
+2. Unpinned, at reduced gains (`rate_gain_scale` 0.2, the default, which scales K_ω and K_i together; finding V-47), push the box counter-clockwise by hand. Log ω̂ and Ω_ref. Correct behaviour: Ω_ref moves so that the reaction opposes the push, and ω̂ decays. Wrong sign: ω̂ grows; the operator hits e-stop.
 3. Record s_w in NVS.
 
 ---
@@ -588,8 +618,8 @@ stateDiagram-v2
     SPINUP --> READY: wheel within 5 percent of bias for 0.5 s
     SPINUP --> SAFE: cmd disarm or estop, or interlock
     READY --> DETUMBLE: cmd mode DETUMBLE
-    READY --> HOLD: cmd mode HOLD, magnetometer OK
-    READY --> SLEW: cmd mode SLEW, magnetometer OK
+    READY --> HOLD: cmd mode HOLD, heading available (gyro-only, R4.2)
+    READY --> SLEW: cmd mode SLEW, heading available (gyro-only, R4.2)
     READY --> SUN_POINT: cmd mode SUN_POINT, sun_valid
     READY --> SPINUP: cmd respin (box held), new wheel start speed
     READY --> MANUAL: cmd mode MANUAL with input, input loop built
@@ -606,7 +636,20 @@ stateDiagram-v2
     SUN_POINT --> SAFE: estop, disarm, or interlock
 ```
 
-These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the magnetometer and sun guards, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
+These additions were approved by the owner on 2026-10-10 and written into TD §6.6 and §6.7: the `disarm` command, the 0.5 s dwell before `READY`, the sun guard, and the `READY → SPINUP` "respin" transition used for desaturation and alternate wheel start speeds (§13.4).
+
+**Heading guard amendment** (approved by the owner on 2026-10-10, finding V-48). `HOLD` and `SLEW` no longer require a magnetometer. Until Set 5 calibrates it, they run on the gyro-only heading of §11.3 for relative use: `SLEW` targets are interpreted relative to the last `zero_heading`, and `HOLD` holds the heading it captured at entry. A missing magnetometer (`MAG_MISSING`) is reported but blocks neither. Absolute `HOLD` against a compass reference returns with the magnetometer (Set 5).
+
+**Hall bench bypass** (approved by the owner on 2026-10-10 [D], finding V-30). Until the Hall magnets can be mounted (repository Set 2), rung 1 of `MANUAL` is tested with the parameter `hall_installed` set false. It can be set false only by `set_params` in `SAFE` while `bench_mode` is already true, so it takes two separate commands, and every boot sets it true again; it is never persisted. While it is false:
+
+- `arm` is refused unless `bench_mode` is true;
+- only the `throttle` `MANUAL` input is available;
+- `SPINUP` ramps the throttle open loop to `spinup_throttle` at 200 DShot units per second and reaches `READY` after the ramp plus 0.5 s, with no speed check;
+- every throttle the controller emits is clamped to `min(manual_throttle_max, kBypassThrottleMax)`, where `kBypassThrottleMax` = 400 is a compile-time constant, not a parameter, so no command can raise it [D]; its speed, about 1600 rpm no-load at 10 V, is [A] until R3.7 measures it;
+- the `tlm` flag `HALL_BYPASS` is set on every frame, and a `notice` event `HALL_BYPASS` (`detail` `on` or `off`) is posted when it changes;
+- `OVERSPEED`, `UNDERSPEED`, and `HALL_SILENT` are suspended (§14.1); every other interlock stays active.
+
+**Refusal reasons** [D, V-34]. A refused command's `ack` carries one of these exact strings: `not in SAFE` (`arm` while armed, `set_params` outside `SAFE`), `not armed` (`disarm`, or `mode READY`, in `SAFE`), `ramp-down in progress` (`arm` or `set_params` during a ramp-down, V-65), `box not still`, `battery low`, `latched fault: <INTERLOCK>` (a latch whose release condition does not hold, §14.1), `bench_mode required` (`arm` with the Hall bypassed and bench mode off), `not controlling client`, `not in READY` (`mode MANUAL`, `HOLD`, or `SLEW` from any other mode, including from each other), `wheel loop not available` (`mode HOLD`, `mode SLEW`, or `wheel_step` before the closed wheel loop exists: no Hall or no `ff_table`, V-43), `input not available`, `wheel not at bias` (`mode READY` during `SPINUP`), `not in MANUAL`, `input mismatch`, `too fast`, `invalid setpoint`, `not implemented` (modes and commands of later repository sets), and for `set_params`: `invalid param: <key>`, `unknown param: <key>`, `not settable: <key>`, `not implemented: <key>`, `bench_mode required: hall_installed`, `no params`. The guards of `arm` are checked in the order `SAFE`, ramp, bench mode, still, battery, latches, and the first that fails names the reason; those of `set_params` in the order `SAFE`, ramp, then the parameters.
 
 ### 13.2 Per-mode behaviour
 
@@ -616,8 +659,8 @@ These additions were approved by the owner on 2026-10-10 and written into TD §6
 | `SPINUP` | Ω_ref ramps toward the start speed (default bias) at 400 rpm/s; wheel PI active | Wheel loop only. Rate and attitude off: the box is pinned or held [V] TD §2 | Ω_target | At target → `READY` |
 | `READY` | Wheel loop | Rate loop | ω_cmd = 0 | Mode commands |
 | `DETUMBLE` | Wheel loop | Rate loop | ω_cmd = 0 | `mode READY` |
-| `HOLD` | Wheel loop | Attitude + rate | ψ_ref = ψ̂ at entry | `mode READY` |
-| `SLEW` | Wheel loop | Attitude + rate | Trapezoid to `psi_ref_deg` | complete, timeout, `mode READY` |
+| `HOLD` | Wheel loop | Attitude + rate, hold deadband | ψ_ref = ψ̂ at entry | `mode READY` |
+| `SLEW` | Wheel loop | Attitude + rate, hold deadband after the profile | Trapezoid to `psi_ref_deg` | complete, timeout, `mode READY` |
 | `SUN_POINT` | Wheel loop | Sun error + rate | sun angle → 0 | `mode READY`, invalid sun |
 | `MANUAL` | Open-loop throttle (`throttle`), or the wheel loop (`wheel`, `rate`) | `throttle`: none; `wheel`: wheel loop; `rate`: rate loop over the wheel loop | From `cmd:"manual"` (§13.5) | `mode READY`, `disarm`, `estop`, interlock |
 
@@ -704,8 +747,14 @@ Every interlock is evaluated every tick, after the controller, so it can overrid
 | `IMU_SILENT` | 25 consecutive invalid IMU reads (50 ms) | DShot 0 at once → SAFE | Until a valid read and `arm` | TD §6.7 |
 | `TILT` | Averaged accel more than 30° from vertical | DShot 0 at once → SAFE | Until upright and `arm` | TD §6.7 |
 | `CONTROL_STALL` | 25 consecutive missed ticks | DShot 0 → SAFE; if the task is fully stuck, the 100 ms watchdog resets the MCU | Reboot | TD §6.7; [D] for the soft stage |
-| `HALL_SILENT` | Throttle above the low-limit FF value for 500 ms with no Hall edge | DShot 0 at once → SAFE | Until next `arm` | [D] new, finding V-11 |
+| `HALL_SILENT` | Throttle above `hall_expect_throttle` (§16; set to the low-limit FF value once T-5 measures it, and always below `spinup_throttle`, so it arms in every `SPINUP`, V-64) for 500 ms with no Hall edge | DShot 0 at once → SAFE | Until next `arm` | [D] new, finding V-11 |
 | `MOMENTUM_NEAR_LIMIT` | Ω within 300 rpm of a limit | Warning flag only | n/a | TD §6.7 |
+
+**Latch release** [D, V-33]. `arm` clears every latch at once, but only if each latched interlock's release condition holds now: `OVERSPEED` needs `speed_safe` below the bias, `BATTERY_LOW` needs the arm battery guard, `IMU_SILENT` a valid read (no invalid reads in the current streak), `TILT` 30 deg or less, and `CONTROL_STALL` never releases (reboot). Otherwise `arm` is refused with `latched fault: <INTERLOCK>`. Hard faults are evaluated in every mode, including `SAFE`, and post one `mode` event when they first latch.
+
+**Hall bench bypass** (§13.1, V-30). While `hall_installed` is false, `OVERSPEED`, `UNDERSPEED`, and `HALL_SILENT` are suspended, because they need wheel speed, and the compile-time throttle ceiling `kBypassThrottleMax` is the only overspeed protection. Every other interlock, the e-stop, and the heartbeat stay active.
+
+**Zero throttle needs no ramp** [D, V-36]. E-stop, `disarm`, and heartbeat loss start the ramp-down only when the throttle last sent was a running value (48 or more); otherwise the box drops to `SAFE` with DShot 0 at once, so a needless 5 s ramp does not block the next `arm`.
 
 **Why `HALL_SILENT` is added.** Without it, a disconnected Hall sensor makes `speed_safe` go stale. The staleness bound in §10.4 then drives the speed estimate toward zero, so `UNDERSPEED` would trip after 200 ms, which is safe. But during `SPINUP`, where `UNDERSPEED` is exempt, the wheel PI would push throttle up without bound while the real wheel accelerates past the cap with no overspeed detection. `HALL_SILENT` closes that gap (finding V-11).
 
@@ -733,7 +782,7 @@ TD §6.7: ramp the wheel to zero over 5 s, then DShot 0, so the box speeds up ge
 Implementation [D]:
 
 1. Freeze the controllers. Record throttle_0 = current throttle.
-2. Each tick, throttle = throttle_0 × (1 − t / 5 s), open loop, mapped to 0 once below 48.
+2. Each tick, throttle = throttle_0 × (1 − t / 5 s), open loop, mapped to 0 once below 48. t is wall time from the alarm clock, so missed ticks do not lengthen the ramp (§9.2, V-66).
 3. At t = 5 s, or as soon as a hard fault occurs, send DShot 0.
 
 The ramp is **open-loop on throttle**, not closed-loop on Ω_ref, because closed-loop control below the 800 rpm sensorless limit is not trusted [A] A-8, and because the safety path should not depend on the Hall sensor.
@@ -775,11 +824,13 @@ The ESP-IDF task watchdog is configured for 100 ms on the control task [V] TD §
 | Item | Choice | Label |
 | --- | --- | --- |
 | Library | ESP-IDF `esp_http_server` with `CONFIG_HTTPD_WS_SUPPORT=y`, URI `/ws` registered as a WebSocket handler on port 80, the main UI's endpoint (finding U-2). Other paths are not served. Outbound frames go through `httpd_queue_work` and `httpd_ws_send_frame_async`, the pattern of the DirecSun1 prototype | [A] verified by the owner on an ESP32-C3; build check BC-4 on the S3 |
-| Max clients | 3 | [D] |
-| Outbound policy | Telemetry is broadcast to all clients. If a client's send would block (buffer full), that frame is skipped for that client and `tlm_dropped` increments. Acks and events are never skipped | [D] |
-| Inbound size limit | 512 bytes per message; larger messages are dropped with `ack ok:false reason:"too large"` | [D] |
-| JSON | Encode `tlm` with `snprintf` into a fixed buffer (no heap). Parse commands with cJSON from the `espressif/cjson` registry component (ESP-IDF v6.0 no longer bundles it) | [D]; library [A] |
-| Contract check | Every message kind is described by `protocol/schema-v1.json`; host test HT-9 validates encoder output against it | [D] |
+| Max clients | 3 (`max_open_sockets`), with LRU purge off, so a fourth connection is refused rather than evicting a connected (possibly controlling) client. Client ids are never reused, so a reconnect is a new client and resumes nothing | [D] |
+| Threads | The httpd task (core 0) owns every socket and the client table: handshakes, inbound frames, pongs and parse refusals sent inline, and every outbound send. The comms task (core 0, 50 Hz, below httpd priority) drains acks and events from control, encodes the newest snapshot, and hands both over through a queue and a latest-tlm buffer | [D] R3.5 |
+| Outbound policy | `tlm` goes to every client; a client whose socket is not writable at that moment skips the frame and `tlm_dropped` increments. An `ack` goes to the client that sent the command. An `event` goes only to clients that have sent at least one message, so a read-only viewer (the main UI's device link, which counts every non-`tlm` frame as ignored) receives only `tlm`, which carries the mode in every frame. Acks and events are not skipped for a slow socket; a send that fails closes that client | [D] R3.5 (finding V-38) |
+| Inbound size limit | 512 bytes per message; 513 to 1024 bytes are read and refused with `ack ok:false reason:"too large"` and `seq` 0; anything larger closes the session, because skipping it would desynchronise the stream | [D] |
+| JSON | Encode every message with `snprintf` into fixed buffers (no heap). Parse commands with cJSON 1.7.19, vendored in `direcsun_core/third_party/cjson` so the firmware and the host tests run the same parser (the `espressif/cjson` registry dependency is gone); `CJSON_NESTING_LIMIT` = 8 | [D] R3.5 (finding V-39) |
+| Wire sign | `direcsun_core/src/protocol.cpp` is the only code that converts between the internal counter-clockwise frame and the clockwise wire frame (§2.3, U-1); host test "sign conversion" pins it, and the `no_wire_sign` mutant proves the test can fail | [D] R3.5 |
+| Contract check | Every message kind is described by `protocol/schema-v1.json`. Host test HT-9 parses every client-direction schema fixture through the real parser and writes one of every encoded message kind for `tools/check-protocol.sh`, which validates them against the schema and requires a deliberately malformed `tlm` to fail | [D] |
 
 ### 15.3 Message schema, version 1
 
@@ -796,9 +847,9 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `mode` | string | Wire mode name (§2.4) | TD |
 | `manual_input` | string or null | `throttle`, `wheel`, or `rate` in `MANUAL`; null otherwise | [D] |
 | `psi_deg` | number | Wrapped heading (−180, 180], clockwise positive (wire frame, §2.3) | TD; wrap [D]; sign [D] U-1 |
-| `psi_ref_deg` | number or null | Current reference, clockwise positive (null in SAFE, SPINUP, READY, DETUMBLE) | TD; null rule [D] |
+| `psi_ref_deg` | number or null | Current reference, clockwise positive and relative to the last `zero_heading`: a number in HOLD and SLEW (R4.3), null in SAFE, SPINUP, READY, DETUMBLE, and MANUAL | TD; null rule [D] |
 | `rate_dps` | number | ω̂, clockwise positive (the internal ω̂ negated) | TD |
-| `mag_deg` | number or null | ψ_mag, clockwise positive (null if magnetometer missing) | TD |
+| `mag_deg` | number or null | ψ_mag, clockwise positive (null if the magnetometer is missing, and null until magnetometer heading exists in Set 5) | TD; [D] V-40 |
 | `sun_deg` | number or null | Calibrated sun angle, clockwise positive | TD |
 | `sun_valid` | bool | n/a | TD |
 | `wheel_rpm` | number | `speed_safe` | TD |
@@ -807,9 +858,10 @@ All messages are JSON objects with `v`, `type`, and `seq` [V] TD §7.3. `seq` is
 | `tau_cmd_mNm` | number | τ_cmd, clockwise positive (the internal τ_cmd negated) | TD |
 | `vbat` | number | 1 s average battery voltage | TD |
 | `loop_us` | int | Longest tick in the last 20 ms | TD; "longest" [D] |
-| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `MAG_MISSING`, `MANUAL_STALE`, latched fault names | TD; list [D] |
+| `flags` | string[] | e.g. `MOMENTUM_OK`, `MOMENTUM_NEAR_LIMIT`, `MOMENTUM_SATURATED`, `LOOP_OVERRUN`, `IMU_MISSING`, `MAG_MISSING`, `MANUAL_STALE`, `HALL_BYPASS`, `WHEEL_STEP`, `MOMENTUM_SATURATED`, `HEADING_GYRO` (every frame until Set 5: the heading is gyro-only and relative to the last `zero_heading`, R4.2), then the latched fault names | TD; list [D] |
 | `t_c`, `p_pa` | number or null | BMP280, optional | [D] |
 | `tlm_dropped`, `dropped_events` | int | Counters | [D] |
+| `gyro_raw`, `mag_raw`, `sun_a_mv`, `sun_b_mv` | int[3], int[3], int, int | Bench mode only: raw sensor counts in the sensors' own axes (not converted to the wire frame) and the sun sensor millivolts (§19.2) | [D] |
 
 Example (values illustrative, not measurements; `vbat` chosen inside the NiMH range, finding V-3):
 
@@ -834,8 +886,8 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 | `manual` | exactly one of `throttle` (int), `wheel_rpm`, `rate_dps` (clockwise positive), matching the active input | MANUAL, controlling client only | New setpoint, clamped and rate-limited per §13.5; counts as heartbeat |
 | `respin` | `wheel_rpm` (optional, default bias) | READY | → SPINUP to the new start speed (§13.4) |
 | `zero_heading` | none | SAFE, READY | Heading offset (§11.3) |
-| `set_params` | `params` object | SAFE only | Validate every key and range; store in NVS; reply with the applied set [D] |
-| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set | Ω_ref step with the attitude and rate loops suspended until `mode READY` is sent again; for §12.5, T-5 and T-18 [D]; refused unless `bench_mode` is true. Interlocks stay active |
+| `set_params` | `params` object | SAFE only, once any ramp-down has ended (V-65) | Validate every key and range; store in NVS; reply with the applied set [D] |
+| `wheel_step` | `delta_rpm` (±500 max) | READY, bench flag set, wheel loop available | Ω_ref step, clamped to [Ω_low + 100, cap in force] (V-52), with the attitude and rate loops suspended until `mode READY` is sent again (tlm flag `WHEEL_STEP` meanwhile); for §12.5 and the wheel-loop step response [D]. Refused, in this order, with `bench_mode required`, `not in READY`, or `wheel loop not available` (no Hall, or no `ff_table` yet). Interlocks stay active |
 
 #### `ack`: box → sender
 
@@ -843,13 +895,19 @@ At about 250 to 300 bytes per frame and 50 frames/s the stream is about 12.5 to 
 {"v":1,"type":"ack","seq":77,"ok":false,"reason":"wheel not at bias"}
 ```
 
-`seq` echoes the command's `seq` [V] TD §7.3. Unknown `v`, unknown `type`, unknown `cmd`, a malformed message, or a failed guard → `ok:false` with a reason [V] TD §7.3.
+`seq` echoes the command's `seq` [V] TD §7.3, or is 0 when the refused frame had no readable `seq` (too large, malformed JSON). Unknown `v`, unknown `type`, unknown `cmd`, a malformed message, or a failed guard → `ok:false` with a reason [V] TD §7.3. The reasons are fixed strings [D] (finding V-41):
+
+- parse refusals, from the comms layer: `too large`, `malformed JSON`, `missing v`, `unsupported v`, `invalid seq`, `unknown type`, `unexpected type <t>` (a box-to-client type sent by a client), `unknown cmd`, `missing field: <f>`, `unexpected field: <f>`, `invalid field: <f>`, `two setpoints`, `missing setpoint`, `unknown param: <k>`, `invalid param: <k>`, `too many params`;
+- `busy`, when the command queue is full (an `estop` is still applied through its flag and acked `ok:true`);
+- guard refusals from the supervisor (§13.1): for example `not in SAFE`, `not controlling client`, `box not still`, `battery low`, `latched fault: <NAME>`, `input not available`, `too fast`, `not implemented`.
+
+A `set_params` ack with `ok:true` carries `applied`, the parameter object as received: updates are all-or-nothing, so what was applied is exactly what was sent.
 
 > **Ambiguity resolved (finding V-14).** TD defines `seq` as "the sender's counter" for every message, but the ack example uses the command's `seq` (77). The firmware therefore puts the **echoed command seq** in `seq` for `ack` messages only. Every other box message uses the box's own counter.
 
 #### `ping` / `pong`
 
-Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] TD §7.3. Box replies `{"v":1,"type":"pong","seq":<box seq>,"ping_seq":79,"t_client_ms":512330,"t_ms":83120}` [D field names], which lets the client compute round-trip time for T-11.
+Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] TD §7.3. Box replies `{"v":1,"type":"pong","seq":<box seq>,"ping_seq":79,"t_client_ms":512330,"t_ms":83120}` [D field names], which lets the client compute round-trip time for T-11. Comms answers the pong itself and forwards every ping to the supervisor as a command, so the supervisor alone decides whose pings keep an armed box alive (V-32).
 
 #### `event`: box → all clients
 
@@ -857,7 +915,14 @@ Client sends `{"v":1,"type":"ping","seq":79,"t_client_ms":512330}` at 5 Hz [V] T
 {"v":1,"type":"event","seq":311,"t_ms":83500,"event":"mode","mode":"SAFE","cause":"HEARTBEAT_LOST"}
 ```
 
-Sent on every mode change and every interlock trip [V] TD §7.3. `cause` is an interlock name, a command name, or `"slew_complete"` [D].
+Sent on every mode change and every interlock trip [V] TD §7.3, to every client that has sent at least one message (§15.2). The catalogue [D] (finding V-42):
+
+| `event` | Fields | When |
+| --- | --- | --- |
+| `mode` | `mode`, `cause` | Every mode change. `cause` is an interlock name (`ESTOP`, `HEARTBEAT_LOST`, `OVERSPEED`, ...), the command that caused it (`arm`, `disarm`, `mode`, `respin`), or an automatic transition: `boot`, `spinup_complete`, `slew_complete`, `SLEW_TIMEOUT`, `sun_invalid` |
+| `notice` | `name`, optional `detail` | `PARAMS_RESET` (detail `missing`, `version`, or `invalid`): the stored parameters were not usable and the defaults loaded. `HALL_BYPASS` (detail `on` or `off`): the Hall bench bypass changed |
+
+`t_ms` of an event is the time comms encoded it, at most 20 ms after the supervisor posted it. "Too fast" for MANUAL setpoints (§13.5) is measured when the supervisor drains the command, within one 2 ms tick of its arrival.
 
 ### 15.4 Command handling sequence
 
@@ -895,18 +960,26 @@ Stored in NVS under namespace `direcsun` with a `param_version` key. On a versio
 | `k_psi` | 3.1 | 0..10 | `set_params` |
 | `k_omega` | 0.0129 | 0..0.05 | `set_params` |
 | `k_i` | 0.0163 | 0..0.1 | `set_params` |
-| `wheel_kp`, `wheel_ki` | from T-5 | ≥ 0 | `set_params` |
+| `rate_gain_scale` | 0.2 | 0..1 | `set_params`. Multiplies `k_omega` and `k_i`: 0.2 for the first unpinned runs and the sign check (§12.5), 1 once the sign is confirmed. Added in R3.9 with `param_version` 2 [D] |
+| `wheel_kp`, `wheel_ki` | 0 until T-5 [D] | 0..10 | `set_params` |
 | `ff_table` | 8 points | monotonic | `set_params` |
 | `omega_low_rpm` | 800 | 500..1500 | after T-18 |
 | `omega_bias_rpm` | 2400 | low+400 .. cap−400 | after T-18 |
-| `omega_cap_rpm` | 4000 | **≤ 4000, cannot be raised over the wire** | firmware rebuild only (TD §10.3: changing the cap requires re-running Section 3) |
+| `omega_cap_rpm` | 4000 | **≤ 4000 (`kOmegaCapMaxRpm`)** | firmware rebuild only (TD §10.3: changing the cap requires re-running Section 3). Not settable over the wire at all (`not settable`), and not persisted [D] |
 | `s_w`, `s_gyro` | +1 | ±1 | after T-5, T-8 |
 | `mag_axis_map`, `mag_cal` | see §10.2 | n/a | after T-9 |
 | `sun_cal`, `light_threshold` | identity, 0 | n/a | after T-10 |
 | `dshot_rate` | 150 | 150 or 300 | after reading the ESC MCU (TD §5.2) |
-| `bench_mode` | false | bool | `set_params` in SAFE |
-| `manual_throttle_min`, `manual_throttle_max` | from T-5 [M] | 48..2047, min < max; the band must keep the wheel between Ω_low and Ω_cap | `set_params` in SAFE |
+| `bench_mode` | false at every boot | bool; cannot turn off while `hall_installed` is false | `set_params` in SAFE; never persisted [D] |
+| `manual_throttle_min`, `manual_throttle_max` | 150 and 400 until T-5 [D]; then from T-5 [M] | 48..2047, min < max; the band must keep the wheel between Ω_low and Ω_cap | `set_params` in SAFE |
+| `spinup_throttle` | 300 until T-5 [D] | 48..2047, above `hall_expect_throttle` | `set_params` in SAFE; the open-loop throttle `SPINUP` ramps to (§13.1, R3.7) |
+| `hall_expect_throttle` | 200 until T-5 [D] | 48..2047, below `spinup_throttle` | `set_params` in SAFE; set to FF(Ω_low) after T-5; arms `HALL_SILENT` (§14.1). Below `spinup_throttle` so that every `SPINUP` arms it: `SPINUP` is exempt from `UNDERSPEED`, so `HALL_SILENT` is the only stop for a silent Hall sensor there (V-11, V-64) |
+| `hall_installed` | true at every boot | bool; false only with `bench_mode` already true | `set_params` in SAFE; never persisted; the Hall bench bypass (§13.1) |
+| `bench_underspeed_rpm` | 0 (off) at every boot | 0, or 100..Ω_low | `set_params` in SAFE with `bench_mode` on; never persisted; cleared when `bench_mode` turns off. Replaces Ω_low as the `UNDERSPEED` threshold for T-18 only (§19.2) [D] |
+| `bench_cap_rpm` | 0 (off) at every boot | 0, or `omega_bias_rpm`..`omega_cap_rpm` | `set_params` in SAFE with `bench_mode` on; never persisted; cleared when `bench_mode` turns off. Lowers the cap in force (Ω_ref clamp and `OVERSPEED` at cap + 100) for the deliberate overspeed check; it can never raise the cap [D] |
 | Wi-Fi SSID, password, static address, SoftAP flag | n/a | n/a | menuconfig, from `firmware/sdkconfig.defaults.local` (gitignored); never over the wire |
+
+`set_params` is all-or-nothing: the merged set is validated as a whole, and one bad key rejects the update and names the key. A cross-key rule names the same key whichever key the update changed: `omega_bias_rpm` for the bias between the limits, `manual_throttle_min` for the band, and `hall_expect_throttle` for the `HALL_SILENT` threshold. A stored set that breaks any rule loads the defaults, with the notice `PARAMS_RESET` `invalid`. `mag_axis_map`, `mag_cal`, `sun_cal`, and `light_threshold` are refused with `not implemented: <key>` until repository Set 5 adds them with a `param_version` bump [D]. Parameters are persisted outside the control task, because a flash write stalls both cores' caches: the supervisor reports `params_changed`, and a lower-priority task writes NVS [D]. `set_params` is refused during a ramp-down with `ramp-down in progress` (V-65): the box reports `SAFE` then, but the wheel is still driven, the running ramp would ignore a lowered cap, and the flash write would stall the control tick while the motor turns.
 
 `dshot_rate` defaults to the slower, always-supported DShot150 until the ESC's MCU is read [D]. TD says DShot150 works on 24 MHz MCUs and DShot300 needs 48 MHz [V].
 
@@ -918,6 +991,8 @@ The main UI is `frontend/`, Aaron's landing page and ground station, built with 
 
 `ground/link/` and `ground/console/` are engineering bench tools for firmware bring-up and characterisation, and are not shown to judges. When the UI starts sending commands, its own TypeScript client must keep the safety rules `ground/link/` proves: a 5 Hz ping heartbeat, acks matched to commands by `seq`, an `estop` that is sent at once and never queued, and no automatic reconnect (§14.4, §21).
 
+The bench console binds the e-stop to Space wherever focus is, its endpoint text field included, and a focused text field or button cannot take the key instead (finding V-63). A ground station that binds an e-stop key needs the same rule, or the key silently does nothing while a field has focus.
+
 The table records facts read from the `frontend/` source at PR #1 head 622150a (`src/hardware/deviceLink.ts`, `src/ground/*`, `src/simulation/*`, `src/data/assets.ts`) [V at that commit].
 
 | Main UI fact | Firmware consequence |
@@ -928,7 +1003,7 @@ The table records facts read from the `frontend/` source at PR #1 head 622150a (
 | It does not reconnect automatically | Matches §14.4 |
 | Its endpoint placeholder is `ws://192.168.4.1/ws`, and it saves whatever URL the user enters | The firmware serves port 80 at `/ws` (§15.1, §15.2): SoftAP mode is exactly that default, and station mode is `ws://direcsun.local/ws` (finding U-2) |
 | **Positive heading is clockwise seen from above.** "Rotate right" commands +90°, the dial's needle is drawn at (sin ψ, -cos ψ) in screen coordinates, and the 3D model turns by `rotation.y = -ψ` | The wire is clockwise positive and the firmware converts in its protocol layer (§2.3, finding U-1). A box turning clockwise by hand must turn the UI's dial clockwise |
-| Its judge sequence turns 90° left or right, holds 1.0 s, and returns to the start heading, at 60 deg/s and 120 deg/s² (`src/simulation/constants.ts`), with Stop and Reset | The same trapezoid limits as §12.4. On hardware it needs HOLD and SLEW. Whether the UI sends a pair of `SLEW` commands or one sequence command is decided by what the finished UI sends (repository Set 4) |
+| Its judge sequence turns 90° left or right, holds 1.0 s, and returns to the start heading, at 60 deg/s and 120 deg/s² (`src/simulation/constants.ts`), with Stop and Reset | The same trapezoid limits as §12.4. The UI sequences the turn itself (frontend PR #10): it captures `psi_deg`, sends `SLEW` to start ± 90 wrapped onto (−180, 180], waits for `slew_complete`, holds 1.0 s in `READY`, and sends `SLEW` back to the captured start; it stops on `SLEW_TIMEOUT`, a refusal, or `SAFE`, and "Stop turn" sends `mode READY`. R4.3 provides each step |
 | It loads `/assets/direcsun.glb` when present, and otherwise draws a schematic box ("SCHEMATIC MODEL, CAD NOT LOADED") | The CAD pipeline exports that model (repository Set 2, R2.5) |
 | While device telemetry is live, the simulation controls are locked and the header reads "DEVICE CONNECTED, RECEIVING TELEMETRY" | No firmware consequence |
 
@@ -987,13 +1062,14 @@ firmware/                     ESP-IDF v6.0 project; run idf.py from here (or too
 | HT-2 | `wheel_speed` | 30/p conversion; plausibility window; median; staleness bound falls with time |
 | HT-3 | `estimator` | Bias frozen while moving; complementary filter converges to ψ_mag with τ = 2 s; wrap at ±180 |
 | HT-4 | `controllers` | Anti-windup stops integration at saturation; trapezoid gives 2.0 s ± 1 tick for 90° |
-| HT-5 | `controllers` + `plant_sim` | Closed loop on the TD §3.1 plant: detumble 1 rev/s within 5 s; 90° slew within 3 s settling to ±3°; Ω_ref never exceeds 4000 rpm |
+| HT-5 | `controllers` + `plant_sim` | Closed loop on the TD §3.1 plant: detumble 1 rev/s within 5 s; 90° slew within 3 s settling to ±3°; Ω_ref never exceeds 4000 rpm. R3.9 covers the detumble at 0, 1, and 3 mN·m of friction, ±30 deg/s rate tracking, and the Ω_ref bounds; the slew half arrives with the attitude loop (Set 4) |
 | HT-6 | `controllers` sign | With s_w = −1 instead of +1, HT-5's detumble diverges, so the test can see a sign error (positive control) |
 | HT-7 | `modes` | Every row of §13.1, every refused transition with its reason, FR-2 timing in ticks |
-| HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s |
+| HT-8 | `interlocks` | Each interlock trips at its threshold and not 1 % below; hard faults zero throttle in the same tick; ramp-down reaches 0 at 5 s; no path leaves `SAFE` after a fault without `arm`, with a mutant build that compiles out latching as its positive control; with timer alarms missed, the heartbeat, the ramp, and every interlock duration still end on wall time (V-66; mutants that count executed ticks must fail) |
 | HT-9 | `protocol` | Parse every `cmd`; reject oversize, wrong `v`, unknown `type`; `ack` echoes `seq`; `tlm` round-trips through a JSON parser |
-| HT-10 | `interlocks` | `HALL_SILENT` trips during SPINUP with throttle high and no edges |
+| HT-10 | `interlocks` | `HALL_SILENT` trips during SPINUP with throttle high and no edges, for every parameter set the box accepts, on the tick its 500 ms ends (V-64; a mutant build without the `hall_expect_throttle` rule must fail it) |
 | HT-11 | `modes` + `protocol` | `MANUAL`: entry refused from any mode but READY and for an unbuilt input; each setpoint form clamps to its limits; a setpoint for the wrong input, from a non-controlling client, or under 50 ms after the last is refused; after 250 ms without setpoints `rate` falls to 0 and `MANUAL_STALE` is set while `throttle` and `wheel` hold; an accepted setpoint resets the heartbeat |
+| HT-12 | `modes` | Hall bench bypass: property tests over 10,000 random parameter sets and command sequences show the throttle never exceeds `kBypassThrottleMax` while bypassed (a mutant build without the clamp must fail it), the bypass is refused outside `SAFE` and without `bench_mode`, and every boot starts with `hall_installed` true |
 
 HT-6 follows TD §8.5's rule that an empty result counts only if a known positive is detected by the same instrument.
 
@@ -1013,7 +1089,7 @@ These map firmware features onto TD §9:
 | T-12 ESC signal loss | Bench command to stop sending frames is **not** provided; unplug the wire as TD describes [D] |
 | T-13 interlocks | Every interlock trips with an `event` naming it |
 | T-15–T-17 | Modes and controllers |
-| T-18 low-speed limit | `wheel_step` downward in bench mode with UNDERSPEED threshold temporarily lowered via `set_params` (bench mode only) |
+| T-18 low-speed limit | MANUAL throttle stepped downward in bench mode, with the UNDERSPEED threshold lowered by `bench_underspeed_rpm` (bench mode only, R3.8); the T-5 map itself comes from the bench console's MANUAL throttle sweep |
 
 ### 19.3 Build checks (first day, before any feature work)
 
@@ -1088,7 +1164,7 @@ In `changes/`, F-1 is Set 1 (R1.4, R1.5) and the start of Set 3; F-2 to F-6 are 
 | --- | --- | --- | --- |
 | Rate-loop sign error | Box accelerates instead of damping | §12.5 sign check at reduced gain; HT-6 | [C] TD R-1 |
 | Hall disconnect during SPINUP | Wheel overspeeds undetected | `HALL_SILENT` interlock | [D] V-11 |
-| Magnetometer axis map wrong | Heading mirrored; HOLD drifts or runs away | T-9 direction check; HOLD refused until `mag_cal` is set [D] | [M] |
+| Magnetometer axis map wrong | Heading mirrored; HOLD drifts or runs away | T-9 direction check; the magnetometer stays out of the heading until `mag_cal` is set, so until then HOLD uses the gyro heading alone (V-48) [D] | [M] |
 | Wheel loop too slow for the rate loop | Oscillation in DETUMBLE | Start at 2 Hz wheel; lower rate bandwidth if needed (§12.2) | [C] V-8 |
 | Wi-Fi task starves core 0 | Telemetry gaps | Control is on core 1 and never waits; telemetry drops are counted | [A] |
 | I2C forced to 100 kHz | Tick overrun | §9.2 fallback plan | [C] |
@@ -1136,10 +1212,41 @@ Rows U-1 onward record the main UI contract (2026-10-10). They are numbered sepa
 | V-27 | §24 Q6 additions and the V-1, V-4, V-5, V-7, V-9, V-14 corrections awaited owner approval | Owner review 2026-10-10 | Approved | Written into TD §4.8, §5.2, §6.4 to §6.7, §7.3, §9.1, §10; §13.1 and §13.4 text updated | n/a |
 | V-28 | Em dashes in headings and empty table cells | Owner style | n/a | Replaced with colons, "none", or "n/a" | Low |
 | V-29 | §10 had no driver notes | Driver source read 2026-10-10 | The esp-idf-lib drivers default to 1 MHz SCL, the QMC5883P driver hard-codes 100 kHz, and the drivers were validated only one at a time | Driver notes in §10.1 to §10.3; 400 kHz override [D]; TD A-23 | Medium (this doc) |
+| V-30 | §13 and §14 assumed the Hall sensor is always fitted | Owner decision 2026-10-10 | The Hall magnets cannot be mounted until repository Set 2, so rung 1 of `MANUAL` could not be tested at all | Hall bench bypass (§13.1, §14.1, §16): `hall_installed` false only from bench mode, never persisted; open-loop `SPINUP`; Hall interlocks suspended; compile-time ceiling `kBypassThrottleMax` = 400; HT-12 | Medium (this doc and TD) |
+| V-31 | §14.1: `HALL_SILENT` arms on "throttle above the low-limit FF value" | The FF table does not exist until T-5 | The threshold was undefined before characterisation | New parameter `hall_expect_throttle`, default 200, set to FF(Ω_low) after T-5 [D] | Medium (this doc) |
+| V-32 | §7.4: comms writes `last_heartbeat_us` for the controlling client | Only the control task knows which client armed the box | Comms would need a second copy of that fact across cores | Pings go through the command queue; the supervisor times the heartbeat [D] | Low (this doc) |
+| V-33 | §14.1 latch column ("until next `arm`", "until a valid read and `arm`") did not say what `arm` does with several latches | Implementation of the supervisor | Ambiguous | `arm` clears all latches only if every latched interlock's release condition holds; else `latched fault: <NAME>` [D] | Low (this doc) |
+| V-34 | §15.3: "a failed guard → ok:false with a reason" without the reason strings | Implementation | The UI and tests need exact strings | Fixed list in §13.1 [D] | Low (this doc) |
+| V-35 | §16: `omega_cap_rpm` "cannot be raised over the wire"; persistence of `bench_mode` unstated | Implementation | Lowering it over the wire was also unclear | The cap is not settable over the wire at all and not persisted; `bench_mode` and `hall_installed` are volatile [D] | Low (this doc) |
+| V-36 | §14.3: e-stop always ramps from throttle_0 | Implementation | A ramp from zero throttle only blocks the next `arm` for 5 s | No ramp when the last throttle was below 48 [D] | Low (this doc) |
+| V-37 | §10.3: the BMP280 "is read at 1 Hz on a spare tick" | R3.2 read the esp-idf-lib i2cdev source | A bus error makes `bmp280_read_float` retry three times with 40 to 160 ms backoff, about 0.3 s, which would stall the 2 ms control loop | Read by a low-priority core-0 task and published through a seqlock; the control task never calls it (R3.4) | Medium (this doc) |
 | U-1 | §2.3, §15.3, §17: the wire is counter-clockwise positive and the UI negates for display (V-17, V-24) | Main UI source at PR #1 622150a; owner decision 2026-10-10 | `frontend/` became the main UI, and the backend matches it. The UI draws positive heading clockwise ("rotate right" = +90°, dial at (sin ψ, -cos ψ), model `rotation.y = -ψ`) | The wire is clockwise positive for every quantity about the spin axis, including `tau_cmd_mNm`, which the spec list did not name but which is a torque about the same axis. The firmware converts only in its protocol encode and decode; the internal frame of §2.3 is unchanged. A v1 correction, not a v2 break: no backend had emitted v1, and the only consumer already assumed clockwise. Supersedes V-17 and the sign half of V-24 | High (wire contract) |
 | U-2 | §15.1, §15.2, §17, §19.3: WebSocket on port 81 at `/` (V-16 asked the UI to change its placeholder) | Main UI placeholder `ws://192.168.4.1/ws`; owner decision 2026-10-10 | The backend matches the UI | Port 80 at `/ws`: `ws://direcsun.local/ws` in station mode, `ws://192.168.4.1/ws` in SoftAP mode. `ground/link/` default, console hints, and `tools/mock-box.py` (serves only `/ws`, 404 elsewhere) follow. Supersedes V-16 | Medium (wire contract) |
 | U-3 | Header, §3, §17, §24 Q4: the demo UI is Aaron's, lives outside the repository, and talks through `ground/link/` | PR #1 merged 2026-10-10 (7136f6a) | `frontend/` is in the repository and is the main UI; it owns its operator client | §17 rewritten as the integration contract with `frontend/`, from its source. `ground/link/` and `ground/console/` are bench tools. §3 says the UI leads the wire interface | Medium |
+| V-38 | §15.2: "telemetry is broadcast to all clients" and events to all clients | R1.8 found the main UI counts every non-`tlm` frame as ignored and never sends | A read-only viewer would see its ignored count climb with every event | Events go only to clients that have sent at least one message; read-only viewers receive only `tlm`, which carries the mode (R3.5) | Low (this doc) |
+| V-39 | §15.2: cJSON from the `espressif/cjson` registry component | Host tests need the same parser | Two copies at different versions would let host tests pass against code the firmware does not run | cJSON 1.7.19 vendored in `direcsun_core/third_party/cjson`, compiled by both builds; the registry dependency is dropped (R3.5) | Low (this doc) |
+| V-40 | §15.3: `mag_deg` null only if the magnetometer is missing | No calibrated magnetometer heading exists until Set 5 | A raw atan2 of uncalibrated counts would be a misleading heading | `mag_deg` is null until Set 5 builds the calibrated heading (R3.5) | Low (this doc) |
+| V-41 | §15.3: refusals carry "a reason" without the strings | Implementation of the parser (R3.5) and supervisor (R3.6) | The UI and the tests need exact strings | Fixed list in §15.3; `seq` 0 for an unreadable frame | Low (this doc) |
+| V-42 | §15.3: `cause` limited to interlocks, commands, and `slew_complete`; no notice catalogue | R1.6 schema and R3.6 supervisor | The schema already had `boot`, `spinup_complete`, `SLEW_TIMEOUT`, `sun_invalid`, and `notice` | Event catalogue in §15.3, with `HALL_BYPASS` added as an additive v1 change (CONTEXT.md, 2026-10-10) | Low (this doc) |
+| V-43 | §12.1 step 4 and §16: the wheel PI runs whenever the box is armed, with gains "from T-5" | R3.8 | Before T-5 there is no feed-forward table and the gains are 0, so a closed loop would command nothing sensible | The closed wheel loop runs only when the Hall is fitted and `ff_table` is set (`wheel_loop_available`); until then the box runs rung 1, the open-loop throttle controller (R3.7). `wheel_step` is refused with `wheel loop not available` [D] | Medium (this doc) |
+| V-44 | §19.2: T-18 lowers the UNDERSPEED threshold "via `set_params`"; the overspeed check had no way to lower the cap | R3.8 | No parameter existed for either, and `omega_cap_rpm` is not settable at all (V-35) | Two volatile bench-only keys, `bench_underspeed_rpm` and `bench_cap_rpm` (§16), each able only to make its own test more conservative, both cleared with bench mode and at every boot [D] | Low (this doc) |
+| V-45 | §13.3: spin-up "begins with throttle feed-forward only and closes the wheel PI once the Hall speed exceeds Ω_low" | R3.8 | Ω_ref's [Ω_low, Ω_cap] clamp would jump the reference to Ω_low at once | In SPINUP Ω_ref ramps at 400 rpm/s from the measured speed with only the cap clamping it; the PI is off below Ω_low (feed-forward only) and the integrator is cleared there. READY clamps Ω_ref to [Ω_low, cap in force] [D] | Low (this doc) |
+| V-46 | §12.3: the rate integral only stops while saturated | R3.9 host simulation | Coulomb friction holds a stopped box still while an integral below breakaway remains, and that integral keeps ramping Ω_ref with nothing moving: about 570 rpm in the 15 s after a 1 rev/s detumble at 1 mN·m, until Ω_ref reaches a limit | Stick-slip bleed: with ω_cmd = 0 and ω̂ within ±1 deg/s the integral decays with τ = 0.5 s. A mutant build without it fails its host test. To be re-checked by the R3.9 hold test on the turntable [D] | Low (this doc) |
+| V-47 | §12.5: the sign check runs "at reduced K_ω (×0.2)" | R3.9 | Scaling K_ω alone would leave K_i at full value and move the PI corner up five times | `rate_gain_scale` scales K_ω and K_i together, default 0.2. In the host simulation scale 0.2 damps a push and never amplifies it, but does not meet PR-1; PR-1 is verified at scale 1 (HT-5) [D] | Low (this doc) |
+| V-48 | §13.1 and TD §6.6: `HOLD` and `SLEW` need "magnetometer OK"; §11.3's heading fuses the calibrated magnetometer | Owner decision 2026-10-10 (repository Set 4, R4.2) | The magnetometer calibration (T-9 at three wheel speeds) belongs to Set 5, but the main UI's judge sequence (turn 90°, hold 1 s, return) needs `HOLD` and `SLEW` now, and lasts only 5 to 6 s | `HOLD` and `SLEW` run on the gyro-only heading for relative use; `SLEW` targets are relative to the last `zero_heading`; `MAG_MISSING` blocks neither; the `HEADING_GYRO` flag marks every `tlm` until Set 5. Absolute `HOLD` returns with the magnetometer | Medium (this doc and TD) |
+| V-49 | §11.3: `zero_heading` "adds an offset so ψ̂ reads 0"; where the offset lives was unstated, and the command was accepted in any state | R4.2 | An offset kept in the estimator would let a zero and a `HOLD` or `SLEW` in the same control tick use different references, and a zero during `SLEW` would move the target under the box | The supervisor keeps the offset and reports the heading relative to it; the estimator integrates and is never reset. `zero_heading` is accepted in `SAFE` and `READY` only, refused elsewhere with `not in SAFE or READY` [D] | Low (this doc) |
+| V-50 | §12.4: `SLEW` ends when \|ψ_ref − ψ̂\| < 3° and \|ω̂\| < 5 deg/s for 0.5 s; the target's direction for a half-turn was left to the ground station | R4.3 | Read literally, the test holds while ψ_ref is still moving, so a short slew could report `slew_complete` before ψ_ref reached the target; a 180° target had two shortest paths | The test starts only once the profile has ended, so it compares ψ̂ with the target itself; a half-turn always goes counter-clockwise. The 6 s timeout counts from entry, which is tick 0 [D] | Low (this doc) |
+| V-51 | §12.1 and §12.3: ω_cmd = K_ψ · wrap(ψ_ref − ψ̂) everywhere in `HOLD`; the stick-slip bleed runs only while ω_cmd = 0 | R4.3 host simulation | At 3 mN·m, after a 10 mN·m, 100 ms poke, the box returned within 2° in 0.3 s and then crept the last 1.6° at under 1 deg/s with the rate loop holding about 2.8 mN·m against friction. The wheel absorbed that friction impulse, about 440 rpm per second, and reached Ω_low and `UNDERSPEED` 3.9 s after the poke | A 1° hold deadband on a still reference: inside it ω_cmd = 0, the bleed clears the integral, and friction holds the box. The same poke then costs about 800 rpm once and the wheel stays put (7 rpm in the next second). The positive control `DIRECSUN_MUTANT_NO_HOLD_DEADBAND` fails the HOLD simulation test [D] | Medium (this doc) |
+| V-52 | §12.2: Ω_ref is clamped to [Ω_low, Ω_cap], and `UNDERSPEED` trips when the wheel is below Ω_low for 200 ms (§14.1) | R4.3 host simulation; owner decision 2026-10-10 | The clamp's floor is the trip threshold itself, so a rate loop that holds Ω_ref on Ω_low (`MOMENTUM_SATURATED`) turns into `UNDERSPEED` and `SAFE` as soon as the wheel dips a hair under it for 200 ms; the cap has margin to `OVERSPEED`, the floor has none | The floor of the clamp is Ω_low + 100 rpm, for the rate loop, the bumpless start into `READY`, and `wheel_step`; `UNDERSPEED` stays at Ω_low, and `MOMENTUM_SATURATED` is set while the rate loop holds Ω_ref on the floor. `SPINUP`'s ramp is still clamped only by the cap (V-45). In the host simulation a clockwise 3 rev/s spin pins Ω_ref on the floor: the wheel undershoots to 891 rpm and the box stays in `READY`; the positive control `DIRECSUN_MUTANT_FLOOR_AT_LOW` (floor on Ω_low) undershoots to 798 rpm and trips `UNDERSPEED` within 0.9 s. The MANUAL `wheel` input (§13, not built yet) still clamps to [Ω_low, Ω_cap] and should take the same floor when it is built [D] | Medium (this doc) |
 | U-4 | §21 rule 7: any schema change bumps `v` | Owner decision 2026-10-10 (CONTEXT.md) | Additive changes need not break the UI | Additive, backward-compatible changes stay `v: 1`; breaking changes bump `v` (`protocol/README.md`) | Low |
+| V-60 | §9.2: worst tick "about 0.75 ms of 2 ms" | R3.4 bench, per-stage timing on the XIAO | The worst tick was 1.4 to 1.9 ms: the 16 KB instruction cache thrashed every tick, the magnetometer status and data reads and an ADC read shared ticks, and the first tick logged | 32 KB instruction cache and IRAM placement by linker fragments; magnetometer data on the tick after the status read; ADC on ticks 0, 2, 4; no log inside a tick. Measured 911 to 976 µs, no missed ticks; a once-a-second IMU read delay, probably the barometer read, is open (§9.2) | High (this doc) |
+| V-61 | §11.1: the bias gate needs the accel magnitude "within 0.05 g of 1 g"; §8.2: the bias "is not taken once at boot" | R3.4 bench: the MPU-6050 read 0.871 g at rest, and the boot seed refused a window with a 0.12 deg/s gyro range | The absolute test rejects an uncalibrated accelerometer at rest, so neither the boot seed nor the gate ever ran, and heading drifted with the 2.1 deg/s offset | Stillness relative to the boot window's own mean magnitude, with a 0.7 to 1.3 g plausibility band; the boot seed and its criteria written into §11.1; the boot log names the failed criterion | High (this doc) |
+| V-62 | §9.2: the R3.4 IRAM placement keeps the worst tick under 1 ms | R3.5 bench on the XIAO, SoftAP up | The worst tick was 1369 to 1649 µs with Wi-Fi: the Wi-Fi stack evicts the tick's remaining flash code (I2C, RMT and ADC drivers, libc math, `shared.cpp`) from the shared instruction cache | Those objects placed in IRAM by `main/linker.lf`, plus `CONFIG_FREERTOS_IN_IRAM`, `CONFIG_I2C_ISR_IRAM_SAFE` and `CONFIG_ADC_ONESHOT_CTRL_FUNC_IN_IRAM`. Measured 753 to 756 µs over 10 min, no missed ticks after the first second. The first second's intermittent 4 ms tick is open (§9.2) | High (this doc) |
+| V-63 | TD §7.4 and R3.7: the bench console's e-stop is "bound to the space bar", "from any state" | Review of R3.7 before the first spin: Playwright against `tools/mock-box.py`, frames read from the browser's own WebSocket record | With focus in the endpoint field, where connecting with Enter left it, Space typed a space into the URL and sent nothing; the box stayed in `MANUAL` | Space sends `estop` wherever focus is; a held key sends one; Space's keyup is cancelled, so it cannot press a focused button; the endpoint field loses focus once the link opens (§17) | High (bench console) |
+| V-64 | §14.1 and §16: `HALL_SILENT` arms above `hall_expect_throttle`; it and `spinup_throttle` each range over 48..2047 | Review of R3.7 before the first spin: host test with the Hall fitted but silent, both parameters at 2047 as NVS could hold them | Rung 1's `SPINUP` ramp tops out at `spinup_throttle`, and `SPINUP` is exempt from `UNDERSPEED`. With the threshold at or above the target, nothing stopped a `SPINUP` at full throttle | `hall_expect_throttle` must be below `spinup_throttle`: `set_params` refuses otherwise (`invalid param: hall_expect_throttle`), and a stored set that breaks it loads the defaults. Strictly below, because the trip condition is "above". The rule matches the intended values: FF(Ω_low) is below the throttle that drives the wheel toward the bias. With the defaults it trips 1.504 s after `arm`, at throttle 300 | High (this doc) |
+| V-65 | §13.1, §15.3, §16: `set_params` is accepted in `SAFE` | Review of R3.7 before the first spin: host test of a `set_params` sent during the 5 s ramp-down that follows an e-stop | The ramp-down is `SAFE` with the wheel still driven, so the update was accepted: a lowered cap did not apply to the running ramp, and `params_changed` asked for a flash write, which stalls both cores' caches and the tick alarm (§16, `control_task.cpp`), while the motor turned | `set_params` is refused until the ramp has ended, with the existing reason `ramp-down in progress`, the one `arm` already gives there; the refusal reasons stay a fixed list (§13.1), and the schema does not enumerate them, so this is no schema change | Medium (this doc) |
+| V-66 | §9.2, §14.1, §14.3: missed ticks are counted for `CONTROL_STALL`; the 1 s heartbeat, the 5 s ramp, and the 200 ms and 500 ms interlock durations are counted in ticks | Review of R3.7 before the first spin: read `control_task.cpp`; host test with 6 of every 14 timer alarms missed | The supervisor's tick count advanced once per executed tick, not per alarm, so missed ticks stretched every duration. At that miss rate the heartbeat expired after 1.75 s of wall time, `UNDERSPEED` after about 350 ms, and `HALL_SILENT` after about 875 ms | `TickClock` in the pure core advances by every alarm and keeps the missed-tick streak; the control task feeds it, and the supervisor's duration counters add the alarms each tick stands for (§9.2). Host tests drive the supervisor through it; mutants that count executed ticks fail them | High (this doc) |
+| V-67 | §8 and TD §5.1: the battery divider is 100 kΩ / 22 kΩ, ratio 0.1803 | Julian's meter on the bench rig's resistors, 2026-10-10 | The fitted resistors measure 83.2 kΩ and 21.23 kΩ, ratio 0.2033; with the design constant every battery reading, and so the 9.6 V arm guard and the low-battery trip, would read 12.8 % high | The ratio is computed from the two measured values in `adc_inputs.hpp`, which change with the resistors. R3.3's meter test (10.0 V and 9.0 V within 2 %) checks it | High (this doc) |
 
 ### 23.2 Statements re-derived and confirmed
 
