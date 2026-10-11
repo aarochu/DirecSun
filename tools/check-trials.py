@@ -28,6 +28,9 @@ SLEW_SETTLE_S = 3.0
 SLEW_TIMEOUT_S = 6.0
 DETUMBLE_PEAK_MIN, DETUMBLE_PEAK_MAX = 270.0, 450.0
 DETUMBLE_QUIET_DPS = 5.0
+# MOMENTUM_SATURATED this long after the peak means the spin was more than the
+# wheel can absorb; earlier, it is the wheel lagging its reference (R4.4 Notes).
+DETUMBLE_SAT_GRACE_S = 1.0
 GYRO_COUNTS_PER_DPS = 16.4   # MPU-6050 at +-2000 deg/s (FD section 10.1)
 
 
@@ -96,8 +99,11 @@ def score_detumble(frames, min_trials=10, min_per_direction=5, out=print):
         if any(m["mode"] != "DETUMBLE" for m in window):
             rows.append((t0, direction, peak, None, "invalid: mode left DETUMBLE"))
             continue
-        if any("MOMENTUM_SATURATED" in m.get("flags", []) for m in window):
-            rows.append((t0, direction, peak, None, "invalid: MOMENTUM_SATURATED"))
+        saturated = [m["t_ms"] for m in window if "MOMENTUM_SATURATED" in m.get("flags", [])]
+        late = [t for t in saturated if t >= t0 + DETUMBLE_SAT_GRACE_S * 1000]
+        if late:
+            rows.append((t0, direction, peak, None,
+                         f"invalid: MOMENTUM_SATURATED {(late[0] - t0) / 1000.0:.2f} s after the peak"))
             continue
         valid += 1
         per_dir[direction] += 1
@@ -105,7 +111,10 @@ def score_detumble(frames, min_trials=10, min_per_direction=5, out=print):
         t_settle = (loud[-1]["t_ms"] - t0) / 1000.0 if loud else 0.0
         ok = t_settle <= 5.0
         failed += 0 if ok else 1
-        rows.append((t0, direction, peak, t_settle, "pass" if ok else "FAIL: still above 5 deg/s after 5 s"))
+        result = "pass" if ok else "FAIL: still above 5 deg/s after 5 s"
+        if saturated:
+            result += f" (MOMENTUM_SATURATED until {(saturated[-1] - t0) / 1000.0:.2f} s)"
+        rows.append((t0, direction, peak, t_settle, result))
     out("t0_ms    dir  peak_dps  t_settle_s  result")
     for t0, d, peak, ts, res in rows:
         out(f"{t0:<8} {'cw ' if d > 0 else 'ccw'} {peak:8.1f}  {'' if ts is None else f'{ts:10.2f}'}  {res}")
@@ -306,7 +315,7 @@ def _tlm(t_ms, **kw):
     return m
 
 
-def _detumble_trace(n, settle_s, peak=360.0):
+def _detumble_trace(n, settle_s, peak=360.0, saturated_s=()):
     frames, t = [], 0
     for k in range(n):
         sign = 1 if k % 2 == 0 else -1
@@ -315,7 +324,8 @@ def _detumble_trace(n, settle_s, peak=360.0):
         for step in range(600):   # 12 s: spin, decay linearly to rest
             sec = step * 0.02
             r = peak * max(0.0, 1 - sec / settle_s) if step else peak
-            frames.append(_tlm(t, mode="DETUMBLE", rate_dps=sign * r)); t += 20
+            flags = ["MOMENTUM_SATURATED"] if saturated_s and saturated_s[0] <= sec < saturated_s[1] else []
+            frames.append(_tlm(t, mode="DETUMBLE", rate_dps=sign * r, flags=flags)); t += 20
     return frames
 
 
@@ -338,6 +348,14 @@ def selftest():
     for m in one_sided:
         m["rate_dps"] = abs(m["rate_dps"])
     expect("detumble one direction only", score_detumble(one_sided, out=sink), False)
+    # The wheel lagging its reference: a brief clamp early in every trial still counts.
+    expect("detumble with a clamp from 0.3 to 0.5 s",
+           score_detumble(_detumble_trace(10, 3.0, saturated_s=(0.3, 0.5)), out=sink), True)
+    # A clamp still set at 1.0 s or later: every trial invalid, so the run fails.
+    expect("detumble with a clamp from 0.3 to 1.1 s",
+           score_detumble(_detumble_trace(10, 3.0, saturated_s=(0.3, 1.1)), out=sink), False)
+    expect("detumble with a clamp from 1.5 to 2.0 s",
+           score_detumble(_detumble_trace(10, 3.0, saturated_s=(1.5, 2.0)), out=sink), False)
 
     def ramp(start_delay, span, thr=1000):
         fr = [_tlm(t, throttle=thr) for t in range(0, 1000, 20)]

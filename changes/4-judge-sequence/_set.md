@@ -17,10 +17,10 @@ A judge spinning the box by hand in READY sees it come to rest (DETUMBLE behavio
 - [~] R4.1 ui-command-contract: implement the commands the finished UI sends (arm, disarm, e-stop, rotate ±90 / stop / reset, heartbeat), matching `frontend/`'s client exactly; schema additions stay v1 if additive
 - [~] R4.2 gyro-heading: heading from integrated gyro with `zero_heading` at sequence start; drift budget measured over 10 s
 - [~] R4.3 hold-and-slew: attitude loop, HOLD capture, relative SLEW trapezoid at 60 deg/s and 120 deg/s² (HT-4), completion and timeout, the return leg
-- [~] R4.4 detumble-and-safety: the DETUMBLE wire mode for hand spins; T-12 and T-13 on the real box (ESC signal loss, every interlock)
+- [~] R4.4 detumble-and-safety: the DETUMBLE wire mode for hand spins; T-12 and T-13 on the real box (ESC signal loss, every interlock) (spec approved with changes by Julian, 2026-10-11)
 - [~] R4.6 status-flags-and-refusals: the flags `FF_TABLE_MISSING`, `RATE_GAIN_REDUCED`, `PARAMS_RESET` and the refusal strings for DETUMBLE and SUN_POINT (issues 62 and 59; spec approved with changes by Julian, 2026-10-11)
 - [~] R4.7 accel-rms: send `accel_rms_g` in bench telemetry for T-7 (issue 66, issue 80 P1.3; spec approved with changes by Julian, 2026-10-11)
-- [~] R4.5 characterisation-and-acceptance: T-2 to T-4, T-7, T-8 on the assembled box, `sizing.py` re-run (G2); T-15 and T-16 trials driven from the UI
+- [~] R4.5 characterisation-and-acceptance: T-2 to T-4, T-7, T-8 on the assembled box, `sizing.py` re-run (G2); T-15 and T-16 trials driven from the UI (spec approved with changes by Julian, 2026-10-11)
 
 ## Open questions / decisions before implementing
 1. ~~Who sequences rotate, hold, and return?~~ **Answered by R4.1** from the UI's source: the UI does (frontend PR #13), with `zero_heading`, then `mode SLEW` to ±90, a 1 s hold in READY, then `mode SLEW` to 0. No new command; FD §17 records the flow.
