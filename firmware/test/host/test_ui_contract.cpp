@@ -132,7 +132,9 @@ struct UiBox {
         rig.in.estop_requested = estop;
         rig.tick(cmds);
         rig.in.estop_requested = false;
-        for (const auto &[client, seq] : expect_ack) {
+        for (const auto &entry : expect_ack) {
+            const auto client = entry.first;   // not a structured binding: C++17 cannot capture those in CHECK_MESSAGE
+            const auto seq = entry.second;
             const Ack *a = ack_for(rig.out, client, seq);
             CHECK_MESSAGE(a != nullptr, "no ack in the tick that drained client " << client << " seq " << seq);
             if (a != nullptr && !a->ok) refused.push_back(*a);
