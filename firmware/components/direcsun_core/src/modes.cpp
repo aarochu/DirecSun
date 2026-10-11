@@ -5,7 +5,8 @@
 
 // Mutation-test switches remove one safety mechanism so the host selftest can
 // prove the tests notice. They exist only in host selftest builds.
-#if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_LATCH) || defined(DIRECSUN_MUTANT_NO_BYPASS_CLAMP))
+#if defined(ESP_PLATFORM) && (defined(DIRECSUN_MUTANT_NO_LATCH) || defined(DIRECSUN_MUTANT_NO_BYPASS_CLAMP) || \
+                              defined(DIRECSUN_MUTANT_PARAMS_DURING_RAMP))
 #error "DIRECSUN_MUTANT_* switches are for host selftest builds only"
 #endif
 
@@ -294,6 +295,12 @@ void Supervisor::handle(const Command &cmd, const TickInputs &in, TickOutputs &o
     }
     case CommandKind::SetParams: {
         if (armed()) return ack(out, cmd, kNotInSafe);
+#ifndef DIRECSUN_MUTANT_PARAMS_DURING_RAMP
+        // The ramp-down is SAFE with the wheel still driven (V-65): a new cap
+        // would not apply to the running ramp, and the flash write that follows
+        // would stall the caches while the motor turns. Wait for the ramp to end.
+        if (ramp_.active()) return ack(out, cmd, kRampInProgress);
+#endif
         if (cmd.params == nullptr) return ack(out, cmd, kNoParams);
         Params next;
         const ParamsResult r = apply_param_update(params_, *cmd.params, next);

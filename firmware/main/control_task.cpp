@@ -72,7 +72,8 @@ ControlContext s_context;
 
 // The gptimer ISR. Not placed in IRAM on purpose [D]: CONFIG_GPTIMER_ISR_CACHE_SAFE
 // is off, so while a flash write disables the cache (parameter persistence,
-// accepted only in SAFE) this ISR is held off together with the control task,
+// accepted only in SAFE once any ramp-down has ended, so with the wheel not
+// driven) this ISR is held off together with the control task,
 // and a long flash write cannot trip the stall watchdog.
 bool on_tick_alarm(gptimer_handle_t, const gptimer_alarm_event_data_t *, void *)
 {

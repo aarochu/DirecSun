@@ -266,6 +266,9 @@ class Box:
         elif cmd == "set_params":
             if self.mode != "SAFE":
                 return self._ack(conn, seq, False, "not in SAFE")
+            if self.ramp:
+                # SAFE but still ramping down: the firmware waits for the ramp to end (V-65).
+                return self._ack(conn, seq, False, "ramp-down in progress")
             update = message["params"]
             # The Hall bench bypass needs bench mode already on: two commands, never one (R3.6).
             if update.get("hall_installed") is False and not self.params.get("bench_mode"):
@@ -599,6 +602,9 @@ def selftest():
     send(a, {"v": 1, "type": "cmd", "seq": 9, "cmd": "arm"})
     box.last_heartbeat -= 5.0
     box.tick()                                                                        # HEARTBEAT_LOST
+    send(a, {"v": 1, "type": "cmd", "seq": 15, "cmd": "set_params", "params": {"bench_mode": True}})  # mid-ramp
+    box.ramp = (box.ramp[0] - RAMP_S, box.ramp[1])
+    box.tick()                                                                        # ramp ends
     send(a, {"v": 1, "type": "cmd", "seq": 10, "cmd": "set_params", "params": {"hall_installed": False}})  # refused
     send(a, {"v": 1, "type": "cmd", "seq": 11, "cmd": "set_params", "params": {"bench_mode": True}})
     send(a, {"v": 1, "type": "cmd", "seq": 12, "cmd": "set_params", "params": {"hall_installed": False}})
@@ -632,8 +638,9 @@ def selftest():
     if not any(m.get("name") == "HALL_BYPASS" for _t, m in box.outbox if m["type"] == "event"):
         problems.append("no HALL_BYPASS notice")
     # Box rules the mock mirrors: each one refused, and the nearest legal update accepted.
-    acks = {m["seq"]: m for _t, m in box.outbox if m["type"] == "ack" and m["seq"] in (13, 14)}
-    expected = {13: (False, "invalid param: hall_expect_throttle"), 14: (True, None)}
+    acks = {m["seq"]: m for _t, m in box.outbox if m["type"] == "ack" and m["seq"] in (13, 14, 15)}
+    expected = {13: (False, "invalid param: hall_expect_throttle"), 14: (True, None),
+                15: (False, "ramp-down in progress")}
     for seq, (ok, reason) in expected.items():
         got = acks.get(seq)
         if got is None or got["ok"] is not ok or got.get("reason") != reason:
