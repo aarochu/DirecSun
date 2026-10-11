@@ -20,6 +20,7 @@ import {
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ModelAsset } from '@shared/data/assets';
+import { renderDetail } from '@shared/geometry/renderDetail';
 import { VIEW_CAMERA_BEARING_DEG, VIEW_ELEVATION_DEG } from './CubeSatSchematic';
 
 const DEG = Math.PI / 180;
@@ -92,6 +93,7 @@ export default function RealCubeSatModel({ asset, headingDeg, onLoad, onError }:
           return;
         }
         applyCadLook(gltf.scene);
+        host.dataset.detailCount = String(decorateElectronics(gltf.scene));
         for (const child of [...gltf.scene.children]) {
           (asset.fixedNodePattern.test(child.name) ? fixedGroup : bodyGroup).add(child);
         }
@@ -122,6 +124,35 @@ export default function RealCubeSatModel({ asset, headingDeg, onLoad, onError }:
   }, [headingDeg]);
 
   return <div ref={hostRef} className="cad-model" />;
+}
+
+function decorateElectronics(root: Object3D): number {
+  root.updateMatrixWorld(true);
+  const meshes: Mesh[] = [];
+  const outlines = new Map<string, LineSegments>();
+  root.traverse((object) => {
+    if (object instanceof Mesh) meshes.push(object);
+    else if (object instanceof LineSegments) outlines.set(object.name.replace(/__edges$/, ''), object);
+  });
+  let count = 0;
+  for (const mesh of meshes) {
+    if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+    const box = mesh.geometry.boundingBox!.clone().applyMatrix4(mesh.matrixWorld);
+    const edge = new LineBasicMaterial({ color: '#1a1a1a', transparent: true, opacity: 0.55 });
+    const detail = renderDetail(mesh.name, box, edge);
+    if (!detail) {
+      edge.dispose();
+      continue;
+    }
+    if (detail.replace) {
+      mesh.visible = false;
+      const outline = outlines.get(mesh.name);
+      if (outline) outline.visible = false;
+    }
+    root.add(detail.group);
+    count += detail.count;
+  }
+  return count;
 }
 
 // The landing page's CAD look: flat grey solids with dark outlines. The lock
@@ -159,15 +190,16 @@ function frameCamera(camera: PerspectiveCamera, scene: Scene) {
 }
 
 function disposeObject(root: Object3D) {
+  const geometries = new Set<{ dispose(): void }>();
+  const materials = new Set<Material>();
   root.traverse((object) => {
-    if (!(object instanceof Mesh)) return;
-    object.geometry.dispose();
-    const materials: Material[] = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of materials) {
-      for (const value of Object.values(material)) {
-        if (value instanceof Texture) value.dispose();
-      }
-      material.dispose();
-    }
+    if (!(object instanceof Mesh || object instanceof LineSegments)) return;
+    geometries.add(object.geometry);
+    for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material);
   });
+  for (const geometry of geometries) geometry.dispose();
+  for (const material of materials) {
+    for (const value of Object.values(material)) if (value instanceof Texture) value.dispose();
+    material.dispose();
+  }
 }

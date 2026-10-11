@@ -1,5 +1,6 @@
 import { normalizeDeg } from '../simulation/physics';
 import type { Direction } from '../simulation/types';
+import { ARMED_MODES, AUTO_EXITS, canEnter, modeCommand, REFUSAL_HINTS, type CommandableMode, type ManualInput } from './modes';
 import { DeviceCommandError, type DeviceEvent, type DeviceLink } from './deviceLink';
 
 export type TurnPhase = 'idle' | 'rotating' | 'holding' | 'returning';
@@ -11,13 +12,29 @@ export interface OperatorResult {
 
 export interface OperatorState {
   readonly controlling: boolean;
+  readonly linkLost: boolean;
   readonly phase: TurnPhase;
   readonly direction: Direction | null;
   readonly originDeg: number | null;
   readonly targetDeg: number | null;
-  readonly busy: 'arm' | 'disarm' | 'estop' | null;
+  readonly busy: 'arm' | 'disarm' | 'estop' | 'mode' | null;
+  readonly manual: ManualState | null;
   readonly result: OperatorResult | null;
 }
+
+export type { CommandableMode, ManualInput } from './modes';
+
+export interface ManualState {
+  readonly input: ManualInput;
+  readonly value: number;
+  readonly min: number;
+  readonly max: number;
+}
+
+export const MANUAL_PERIOD_MS = 100;
+const MANUAL_SETPOINT_KEY: Record<ManualInput, string> = { rate: 'rate_dps', throttle: 'throttle', wheel: 'wheel_rpm' };
+const WHEEL_RANGE: readonly [number, number] = [800, 4000];
+const RATE_RANGE: readonly [number, number] = [-90, 90];
 
 export const TURN_STEP_DEG = 90;
 export const HOLD_MS = 1000;
@@ -28,11 +45,13 @@ type WatchVerdict = 'continue' | 'done' | string | { waitMs: number; timeoutMess
 
 const IDLE: OperatorState = {
   controlling: false,
+  linkLost: false,
   phase: 'idle',
   direction: null,
   originDeg: null,
   targetDeg: null,
   busy: null,
+  manual: null,
   result: null,
 };
 
@@ -46,7 +65,10 @@ class TurnAborted extends Error {}
 
 const describe = (error: unknown): string => {
   if (error instanceof DeviceCommandError) {
-    if (error.code === 'REFUSED') return `${error.command.toUpperCase()} REFUSED: ${error.reason ?? 'no reason given'}`;
+    if (error.code === 'REFUSED') {
+      const hint = error.reason ? REFUSAL_HINTS[error.reason] : undefined;
+      return `${error.command.toUpperCase()} REFUSED: ${error.reason ?? 'no reason given'}${hint ? `. ${hint}` : ''}`;
+    }
     if (error.code === 'TIMEOUT') return `${error.command.toUpperCase()}: NO ANSWER FROM THE BOX`;
     return `${error.command.toUpperCase()} NOT SENT: THE LINK IS NOT OPEN`;
   }
@@ -62,6 +84,11 @@ export class DeviceOperator {
   private turnToken = 0;
   private cancelWait: ((reason: string) => void) | null = null;
   private unsubscribe: (() => void)[] = [];
+  private manualTimer: ReturnType<typeof setInterval> | null = null;
+  private lastManualError = '';
+  // Set by e-stop and disarm: the box keeps reporting MANUAL until its mode
+  // event lands, and those frames must not restart the stream.
+  private manualHeld = false;
 
   constructor(private readonly link: DeviceLink) {}
 
@@ -75,6 +102,7 @@ export class DeviceOperator {
   }
 
   detach(): void {
+    this.stopManual();
     this.abortTurn('Closed');
     for (const unsubscribe of this.unsubscribe) unsubscribe();
     this.unsubscribe = [];
@@ -96,6 +124,72 @@ export class DeviceOperator {
       (this.link.latestReading?.wheelRefRpm ?? 0) > 0;
   }
 
+  get canChangeMode(): boolean {
+    return this.state.controlling && this.state.phase === 'idle' && this.state.busy === null && (ARMED_MODES as readonly string[]).includes(this.boxMode ?? '');
+  }
+
+  async setMode(mode: CommandableMode, input?: ManualInput): Promise<void> {
+    if (!this.canChangeMode || !canEnter(mode, this.boxMode)) return;
+    const label = input ? `${mode} (${input.toUpperCase()})` : mode.replace('_', ' ');
+    this.set({ busy: 'mode', result: null });
+    try {
+      await this.link.command('mode', modeCommand({ mode, input }));
+      this.set({ busy: null, result: { tone: 'ok', text: `MODE ${label} ACCEPTED.` } });
+    } catch (error) {
+      this.set({ busy: null, result: { tone: 'error', text: describe(error) } });
+    }
+  }
+
+  setManual(value: number): void {
+    const manual = this.state.manual;
+    if (!manual || !Number.isFinite(value)) return;
+    const clamped = Math.min(manual.max, Math.max(manual.min, manual.input === 'rate' ? value : Math.round(value)));
+    this.set({ manual: { ...manual, value: clamped } });
+  }
+
+  private manualRange(input: ManualInput): readonly [number, number] | null {
+    if (input === 'rate') return RATE_RANGE;
+    if (input === 'wheel') return WHEEL_RANGE;
+    return this.link.latestReading?.throttleBand ?? null;
+  }
+
+  private syncManual(): void {
+    const reading = this.link.latestReading;
+    if (reading?.mode !== 'MANUAL') this.manualHeld = false;
+    const input = this.state.controlling && !this.manualHeld && reading?.mode === 'MANUAL' ? reading.manualInput : null;
+    if (input === null) return this.stopManual();
+    if (this.state.manual?.input !== input) {
+      const range = this.manualRange(input);
+      if (!range) return this.stopManual();
+      const start = input === 'rate' ? 0 : input === 'wheel' ? Math.round(reading?.wheelRpm ?? 2400) : range[0];
+      this.set({ manual: { input, min: range[0], max: range[1], value: Math.min(range[1], Math.max(range[0], start)) } });
+    }
+    if (this.manualTimer === null) this.manualTimer = setInterval(() => this.sendManual(), MANUAL_PERIOD_MS);
+  }
+
+  private sendManual(): void {
+    const manual = this.state.manual;
+    if (!manual || !this.link.isOpen) return;
+    this.link.command('manual', { [MANUAL_SETPOINT_KEY[manual.input]]: manual.value }).catch((error: unknown) => {
+      const text = describe(error);
+      if (/too fast/i.test(text) || text === this.lastManualError) return;
+      this.lastManualError = text;
+      this.set({ result: { tone: 'error', text } });
+    });
+  }
+
+  private holdManual(): void {
+    this.manualHeld = true;
+    this.stopManual();
+  }
+
+  private stopManual(): void {
+    if (this.manualTimer !== null) clearInterval(this.manualTimer);
+    this.manualTimer = null;
+    this.lastManualError = '';
+    if (this.state.manual) this.set({ manual: null });
+  }
+
   async arm(): Promise<void> {
     if (this.state.busy) return;
     this.set({ busy: 'arm', result: null });
@@ -111,6 +205,7 @@ export class DeviceOperator {
 
   async disarm(): Promise<void> {
     if (this.state.busy) return;
+    this.holdManual();
     this.abortTurn('Disarm requested');
     this.set({ busy: 'disarm', result: null });
     try {
@@ -122,6 +217,7 @@ export class DeviceOperator {
   }
 
   estop(): void {
+    this.holdManual();
     this.abortTurn('E-stop sent');
     this.ownEstopPending = true;
     let sent: Promise<unknown>;
@@ -168,10 +264,11 @@ export class DeviceOperator {
   }
 
   async stopTurn(): Promise<void> {
+    const wasTurning = this.state.phase !== 'idle';
     const shouldSendReady = this.slewIssued || this.boxMode === 'SLEW';
     this.abortTurn('Stop requested');
+    if (wasTurning) this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
     if (!shouldSendReady) return;
-    this.set({ result: { tone: 'ok', text: 'TURN STOPPED: HOLDING WHERE THE BOX IS.' } });
     try {
       await this.link.command('mode', { mode: 'READY' });
     } catch (error) {
@@ -252,6 +349,7 @@ export class DeviceOperator {
   }
 
   private onFrame = () => {
+    this.syncManual();
     const mode = this.boxMode;
     if (!this.state.controlling) return;
     if (mode !== null && mode !== 'SAFE') this.armedSeen = true;
@@ -263,6 +361,8 @@ export class DeviceOperator {
   };
 
   private onEvent = (event: DeviceEvent) => {
+    const exit = event.event === 'mode' && event.cause ? AUTO_EXITS[event.cause] : undefined;
+    if (exit && this.state.controlling) this.set({ result: { tone: 'error', text: exit } });
     if (event.event === 'mode' && event.mode === 'SAFE' && this.state.controlling && event.cause && event.cause !== 'disarm') {
       if (this.ownEstopPending && event.cause === 'ESTOP') {
         this.ownEstopPending = false;
@@ -274,12 +374,18 @@ export class DeviceOperator {
   };
 
   private onLinkState = () => {
-    if (this.link.isOpen || (!this.state.controlling && this.state.phase === 'idle')) return;
+    if (!this.link.isOpen) this.stopManual();
+    if (this.link.isOpen) {
+      if (this.state.linkLost) this.set({ linkLost: false });
+      return;
+    }
+    if (!this.state.controlling && this.state.phase === 'idle') return;
     this.abortTurn('Link closed');
     this.armedSeen = false;
     this.ownEstopPending = false;
     this.set({
       controlling: false,
+      linkLost: true,
       busy: null,
       result: { tone: 'error', text: 'LINK CLOSED: AN ARMED BOX RAMPS DOWN BY ITSELF 1 S AFTER THE LAST HEARTBEAT.' },
     });

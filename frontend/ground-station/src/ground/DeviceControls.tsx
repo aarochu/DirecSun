@@ -2,6 +2,8 @@ import { ArrowLeft, ArrowRight, OctagonX, Power, PowerOff, Square } from 'lucide
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { DeviceLink } from '../hardware/deviceLink';
 import type { DeviceOperator, TurnPhase } from '../hardware/deviceOperator';
+import { ARMED_MODES, MODES, modeSpec } from '../hardware/modes';
+import { ModeMenu } from './ModeMenu';
 
 const SEQUENCE_STEPS: readonly { label: string; phases: readonly TurnPhase[] }[] = [
   { label: 'Turn 90°', phases: ['rotating'] },
@@ -16,9 +18,12 @@ const PHASE_TEXT: Record<TurnPhase, string> = {
   returning: 'RETURNING',
 };
 
+const MANUAL_LABEL = { rate: 'BOX RATE SETPOINT', throttle: 'THROTTLE SETPOINT', wheel: 'WHEEL SPEED SETPOINT' } as const;
+const MANUAL_UNIT = { rate: ' °/s', throttle: '', wheel: ' RPM' } as const;
+
 function guidance(mode: string | null, controlling: boolean, wheelAvailable: boolean, hallBypass: boolean, spinupSlow: boolean): string {
   if (mode === null) return 'WAITING FOR TELEMETRY FROM THE BOX';
-  if (mode === 'SAFE') return 'INSERT THE LOCK PIN, THEN ARM. WHILE ARMED, THE SPACE BAR SENDS E-STOP';
+  if (mode === 'SAFE') return MODES.SAFE.guidance;
   if (!controlling) return 'ANOTHER CLIENT IS CONTROLLING THE BOX. E-STOP STILL WORKS FROM HERE';
   if (mode === 'SPINUP') return spinupSlow
     ? 'SPIN-UP IS TAKING LONGER THAN EXPECTED. THE BOX MAY NEED CHARACTERISATION. DISARM AND ASK JULIAN.'
@@ -26,12 +31,12 @@ function guidance(mode: string | null, controlling: boolean, wheelAvailable: boo
   if (mode === 'READY' && !wheelAvailable) return hallBypass
     ? 'TURNS UNAVAILABLE: THE HALL SENSOR IS BYPASSED, SO THE WHEEL LOOP IS NOT RUNNING. DISARM AND ASK JULIAN.'
     : 'TURNS UNAVAILABLE: THE WHEEL LOOP IS NOT RUNNING. THE BOX MAY NEED CHARACTERISATION. DISARM AND ASK JULIAN.';
-  if (mode === 'READY') return 'READY: PULL THE LOCK PIN, THEN ROTATE. SPACE BAR SENDS E-STOP';
-  return `${mode}: SPACE BAR SENDS E-STOP`;
+  if (mode === 'READY') return MODES.READY.guidance;
+  return modeSpec(mode)?.guidance ?? `${mode}: SPACE BAR SENDS E-STOP`;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'radio';
+  return target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'radio' && target.type !== 'range';
 }
 
 export function DeviceControls({ link, operator }: { link: DeviceLink; operator: DeviceOperator }) {
@@ -45,6 +50,8 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
   const [confirming, setConfirming] = useState(false);
   const [pinIn, setPinIn] = useState(false);
   const confirmId = useId();
+  const manualId = useId();
+  const manual = state.manual;
   const armedRef = useRef(armed);
   armedRef.current = armed;
 
@@ -114,6 +121,11 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
             Rotate right 90°
             <ArrowRight strokeWidth={1.75} aria-hidden />
           </button>
+          <ModeMenu
+            mode={mode}
+            disabled={!state.controlling || turning || state.busy !== null || !(ARMED_MODES as readonly string[]).includes(mode ?? '')}
+            onSelect={(next, input) => void operator.setMode(next, input)}
+          />
         </div>
         <div className="controls__secondary">
           <button
@@ -190,6 +202,33 @@ export function DeviceControls({ link, operator }: { link: DeviceLink; operator:
           </button>
         </div>
       </div>
+
+      {manual ? (
+        <div className="controls__manual" role="group" aria-label="Manual setpoint">
+          <label className="controls__manual-label mono-label" htmlFor={manualId}>
+            {MANUAL_LABEL[manual.input]}
+          </label>
+          <input
+            id={manualId}
+            type="range"
+            min={manual.min}
+            max={manual.max}
+            step={manual.input === 'rate' ? 0.5 : 1}
+            value={manual.value}
+            aria-label={`Manual ${manual.input} setpoint`}
+            onChange={(event) => operator.setManual(Number(event.target.value))}
+          />
+          <output className="controls__manual-value" htmlFor={manualId}>
+            {manual.value}
+            {MANUAL_UNIT[manual.input]}
+          </output>
+          {manual.input === 'rate' ? (
+            <button type="button" className="button button--quiet" onClick={() => operator.setManual(0)}>
+              Zero
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <ol className="controls__sequence mono-label" aria-label="Command sequence">
         {SEQUENCE_STEPS.map((step, index) => (

@@ -4,6 +4,17 @@ const phase = (page: Page) => page.locator('.controls__status');
 const readout = (page: Page, label: string) =>
   page.locator('.rail .readout').filter({ has: page.locator(`dt:text-is("${label}")`) }).locator('dd');
 
+// Drive simulated time through every animation frame. A busy CI or demo laptop
+// may render fewer than 10 real frames per second, while the plant intentionally
+// accepts at most 100 ms of elapsed time per frame.
+async function advanceSimulationTo(page: Page, status: string, maxSimulatedMs: number) {
+  for (let elapsed = 0; elapsed <= maxSimulatedMs; elapsed += 100) {
+    if ((await phase(page).textContent()) === status) return;
+    await page.clock.runFor(100);
+  }
+  await expect(phase(page)).toHaveText(status);
+}
+
 test.describe('ground station judge flow', () => {
   test('ROUTE_REFRESH: the ground station loads directly and after a reload', async ({ page }) => {
     await page.goto('/');
@@ -19,6 +30,7 @@ test.describe('ground station judge flow', () => {
     ['left', 'Rotate left ninety degrees and return', '−90.0°'],
   ] as const) {
     test(`${direction} 90° → hold → automatic return → READY`, async ({ page }) => {
+      await page.clock.install();
       await page.goto('/');
       const left = page.getByRole('button', { name: 'Rotate left ninety degrees and return' });
       const right = page.getByRole('button', { name: 'Rotate right ninety degrees and return' });
@@ -29,11 +41,11 @@ test.describe('ground station judge flow', () => {
       await expect(right).toBeDisabled();
       await expect(readout(page, 'TARGET')).toHaveText(target);
 
-      await expect(phase(page)).toHaveText('HOLDING TARGET / SIMULATED', { timeout: 4000 });
+      await advanceSimulationTo(page, 'HOLDING TARGET / SIMULATED', 4000);
       await expect(readout(page, 'HEADING')).toHaveText(target);
-      await expect(phase(page)).toHaveText('RETURNING / SIMULATED', { timeout: 2000 });
+      await advanceSimulationTo(page, 'RETURNING / SIMULATED', 2000);
       await expect(readout(page, 'TARGET')).toHaveText('0.0°');
-      await expect(phase(page)).toHaveText('READY / SIMULATED', { timeout: 5000 });
+      await advanceSimulationTo(page, 'READY / SIMULATED', 5000);
       await expect(readout(page, 'HEADING')).toHaveText('0.0°');
       await expect(readout(page, 'BODY RATE')).toHaveText('0.0°/s');
       await expect(left).toBeEnabled();
@@ -41,13 +53,14 @@ test.describe('ground station judge flow', () => {
   }
 
   test('STOP cancels the pending return; RESET restores 0°', async ({ page }) => {
+    await page.clock.install();
     await page.goto('/');
     await page.getByRole('button', { name: 'Rotate right ninety degrees and return' }).click();
-    await page.waitForTimeout(700);
+    await page.clock.runFor(700);
     await page.getByRole('button', { name: 'Stop the simulation' }).click();
     await expect(phase(page)).toHaveText('STOPPED / SIMULATED');
     const stoppedAt = await readout(page, 'HEADING').textContent();
-    await page.waitForTimeout(3500);
+    await page.clock.runFor(3500);
     await expect(readout(page, 'HEADING')).toHaveText(stoppedAt!);
     await expect(phase(page)).toHaveText('STOPPED / SIMULATED');
 
@@ -57,6 +70,7 @@ test.describe('ground station judge flow', () => {
   });
 
   test('MOCK_ONLY: clicking every control makes no network request', async ({ page }) => {
+    await page.clock.install();
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await page.evaluate(() => Promise.all([...document.fonts].map((face) => face.load())));
@@ -66,11 +80,11 @@ test.describe('ground station judge flow', () => {
     page.on('websocket', (socket) => requests.push(socket.url()));
 
     await page.getByRole('button', { name: 'Rotate right ninety degrees and return' }).click();
-    await page.waitForTimeout(600);
+    await page.clock.runFor(600);
     await page.getByRole('button', { name: 'Stop the simulation' }).click();
     await page.getByRole('button', { name: 'Reset the simulation' }).click();
     await page.getByRole('button', { name: 'Rotate left ninety degrees and return' }).click();
-    await expect(phase(page)).toHaveText('READY / SIMULATED', { timeout: 8000 });
+    await advanceSimulationTo(page, 'READY / SIMULATED', 8000);
     await page.getByRole('button', { name: 'Reset the simulation' }).click();
 
     expect(requests).toEqual([]);
@@ -142,12 +156,13 @@ test.describe('landing', () => {
   test('REDUCED_MOTION: static hero, ground station still works', async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: 'reduce' });
     const page = await context.newPage();
+    await page.clock.install();
     await page.goto('/overview');
     await expect(page.locator('#top')).toHaveAttribute('data-background', 'static');
     await expect(page.locator('canvas')).toHaveCount(0);
     await page.goto('/');
     await page.getByRole('button', { name: 'Rotate right ninety degrees and return' }).click();
-    await expect(phase(page)).toHaveText('READY / SIMULATED', { timeout: 8000 });
+    await advanceSimulationTo(page, 'READY / SIMULATED', 8000);
     await expect(readout(page, 'HEADING')).toHaveText('0.0°');
     await context.close();
   });

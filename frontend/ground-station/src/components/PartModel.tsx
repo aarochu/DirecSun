@@ -22,6 +22,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { hardwareStack } from '@shared/data/assets';
 import type { HardwareView } from '@shared/data/hardwareModels';
+import { renderDetail } from '@shared/geometry/renderDetail';
 
 const DEG = Math.PI / 180;
 const FOV_DEG = 30;
@@ -165,6 +166,7 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
     canvas.style.touchAction = 'pan-y';
 
     const materials: (MeshStandardMaterial | LineBasicMaterial)[] = [];
+    const detailGeometries: BufferGeometry[] = [];
     const home = { position: new Vector3(), target: new Vector3() };
 
     const draw = () => {
@@ -277,10 +279,12 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
         if (disposed) return;
         const subject = new Set(view.subject);
         const carrier = new Set(view.carrier);
+        const focus = new Set(view.focus ?? view.subject);
         const solid = new Group();
         const context = new Group();
         const focusBox = new Box3();
         const stackBox = new Box3();
+        let detailCount = 0;
         for (const part of parts) {
           const role: Role = subject.has(part.name) ? 'subject' : carrier.has(part.name) ? 'carrier' : 'context';
           const surface = SURFACE[role];
@@ -296,16 +300,36 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
           const lineMaterial = new LineBasicMaterial({ color: edge.color, transparent: true, opacity: edge.opacity });
           materials.push(material, lineMaterial);
           const target = role === 'context' ? context : solid;
-          target.add(place(new Mesh(part.geometry, material), part.matrix));
-          if (part.edges) target.add(place(new LineSegments(part.edges, lineMaterial), part.edgesMatrix));
+          const cadMesh = place(new Mesh(part.geometry, material), part.matrix);
+          const cadEdges = part.edges ? place(new LineSegments(part.edges, lineMaterial), part.edgesMatrix) : null;
+          target.add(cadMesh);
+          if (cadEdges) target.add(cadEdges);
           if (!part.geometry.boundingBox) part.geometry.computeBoundingBox();
           const bounds = part.geometry.boundingBox!.clone().applyMatrix4(part.matrix);
+          if (role !== 'context') {
+            const detail = renderDetail(part.name, bounds, lineMaterial);
+            if (detail) {
+              if (detail.replace) {
+                cadMesh.visible = false;
+                if (cadEdges) cadEdges.visible = false;
+              }
+              target.add(detail.group);
+              detailCount += detail.count;
+              detailGeometries.push(...detail.geometries);
+              for (const { material: detailMaterial } of detail.materials) {
+                detailMaterial.opacity = surface.opacity;
+                detailMaterial.depthWrite = surface.opacity === 1;
+                materials.push(detailMaterial);
+              }
+            }
+          }
           stackBox.union(bounds);
-          if (role === 'subject') focusBox.union(bounds);
+          if (focus.has(part.name)) focusBox.union(bounds);
         }
         if (focusBox.isEmpty()) focusBox.copy(stackBox);
         scene.add(solid, context);
         contextRef.current = context;
+        rootRef.current?.setAttribute('data-detail-count', String(detailCount));
 
         const focusSphere = focusBox.getBoundingSphere(new Sphere());
         const stackSphere = stackBox.getBoundingSphere(new Sphere());
@@ -349,6 +373,7 @@ export default function PartModel({ view, label, onReady, onError }: PartModelPr
       observer.disconnect();
       controls.dispose();
       for (const material of materials) material.dispose();
+      for (const geometry of detailGeometries) geometry.dispose();
       canvas.remove();
     };
   }, [view]);
