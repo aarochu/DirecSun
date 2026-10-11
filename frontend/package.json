@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "demo": "node scripts/demo.mjs",
+    "demo:serve": "node scripts/demo.mjs --no-build",
+    "demo:check": "node scripts/demo.mjs --check",
+    "test": "node --test \"scripts/*.test.mjs\""
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.3.0",
